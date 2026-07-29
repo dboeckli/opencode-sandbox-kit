@@ -19,6 +19,12 @@ caps:
     - "localhost:64342"
     - "127.0.0.1:64342"
     - "host.docker.internal:64342"
+    # Maven Central
+    - repo1.maven.org
+    - "*.maven.org"
+    # Spring
+    - repo.spring.io
+    - "*.spring.io"
 
 commands:
   install:
