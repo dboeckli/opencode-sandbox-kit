@@ -21,6 +21,7 @@ Sandbox Kit (mixin) for OpenCode with ctx7 and IntelliJ MCP.
 | Liberica JDK 25.0.4 | GitHub Releases (bell-sw) |
 | Apache Maven 3.9.16 | dlcdn.apache.org |
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
+| kubectl (latest stable) | dl.k8s.io |
 | @opencode-ai/cli, ctx7 | npm |
 
 ## Caveats

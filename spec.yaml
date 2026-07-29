@@ -30,6 +30,7 @@ caps:
     - "*.docker.io"
     - "*.docker.com"
     - download.docker.com
+    - dl.k8s.io
 
 commands:
   install:
@@ -50,6 +51,10 @@ commands:
         curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz -o /tmp/docker.tgz && \
         tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker && \
         rm -f /tmp/docker.tgz
+    - command: |
+        KUBE_VER=$(curl -fsSL https://dl.k8s.io/release/stable.txt) && \
+        curl -fsSL "https://dl.k8s.io/release/$KUBE_VER/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl && \
+        chmod +x /usr/local/bin/kubectl
     - command: |
         echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh

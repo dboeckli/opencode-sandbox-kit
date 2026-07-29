@@ -65,6 +65,7 @@ automatisch in die Sandbox – kein extra Mount nötig. Docker-Befehle funktioni
 | Liberica JDK | 25.0.4 | `/usr/local/java` |
 | Apache Maven | 3.9.16 | `/opt/maven` |
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
+| kubectl | latest stable | `/usr/local/bin/kubectl` |
 | OpenCode CLI | latest | npm global |
 | ctx7 | latest | npm global |
 
