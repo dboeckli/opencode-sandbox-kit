@@ -1,0 +1,61 @@
+name: Validate Kit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install ctx7
+        run: npm install -g ctx7
+
+      - name: Validate kit spec
+        run: sbx kit validate .
+
+      - name: Check download URLs are reachable
+        run: |
+          echo "Checking Liberica JDK…"
+          curl -fsSL -o /dev/null --max-time 10 \
+            "https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz" && echo "OK" || echo "FAIL"
+
+          echo "Checking Maven…"
+          curl -fsSL -o /dev/null --max-time 10 \
+            "https://dlcdn.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz" && echo "OK" || echo "FAIL"
+
+          echo "Checking Docker CLI…"
+          curl -fsSL -o /dev/null --max-time 10 \
+            "https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz" && echo "OK" || echo "FAIL"
+
+          echo "Checking kubectl stable version resolution…"
+          KUBE_VER=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
+          echo "stable: $KUBE_VER"
+          curl -fsSL -o /dev/null --max-time 10 \
+            "https://dl.k8s.io/release/$KUBE_VER/bin/linux/amd64/kubectl" && echo "OK" || echo "FAIL"
+
+  sandbox:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install ctx7
+        run: npm install -g ctx7
+
+      - name: Run sandbox test
+        run: sbx run opencode --name opencode-sandbox --kit . --timeout 120000
