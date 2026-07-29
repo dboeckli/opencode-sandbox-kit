@@ -14,6 +14,7 @@ caps:
     - github.com
     - "*.github.com"
     - registry.npmjs.org
+    - dlcdn.apache.org
     # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
     - "localhost:64342"
     - "127.0.0.1:64342"
@@ -22,5 +23,20 @@ caps:
 commands:
   install:
     - command: "npm install -g @opencode-ai/cli ctx7"
+    - command: |
+        curl -fsSL https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz -o /tmp/jdk.tar.gz && \
+        mkdir -p /usr/local/java && \
+        tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1 && \
+        ln -sf /usr/local/java/bin/java /usr/local/bin/java && \
+        rm -f /tmp/jdk.tar.gz
+    - command: |
+        curl -fsSL https://dlcdn.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz -o /tmp/maven.tar.gz && \
+        mkdir -p /opt/maven && \
+        tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1 && \
+        rm -f /tmp/maven.tar.gz && \
+        ln -sf /opt/maven/bin/mvn /usr/local/bin/mvn
+    - command: |
+        echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
+        echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh
 
 
