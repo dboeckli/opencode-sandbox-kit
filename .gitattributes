@@ -1,0 +1,21 @@
+# Normalize line endings to LF on commit, enforce LF in working tree
+* text=auto eol=lf
+
+# Markdown / config / scripts – explicit LF + UTF-8
+*.md        text eol=lf working-tree-encoding=UTF-8
+*.txt       text eol=lf working-tree-encoding=UTF-8
+*.json      text eol=lf working-tree-encoding=UTF-8
+*.xml       text eol=lf working-tree-encoding=UTF-8
+*.yaml      text eol=lf working-tree-encoding=UTF-8
+*.yml       text eol=lf working-tree-encoding=UTF-8
+*.sh        text eol=lf working-tree-encoding=UTF-8
+*.iml       text eol=lf working-tree-encoding=UTF-8
+
+# Binary – no conversion
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.zip       binary
+*.jar       binary

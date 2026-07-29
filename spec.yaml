@@ -1,0 +1,26 @@
+schemaVersion: "1"
+kind: mixin
+name: opencode-sandbox-kit
+displayName: "OpenCode-Konfiguration"
+description: "OpenCode, Context7 und IntelliJ MCP"
+
+caps:
+  network:
+    allow:
+    - opencode.ai
+    - "*.opencode.ai"
+    - context7.com
+    - "*.context7.com"
+    - github.com
+    - "*.github.com"
+    - registry.npmjs.org
+    # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
+    - "localhost:64342"
+    - "127.0.0.1:64342"
+    - "host.docker.internal:64342"
+
+commands:
+  install:
+    - command: "npm install -g @opencode-ai/cli ctx7"
+
+

@@ -1,0 +1,20 @@
+# opencode-sandbox-kit
+
+Sandbox Kit (mixin) for OpenCode with ctx7 and IntelliJ MCP.
+
+## Commands
+
+- `sbx kit validate .` — validate the kit (run before commit)
+- `sbx run opencode --name opencode-sandbox --kit .` — test the kit with a sandbox (via PowerShell on Windows)
+- The kit installs via `npx ctx7 setup --opencode` (spec.yaml `commands.install`)
+- `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
+
+## Layout
+
+- `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
+- `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse`
+
+## Caveats
+
+- No commits yet (fresh repo)
+- Kit uses kit-spec v2 (`caps.network.allow`, not deprecated `network.allowedDomains`)

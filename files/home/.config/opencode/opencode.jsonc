@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/deepseek-v4-flash-free",
+  "mcp": {
+    "idea": {
+      "type": "remote",
+      "url": "http://host.docker.internal:64342/sse",
+      "headers": {}
+    }
+  }
+}
