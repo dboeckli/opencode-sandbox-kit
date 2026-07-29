@@ -14,7 +14,17 @@ Sandbox Kit (mixin) for OpenCode with ctx7 and IntelliJ MCP.
 - `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
 - `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse`
 
+## Tools installed by the kit
+
+| Tool | Source |
+|------|--------|
+| Liberica JDK 25.0.4 | GitHub Releases (bell-sw) |
+| Apache Maven 3.9.16 | dlcdn.apache.org |
+| Docker CLI 27.5.1 | download.docker.com (static binary) |
+| @opencode-ai/cli, ctx7 | npm |
+
 ## Caveats
 
+- **Docker Socket**: Wird von Docker Desktop automatisch in die Sandbox gemountet – kein manuelles Mount nötig.
 - No commits yet (fresh repo)
 - Kit uses kit-spec v2 (`caps.network.allow`, not deprecated `network.allowedDomains`)

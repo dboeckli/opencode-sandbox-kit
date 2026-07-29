@@ -1,6 +1,6 @@
 # opencode-sandbox-kit
 
-Docker Sandbox Kit (mixin) for OpenCode development with ctx7 and IntelliJ MCP.
+Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Java, Maven, and Docker CLI.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -28,6 +28,9 @@ Docker Sandbox Kit (mixin) for OpenCode development with ctx7 and IntelliJ MCP.
 │  │  │  │  MCP Client ───► host.docker.internal:        │  │   │   │
 │  │  │  │                 64342/sse                     ──┼──┼───┼───▶
 │  │  │  │                                               │  │   │   │
+│  │  │  │  docker (CLI) ───► /var/run/docker.sock       │  │   │   │
+│  │  │  │                   (gemounted vom Host)         │  │   │   │
+│  │  │  │                                               │  │   │   │
 │  │  │  │  liest/schreibt                               │  │   │   │
 │  │  │  │  /workspace/ → Projekt-Code                   │  │   │   │
 │  │  │  └──────────────────────────────────────────────┘  │   │   │
@@ -47,6 +50,25 @@ sbx run opencode --name opencode-sandbox --kit .
 ```
 
 The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
+
+### Docker CLI in der Sandbox
+
+Das Kit installiert die Docker CLI (statisches Binary). Docker Desktop mountet den Docker Socket (`/var/run/docker.sock`)
+automatisch in die Sandbox – kein extra Mount nötig. Docker-Befehle funktionieren direkt.
+
+> Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
+
+## Installierte Tools
+
+| Tool | Version | Installiert in |
+|------|---------|---------------|
+| Liberica JDK | 25.0.4 | `/usr/local/java` |
+| Apache Maven | 3.9.16 | `/opt/maven` |
+| Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
+| OpenCode CLI | latest | npm global |
+| ctx7 | latest | npm global |
+
+`JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht.
 
 Optional — Context7 API-Key für höheres Rate-Limit:
 
