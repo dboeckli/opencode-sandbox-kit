@@ -1,11 +1,13 @@
 # opencode-sandbox-kit
 
 Sandbox Kit (mixin) for OpenCode with ctx7 and IntelliJ MCP.
+Repo: https://github.com/dboeckli/opencode-sandbox-kit
 
 ## Commands
 
 - `sbx kit validate .` — validate the kit (run before commit)
 - `sbx run opencode --name opencode-sandbox --kit .` — test the kit with a sandbox (via PowerShell on Windows)
+- `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — run from remote Git repo
 - The kit installs via `npx ctx7 setup --opencode` (spec.yaml `commands.install`)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
 

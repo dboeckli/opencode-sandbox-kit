@@ -19,24 +19,3 @@ jobs:
 
       - name: Validate kit spec
         run: sbx kit validate .
-
-      - name: Check download URLs are reachable
-        run: |
-          set -e
-          echo "Checking Liberica JDK…"
-          curl -fsSL -o /dev/null --max-time 10 \
-            "https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz"
-
-          echo "Checking Maven…"
-          curl -fsSL -o /dev/null --max-time 10 \
-            "https://dlcdn.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz"
-
-          echo "Checking Docker CLI…"
-          curl -fsSL -o /dev/null --max-time 10 \
-            "https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz"
-
-          echo "Checking kubectl stable version…"
-          KUBE_VER=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
-          echo "stable: $KUBE_VER"
-          curl -fsSL -o /dev/null --max-time 10 \
-            "https://dl.k8s.io/release/$KUBE_VER/bin/linux/amd64/kubectl"

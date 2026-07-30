@@ -1,44 +1,46 @@
 # opencode-sandbox-kit
 
-Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Java, Maven, and Docker CLI.
+[![Validate Kit](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml)
+
+Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, and kubectl.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         WINDOWS HOST                            │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    IntelliJ IDEA                          │   │
-│  │  ◀── Projekt öffnen, Code anzeigen, Refactoring etc.     │   │
-│  │                                                           │   │
+│  │                    IntelliJ IDEA                         │   │
+│  │                                                          │   │
+│  │                                                          │   │
 │  │  MCP Server läuft auf http://127.0.0.1:64342/sse         │   │
 │  └────────────────────┬─────────────────────────────────────┘   │
-│                       │ Port 64342                               │
-│                       ▼                                          │
+│                       │ Port 64342                              │
+│                       ▼                                         │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │              Docker Desktop (WSL)                         │   │
-│  │                                                           │   │
-│  │  host.docker.internal → Windows-Host                      │   │
-│  │                                                           │   │
-│  │  ┌────────────────────────────────────────────────────┐   │   │
-│  │  │           SANDBOX (Container/VM)                    │   │   │
-│  │  │                                                    │   │   │
-│  │  │  ┌──────────────────────────────────────────────┐  │   │   │
-│  │  │  │    opencode (CLI Agent)                       │  │   │   │
-│  │  │  │                                               │  │   │   │
-│  │  │  │  MCP Client ───► host.docker.internal:        │  │   │   │
+│  │              Docker Desktop (WSL)                        │   │
+│  │                                                          │   │
+│  │  host.docker.internal → Windows-Host                     │   │
+│  │                                                          │   │
+│  │  ┌────────────────────────────────────────────────────┐  │   │
+│  │  │           SANDBOX (Container/VM)                   │  │   │
+│  │  │                                                    │  │   │
+│  │  │  ┌──────────────────────────────────────────────┐  │  │   │
+│  │  │  │    opencode (CLI Agent)                      │  │  │   │
+│  │  │  │                                              │  │  │   │
+│  │  │  │  MCP Client ───► host.docker.internal:       │  │  │   │
 │  │  │  │                 64342/sse                     ──┼──┼───┼───▶
-│  │  │  │                                               │  │   │   │
-│  │  │  │  docker (CLI) ───► /var/run/docker.sock       │  │   │   │
-│  │  │  │                   (gemounted vom Host)         │  │   │   │
-│  │  │  │                                               │  │   │   │
-│  │  │  │  liest/schreibt                               │  │   │   │
-│  │  │  │  /workspace/ → Projekt-Code                   │  │   │   │
-│  │  │  └──────────────────────────────────────────────┘  │   │   │
-│  │  └────────────────────────────────────────────────────┘   │   │
-│  │                                                           │   │
+│  │  │  │                                              │  │  │   │
+│  │  │  │  docker (CLI) ───► /var/run/docker.sock      │  │  │   │
+│  │  │  │                   (gemounted vom Host)       │  │  │   │
+│  │  │  │                                              │  │  │   │
+│  │  │  │  liest/schreibt                              │  │  │   │
+│  │  │  │  /workspace/ → Projekt-Code                  │  │  │   │
+│  │  │  └──────────────────────────────────────────────┘  │  │   │
+│  │  └────────────────────────────────────────────────────┘  │   │
+│  │                                                          │   │
 │  └──────────────────────────────────────────────────────────┘   │
 │                                                                 │
-│  📁 C:\development\projects\ ← geteilt via /mnt/c              │
+│  📁 C:\development\projects\ ← geteilt via /mnt/c               │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -46,7 +48,11 @@ Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Jav
 ## Usage (PowerShell on Windows)
 
 ```powershell
+# Lokales Kit (Entwicklung)
 sbx run opencode --name opencode-sandbox --kit .
+
+# Kit direkt aus GitHub (ohne Clone)
+sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
 ```
 
 The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
@@ -119,5 +125,6 @@ Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
 
 ## References
 
+- [GitHub Repo](https://github.com/dboeckli/opencode-sandbox-kit)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)
