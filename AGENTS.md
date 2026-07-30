@@ -25,10 +25,11 @@ Repo: https://github.com/dboeckli/opencode-sandbox-kit
 | Apache Maven 3.9.16 | dlcdn.apache.org |
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
 | kubectl (latest stable) | dl.k8s.io |
-| @opencode-ai/cli, ctx7 | npm |
+| ctx7 | npm |
 
 ## Caveats
 
 - **Docker Socket**: Wird von Docker Desktop automatisch in die Sandbox gemountet – kein manuelles Mount nötig.
+- **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - No commits yet (fresh repo)
 - Kit uses kit-spec v2 (`caps.network.allow`, not deprecated `network.allowedDomains`)

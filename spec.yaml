@@ -34,7 +34,7 @@ caps:
 
 commands:
   install:
-    - command: "npm install -g @opencode-ai/cli ctx7"
+    - command: "npm install -g ctx7"
     - command: |
         curl -fsSL https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz -o /tmp/jdk.tar.gz && \
         mkdir -p /usr/local/java && \

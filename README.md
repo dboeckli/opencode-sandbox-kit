@@ -73,7 +73,6 @@ automatisch in die Sandbox – kein extra Mount nötig. Docker-Befehle funktioni
 | Apache Maven | 3.9.16 | `/opt/maven` |
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
-| OpenCode CLI | latest | npm global |
 | ctx7 | latest | npm global |
 
 `JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht.
@@ -123,6 +122,15 @@ Im Sandbox-Kit ist die MCP-URL auf `host.docker.internal:64342` konfiguriert. Do
 Falls `host.docker.internal` nicht verfügbar sein sollte (z. B. Docker Engine ohne Docker Desktop), kann in der `.wslconfig` `networkingMode=mirrored` gesetzt werden. Dann wird `127.0.0.1` aus dem Container direkt an Windows durchgereicht. Die URL in `opencode.jsonc` müsste dann wieder auf `127.0.0.1` geändert werden.
 
 Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
+
+## Caveats
+
+### Pre-installed Tools im Base Image
+
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker`) enthält bereits eine eigene OpenCode CLI.
+Das Kit überschreibt diese mit `npm install -g @opencode-ai/cli@1.18.9`, aber die tatsächlich verwendete
+Version hängt davon ab, welches Binary im PATH zuerst gefunden wird. Falls nach dem Kit-Build noch eine
+ältere Version angezeigt wird, liegt das an der vorinstallierten Version im Base-Image.
 
 ## References
 
