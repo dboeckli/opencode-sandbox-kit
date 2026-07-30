@@ -59,7 +59,7 @@ Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Jav
 sbx run opencode --name opencode-sandbox --kit .
 
 # Kit direkt aus GitHub (ohne Clone)
-sbx settings set kit.allowedSources '["docker.io/","github.com/dboeckli/"]'
+sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"
 sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
 ```
 
