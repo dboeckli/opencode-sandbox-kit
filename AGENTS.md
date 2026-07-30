@@ -12,6 +12,27 @@ Repo: https://github.com/dboeckli/opencode-sandbox-kit
 - The kit installs via `npx ctx7 setup --opencode` (spec.yaml `commands.install`)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
 
+## GitHub Authentication
+
+Für `gh` CLI in der Sandbox ein persönliches GitHub-Token (Name: `opencode-sandbox-kit-github-token`) erstellen und als Secret speichern:
+
+```powershell
+sbx secret set -g github -t "<github-token>"
+```
+
+Das Token wird via Proxy automatisch injiziert – `gh auth status` sollte in der Sandbox funktionieren.
+
+### Token-Scopes (aktuell konfiguriert)
+
+| Scope | Beschreibung |
+|-------|-------------|
+| `read:org` | Organisationen lesen |
+| `read:packages` | Packages lesen |
+| `read:project` | Projects lesen |
+| `read:user` | Benutzerdaten lesen |
+
+> **Hinweis:** Für Private-Repo-Zugriff, Push oder PR/Issue-Erstellung wird zusätzlich das `repo`-Scope benötigt. Dies kann via `gh auth refresh -h github.com -s repo` nachgefordert werden.
+
 ## Layout
 
 - `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
@@ -26,10 +47,11 @@ Repo: https://github.com/dboeckli/opencode-sandbox-kit
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
 | kubectl (latest stable) | dl.k8s.io |
 | ctx7 | npm |
+| skills | npm (vercel-labs) |
 
 ## Caveats
 
 - **Docker Socket**: Wird von Docker Desktop automatisch in die Sandbox gemountet – kein manuelles Mount nötig.
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
-- No commits yet (fresh repo)
+- **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
 - Kit uses kit-spec v2 (`caps.network.allow`, not deprecated `network.allowedDomains`)

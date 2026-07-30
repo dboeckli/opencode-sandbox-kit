@@ -5,44 +5,51 @@
 Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, and kubectl.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         WINDOWS HOST                            │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    IntelliJ IDEA                         │   │
-│  │                                                          │   │
-│  │                                                          │   │
-│  │  MCP Server läuft auf http://127.0.0.1:64342/sse         │   │
-│  └────────────────────┬─────────────────────────────────────┘   │
-│                       │ Port 64342                              │
-│                       ▼                                         │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │              Docker Desktop (WSL)                        │   │
-│  │                                                          │   │
-│  │  host.docker.internal → Windows-Host                     │   │
-│  │                                                          │   │
-│  │  ┌────────────────────────────────────────────────────┐  │   │
-│  │  │           SANDBOX (Container/VM)                   │  │   │
-│  │  │                                                    │  │   │
-│  │  │  ┌──────────────────────────────────────────────┐  │  │   │
-│  │  │  │    opencode (CLI Agent)                      │  │  │   │
-│  │  │  │                                              │  │  │   │
-│  │  │  │  MCP Client ───► host.docker.internal:       │  │  │   │
-│  │  │  │                 64342/sse                     ──┼──┼───┼───▶
-│  │  │  │                                              │  │  │   │
-│  │  │  │  docker (CLI) ───► /var/run/docker.sock      │  │  │   │
-│  │  │  │                   (gemounted vom Host)       │  │  │   │
-│  │  │  │                                              │  │  │   │
-│  │  │  │  liest/schreibt                              │  │  │   │
-│  │  │  │  /workspace/ → Projekt-Code                  │  │  │   │
-│  │  │  └──────────────────────────────────────────────┘  │  │   │
-│  │  └────────────────────────────────────────────────────┘  │   │
-│  │                                                          │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                 │
-│  📁 C:\development\projects\ ← geteilt via /mnt/c               │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                         WINDOWS HOST                               │
+│                                                                    │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │                    IntelliJ IDEA                           │    │
+│  │                                                            │    │
+│  │  MCP Server läuft auf http://127.0.0.1:64342/sse           │    │
+│  └──────────────────────┬─────────────────────────────────────┘    │
+│                         │ Port 64342                               │
+│                         ▼                                          │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │              Docker Desktop (WSL)                          │    │
+│  │                                                            │    │
+│  │  ┌──────────────────────────────────────────────────────┐  │    │
+│  │  │         HOST-SEITIGER PROXY                          │  │    │
+│  │  │  - Network Policies (allow/deny)                     │  │    │
+│  │  │  - Credential Injection (GitHub Token u.a.)          │  │    │
+│  │  │  - Forward an IntelliJ MCP, GitHub, npm, etc.        │  │    │
+│  │  └──────────┬───────────────────────────────────────────┘  │    │
+│  │             │                                              │    │
+│  │  host.docker.internal → Windows-Host                       │    │
+│  │             │                                              │    │
+│  │  ┌──────────────────────────────────────────────────────┐  │    │
+│  │  │           SANDBOX (MicroVM / nerdbox)                │  │    │
+│  │  │  ┌────────────────────────────────────────────────┐  │  │    │
+│  │  │  │    opencode (CLI Agent)                        │  │  │    │
+│  │  │  │                                                │  │  │    │
+│  │  │  │  MCP Client ───► host.docker.internal:         │  │  │    │
+│  │  │  │                 64342/sse ──► Proxy ──► IDEA   │  │  │    │
+│  │  │  │                                                │  │  │    │
+│  │  │  │  docker (CLI) ───► isolierter Docker Daemon    │  │  │    │
+│  │  │  │                   (im MicroVM, nicht Host)     │  │  │    │
+│  │  │  │                                                │  │  │    │
+│  │  │  │  Filesystem Passthrough                        │  │  │    │
+│  │  │  │  C:\dev\projects\... (selber Pfad wie Host)    │  │  │    │
+│  │  │  └────────────────────────────────────────────────┘  │  │    │
+│  │  │                                                      │  │    │
+│  │  │  isolation: Hypervisor (KVM) + Namespaces + Proxy    │  │    │
+│  │  └──────────────────────────────────────────────────────┘  │    │
+│  │                                                            │    │
+│  └────────────────────────────────────────────────────────────┘    │
+│                                                                    │
+│  📁 C:\development\projects\ ← direkt via Filesystem Passthrough   │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Usage (PowerShell on Windows)
@@ -58,10 +65,36 @@ sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/
 
 The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
 
+```mermaid
+flowchart TB
+    subgraph Host["Windows Host"]
+        IDE["IntelliJ IDEA<br/>MCP Server :64342"]
+    end
+
+    subgraph DD["Docker Desktop (WSL)"]
+        Proxy["Host-Proxy<br/>Policies + Credential Injection"]
+        
+        subgraph VM["Sandbox MicroVM (nerdbox)"]
+            Agent["opencode (CLI Agent)"]
+            Dockerd["isolierter Docker Daemon"]
+            FS["Filesystem Passthrough<br/>C:\\dev\\projects\\..."]
+            Agent -->|"MCP Client"| Proxy
+            Agent -->|"docker CLI"| Dockerd
+            Agent -->|"liest/schreibt"| FS
+        end
+        
+        Proxy --> IDE
+    end
+
+    Proxy -->|"GitHub API"| GH["github.com"]
+    Proxy -->|"npm Registry"| NPM["registry.npmjs.org"]
+    Proxy -->|"ctx7 Docs"| C7["context7.com"]
+```
+
 ### Docker CLI in der Sandbox
 
-Das Kit installiert die Docker CLI (statisches Binary). Docker Desktop mountet den Docker Socket (`/var/run/docker.sock`)
-automatisch in die Sandbox – kein extra Mount nötig. Docker-Befehle funktionieren direkt.
+Das Kit installiert die Docker CLI (statisches Binary). Jede Sandbox hat einen **isolierten Docker Daemon**
+im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionieren direkt.
 
 > Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
@@ -74,6 +107,7 @@ automatisch in die Sandbox – kein extra Mount nötig. Docker-Befehle funktioni
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
 | ctx7 | latest | npm global |
+| skills | 1.5.21 | npm global (vercel-labs) |
 
 `JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht.
 
@@ -82,6 +116,27 @@ Optional — Context7 API-Key für höheres Rate-Limit:
 ```powershell
 sbx exec opencode-sandbox bash -c "echo 'export CONTEXT7_API_KEY=your-key' >> /etc/sandbox-persistent.sh"
 ```
+
+## Skills
+
+Das Kit installiert automatisch Skills aus [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) via `skills add -g --all`. Installierte Skills:
+
+- **camel-matrix** — Camel Spring Boot Kompatibilitätsmatrix
+- **cc-best-practices** — Claude Code Best Practices
+- **project-references** — Referenzprojekt-Suche
+- **skill-best-practices** — SKILL.md Schreib-Guide
+
+Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
+
+## GitHub Authentication
+
+Für `gh` CLI in der Sandbox ein persönliches GitHub-Token mit `repo`-Scope (Name: `opencode-sandbox-kit-github-token`) erstellen und als Secret speichern:
+
+```powershell
+sbx secret set -g github -t "<github-token>"
+```
+
+Das Token wird via Proxy automatisch injiziert – `gh auth status` funktioniert ohne weitere Konfiguration.
 
 ## Troubleshooting
 
@@ -131,6 +186,12 @@ Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker`) enthält ber
 Das Kit überschreibt diese mit `npm install -g @opencode-ai/cli@1.18.9`, aber die tatsächlich verwendete
 Version hängt davon ab, welches Binary im PATH zuerst gefunden wird. Falls nach dem Kit-Build noch eine
 ältere Version angezeigt wird, liegt das an der vorinstallierten Version im Base-Image.
+
+### Skills landen nicht bei `agent`
+
+Falls Skills in der Sandbox nicht sichtbar sind (`ls ~/.agents/skills/` leer), liegt es meist daran,
+dass der `skills add`-Befehl als `root` statt als `agent` lief. Im Kit ist `user: "1000"` gesetzt –
+beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run ...`).
 
 ## References
 
