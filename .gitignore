@@ -1,3 +1,4 @@
 .idea/
 *.iml
 *.zip
+/target/camel-springboot-matrix.adoc

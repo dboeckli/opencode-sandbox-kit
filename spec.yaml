@@ -31,10 +31,15 @@ caps:
     - "*.docker.com"
     - download.docker.com
     - dl.k8s.io
+    # Skills CLI
+    - add-skill.vercel.sh
 
 commands:
   install:
     - command: "npm install -g ctx7"
+    - command: "npm install -g skills"
+    - command: "skills add -g --all https://github.com/dboeckli/ai-agent-skills.git"
+      user: "1000"
     - command: |
         curl -fsSL https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz -o /tmp/jdk.tar.gz && \
         mkdir -p /usr/local/java && \
@@ -58,5 +63,3 @@ commands:
     - command: |
         echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh
-
-
