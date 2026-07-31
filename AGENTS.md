@@ -15,7 +15,8 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 ## Commands
 
 - `sbx kit validate .` — validate the kit (run before commit)
-- `sbx run opencode --name opencode-sandbox --kit .` — test the kit with a sandbox (via PowerShell on Windows)
+- `sbx run opencode --name opencode-sandbox --kit .` — test the kit with an OpenCode sandbox (via PowerShell on Windows)
+- `sbx run claude --name claude-sandbox --kit .` — test the kit with a Claude Code sandbox (via PowerShell on Windows)
 - `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — run from remote Git repo
 - `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
