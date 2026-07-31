@@ -196,6 +196,28 @@ sbx secret set -g github -t "<github-token>"
 
 Das Token wird via Proxy automatisch injiziert – `gh auth status` funktioniert ohne weitere Konfiguration.
 
+## Anthropic Authentication
+
+Für Claude Code in der Sandbox wird der Anthropic API-Key als Secret gespeichert und vom Proxy verwaltet – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set -g anthropic
+```
+
+Es wird davon ausgegangen, dass `ANTHROPIC_API_KEY` nicht als Env-Variable gesetzt ist – der Key wird interaktiv eingegeben. Falls bereits ein OAuth-Token existiert, wird nachgefragt – mit `-f` überschreiben:
+
+```powershell
+sbx secret set -g anthropic -f
+```
+
+Verifikation:
+
+```powershell
+sbx secret ls   # sollte "anthropic (stored)" zeigen
+```
+
+In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls über den Proxy trotzdem funktionieren.
+
 ## Troubleshooting
 
 ### KVM Permission Denied (WSL2)
