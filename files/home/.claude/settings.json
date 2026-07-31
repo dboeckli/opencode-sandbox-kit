@@ -4,5 +4,18 @@
       "type": "sse",
       "url": "http://host.docker.internal:64342/sse"
     }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/sandbox-kit/run-checks-hook.sh"
+          }
+        ]
+      }
+    ]
   }
 }
