@@ -64,6 +64,9 @@ sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/
 
 # Kit mit anderem Projekt verwenden
 sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
+
+# Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
+sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
 ```
 
 The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.

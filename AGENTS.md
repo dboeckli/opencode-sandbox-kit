@@ -18,6 +18,7 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 - `sbx run opencode --name opencode-sandbox --kit .` — test the kit with a sandbox (via PowerShell on Windows)
 - `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — run from remote Git repo
 - `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
+- `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
 - The kit installs via `npx ctx7 setup --opencode` (spec.yaml `commands.install`)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
@@ -64,4 +65,4 @@ Das Token wird via Proxy automatisch injiziert – `gh auth status` sollte in de
 - **Docker Socket**: Wird von Docker Desktop automatisch in die Sandbox gemountet – kein manuelles Mount nötig.
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
-- Kit uses kit-spec v2 (`caps.network.allow`, not deprecated `network.allowedDomains`)
+- Kit uses kit-spec v2 (`caps.network.allow`, not deprecated `network.allowedDomains` — `sbx kit validate` warnt bei Verwendung des alten Felds)
