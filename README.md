@@ -240,10 +240,14 @@ Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
 
 ### Pre-installed Tools im Base Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker`) enthält bereits eine eigene OpenCode CLI.
-Das Kit überschreibt diese mit `npm install -g @opencode-ai/cli@1.18.9`, aber die tatsächlich verwendete
-Version hängt davon ab, welches Binary im PATH zuerst gefunden wird. Falls nach dem Kit-Build noch eine
-ältere Version angezeigt wird, liegt das an der vorinstallierten Version im Base-Image.
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker`) enthält eine eigene OpenCode CLI
+(aktuell `1.7.10` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
+bei `1.18.10` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
+vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:
+
+```
+npm install -g @opencode-ai/cli
+```
 
 ### Skills landen nicht bei `agent`
 
