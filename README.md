@@ -57,19 +57,70 @@ Docker Sandbox Kit (mixin) for OpenCode development with ctx7, IntelliJ MCP, Jav
 ```powershell
 # Lokales Kit (Entwicklung)
 sbx run opencode --name opencode-sandbox --kit .
+sbx run claude   --name claude-sandbox   --kit .
 
 # Kit direkt aus GitHub (ohne Clone)
 sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"
 sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+sbx run claude   --name claude-sandbox   --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
 
 # Kit mit anderem Projekt verwenden
 sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
 
 # Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
 sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
 ```
 
 The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
+
+## Dual Agent Support
+
+Das Kit funktioniert mit **OpenCode und Claude Code** – der Agent wird nicht vom Kit bestimmt,
+sondern vom Template beim `sbx run`:
+
+| Agent | Template | Start-Command |
+|-------|----------|---------------|
+| OpenCode | `opencode-docker` | `sbx run opencode --name my-sandbox --kit .` |
+| Claude Code | `claude-code-docker` | `sbx run claude --name my-sandbox --kit .` |
+
+Beide erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
+`host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
+
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md`
+- **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
+
+### Claude Code Konfiguration
+
+`~/.claude/settings.json` enthält:
+
+- **Modell**: `claude-sonnet-4-6` als Default (`"model"`)
+- **IntelliJ MCP**: SSE-Endpoint `http://host.docker.internal:64342/sse`
+- **StatusLine**: `bash ~/.claude/statusline.sh` – zeigt Modell, Kontext-Tokens, Kosten, geänderte Zeilen und Session-Dauer
+- **SessionStart-Hook**: führt die Sandbox-Checks aus und übergibt den Report als System-Message
+
+Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
+[dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) installiert.
+
+## Startup Checks
+
+Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
+(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Skills) und zeigt den Report als
+`[startup-checks] ...` an:
+
+```
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK
+```
+
+- **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
+  System-Prompt und schreibt ihn nach `~/.config/sandbox-kit/startup-checks.report`. Ein TUI-Plugin
+  (Auto-Session) startet direkt im Session-View, sodass die Sidebar mit den Blöcken **Startup checks**
+  und **Skills** sofort sichtbar ist – ohne ersten Prompt.
+- **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message.
+- **Manuell**: `bash ~/.config/sandbox-kit/run-checks.sh`
+- **Referenz**: `~/.config/sandbox-kit/startup-checks.md`
+
+Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FAIL` einen Fix vor.
 
 ```mermaid
 flowchart TB
@@ -114,6 +165,7 @@ im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionier
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
+| jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht.
 
