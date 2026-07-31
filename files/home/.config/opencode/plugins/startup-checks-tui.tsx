@@ -72,7 +72,7 @@ const tui: TuiPlugin = async (api) => {
               <b>Startup checks</b>
             </text>
             <text fg={report() ? skin.text : skin.muted}>
-              {report() || "waiting… (first message triggers the check)"}
+              {report() || "running…"}
             </text>
           </box>
         )
