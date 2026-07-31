@@ -1,5 +1,9 @@
 {
   "model": "claude-sonnet-4-6",
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  },
   "mcpServers": {
     "idea": {
       "type": "sse",
