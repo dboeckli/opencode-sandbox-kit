@@ -48,6 +48,22 @@ Das Token wird via Proxy automatisch injiziert – `gh auth status` sollte in de
 
 - `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
 - `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse`
+- `files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
+- `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse`
+- `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
+
+## Dual agent support
+
+Das Kit funktioniert mit **OpenCode und Claude Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`:
+
+```powershell
+sbx run opencode --name my-sandbox --kit .          # OpenCode (opencode-docker Template)
+sbx run claude   --name my-sandbox --kit .          # Claude Code (claude-code-docker Template)
+```
+
+Beide erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
+- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md`
+- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 
 ## Tools installed by the kit
 

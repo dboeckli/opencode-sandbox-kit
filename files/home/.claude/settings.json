@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "idea": {
+      "type": "sse",
+      "url": "http://host.docker.internal:64342/sse"
+    }
+  }
+}
