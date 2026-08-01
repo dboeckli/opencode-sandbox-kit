@@ -2,3 +2,5 @@
 *.iml
 *.zip
 /target/camel-springboot-matrix.adoc
+__pycache__/
+*.pyc

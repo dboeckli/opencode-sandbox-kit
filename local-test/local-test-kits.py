@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+"""local-test-kits.py - automatischer Test der 3 Agent-Szenarien des opencode-sandbox-kit.
+
+Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
+Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
+
+Szenarien:
+  1. OpenCode + Mixin-Kit      (sbx create opencode --kit .)
+  2. Claude   + Mixin-Kit      (sbx create claude --kit .)
+  3. Mammouth + mammouth-agent (sbx create mammouth --kit ./mammouth-agent/)
+
+Voraussetzungen:
+  - Docker laeuft, `sbx` CLI im PATH
+  - Globale Secrets registriert: github, anthropic und mammouth (sbx secret set -g mammouth)
+
+Verwendung:
+  python local-test-kits.py
+  python local-test-kits.py --keep          # Sandboxes nach dem Test behalten
+"""
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from shutil import which
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+passed = []
+failed = []
+
+
+def enable_ansi():
+    if os.name == "nt":
+        os.system("")
+
+
+def _color(code, text):
+    return f"\033[{code}m{text}\033[0m"
+
+
+def info(msg):
+    print(_color("36", msg))
+
+
+def pass_(msg):
+    passed.append(msg)
+    print("  " + _color("32", "[PASS] " + msg))
+
+
+def fail(msg, detail=""):
+    failed.append(msg)
+    print("  " + _color("31", "[FAIL] " + msg))
+    if detail:
+        print("         " + _color("31", detail))
+
+
+def run_sbx(args, stream=False):
+    if which("sbx") is None:
+        print(_color("31", "sbx CLI nicht gefunden (PATH?)"))
+        sys.exit(1)
+    proc = subprocess.run(
+        ["sbx"] + args,
+        capture_output=not stream,
+        text=True,
+    )
+    if stream:
+        return proc.returncode, ""
+    out = (proc.stdout or "") + (proc.stderr or "")
+    return proc.returncode, out.strip()
+
+
+def exec_sandbox(name, cmd):
+    return run_sbx(["exec", name, "bash", "-c", cmd])
+
+
+def main():
+    enable_ansi()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
+    args = parser.parse_args()
+
+    print()
+    info("==> Kit-Validierung")
+    info(f"  --> validate: {ROOT}")
+    code, _ = run_sbx(["kit", "validate", ROOT], stream=True)
+    pass_("sbx kit validate (mixin)") if code == 0 else fail("sbx kit validate (mixin)")
+    info(f"  --> validate: {os.path.join(ROOT, 'mammouth-agent')}")
+    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mammouth-agent")], stream=True)
+    pass_("sbx kit validate (mammouth-agent)") if code == 0 else fail("sbx kit validate (mammouth-agent)")
+
+    print()
+    info("==> Secrets (global)")
+    _, secret_out = run_sbx(["secret", "ls"])
+    for sname in ("github", "anthropic", "mammouth"):
+        ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
+        pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
+
+    tools_cmd = (
+        'for t in "ctx7:ctx7 --version" "gh:gh auth status" "java:java -version" '
+        '"javac:javac -version" "mvn:mvn -version" "docker:docker version" '
+        '"kubectl:kubectl version --client" "jq:jq --version" "node:node --version" '
+        '"npm:npm --version"; do '
+        'name="${t%%:*}"; cmd="${t#*:}"; if $cmd >/dev/null 2>&1; then echo "TOOL-OK:$name"; '
+        'else echo "TOOL-FAIL:$name"; fi; done'
+    )
+
+    scenarios = [
+        {
+            "name": "kit-test-opencode",
+            "agent": "opencode",
+            "kit": ROOT,
+            "model": "opencode/deepseek-v4-flash-free",
+            "config": 'grep -q "opencode/deepseek-v4-flash-free" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK',
+        },
+        {
+            "name": "kit-test-claude",
+            "agent": "claude",
+            "kit": ROOT,
+            "model": "claude-sonnet-4-6",
+            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && echo CONFIG-OK',
+        },
+        {
+            "name": "kit-test-mammouth",
+            "agent": "mammouth",
+            "kit": os.path.join(ROOT, "mammouth-agent"),
+            "model": "opencode/deepseek-v4-flash-free",
+            "config": 'grep -q "opencode/deepseek-v4-flash-free" ~/.config/mammouth/opencode.jsonc && echo CONFIG-OK',
+            "run_checks": True,
+        },
+    ]
+
+    for s in scenarios:
+        print()
+        info(f"=== {s['name']}  (agent={s['agent']}, kit={s['kit']})")
+
+        run_sbx(["rm", s["name"], "-f"])
+
+        ws = tempfile.mkdtemp(prefix="sbx-kit-test-")
+        info("  Sandbox erzeugen ...")
+        code, _ = run_sbx(["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"], "-q"], stream=True)
+        if code != 0:
+            fail("sandbox create")
+            run_sbx(["rm", s["name"], "-f"])
+            continue
+
+        ready = False
+        for _ in range(30):
+            c2, _ = exec_sandbox(s["name"], "echo ok")
+            if c2 == 0:
+                ready = True
+                break
+            time.sleep(10)
+        pass_("sandbox ready") if ready else fail("sandbox ready")
+        if not ready:
+            run_sbx(["rm", s["name"], "-f"])
+            continue
+
+        c2, out = exec_sandbox(s["name"], tools_cmd)
+        ok_tools = set(re.findall(r"TOOL-OK:(\w+)", out))
+        for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm"):
+            if t in ok_tools:
+                pass_(f"tool: {t}")
+            else:
+                fail(f"tool: {t}", out)
+
+        if s["config"]:
+            c2, out = exec_sandbox(s["name"], s["config"])
+            if c2 == 0 and "CONFIG-OK" in out:
+                pass_(f"default model in config ({s['model']})")
+            else:
+                fail(f"default model in config ({s['model']})", out)
+
+        mcp_cmd = (
+            'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 '
+            "http://host.docker.internal:64342/sse 2>/dev/null); "
+            'if [ "$code" = "200" ] || [ "$code" = "206" ]; then echo MCP-OK; else echo MCP-FAIL; fi'
+        )
+        c2, out = exec_sandbox(s["name"], mcp_cmd)
+        if c2 == 0 and "MCP-OK" in out:
+            pass_("intellij-mcp connection (via sbx exec)")
+        else:
+            print("  " + _color("33", "[WARN] intellij-mcp connection (via sbx exec) "
+                                     "(IntelliJ MCP muss auf dem Host laufen)"))
+
+        skills_cmd = (
+            "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "
+            "skills ls -g | grep -q \"$sk\" || echo \"MISSING:$sk\"; done; echo SKILLS-DONE"
+        )
+        c2, out = exec_sandbox(s["name"], skills_cmd)
+        if c2 == 0 and "MISSING" not in out:
+            pass_("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)")
+        else:
+            fail("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)", out)
+
+        if s.get("run_checks"):
+            c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")
+            m = {k: v for k, v in re.findall(r"([A-Za-z0-9_/-]+):(OK|FAIL)", out)}
+            if m.get("mammouth") == "OK":
+                pass_("startup check: mammouth")
+            else:
+                fail("startup check: mammouth", f"status={m.get('mammouth')}")
+
+            net_cmd = 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head -c 120'
+            c2, out = exec_sandbox(s["name"], net_cmd)
+            if c2 == 0 and ('"object":"list"' in out or '"id"' in out):
+                pass_("api.mammouth.ai e2e (Proxy-Key)")
+            else:
+                fail("api.mammouth.ai e2e (Proxy-Key)", out)
+
+        if not args.keep:
+            info("  Sandbox entfernen ...")
+            run_sbx(["rm", s["name"], "-f"])
+
+    print()
+    if not failed:
+        print(_color("32", f"ALLE TESTS BESTANDEN ({len(passed)} Checks)"))
+        sys.exit(0)
+    print(_color("31", f"FEHLGESCHLAGEN: {len(failed)} Check(s)"))
+    for f in failed:
+        print("  - " + _color("31", f))
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

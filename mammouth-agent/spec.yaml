@@ -1,0 +1,110 @@
+schemaVersion: "1"
+kind: sandbox
+name: mammouth
+displayName: "Mammouth Code (OpenCode-Fork)"
+description: "Mammouth Code Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
+
+sandbox:
+  image: "docker/sandbox-templates:opencode-docker"
+  aiFilename: AGENTS.md
+  entrypoint:
+    run: [mammouth]
+
+caps:
+  network:
+    allow:
+      - "mammouth.ai:443"
+      - "*.mammouth.ai:443"
+      - "code.mammouth.ai:443"
+      - "model-explorer.mammouth.ai:443"
+      - "api.github.com:443"
+      - "*.github.com:443"
+      - "objects.githubusercontent.com:443"
+      - "*.githubusercontent.com:443"
+      - "models.dev:443"
+      - "opencode.ai:443"
+      - "*.opencode.ai:443"
+      - "registry.npmjs.org:443"
+      - "dlcdn.apache.org:443"
+      - "localhost:64342"
+      - "127.0.0.1:64342"
+      - "host.docker.internal:64342"
+      - "repo1.maven.org:443"
+      - "*.maven.org:443"
+      - "repo.spring.io:443"
+      - "*.spring.io:443"
+      - "docker.io:443"
+      - "*.docker.io:443"
+      - "*.docker.com:443"
+      - "download.docker.com:443"
+      - "dl.k8s.io:443"
+      - "add-skill.vercel.sh:443"
+
+credentials:
+  - service: mammouth
+    description: "Mammouth Code API-Key (https://mammouth.ai/app/account/settings/api)"
+    apiKey:
+      name: MAMMOUTH_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.mammouth.ai
+          header: Authorization
+          format: "Bearer %s"
+
+environment:
+  variables:
+    MAMMOUTH_API_KEY: "proxy-managed"
+
+commands:
+  install:
+    - command: "npm install -g ctx7"
+    - command: "npm install -g skills"
+    - command: "apt-get install -y jq"
+    - command: "skills add -g --all https://github.com/dboeckli/ai-agent-skills.git"
+      user: "1000"
+    - command: |
+        git clone --depth 1 https://github.com/dboeckli/ai-agent-skills.git /tmp/ai-agent-skills && \
+        mkdir -p ~/.claude && \
+        cp /tmp/ai-agent-skills/scripts/statusline.sh ~/.claude/statusline.sh && \
+        chmod +x ~/.claude/statusline.sh && \
+        rm -rf /tmp/ai-agent-skills
+      user: "1000"
+    - command: |
+        curl -fsSL https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz -o /tmp/jdk.tar.gz && \
+        mkdir -p /usr/local/java && \
+        tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1 && \
+        ln -sf /usr/local/java/bin/java /usr/local/bin/java && \
+        rm -f /tmp/jdk.tar.gz
+    - command: |
+        curl -fsSL https://dlcdn.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz -o /tmp/maven.tar.gz && \
+        mkdir -p /opt/maven && \
+        tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1 && \
+        rm -f /tmp/maven.tar.gz && \
+        ln -sf /opt/maven/bin/mvn /usr/local/bin/mvn
+    - command: |
+        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz -o /tmp/docker.tgz && \
+        tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker && \
+        rm -f /tmp/docker.tgz
+    - command: |
+        KUBE_VER=$(curl -fsSL https://dl.k8s.io/release/stable.txt) && \
+        curl -fsSL "https://dl.k8s.io/release/$KUBE_VER/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl && \
+        chmod +x /usr/local/bin/kubectl
+    - command: |
+        curl -fsSL https://code.mammouth.ai/install.sh | bash
+      user: "1000"
+      description: Install Mammouth Code
+    - command: "ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth"
+      description: Symlink mammouth into PATH for entrypoint
+    - command: |
+        echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
+        echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
+        echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh
+
+agentContext: |
+  ## Sandbox environment
+
+  You are running inside a Docker sandbox. The workspace is mounted at its
+  absolute host path. `sudo` is passwordless; use it for package installs.
+  Docker is available inside the sandbox; containers you start are isolated
+  in the microVM. The IntelliJ MCP server runs on the Windows host and is
+  reached via `host.docker.internal:64342`.

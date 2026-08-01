@@ -24,7 +24,7 @@ bash ~/.config/sandbox-kit/run-checks.sh
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |
 | 6 | kubectl | `kubectl version --client` |
 | 7 | Skills | `skills ls -g` |
-| 8 | Mammouth Code | `command -v mammouth` — nur ausgeführt, wenn `~/.mammouth` existiert oder `mammouth` im PATH ist. In OpenCode-/Claude-Sandboxes ohne Mammouth wird der Check **übersprungen** (kein `mammouth:FAIL`-Rauschen); in einer Mammouth-Sandbox gilt fehlender Binary als `FAIL`. |
+| 8 | Mammouth Code | `command -v mammouth` |
 
 ## Report format
 
@@ -33,5 +33,3 @@ bash ~/.config/sandbox-kit/run-checks.sh
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).
-
-The `mammouth:` entry appears only when Mammouth is present (`~/.mammouth` or binary in PATH) — i.e. in a Mammouth sandbox or after a manual install. In a plain OpenCode/Claude sandbox the entry is omitted.
