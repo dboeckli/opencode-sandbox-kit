@@ -11,8 +11,17 @@ caps:
     - "*.opencode.ai"
     - context7.com
     - "*.context7.com"
-    - github.com
+    # Mammouth AI
+    - mammouth.ai
+    - "*.mammouth.ai"
+    - code.mammouth.ai
+    - api.mammouth.ai
+    - model-explorer.mammouth.ai
+    - api.github.com
     - "*.github.com"
+    - objects.githubusercontent.com
+    - "*.githubusercontent.com"
+    - models.dev
     - registry.npmjs.org
     - dlcdn.apache.org
     # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
@@ -70,4 +79,5 @@ commands:
         chmod +x /usr/local/bin/kubectl
     - command: |
         echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
-        echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh
+        echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
+        echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh

@@ -71,23 +71,9 @@ const tui: TuiPlugin = async (api) => {
             <text fg={skin.accent}>
               <b>Startup checks</b>
             </text>
-            {report() ? (
-              <box flexDirection="row" flexWrap="wrap">
-                <text fg={skin.muted}>[startup-checks] </text>
-                {report()
-                  .replace(/^\[startup-checks\]\s*/, "")
-                  .trim()
-                  .split(/\s+/)
-                  .filter(Boolean)
-                  .map((t) => {
-                    const status = t.split(":")[1]
-                    const fg = status === "OK" ? "#5faf5f" : status === "FAIL" ? "#ff5f5f" : skin.muted
-                    return <text fg={fg}>{t} </text>
-                  })}
-              </box>
-            ) : (
-              <text fg={skin.muted}>running…</text>
-            )}
+            <text fg={report() ? skin.text : skin.muted}>
+              {report() || "running…"}
+            </text>
           </box>
         )
       },

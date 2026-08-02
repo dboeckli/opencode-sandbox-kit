@@ -2,9 +2,7 @@ name: Validate Kit
 
 on:
   push:
-    branches: [master]
   pull_request:
-    branches: [master]
 
 jobs:
   validate:
@@ -19,3 +17,6 @@ jobs:
 
       - name: Validate kit spec
         run: sbx kit validate .
+
+      - name: Validate Mammouth agent kit spec
+        run: sbx kit validate ./mammouth-agent/
