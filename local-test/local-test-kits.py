@@ -184,9 +184,12 @@ def main():
         c2, out = exec_sandbox(s["name"], mcp_cmd)
         if c2 == 0 and "MCP-OK" in out:
             pass_("intellij-mcp connection (via sbx exec)")
+        elif ci:
+            print("  " + _color("33", "[SKIP] intellij-mcp connection (via sbx exec) — expected: "
+                                     "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
         else:
-            print("  " + _color("33", "[WARN] intellij-mcp connection (via sbx exec) "
-                                     "(IntelliJ MCP muss auf dem Host laufen)"))
+            fail("intellij-mcp connection (via sbx exec)",
+                 "IntelliJ MCP muss auf dem Host laufen (host.docker.internal:64342)")
 
         skills_cmd = (
             "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "
