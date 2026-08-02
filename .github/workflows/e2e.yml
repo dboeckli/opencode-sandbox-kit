@@ -12,6 +12,9 @@ name: Kit e2e
 on:
   push:
   pull_request:
+  schedule:
+    # Nightly at 03:05 UTC, after validate.yml (03:00) has finished.
+    - cron: "5 3 * * *"
 
 permissions:
   contents: read

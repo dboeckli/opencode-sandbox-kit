@@ -3,6 +3,9 @@ name: Validate Kit
 on:
   push:
   pull_request:
+  schedule:
+    # Nightly at 03:00 UTC; e2e.yml runs at 03:05 so validation finishes first.
+    - cron: "0 3 * * *"
 
 jobs:
   validate:
