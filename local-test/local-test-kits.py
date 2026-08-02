@@ -11,7 +11,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic und mammouth (sbx secret set -g mammouth)
+  - Globale Secrets registriert: github, anthropic, mammouth und context7
+    (sbx secret set -g mammouth / sbx secret set -g context7)
 
 Verwendung:
   python local-test-kits.py
@@ -97,7 +98,7 @@ def main():
     print()
     info("==> Secrets (global)")
     _, secret_out = run_sbx(["secret", "ls"])
-    for sname in ("github", "anthropic", "mammouth"):
+    for sname in ("github", "anthropic", "mammouth", "context7"):
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
         pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
 
@@ -200,6 +201,13 @@ def main():
             pass_("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)")
         else:
             fail("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)", out)
+
+        ctx7_env_cmd = 'echo "CONTEXT7_API_KEY=${CONTEXT7_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], ctx7_env_cmd)
+        if c2 == 0 and "CONTEXT7_API_KEY=proxy-managed" in out:
+            pass_("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)")
+        else:
+            fail("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)", out)
 
         if s.get("run_checks"):
             c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")

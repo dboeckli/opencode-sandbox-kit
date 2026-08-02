@@ -2,9 +2,9 @@ name: Kit e2e
 
 # End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
 # non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
-# register fake API-key secrets for github/anthropic/mammouth, and run the 3 agent scenarios
+# register fake API-key secrets for github/anthropic/mammouth/context7, and run the 3 agent scenarios
 # (OpenCode / Claude / Mammouth) from local-test/local-test-kits.py with
-# `--ci` (no real mammouth API call — fake keys only prove proxy wiring).
+# `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
 #
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
@@ -128,11 +128,11 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, anthropic/mammouth fake)
-        # local-test/local-test-kits.py asserts these three global services
+      - name: Register sandbox secrets (github real, anthropic/mammouth/context7 fake)
+        # local-test/local-test-kits.py asserts these four global services
         # exist (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
-        # `gh auth status` passes inside the sandbox; anthropic and mammouth
-        # get fake keys — enough to prove the kit's proxy env wiring.
+        # `gh auth status` passes inside the sandbox; anthropic, mammouth and
+        # context7 get fake keys — enough to prove the kit's proxy env wiring.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -140,6 +140,7 @@ jobs:
           printf '%s' "$GITHUB_TOKEN" | sbx secret set -g github
           printf '%s' 'sk-ant-fake-ci-key' | sbx secret set -g anthropic -f
           printf '%s' 'mammouth-fake-ci-key' | sbx secret set -g mammouth -f
+          printf '%s' 'ctx7op-fake-ci-key' | sbx secret set -g context7 -f
 
       - name: Initialize global network policy (balanced)
         # On a fresh runner the global policy is uninitialized, which makes

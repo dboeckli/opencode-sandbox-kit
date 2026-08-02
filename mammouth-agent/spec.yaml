@@ -50,10 +50,20 @@ credentials:
         - domain: api.mammouth.ai
           header: Authorization
           format: "Bearer %s"
+  - service: context7
+    description: "Context7 API-Key (https://context7.com/dashboard)"
+    apiKey:
+      name: CONTEXT7_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: context7.com
+          header: Authorization
+          format: "Bearer %s"
 
 environment:
   variables:
     MAMMOUTH_API_KEY: "proxy-managed"
+    CONTEXT7_API_KEY: "proxy-managed"
 
 commands:
   install:

@@ -55,6 +55,20 @@ sbx secret set -g anthropic -f
 
 In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls über den Proxy trotzdem funktionieren.
 
+## Context7 Authentication
+
+Für höheres Rate-Limit kann ein Context7 API-Key (https://context7.com/dashboard) verwendet werden.
+Das Kit deklariert den Service `context7` (`credentials[].apiKey` mit `name: CONTEXT7_API_KEY`,
+`proxyManaged: true`). Den Key als Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set -g context7
+```
+
+In der Sandbox ist `CONTEXT7_API_KEY=proxy-managed` gesetzt (Platzhalter); die ctx7-CLI sendet
+`Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
+an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
+
 ### Token-Scopes (aktuell konfiguriert)
 
 | Scope | Beschreibung |

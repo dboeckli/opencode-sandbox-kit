@@ -46,6 +46,17 @@ caps:
     # Skills CLI
     - add-skill.vercel.sh
 
+credentials:
+  - service: context7
+    description: "Context7 API-Key (https://context7.com/dashboard)"
+    apiKey:
+      name: CONTEXT7_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: context7.com
+          header: Authorization
+          format: "Bearer %s"
+
 commands:
   install:
     - command: "npm install -g ctx7"
@@ -83,4 +94,5 @@ commands:
     - command: |
         echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
-        echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh
+        echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh && \
+        echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh

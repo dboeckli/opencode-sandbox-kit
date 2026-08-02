@@ -33,6 +33,9 @@ Docs: `npx ctx7 docs /websites/jetbrains_help <query>` (JetBrains product docs, 
 ## Context7
 
 Docs-as-a-service CLI for libraries/frameworks. See the `<!-- context7 -->` section above.
+The Context7 CLI is authenticated via `CONTEXT7_API_KEY` (set to the `proxy-managed` placeholder in the
+sandbox; the proxy replaces it with the real key on requests to `context7.com`). That gives a higher
+rate limit — no extra setup needed. `echo $CONTEXT7_API_KEY` shows `proxy-managed`, never the real key.
 
 ## Skills CLI
 
