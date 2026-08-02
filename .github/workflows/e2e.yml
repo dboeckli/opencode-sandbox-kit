@@ -1,0 +1,156 @@
+name: Kit e2e
+
+# End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
+# non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
+# register fake API-key secrets for github/anthropic/mammouth, and run the 3 agent scenarios
+# (OpenCode / Claude / Mammouth) from local-test/local-test-kits.py with
+# `--ci` (no real mammouth API call — fake keys only prove proxy wiring).
+#
+# Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
+# this repo: no Go TCK, the Python scenario runner instead.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-kit-e2e:
+    # Fork PRs do not expose Docker Hub secrets; skip them.
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Enable KVM access
+        run: |
+          sudo chmod 666 /dev/kvm
+          ls -la /dev/kvm
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Download sbx (latest release)
+        run: |
+          set -euo pipefail
+          VERSION=$(curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            https://api.github.com/repos/docker/sbx-releases/releases/latest \
+            | jq -r .tag_name)
+          echo "Resolved latest sbx release: ${VERSION}"
+          curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://github.com/docker/sbx-releases/releases/download/${VERSION}/DockerSandboxes-linux.tar.gz" \
+            -o /tmp/DockerSandboxes-linux.tar.gz
+          tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install sbx
+        run: |
+          set -euo pipefail
+          sudo PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
+          echo "${HOME}/.docker/sbx/bin" >> "$GITHUB_PATH"
+
+      - name: Verify sbx installation
+        run: sbx version
+
+      - name: Set up Secret Service for sbx login
+        # sbx's Linux binary persists credentials via libsecret, which talks
+        # to org.freedesktop.secrets over D-Bus. GHA's ubuntu-latest is
+        # headless, so no Secret Service is running and `sbx login` blocks.
+        # This mirrors the recipe from docker/sbx-kits-contrib e2e.yml (and
+        # its root reference in docker/secrets-engine scripts/gnome-keyring):
+        #
+        #   1. Install gnome-keyring + dbus-daemon.
+        #   2. Pre-create ~/.local/share/keyrings/login.keyring as a
+        #      passwordless ini stanza so `gnome-keyring-daemon --start`
+        #      adopts it instead of prompting via gcr-prompter.
+        #   3. Start a session bus (dbus-daemon, not dbus-launch).
+        #   4. Start gnome-keyring-daemon's secrets component.
+        #   5. Poll until org.freedesktop.secrets is owned on D-Bus.
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gnome-keyring dbus
+
+          mkdir -p "$HOME/.local/share/keyrings"
+          cat > "$HOME/.local/share/keyrings/login.keyring" <<'KEYRING'
+          [keyring]
+          display-name=login
+          ctime=1750965549
+          mtime=0
+          lock-on-idle=false
+          lock-after=false
+          KEYRING
+
+          DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --print-address --fork)
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+          export DBUS_SESSION_BUS_ADDRESS
+
+          gnome-keyring-daemon --start --components=secrets >/dev/null
+
+          for _ in $(seq 1 50); do
+            if gdbus call --session \
+                --dest org.freedesktop.DBus \
+                --object-path /org/freedesktop/DBus \
+                --method org.freedesktop.DBus.GetNameOwner \
+                org.freedesktop.secrets >/dev/null 2>&1; then
+              echo "Secret Service registered on D-Bus"
+              exit 0
+            fi
+            sleep 0.1
+          done
+          echo "Timed out waiting for org.freedesktop.secrets to register"
+          exit 1
+
+      - name: Sign in to Docker Hub via sbx
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCKER_USERNAME}" ] || [ -z "${DOCKER_PAT}" ]; then
+            echo "DOCKER_USERNAME / DOCKER_PAT not configured; cannot run e2e."
+            exit 1
+          fi
+          # Defensive trim: GH preserves any whitespace pasted into the
+          # secret editor, and sbx's readPasswordStdin only strips trailing
+          # \r\n. Usernames and PATs are alphanumeric + hyphens, so stripping
+          # all whitespace can't corrupt a legitimate value.
+          USER_CLEAN=$(printf '%s' "$DOCKER_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
+
+      - name: Register sandbox secrets (github real, anthropic/mammouth fake)
+        # local-test/local-test-kits.py asserts these three global services
+        # exist (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
+        # `gh auth status` passes inside the sandbox; anthropic and mammouth
+        # get fake keys — enough to prove the kit's proxy env wiring.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GITHUB_TOKEN" | sbx secret set -g github
+          printf '%s' 'sk-ant-fake-ci-key' | sbx secret set -g anthropic -f
+          printf '%s' 'mammouth-fake-ci-key' | sbx secret set -g mammouth -f
+
+      - name: Initialize global network policy (balanced)
+        # On a fresh runner the global policy is uninitialized, which makes
+        # `sbx create` fail. `balanced` = default deny with common dev sites
+        # allowed; the Docker docs recommend it for CI pipelines. This is a
+        # functional e2e (tools/config/startup), not a strict per-domain
+        # contract test, so deny-all would only break install commands that
+        # need apt/npm/GitHub reachability not declared in the kit's allow
+        # list.
+        run: sbx policy init balanced
+
+      - name: Run e2e tests (all 3 agent scenarios)
+        run: python3 local-test/local-test-kits.py --ci
+
+      - name: Sign out of Docker Hub
+        if: always()
+        run: sbx logout --yes || true
