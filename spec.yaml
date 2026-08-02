@@ -53,6 +53,9 @@ caps:
     # Ubuntu apt
     - archive.ubuntu.com
     - security.ubuntu.com
+    # Python / PyPI
+    - pypi.org
+    - files.pythonhosted.org
     # Skills CLI
     - add-skill.vercel.sh
 
@@ -72,6 +75,8 @@ commands:
     - command: "npm install -g ctx7"
     - command: "npm install -g skills"
     - command: "apt-get install -y jq"
+    - command: "apt-get install -y python3 python3-pip"
+    - command: "python3 -m pip install --no-cache-dir pyyaml"
     - command: "skills add -g --all https://github.com/dboeckli/ai-agent-skills.git"
       user: "1000"
     - command: |
