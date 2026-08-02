@@ -20,6 +20,7 @@ This sandbox is provisioned by the opencode-sandbox-kit. The following tools are
 ## IntelliJ IDEA MCP
 
 The IntelliJ MCP server is connected via `host.docker.internal:64342/sse`. Tools are prefixed with `idea_` (e.g. `idea_search_symbol`, `idea_read_file`, `idea_build_project`, `idea_get_file_problems`, `idea_execute_sql_query`, debugger tools). The full set of available `idea_*` tools is exposed to the agent automatically by the MCP server — they appear in the tool list at the start of every session. Use them to interact with the IntelliJ IDE on the Windows host: navigate code, run inspections, build, debug, and query the database. These tools require IntelliJ IDEA to be running on the host with the MCP server plugin enabled.
+Docs: `npx ctx7 docs /websites/jetbrains_help <query>` (JetBrains product docs, general); `/jetbrains/intellij-sdk-docs` (plugin SDK), `/jetbrains/intellij-community` (platform/MCP).
 
 ## Context7
 
@@ -39,11 +40,13 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 - **skill-best-practices** — guide for creating/structuring/improving SKILL.md files.
 
 These skills are loaded automatically by OpenCode when a task matches their description.
+Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 
 ## Java / Maven
 
 - JDK (Liberica) 25 at `/usr/local/java` (`JAVA_HOME` set), `java`, `javac`
 - Maven 3.9.16 at `/opt/maven`, `mvn`
+- **Spring Boot** — `/spring-projects/spring-boot` (framework docs)
 - Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/apache/maven`, `/spring-projects/spring-boot`
 
 ## Docker CLI
@@ -56,6 +59,14 @@ Docs: `npx ctx7 docs /docker/docs <query>` (e.g. `/docker/docs` for the Docker d
 `kubectl` (latest stable) at `/usr/local/bin/kubectl`. No cluster is pre-configured; check `kubectl config current-context` or configure a kubeconfig as needed.
 Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
 
+## Runtime tools / CLIs (docs via ctx7)
+
+Docs for other installed runtime tools:
+- **Node.js** — `/nodejs/node` (runtime, `node`, `npm exec`/`npx`)
+- **npm** — `/npm/cli` (package manager)
+- **Git** — `/git/htmldocs` (version control)
+- **jq** — `/jqlang/jq` (JSON processor)
+
 ## Related tooling docs (not installed, docs via ctx7)
 
 These tools are not installed in the sandbox, but their documentation is available via Context7:
@@ -63,9 +74,23 @@ These tools are not installed in the sandbox, but their documentation is availab
 - **Renovate** — `/renovatebot/renovate` (automated dependency updates, PRs)
 - **Dependabot** — `/dependabot/dependabot-core` (GitHub dependency updates / security)
 
+## Languages / formats (docs via ctx7)
+
+Docs for the languages and file formats used in this sandbox:
+- **Python** — `/python/cpython` (language reference, stdlib)
+- **Bash** — `/websites/devdocs_io_bash` (GNU Bash Reference Manual)
+- **YAML / `.yml` / `.yaml`** — `/yaml/yaml-spec` (YAML 1.2 specification)
+- **JSON / `.json`** — `/websites/json` (JSON data format); `.jsonc` (JSON with comments): `/eslint/json`
+
 ## gh (GitHub CLI)
 
 `gh` is available and authenticated via a proxy-injected token. `gh auth status` should work. Run `gh --help` to see all commands (repo, pr, issue, release, api, auth, ...). Use it for GitHub operations (repos, PRs, issues).
+Docs: `npx ctx7 docs /cli/cli <query>` (GitHub CLI).
+
+## OpenCode
+
+OpenCode is an agent CLI (and the base for Mammouth Code). For configuration of `opencode.json`, agents, skills, and MCP servers:
+Docs: `npx ctx7 docs /anomalyco/opencode <query>`.
 
 ## Startup checks
 
