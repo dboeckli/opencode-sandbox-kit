@@ -11,6 +11,9 @@ caps:
     - "*.opencode.ai"
     - context7.com
     - "*.context7.com"
+    # Anthropic (Claude Code)
+    - api.anthropic.com
+    - "*.anthropic.com"
     # Mammouth AI
     - mammouth.ai
     - "*.mammouth.ai"

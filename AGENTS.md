@@ -26,6 +26,8 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 - The kit installs ctx7 via `npm install -g ctx7` (spec.yaml `commands.install`); `npx ctx7 setup --opencode` ist nur nötig, um ctx7 für OpenCode zu konfigurieren (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
 - `python local-test/local-test-kits.py` — automate the 3 scenarios (OpenCode/Claude/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
+- `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth API call (only proxy env wiring)
+- GitHub Actions `.github/workflows/e2e.yml` — e2e on push + PR: installs sbx, logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
 
 ## GitHub Authentication
 

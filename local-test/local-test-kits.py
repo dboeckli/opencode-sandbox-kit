@@ -80,7 +80,10 @@ def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
+    parser.add_argument("--ci", action="store_true",
+                        help="CI-Modus: Fake-API-Keys, kein realer mammouth-API-Call")
     args = parser.parse_args()
+    ci = args.ci
 
     print()
     info("==> Kit-Validierung")
@@ -181,9 +184,12 @@ def main():
         c2, out = exec_sandbox(s["name"], mcp_cmd)
         if c2 == 0 and "MCP-OK" in out:
             pass_("intellij-mcp connection (via sbx exec)")
+        elif ci:
+            print("  " + _color("33", "[SKIP] intellij-mcp connection (via sbx exec) — expected: "
+                                     "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
         else:
-            print("  " + _color("33", "[WARN] intellij-mcp connection (via sbx exec) "
-                                     "(IntelliJ MCP muss auf dem Host laufen)"))
+            fail("intellij-mcp connection (via sbx exec)",
+                 "IntelliJ MCP muss auf dem Host laufen (host.docker.internal:64342)")
 
         skills_cmd = (
             "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "
@@ -203,12 +209,20 @@ def main():
             else:
                 fail("startup check: mammouth", f"status={m.get('mammouth')}")
 
-            net_cmd = 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head -c 120'
-            c2, out = exec_sandbox(s["name"], net_cmd)
-            if c2 == 0 and ('"object":"list"' in out or '"id"' in out):
-                pass_("api.mammouth.ai e2e (Proxy-Key)")
+            if ci:
+                env_cmd = 'echo "MAMMOUTH_API_KEY=${MAMMOUTH_API_KEY:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], env_cmd)
+                if c2 == 0 and "MAMMOUTH_API_KEY=proxy-managed" in out:
+                    pass_("mammouth proxy env wiring (fake-key CI)")
+                else:
+                    fail("mammouth proxy env wiring (fake-key CI)", out)
             else:
-                fail("api.mammouth.ai e2e (Proxy-Key)", out)
+                net_cmd = 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head -c 120'
+                c2, out = exec_sandbox(s["name"], net_cmd)
+                if c2 == 0 and ('"object":"list"' in out or '"id"' in out):
+                    pass_("api.mammouth.ai e2e (Proxy-Key)")
+                else:
+                    fail("api.mammouth.ai e2e (Proxy-Key)", out)
 
         if not args.keep:
             info("  Sandbox entfernen ...")
