@@ -207,11 +207,16 @@ Bevor du das Kit verwenden kannst, brauchst du auf dem Windows-Host:
 
 | Voraussetzung | Beschreibung | Benötigt für |
 |---------------|--------------|--------------|
-| **Docker Desktop** (Windows) | Laufender Docker Daemon (native Windows-Installation, nicht aus WSL heraus) | Sandbox-Ausführung |
+| **Docker Desktop** (Windows) | Laufender Docker Daemon — native Windows-Installation **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 16.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
+
+> **WSL funktioniert ebenfalls:** Das Kit läuft nicht nur aus Windows PowerShell + Docker Desktop, sondern
+> auch aus einem **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 16.04**). `sbx run` / `sbx exec`
+> und der IntelliJ-MCP-Zugriff über `host.docker.internal:64342` funktionieren dort genauso — inkl.
+> Secret-Injection (gh/ctx7) und Network-Allow-List.
 
 ### IntelliJ MCP Server aktivieren
 
@@ -291,7 +296,7 @@ python .\local-test\local-test-kits.py          # ohne --keep: Sandboxes werden 
 python .\local-test\local-test-kits.py --keep   # Sandboxes nach dem Test behalten
 ```
 
-Voraussetzungen: Docker läuft (auf Windows nativ, nicht aus WSL heraus), `sbx` im PATH,
+Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
 globale Secrets gesetzt (`github`, `anthropic`, `mammouth`).
 
 ## Startup Checks
@@ -444,12 +449,26 @@ sbx rm opencode-sandbox --force
 
 Der IntelliJ MCP-Forwarder läuft auf Windows unter `127.0.0.1:64342`.
 
-**Via `host.docker.internal` (funktioniert mit Docker Desktop unter Windows):**  
-Im Sandbox-Kit ist die MCP-URL auf `host.docker.internal:64342` konfiguriert. Docker Desktop löst diese Adresse automatisch auf den Windows-Host auf. Funktioniert auch ohne WSL `networkingMode=mirrored`.
+**Via `host.docker.internal` (Standard, funktioniert mit Docker Desktop unter Windows):**  
+Im Sandbox-Kit ist die MCP-URL auf `host.docker.internal:64342` konfiguriert. Docker Desktop löst
+diese Adresse automatisch auf den Windows-Host auf (inkl. Loopback). Funktioniert auch ohne WSL
+`networkingMode=mirrored`.
 
-**Alternativ — WSL `networkingMode=mirrored`:**  
-Falls `host.docker.internal` nicht verfügbar sein sollte (z. B. Docker Engine ohne Docker Desktop), kann in der `.wslconfig` `networkingMode=mirrored` gesetzt werden. Dann wird `127.0.0.1` aus dem Container direkt an Windows durchgereicht. Die URL in `opencode.jsonc` müsste dann wieder auf `127.0.0.1` geändert werden.
+> **Wichtig:** Aus dem Container heraus ist `127.0.0.1`/`localhost` der Loopback des Containers selbst,
+> nicht der Host. Die MCP-URL darf daher **nicht** auf `127.0.0.1` geändert werden — das funktioniert
+> nur, wenn der Agent direkt in WSL läuft (ohne Container).
 
+**Manuelle Verifikation vom Host** (PowerShell oder WSL):
+
+```bash
+sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
+```
+
+Erwartet: `HTTP 200` (das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s;
+nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal).
+
+Falls `host.docker.internal` nicht verfügbar sein sollte (z. B. Docker Engine ohne Docker Desktop):
+den MCP-Server im IntelliJ-Plugin auf `0.0.0.0` binden lassen und die Windows-Host-IP verwenden.
 Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
 
 ## Caveats

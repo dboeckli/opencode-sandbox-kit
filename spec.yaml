@@ -15,6 +15,7 @@ caps:
     - anthropic.com
     - api.anthropic.com
     - "*.anthropic.com"
+    - platform.claude.com
     # Mammouth AI
     - mammouth.ai
     - "*.mammouth.ai"
@@ -49,6 +50,9 @@ caps:
     - "*.docker.com"
     - download.docker.com
     - dl.k8s.io
+    # Ubuntu apt
+    - archive.ubuntu.com
+    - security.ubuntu.com
     # Skills CLI
     - add-skill.vercel.sh
 

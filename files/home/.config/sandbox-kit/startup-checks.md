@@ -13,12 +13,20 @@ The actual checks live in `~/.config/sandbox-kit/run-checks.sh`. You only need t
 bash ~/.config/sandbox-kit/run-checks.sh
 ```
 
+**Manuelle Verifikation der IntelliJ-MCP-Erreichbarkeit vom Host** (PowerShell oder WSL):
+
+```bash
+sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
+```
+
+Erwartet: `HTTP 200`. Das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s; nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal.
+
 ## Checks
 
 | # | Check | Command |
 |---|-------|---------|
 | 1 | Context7 | `npx ctx7 --help` |
-| 2 | IntelliJ MCP | `curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:64342/sse` (expect 200/206) |
+| 2 | IntelliJ MCP | `curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:64342/sse` (Fallback `127.0.0.1`/`localhost`, je 3 Versuche mit 1s Pause; erwartet 200/206) |
 | 3 | gh CLI | `gh auth status` |
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |

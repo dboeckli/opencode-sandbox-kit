@@ -9,7 +9,7 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 
 - **WSL Ubuntu** (hier): Ich kann Tools wie `ctx7`, `curl`, `sbx` testen — Library-IDs, Versions-Checks, Doku-Recherche.
 - **Windows/PowerShell** (User): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
-- Die Sandbox-Befehle aus WSL heraus sind **nicht möglich** (kein Zugriff auf den Windows-Docker-Daemon).
+- **WSL-Setup funktioniert ebenfalls**: Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
 ## Commands
