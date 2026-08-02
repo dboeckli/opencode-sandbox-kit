@@ -101,6 +101,17 @@ im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionier
 
 > Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
+### Netzwerk: Deny-by-Default mit Allow-Liste
+
+Die Sandbox hat eine **Allow-Liste** für ausgehende Verbindungen (`caps.network.allow`) — nur gelistete
+Domains sind erreichbar, alles andere wird vom Host-Proxy geblockt (HTTP 403, `default-deny`). Requests
+zu nicht-whitelisted Hosts werden zwar von den Agent-Tools versucht, kommen aber nie nach außen.
+
+Damit der Agent solche geblockten Calls von vornherein vermeidet (Token-Kosten), ist die vollständige
+Allow-Liste in den Agent-Instructions dokumentiert (`~/.config/opencode/AGENTS.md`, `~/.claude/CLAUDE.md`,
+`~/.config/mammouth/AGENTS.md`, Abschnitt **Network policy (allow-list)**). Beim Anpassen der Liste in
+`spec.yaml` muss die Dokumentation synchron gehalten werden.
+
 ## Dual Agent Support
 
 Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt,
