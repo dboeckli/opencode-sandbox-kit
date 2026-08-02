@@ -25,6 +25,9 @@ Docs: `npx ctx7 docs /websites/jetbrains_help <query>` (JetBrains product docs, 
 ## Context7
 
 Docs-as-a-service CLI for libraries/frameworks. See the `<!-- context7 -->` section above.
+The Context7 CLI is authenticated via `CONTEXT7_API_KEY` (set to the `proxy-managed` placeholder in the
+sandbox; the proxy replaces it with the real key on requests to `context7.com`). That gives a higher
+rate limit — no extra setup needed. `echo $CONTEXT7_API_KEY` shows `proxy-managed`, never the real key.
 
 ## Skills CLI
 
@@ -91,6 +94,26 @@ Docs: `npx ctx7 docs /cli/cli <query>` (GitHub CLI).
 
 OpenCode is an agent CLI (and the base for Mammouth Code). For configuration of `opencode.json`, agents, skills, and MCP servers:
 Docs: `npx ctx7 docs /anomalyco/opencode <query>`.
+
+## Network policy (allow-list)
+
+The sandbox uses a **deny-by-default** network policy (see `spec.yaml` → `caps.network.allow`).
+Only the hosts below are reachable. Any request to a host not on this list is blocked by the host
+proxy (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens.
+
+Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...), check
+this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
+for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
+
+- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`
+- **GitHub**: `api.github.com`, `*.github.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
+- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
+- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `repo1.maven.org`, `*.maven.org`, `repo.spring.io`, `*.spring.io`
+- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
+- **Skills CLI**: `add-skill.vercel.sh`
+- **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
+
+Not reachable (blocked): general web search providers (e.g. `*.exa.ai`), telemetry, and any other host.
 
 ## Startup checks
 

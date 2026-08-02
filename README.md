@@ -101,6 +101,17 @@ im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionier
 
 > Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
+### Netzwerk: Deny-by-Default mit Allow-Liste
+
+Die Sandbox hat eine **Allow-Liste** für ausgehende Verbindungen (`caps.network.allow`) — nur gelistete
+Domains sind erreichbar, alles andere wird vom Host-Proxy geblockt (HTTP 403, `default-deny`). Requests
+zu nicht-whitelisted Hosts werden zwar von den Agent-Tools versucht, kommen aber nie nach außen.
+
+Damit der Agent solche geblockten Calls von vornherein vermeidet (Token-Kosten), ist die vollständige
+Allow-Liste in den Agent-Instructions dokumentiert (`~/.config/opencode/AGENTS.md`, `~/.claude/CLAUDE.md`,
+`~/.config/mammouth/AGENTS.md`, Abschnitt **Network policy (allow-list)**). Beim Anpassen der Liste in
+`spec.yaml` muss die Dokumentation synchron gehalten werden.
+
 ## Dual Agent Support
 
 Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt,
@@ -190,6 +201,53 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) installiert.
 
+## Voraussetzungen (Prerequisites)
+
+Bevor du das Kit verwenden kannst, brauchst du auf dem Windows-Host:
+
+| Voraussetzung | Beschreibung | Benötigt für |
+|---------------|--------------|--------------|
+| **Docker Desktop** (Windows) | Laufender Docker Daemon (native Windows-Installation, nicht aus WSL heraus) | Sandbox-Ausführung |
+| **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
+| **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
+| **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` | IntelliJ MCP (optional) |
+| **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
+
+### IntelliJ MCP Server aktivieren
+
+Damit der Agent die IntelliJ-MCP-Tools (`idea_*`) nutzen kann, muss auf dem Windows-Host die IDE als
+MCP-Server laufen:
+
+1. **IntelliJ IDEA 2025.2 oder neuer** installieren — seit 2025.2 ist ein MCP-Server in der IDE integriert.
+2. **MCP Server Plugin aktivieren**: Das Plugin ist gebündelt und standardmäßig aktiviert. Falls
+   `idea_*`-Tools nicht verfügbar sind, den Plugin-Status unter **Settings → Plugins** prüfen
+   (`MCP Server` muss aktiviert sein).
+3. **IDE laufen lassen** und das Projekt öffnen — der MCP-Server lauscht auf `127.0.0.1:64342/sse`.
+4. **Port 64342 in der Windows-Firewall freigeben** (nötig für den Zugriff aus der Sandbox über
+   `host.docker.internal:64342`).
+
+> Optional (z. B. für weitere MCP-Server im Kit): unter **Settings → Tools → MCP Server** die SSE-URL
+> `http://127.0.0.1:64342/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig — die
+> Konfiguration liegt bereits in `opencode.jsonc` / `settings.json`.
+
+### API-Keys / Secrets
+
+| Service | Secret | Befehl | Benötigt für |
+|---------|--------|--------|--------------|
+| GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set -g github -t "<token>"` | `gh` CLI |
+| Anthropic | Anthropic API-Key | `sbx secret set -g anthropic` | Claude Code |
+| Mammouth | Mammouth API-Key | `sbx secret set -g mammouth` | Mammouth Code |
+| Context7 | Context7 API-Key (optional) | `sbx secret set -g context7` | ctx7 (höheres Rate-Limit) |
+
+Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
+`DOCKER_PAT` (Secret) benötigt.
+
+Detaillierte Anleitungen:
+- [GitHub Authentication](#github-authentication)
+- [Anthropic Authentication](#anthropic-authentication)
+- [Mammouth Code Agent-Kit](#mammouth-code-agent-kit)
+- [Context7 API-Key (optional)](#context7-api-key-optional)
+
 ## Usage (PowerShell on Windows)
 
 ```powershell
@@ -265,10 +323,39 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 
 `JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht (inkl. `~/.mammouth/bin`).
 
-Optional — Context7 API-Key für höheres Rate-Limit:
+### Context7 API-Key (optional)
+
+Für höheres Rate-Limit kann ein Context7 API-Key verwendet werden (https://context7.com/dashboard).
+Das Kit deklariert den Service `context7` (`credentials[].apiKey` mit `name: CONTEXT7_API_KEY`,
+`proxyManaged: true`). Den Key als Secret registrieren, damit der Proxy ihn für Requests an
+`context7.com` als `Authorization: Bearer` injiziert — der Key liegt nie im Sandbox-Filesystem:
 
 ```powershell
-sbx exec opencode-sandbox bash -c "echo 'export CONTEXT7_API_KEY=your-key' >> /etc/sandbox-persistent.sh"
+# Kit-deklarierter Service (wie sbx secret set -g mammouth)
+sbx secret set -g context7
+```
+
+> **Wichtig:** `CONTEXT7_API_KEY` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> Die ctx7-CLI liest die Variable und sendet `Authorization: Bearer proxy-managed`; der Proxy
+> ersetzt den Platzhalter transparent bei Outbound-Requests an `context7.com`. Das ist gewollt,
+> kein Fehler. `echo $CONTEXT7_API_KEY` zeigt `proxy-managed` (nie den echten Key).
+
+Verifikation (identisch zur Prüfung im automatisierten Test `local-test-kits.py` — ohne Live-API-Call):
+
+```powershell
+# 1. Secret ist registriert
+sbx secret ls
+
+# 2. In der Sandbox: Platzhalter sichtbar (nie der echte Key) — das ist die Verifikation
+sbx exec opencode-sandbox bash -c 'echo $CONTEXT7_API_KEY'   # → proxy-managed
+```
+
+Der automatisierte Test prüft bewusst nur den Platzhalter (`echo $CONTEXT7_API_KEY` → `proxy-managed`),
+keinen echten Request an `context7.com` — damit läuft er auch im CI mit Fake-Keys.
+Ein manueller Live-Call (Key wird dann vom Proxy injiziert) ist optional möglich:
+
+```powershell
+sbx exec opencode-sandbox bash -c 'npx ctx7 docs /vercel/next.js "app router"'
 ```
 
 ## Skills
