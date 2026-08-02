@@ -12,7 +12,23 @@ else
 fi
 
 # 2. IntelliJ MCP server (SSE endpoint reachable)
-code=$(curl -s -o /dev/null -w '%{http_code}' -m 3 http://host.docker.internal:64342/sse 2>/dev/null)
+# Robust: retries each endpoint a few times with a short delay - at session start the
+# IntelliJ MCP server may still be starting up, so a single probe fails spuriously.
+# host.docker.internal is primary (routes to the Windows host loopback);
+# 127.0.0.1/localhost only work in host-network mode (rare).
+code=""
+for host in host.docker.internal 127.0.0.1 localhost; do
+  attempt=1
+  while [ "$attempt" -le 3 ]; do
+    code=$(curl -s -o /dev/null -w '%{http_code}' -m 4 "http://$host:64342/sse" 2>/dev/null)
+    if [ "$code" = "200" ] || [ "$code" = "206" ]; then
+      break 2
+    fi
+    code=""
+    attempt=$((attempt + 1))
+    [ "$attempt" -le 3 ] && sleep 1
+  done
+done
 if [ "$code" = "200" ] || [ "$code" = "206" ]; then
   report="$report intellij-mcp:OK"
 else

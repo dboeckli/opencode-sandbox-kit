@@ -178,8 +178,10 @@ def main():
                 fail(f"default model in config ({s['model']})", out)
 
         mcp_cmd = (
-            'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 '
-            "http://host.docker.internal:64342/sse 2>/dev/null); "
+            'code=""; '
+            'for host in host.docker.internal 127.0.0.1 localhost; do '
+            'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 "http://$host:64342/sse" 2>/dev/null); '
+            '[ "$code" = "200" ] || [ "$code" = "206" ] && break; code=""; done; '
             'if [ "$code" = "200" ] || [ "$code" = "206" ]; then echo MCP-OK; else echo MCP-FAIL; fi'
         )
         c2, out = exec_sandbox(s["name"], mcp_cmd)
@@ -190,7 +192,7 @@ def main():
                                      "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
         else:
             fail("intellij-mcp connection (via sbx exec)",
-                 "IntelliJ MCP muss auf dem Host laufen (host.docker.internal:64342)")
+                 "IntelliJ MCP muss auf dem Host laufen (127.0.0.1/localhost/host.docker.internal:64342)")
 
         skills_cmd = (
             "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "
