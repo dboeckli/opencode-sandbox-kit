@@ -53,44 +53,53 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7,
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-## Usage (PowerShell on Windows)
+## Architektur
 
-```powershell
-# Lokales Kit (Entwicklung)
-sbx run opencode --name opencode-sandbox --kit .          # OpenCode
-sbx run claude   --name claude-sandbox   --kit .          # Claude Code
-sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit)
+```mermaid
+flowchart TB
+    Dev["👨‍💻 Developer"]
 
-# Kit direkt aus GitHub (ohne Clone)
-sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"
-sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
-sbx run claude   --name claude-sandbox   --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
-sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
+    subgraph Host["Windows Host"]
+        SBX["sbx CLI"]
+        IDE["IntelliJ IDEA\nMCP Server :64342"]
+        WS["📁 Workspace\nC:\\development\\projects\\..."]
+        Secrets["🔑 Secrets Store\n(OS Keychain)"]
 
-# Kit mit anderem Projekt verwenden
-sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
-sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
-sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "C:\development\projects\spring-6-reactive"
+        subgraph DD["Docker Desktop (WSL)"]
+            Proxy["🌐 Host-seitiger Proxy\n• Network Policies (allow / deny)\n• Credential Injection\n• Credential Proxy (never enters VM)"]
 
-# Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
-sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+            subgraph VM["Sandbox MicroVM (nerdbox) — Hypervisor-Isolation"]
+                Agent["🤖 AI Coding Agent\n(opencode / claude / mammouth)"]
+                Dockerd["🐳 Isolierter Docker Daemon"]
+                FS["📂 Filesystem Passthrough\n(selber Pfad wie Host)"]
+                Kit["🔌 Kit / Mixin\n(Tools, Skills, Config)"]
+
+                Agent -->|"docker CLI"| Dockerd
+                Agent -->|"liest / schreibt"| FS
+                Agent -->|"MCP Client\nvia host.docker.internal:64342"| Proxy
+            end
+
+            Proxy -->|"forward"| IDE
+        end
+    end
+
+    Dev -->|"sbx run / create"| SBX
+    SBX -->|"startet"| VM
+    SBX -->|"übergibt Workspace"| WS
+    WS -.->|"Filesystem Passthrough"| FS
+    Secrets -.->|"injiziert via Proxy"| Proxy
+
+    Proxy -->|"GitHub API / gh CLI"| GH["github.com"]
+    Proxy -->|"npm / ctx7 / Maven"| PKG["Package Registries\n(npm, Maven Central, ctx7)"]
+    Proxy -->|"LLM API\n(Anthropic / Mammouth / OpenAI)"| LLM["☁️ LLM Provider API"]
 ```
 
-The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
+### Docker CLI in der Sandbox
 
-## Automatisierter Kit-Test
+Das Kit installiert die Docker CLI (statisches Binary). Jede Sandbox hat einen **isolierten Docker Daemon**
+im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionieren direkt.
 
-Die 3 Agent-Szenarien (OpenCode, Claude, Mammouth) lassen sich lokal automatisiert testen —
-`local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert beide Kits, prüft die
-Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
-
-```bash
-python local-test/local-test-kits.py            # ohne --keep: Sandboxes werden wieder entfernt
-python local-test/local-test-kits.py --keep     # Sandboxes nach dem Test behalten
-```
-
-Voraussetzungen: Docker läuft (auf Windows nativ, nicht aus WSL heraus), `sbx` im PATH,
-globale Secrets gesetzt (`github`, `anthropic`, `mammouth`).
+> Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
 ## Dual Agent Support
 
@@ -181,6 +190,45 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) installiert.
 
+## Usage (PowerShell on Windows)
+
+```powershell
+# Lokales Kit (Entwicklung)
+sbx run opencode --name opencode-sandbox --kit .          # OpenCode
+sbx run claude   --name claude-sandbox   --kit .          # Claude Code
+sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit)
+
+# Kit direkt aus GitHub (ohne Clone)
+sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"
+sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+sbx run claude   --name claude-sandbox   --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
+
+# Kit mit anderem Projekt verwenden
+sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
+sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "C:\development\projects\spring-6-reactive"
+
+# Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
+sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+```
+
+The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
+
+## Automatisierter Kit-Test
+
+Die 3 Agent-Szenarien (OpenCode, Claude, Mammouth) lassen sich lokal automatisiert testen —
+`local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert beide Kits, prüft die
+Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
+
+```bash
+python local-test/local-test-kits.py            # ohne --keep: Sandboxes werden wieder entfernt
+python local-test/local-test-kits.py --keep     # Sandboxes nach dem Test behalten
+```
+
+Voraussetzungen: Docker läuft (auf Windows nativ, nicht aus WSL heraus), `sbx` im PATH,
+globale Secrets gesetzt (`github`, `anthropic`, `mammouth`).
+
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
@@ -202,39 +250,6 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
 - **Referenz**: `~/.config/sandbox-kit/startup-checks.md`
 
 Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FAIL` einen Fix vor.
-
-```mermaid
-flowchart TB
-    subgraph Host["Windows Host"]
-        IDE["IntelliJ IDEA<br/>MCP Server :64342"]
-    end
-
-    subgraph DD["Docker Desktop (WSL)"]
-        Proxy["Host-Proxy<br/>Policies + Credential Injection"]
-        
-        subgraph VM["Sandbox MicroVM (nerdbox)"]
-            Agent["opencode (CLI Agent)"]
-            Dockerd["isolierter Docker Daemon"]
-            FS["Filesystem Passthrough<br/>C:\\dev\\projects\\..."]
-            Agent -->|"MCP Client"| Proxy
-            Agent -->|"docker CLI"| Dockerd
-            Agent -->|"liest/schreibt"| FS
-        end
-        
-        Proxy --> IDE
-    end
-
-    Proxy -->|"GitHub API"| GH["github.com"]
-    Proxy -->|"npm Registry"| NPM["registry.npmjs.org"]
-    Proxy -->|"ctx7 Docs"| C7["context7.com"]
-```
-
-### Docker CLI in der Sandbox
-
-Das Kit installiert die Docker CLI (statisches Binary). Jede Sandbox hat einen **isolierten Docker Daemon**
-im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionieren direkt.
-
-> Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
 ## Installierte Tools
 
@@ -393,3 +408,4 @@ beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run
 - [GitHub Repo](https://github.com/dboeckli/opencode-sandbox-kit)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)
+- [Docker Blog — AI Coding Agent Horror Stories: Security Risks](https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/)
