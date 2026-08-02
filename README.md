@@ -284,6 +284,13 @@ python local-test/local-test-kits.py            # ohne --keep: Sandboxes werden 
 python local-test/local-test-kits.py --keep     # Sandboxes nach dem Test behalten
 ```
 
+Lokales Testen in **Windows PowerShell** (Docker Desktop nativ):
+
+```powershell
+python .\local-test\local-test-kits.py          # ohne --keep: Sandboxes werden wieder entfernt
+python .\local-test\local-test-kits.py --keep   # Sandboxes nach dem Test behalten
+```
+
 Voraussetzungen: Docker läuft (auf Windows nativ, nicht aus WSL heraus), `sbx` im PATH,
 globale Secrets gesetzt (`github`, `anthropic`, `mammouth`).
 

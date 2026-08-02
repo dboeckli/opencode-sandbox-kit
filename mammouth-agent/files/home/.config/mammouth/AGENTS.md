@@ -114,10 +114,10 @@ this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` 
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
 - **Agent APIs**: `mammouth.ai`, `*.mammouth.ai`, `code.mammouth.ai`, `api.mammouth.ai`, `model-explorer.mammouth.ai`, `opencode.ai`, `*.opencode.ai`
-- **GitHub**: `api.github.com`, `*.github.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
+- **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `repo1.maven.org`, `*.maven.org`, `repo.spring.io`, `*.spring.io`
-- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
+- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
+- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
 - **Skills CLI**: `add-skill.vercel.sh`
 - **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
 
