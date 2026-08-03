@@ -33,6 +33,10 @@ When you need current information about a library, framework, SDK, API, CLI tool
 
 Before declaring a task done, verify it: run the project's build/test/lint commands (see the repo's `AGENTS.md`/`README`) and report the output as evidence, iterating until they pass. For non-trivial changes, use a fresh-context subagent to review the diff.
 
+## Response style
+
+Token-efficient responses: telegram style, no filler/pleasantries, no full-file dumps — show only changed lines/methods. Detect the project's stack from the repo; never assume a framework (e.g. Spring Boot). Full rules: `response-style.md` (in this directory).
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the opencode-sandbox-kit. The following tools are installed and available:
 
