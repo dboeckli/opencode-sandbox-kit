@@ -7,14 +7,14 @@ Repo: https://github.com/dboeckli/opencode-sandbox-kit
 
 Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup**:
 
-- **WSL Ubuntu** (hier): Ich kann Tools wie `ctx7`, `curl`, `sbx` testen — Library-IDs, Versions-Checks, Doku-Recherche.
+- **WSL Ubuntu** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, `sbx`), Versions-Checks und Doku-Recherche.
 - **Windows/PowerShell** (User): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
 - **WSL-Setup funktioniert ebenfalls**: Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
 ## Commands
 
-- `sbx kit validate .` — validate the kit (run before commit)
+- `sbx kit validate .` — validate the kit; run it after every change and report the output as evidence before committing
 - `sbx run opencode --name opencode-sandbox --kit .` — test the kit with an OpenCode sandbox (via PowerShell on Windows)
 - `sbx run claude --name claude-sandbox --kit .` — test the kit with a Claude Code sandbox (via PowerShell on Windows)
 - `sbx run opencode --name mammouth-sandbox --kit .` — test the mixin kit with an OpenCode sandbox, then run `mammouth` manually in the terminal (Mammouth Code, OpenCode-Fork)
@@ -23,7 +23,7 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 - `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
-- The kit installs ctx7 via `npm install -g ctx7` (spec.yaml `commands.install`); `npx ctx7 setup --opencode` ist nur nötig, um ctx7 für OpenCode zu konfigurieren (nicht Teil des Kits)
+- ctx7 installiert das Kit via `npm install -g ctx7` (spec.yaml `commands.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
 - `python local-test/local-test-kits.py` — automate the 3 scenarios (OpenCode/Claude/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth API call (only proxy env wiring)

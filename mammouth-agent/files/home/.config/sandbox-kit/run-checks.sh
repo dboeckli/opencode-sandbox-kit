@@ -35,8 +35,8 @@ else
   report="$report intellij-mcp:FAIL"
 fi
 
-# 3. gh CLI
-if gh auth status >/dev/null 2>&1; then
+# 3. gh CLI + gh api (authenticated API call)
+if gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1; then
   report="$report gh:OK"
 else
   report="$report gh:FAIL"

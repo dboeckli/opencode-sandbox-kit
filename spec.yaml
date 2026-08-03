@@ -43,6 +43,7 @@ caps:
     - spring.io
     - repo.spring.io
     - "*.spring.io"
+    - start.spring.io
     # Docker
     - docker.io
     - "*.docker.io"
@@ -53,8 +54,13 @@ caps:
     # Ubuntu apt
     - archive.ubuntu.com
     - security.ubuntu.com
+    # Python / PyPI
+    - pypi.org
+    - files.pythonhosted.org
     # Skills CLI
     - add-skill.vercel.sh
+    # Web search (last resort, allow-list for websearch/webfetch provider)
+    - "*.exa.ai"
 
 credentials:
   - service: context7
@@ -72,6 +78,7 @@ commands:
     - command: "npm install -g ctx7"
     - command: "npm install -g skills"
     - command: "apt-get install -y jq"
+    - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-yaml shfmt"
     - command: "skills add -g --all https://github.com/dboeckli/ai-agent-skills.git"
       user: "1000"
     - command: |
@@ -82,19 +89,22 @@ commands:
         rm -rf /tmp/ai-agent-skills
       user: "1000"
     - command: |
-        curl -fsSL https://github.com/bell-sw/Liberica/releases/download/25.0.4+9/bellsoft-jdk25.0.4+9-linux-amd64.tar.gz -o /tmp/jdk.tar.gz && \
+        LIBERICA_VER="25.0.4+9" && \
+        curl -fsSL "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-amd64.tar.gz" -o /tmp/jdk.tar.gz && \
         mkdir -p /usr/local/java && \
         tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1 && \
         ln -sf /usr/local/java/bin/java /usr/local/bin/java && \
         rm -f /tmp/jdk.tar.gz
     - command: |
-        curl -fsSL https://dlcdn.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz -o /tmp/maven.tar.gz && \
+        MAVEN_VER="3.9.16" && \
+        curl -fsSL "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" -o /tmp/maven.tar.gz && \
         mkdir -p /opt/maven && \
         tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1 && \
         rm -f /tmp/maven.tar.gz && \
         ln -sf /opt/maven/bin/mvn /usr/local/bin/mvn
     - command: |
-        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz -o /tmp/docker.tgz && \
+        DOCKER_VER="27.5.1" && \
+        curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VER}.tgz" -o /tmp/docker.tgz && \
         tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker && \
         rm -f /tmp/docker.tgz
     - command: |

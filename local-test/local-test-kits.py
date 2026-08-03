@@ -15,8 +15,18 @@ Voraussetzungen:
     (sbx secret set -g mammouth / sbx secret set -g context7)
 
 Verwendung:
-  python local-test-kits.py
-  python local-test-kits.py --keep          # Sandboxes nach dem Test behalten
+  python local-test-kits.py                 # alle 3 Kits testen (default: all)
+  python local-test-kits.py opencode        # nur OpenCode testen
+  python local-test-kits.py claude          # nur Claude testen
+  python local-test-kits.py mammouth        # nur Mammouth testen
+  python local-test-kits.py --help          # alle Optionen anzeigen
+
+Optionen:
+  {all,opencode,claude,mammouth}  Zu testendes Kit (default: all)
+  -h, --help                      Diese Hilfe anzeigen
+  --keep                          Sandboxes nach dem Test behalten
+  --ci                            CI-Modus: Fake-API-Keys, kein realer
+                                  mammouth-API-Call
 """
 
 import argparse
@@ -77,14 +87,42 @@ def exec_sandbox(name, cmd):
     return run_sbx(["exec", name, "bash", "-c", cmd])
 
 
+def blocked_requests(name):
+    code, out = run_sbx(["policy", "log", name])
+    if code != 0:
+        info(f"  sbx policy log {name}:")
+        print("         " + (out or "(Fehler beim Aufruf)"))
+        return code
+    lines = out.splitlines()
+    try:
+        start = next(i for i, l in enumerate(lines) if l.strip() == "Blocked requests:")
+    except StopIteration:
+        info(f"  sbx policy log {name}: keine Blocked requests")
+        return code
+    try:
+        end = next(i for i, l in enumerate(lines) if l.strip() == "Allowed requests:")
+    except StopIteration:
+        end = len(lines)
+    blocked = [l for l in lines[start + 2:end] if l.strip()]
+    if not blocked:
+        info(f"  sbx policy log {name}: keine Blocked requests")
+        return code
+    info(f"  sbx policy log {name} (Blocked requests):")
+    print("         " + "\n         ".join(lines[start:start + 2] + blocked))
+    return code
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth"],
+                        default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
                         help="CI-Modus: Fake-API-Keys, kein realer mammouth-API-Call")
     args = parser.parse_args()
     ci = args.ci
+    agent = args.agent
 
     print()
     info("==> Kit-Validierung")
@@ -136,9 +174,16 @@ def main():
         },
     ]
 
+    if agent != "all":
+        scenarios = [s for s in scenarios if s["agent"] == agent]
+        if not scenarios:
+            parser.error(f"Unbekanntes Kit: {agent}")
+
     for s in scenarios:
         print()
         info(f"=== {s['name']}  (agent={s['agent']}, kit={s['kit']})")
+
+        failed_before = len(failed)
 
         run_sbx(["rm", s["name"], "-f"])
 
@@ -147,6 +192,7 @@ def main():
         code, _ = run_sbx(["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"], "-q"], stream=True)
         if code != 0:
             fail("sandbox create")
+            blocked_requests(s["name"])
             run_sbx(["rm", s["name"], "-f"])
             continue
 
@@ -159,6 +205,7 @@ def main():
             time.sleep(10)
         pass_("sandbox ready") if ready else fail("sandbox ready")
         if not ready:
+            blocked_requests(s["name"])
             run_sbx(["rm", s["name"], "-f"])
             continue
 
@@ -169,6 +216,15 @@ def main():
                 pass_(f"tool: {t}")
             else:
                 fail(f"tool: {t}", out)
+
+        c2, out = exec_sandbox(s["name"], "gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1 && echo GHAPI-OK")
+        if c2 == 0 and "GHAPI-OK" in out:
+            pass_("gh api (authenticated call)")
+        elif ci:
+            print("  " + _color("33", "[SKIP] gh api (authenticated call) — expected: fake token in CI, "
+                                     "kein authentifizierter gh-API-Call"))
+        else:
+            fail("gh api (authenticated call)", out)
 
         if s["config"]:
             c2, out = exec_sandbox(s["name"], s["config"])
@@ -235,6 +291,8 @@ def main():
                     fail("api.mammouth.ai e2e (Proxy-Key)", out)
 
         if not args.keep:
+            if len(failed) > failed_before:
+                blocked_requests(s["name"])
             info("  Sandbox entfernen ...")
             run_sbx(["rm", s["name"], "-f"])
 

@@ -14,106 +14,100 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 5. Answer using the fetched docs
 <!-- context7 -->
 
+## Context7 tools reference
+
+The full inventory of tools documented via Context7 — with their ctx7 library IDs and GitHub/docs URLs — lives in `context7-tools.md` (in this directory). Tool-specific library IDs are no longer repeated inline below.
+
+## Documentation lookup priority
+
+When you need current information about a library, framework, SDK, API, CLI tool, or cloud service, use this order:
+
+1. **IntelliJ MCP** — `idea_*` tools (`idea_get_symbol_info`, `idea_search_symbol`, `idea_analyze_calls`, `idea_read_file`) are the **primary source for the project itself**: navigate code, get quick documentation, browse external & decompiled dependencies loaded in the IDE. Use it first for project-internal questions. Requires IntelliJ IDEA running on the host.
+2. **Context7** — `npx ctx7 docs <libraryId> <query>` (find unknown IDs via `npx ctx7 library "<name>" "<topic>"`) is the **primary source for external library, framework, SDK, API, and CLI documentation**.
+3. **GitHub / `gh`** — `gh api` / `gh release` for anything hosted on GitHub and for version/release info (e.g. `gh api repos/anomalyco/opencode/releases/latest`)
+4. **Web search** — `websearch` / `webfetch` only as last resort, and only against the allow-listed hosts in the network policy below.
+
+**Failure handling:** if IntelliJ MCP, Context7 (`npx ctx7`), or the GitHub API (`gh api`) is unavailable or fails (not running, error, not found, timeout, rate limit, 403), tell the user immediately which source failed and how the result is affected, then fall back per the steps above. Do not silently degrade.
+
+## Verification
+
+Before declaring a task done, verify it: run the project's build/test/lint commands (see the repo's `AGENTS.md`/`README`) and report the output as evidence, iterating until they pass. For non-trivial changes, use a fresh-context subagent to review the diff.
+
+## Response style
+
+Token-efficient responses: telegram style, no filler/pleasantries, no full-file dumps — show only changed lines/methods. Detect the project's stack from the repo; never assume a framework (e.g. Spring Boot). Full rules: `response-style.md` (in this directory).
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the opencode-sandbox-kit. The following tools are installed and available:
 
 ## IntelliJ IDEA MCP
 
-The IntelliJ MCP server is connected via `host.docker.internal:64342/sse`. Tools are prefixed with `idea_` (e.g. `idea_search_symbol`, `idea_read_file`, `idea_build_project`, `idea_get_file_problems`, `idea_execute_sql_query`, debugger tools). The full set of available `idea_*` tools is exposed to the agent automatically by the MCP server — they appear in the tool list at the start of every session. Use them to interact with the IntelliJ IDE on the Windows host: navigate code, run inspections, build, debug, and query the database. These tools require IntelliJ IDEA to be running on the host with the MCP server plugin enabled.
-Docs: `npx ctx7 docs /websites/jetbrains_help <query>` (JetBrains product docs, general); `/jetbrains/intellij-sdk-docs` (plugin SDK), `/jetbrains/intellij-community` (platform/MCP).
+Connected via `host.docker.internal:64342/sse`; tools prefixed with `idea_` (symbol search, read file, build, inspect problems, SQL, debugger) and listed each session. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority).
 
 ## Context7
 
-Docs-as-a-service CLI for libraries/frameworks. See the `<!-- context7 -->` section above.
-The Context7 CLI is authenticated via `CONTEXT7_API_KEY` (set to the `proxy-managed` placeholder in the
-sandbox; the proxy replaces it with the real key on requests to `context7.com`). That gives a higher
-rate limit — no extra setup needed. `echo $CONTEXT7_API_KEY` shows `proxy-managed`, never the real key.
+Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated via `CONTEXT7_API_KEY` (placeholder `proxy-managed`, replaced by the proxy on requests to `context7.com`) — never shows the real key.
 
 ## Skills CLI
 
-`skills` (vercel-labs) manages reusable agent skills. Installed skills live in `~/.agents/skills/` and are auto-loaded. Manage with:
+`skills` (vercel-labs) manages reusable agent skills in `~/.agents/skills/` (auto-loaded):
 - `skills ls` / `skills ls -g` — list installed skills
 - `skills add <package>` — add a skill package (e.g. `skills add -g https://github.com/dboeckli/ai-agent-skills.git`)
 - `skills remove [skills]` / `skills update` — remove / update skills
 
 Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills)):
-- **camel-matrix** — generates an AsciiDoc compatibility matrix for Apache Camel Spring Boot, Spring Boot, and Apache CXF versions by running `camel-springboot-matrix.sh`. Use when asked to generate/update the Camel compatibility matrix or check Camel Spring Boot version compatibility.
-- **cc-best-practices** — guidance on using Claude Code effectively (context management, verification, explore-plan-implement workflow, prompting, parallel sessions).
-- **project-references** — look up conventions/patterns from GitHub repos checked out under `~/projects/referenzen/` (Helm charts, K8s manifests, Docker Compose, CI/CD). Cite the source project when adopting a pattern.
-- **skill-best-practices** — guide for creating/structuring/improving SKILL.md files.
-
-These skills are loaded automatically by OpenCode when a task matches their description.
-Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
+- **camel-matrix** — Camel/Spring Boot/CXF compatibility matrix via `camel-springboot-matrix.sh`
+- **cc-best-practices** — effective Claude Code usage
+- **project-references** — conventions from `~/projects/referenzen/`
+- **skill-best-practices** — structuring SKILL.md files
 
 ## Java / Maven
 
 - JDK (Liberica) 25 at `/usr/local/java` (`JAVA_HOME` set), `java`, `javac`
 - Maven 3.9.16 at `/opt/maven`, `mvn`
-- **Spring Boot** — `/spring-projects/spring-boot` (framework docs)
-- Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/apache/maven`, `/spring-projects/spring-boot`
+- Spring Boot, Apache Camel, CXF, Commons Lang, HttpClient, Tomcat, POI — see `context7-tools.md`
 
 ## Docker CLI
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
-Docs: `npx ctx7 docs /docker/docs <query>` (e.g. `/docker/docs` for the Docker docs, `/docker/compose`, `/dockerfile`).
 
 ## kubectl
 
 `kubectl` (latest stable) at `/usr/local/bin/kubectl`. No cluster is pre-configured; check `kubectl config current-context` or configure a kubeconfig as needed.
-Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
 
-## Runtime tools / CLIs (docs via ctx7)
+## Runtime tools / CLIs
 
-Docs for other installed runtime tools:
-- **Node.js** — `/nodejs/node` (runtime, `node`, `npm exec`/`npx`)
-- **npm** — `/npm/cli` (package manager)
-- **Git** — `/git/htmldocs` (version control)
-- **jq** — `/jqlang/jq` (JSON processor)
+Installed runtime CLIs — Node.js, npm, Git, jq, Go, pip, curl, GNU Make — see `context7-tools.md`.
 
-## Related tooling docs (not installed, docs via ctx7)
+## Related tooling (not installed)
 
-These tools are not installed in the sandbox, but their documentation is available via Context7:
-- **Helm** — `/helm/helm-www` (Kubernetes package manager, charts)
-- **Renovate** — `/renovatebot/renovate` (automated dependency updates, PRs)
-- **Dependabot** — `/dependabot/dependabot-core` (GitHub dependency updates / security)
+Not installed in the sandbox, but documented via Context7: Helm, Renovate, Dependabot — see `context7-tools.md`.
 
-## Languages / formats (docs via ctx7)
+## Dependabot & Renovate (Context7 required)
 
-Docs for the languages and file formats used in this sandbox:
-- **Python** — `/python/cpython` (language reference, stdlib)
-- **Bash** — `/websites/devdocs_io_bash` (GNU Bash Reference Manual)
-- **YAML / `.yml` / `.yaml`** — `/yaml/yaml-spec` (YAML 1.2 specification)
-- **JSON / `.json`** — `/websites/json` (JSON data format); `.jsonc` (JSON with comments): `/eslint/json`
+This repository manages `.github/dependabot.yml` and `.github/renovate.json`.
+Whenever you create, edit, or validate these configuration files — or change
+which tools/ecosystems they cover — ALWAYS fetch the current documentation via
+Context7 first (see `context7-tools.md`) and follow it. Do not rely on training
+memory; the schemas change.
+
+## Languages / formats
+
+Languages and file formats used in this sandbox (Python, Bash, YAML, JSON, JSONC) — see `context7-tools.md`.
 
 ## gh (GitHub CLI)
 
-`gh` is available and authenticated via a proxy-injected token. `gh auth status` should work. Run `gh --help` to see all commands (repo, pr, issue, release, api, auth, ...). Use it for GitHub operations (repos, PRs, issues).
-Docs: `npx ctx7 docs /cli/cli <query>` (GitHub CLI).
+`gh` is available and authenticated via a proxy-injected token. `gh auth status` should work. Run `gh --help` to see all commands (repo, pr, issue, release, api, auth, ...). Use it for GitHub operations (repos, PRs, issues) and as the primary source for GitHub-hosted docs and version/release information.
 
 ## OpenCode
 
-OpenCode is an agent CLI (and the base for Mammouth Code). For configuration of `opencode.json`, agents, skills, and MCP servers:
-Docs: `npx ctx7 docs /anomalyco/opencode <query>`.
+OpenCode is an agent CLI (and the base for Mammouth Code). For configuration of `opencode.json`, agents, skills, and MCP servers, see `context7-tools.md` and the lookup priority rules above.
 
-## Network policy (allow-list)
+Versions: do not assume the installed or latest version. Check the installed version with `opencode --version`, and always fetch the latest release from GitHub Releases via `gh api repos/anomalyco/opencode/releases/latest --jq '.tag_name'` (ctx7 does not track the CLI version). When version-specific behavior matters, also fetch the release notes via `gh api repos/anomalyco/opencode/releases/latest --jq '.body'` — note that online docs/ctx7 may describe a newer version than what is installed.
 
-The sandbox uses a **deny-by-default** network policy (see `spec.yaml` → `caps.network.allow`).
-Only the hosts below are reachable. Any request to a host not on this list is blocked by the host
-proxy (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens.
+## Network policy
 
-Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...), check
-this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
-for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
-
-- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`
-- **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
-- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
-- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
-- **Skills CLI**: `add-skill.vercel.sh`
-- **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
-
-Not reachable (blocked): general web search providers (e.g. `*.exa.ai`), telemetry, and any other host.
+Deny-by-default: the sandbox only reaches the hosts listed in `network-policy.md` (in this directory). Check it before any outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...). Anything not listed is blocked (HTTP 403).
 
 ## Startup checks
 
