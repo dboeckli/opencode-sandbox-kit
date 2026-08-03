@@ -220,6 +220,9 @@ def main():
         c2, out = exec_sandbox(s["name"], "gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1 && echo GHAPI-OK")
         if c2 == 0 and "GHAPI-OK" in out:
             pass_("gh api (authenticated call)")
+        elif ci:
+            print("  " + _color("33", "[SKIP] gh api (authenticated call) — expected: fake token in CI, "
+                                     "kein authentifizierter gh-API-Call"))
         else:
             fail("gh api (authenticated call)", out)
 
