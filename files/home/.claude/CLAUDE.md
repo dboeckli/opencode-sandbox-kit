@@ -29,6 +29,10 @@ When you need current information about a library, framework, SDK, API, CLI tool
 
 **Failure handling:** if IntelliJ MCP, Context7 (`npx ctx7`), or the GitHub API (`gh api`) is unavailable or fails (not running, error, not found, timeout, rate limit, 403), tell the user immediately which source failed and how the result is affected, then fall back per the steps above. Do not silently degrade.
 
+## Verification
+
+Before declaring a task done, verify it: run the project's build/test/lint commands (see the repo's `AGENTS.md`/`README`) and report the output as evidence, iterating until they pass. For non-trivial changes, use a fresh-context subagent to review the diff.
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the opencode-sandbox-kit. The following tools are installed and available:
 
