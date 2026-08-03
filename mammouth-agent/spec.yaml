@@ -107,7 +107,7 @@ commands:
         rm -rf /tmp/ai-agent-skills
       user: "1000"
     - command: |
-        LIBERICA_VER="25.0.4+9" && \
+        LIBERICA_VER="26.0.2+13" && \
         curl -fsSL "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-amd64.tar.gz" -o /tmp/jdk.tar.gz && \
         mkdir -p /usr/local/java && \
         tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1 && \
