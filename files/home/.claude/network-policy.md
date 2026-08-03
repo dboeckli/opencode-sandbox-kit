@@ -1,0 +1,20 @@
+# Sandbox Network policy (allow-list)
+
+The sandbox uses a **deny-by-default** network policy (authoritative source: `spec.yaml` → `caps.network.allow`).
+Only the hosts below are reachable. Any request to a host not on this list is blocked by the host proxy
+(HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens.
+
+Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...), check
+this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
+for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
+
+- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`
+- **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
+- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
+- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
+- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
+- **Skills CLI**: `add-skill.vercel.sh`
+- **Web search (last resort)**: `*.exa.ai`
+- **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
+
+Not reachable (blocked): telemetry, and any other host not on this list.

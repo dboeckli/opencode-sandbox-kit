@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "github-actions": {
+    "enabled": false
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Liberica JDK version (spec.yaml / mammouth-agent/spec.yaml)",
+      "managerFilePatterns": ["**/spec.yaml"],
+      "matchStrings": ["LIBERICA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+)\""],
+      "depNameTemplate": "bell-sw/Liberica",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Apache Maven version (spec.yaml / mammouth-agent/spec.yaml)",
+      "managerFilePatterns": ["**/spec.yaml"],
+      "matchStrings": ["MAVEN_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "org.apache.maven:apache-maven",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "Docker CLI version (spec.yaml / mammouth-agent/spec.yaml)",
+      "managerFilePatterns": ["**/spec.yaml"],
+      "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "docker/cli",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    }
+  ]
+}
