@@ -287,6 +287,7 @@ Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und 
 ```bash
 python local-test/local-test-kits.py            # ohne --keep: Sandboxes werden wieder entfernt
 python local-test/local-test-kits.py --keep     # Sandboxes nach dem Test behalten
+python local-test/local-test-kits.py --validate-only   # nur Kit-Validierung, keine Sandboxes
 ```
 
 Lokales Testen in **Windows PowerShell** (Docker Desktop nativ):
@@ -294,6 +295,7 @@ Lokales Testen in **Windows PowerShell** (Docker Desktop nativ):
 ```powershell
 python .\local-test\local-test-kits.py          # ohne --keep: Sandboxes werden wieder entfernt
 python .\local-test\local-test-kits.py --keep   # Sandboxes nach dem Test behalten
+python .\local-test\local-test-kits.py --validate-only   # nur Kit-Validierung, keine Sandboxes
 ```
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
