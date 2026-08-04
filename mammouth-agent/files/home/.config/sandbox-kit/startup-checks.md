@@ -23,13 +23,14 @@ bash ~/.config/sandbox-kit/run-checks.sh
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |
 | 6 | kubectl | `kubectl version --client` |
-| 7 | Skills | `skills ls -g` |
-| 8 | Mammouth Code | `command -v mammouth` |
+| 7 | Helm | `helm version` |
+| 8 | Skills | `skills ls -g` |
+| 9 | Mammouth Code | `command -v mammouth` |
 
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK helm:OK skills:OK mammouth:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).

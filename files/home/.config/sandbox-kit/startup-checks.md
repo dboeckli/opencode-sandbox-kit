@@ -31,13 +31,14 @@ Erwartet: `HTTP 200`. Das SSE-Endpoint hält die Verbindung offen — `-m 3` bee
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |
 | 6 | kubectl | `kubectl version --client` |
-| 7 | Skills | `skills ls -g` |
-| 8 | Mammouth Code | `command -v mammouth` — nur ausgeführt, wenn `~/.mammouth` existiert oder `mammouth` im PATH ist. In OpenCode-/Claude-Sandboxes ohne Mammouth wird der Check **übersprungen** (kein `mammouth:FAIL`-Rauschen); in einer Mammouth-Sandbox gilt fehlender Binary als `FAIL`. |
+| 7 | Helm | `helm version` |
+| 8 | Skills | `skills ls -g` |
+| 9 | Mammouth Code | `command -v mammouth` — nur ausgeführt, wenn `~/.mammouth` existiert oder `mammouth` im PATH ist. In OpenCode-/Claude-Sandboxes ohne Mammouth wird der Check **übersprungen** (kein `mammouth:FAIL`-Rauschen); in einer Mammouth-Sandbox gilt fehlender Binary als `FAIL`. |
 
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK helm:OK skills:OK mammouth:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).

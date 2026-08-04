@@ -63,12 +63,19 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 ## Docker CLI
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
+
+Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 Docs: `npx ctx7 docs /docker/docs <query>` (e.g. `/docker/docs` for the Docker docs, `/docker/compose`, `/dockerfile`).
 
 ## kubectl
 
 `kubectl` (latest stable) at `/usr/local/bin/kubectl`. No cluster is pre-configured; check `kubectl config current-context` or configure a kubeconfig as needed.
 Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
+
+## Helm
+
+`helm` 3.21.3 (v3) at `/usr/local/bin/helm`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v4 ist bewusst nicht verwendet — kokuwaio/helm-maven-plugin (6.17.0) ist nicht v4-kompatibel.
+Docs: `npx ctx7 docs /helm/helm-www <query>` (Kubernetes package manager, charts).
 
 ## Runtime tools / CLIs (docs via ctx7)
 
@@ -77,12 +84,11 @@ Docs for other installed runtime tools:
 - **npm** — `/npm/cli` (package manager)
 - **Git** — `/git/htmldocs` (version control)
 - **jq** — `/jqlang/jq` (JSON processor)
+- **Renovate** — `/renovatebot/renovate` (dependency updates; inkl. `renovate-config-validator` — Config validieren: `renovate-config-validator .github/renovate.json`)
 
 ## Related tooling docs (not installed, docs via ctx7)
 
 These tools are not installed in the sandbox, but their documentation is available via Context7:
-- **Helm** — `/helm/helm-www` (Kubernetes package manager, charts)
-- **Renovate** — `/renovatebot/renovate` (automated dependency updates, PRs)
 - **Dependabot** — `/dependabot/dependabot-core` (GitHub dependency updates / security)
 
 ## Languages / formats (docs via ctx7)
