@@ -20,6 +20,7 @@ Verwendung:
   python local-test-kits.py claude          # nur Claude testen
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py --help          # alle Optionen anzeigen
+  python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
   {all,opencode,claude,mammouth}  Zu testendes Kit (default: all)
@@ -27,6 +28,9 @@ Optionen:
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
                                   mammouth-API-Call
+  --validate-only                 Nur Kit-Validierung (sbx kit validate),
+                                  keine Secrets-/Sandbox-Checks (default: Sandboxes
+                                  werden gestartet)
 """
 
 import argparse
@@ -120,6 +124,8 @@ def main():
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
                         help="CI-Modus: Fake-API-Keys, kein realer mammouth-API-Call")
+    parser.add_argument("--validate-only", action="store_true",
+                        help="Nur Kit-Validierung, keine Sandbox-Szenarien (default: Sandboxes werden gestartet)")
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
@@ -132,6 +138,16 @@ def main():
     info(f"  --> validate: {os.path.join(ROOT, 'mammouth-agent')}")
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mammouth-agent")], stream=True)
     pass_("sbx kit validate (mammouth-agent)") if code == 0 else fail("sbx kit validate (mammouth-agent)")
+
+    if args.validate_only:
+        print()
+        if not failed:
+            print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))
+            sys.exit(0)
+        print(_color("31", f"VALIDIERUNG FEHLGESCHLAGEN: {len(failed)} Check(s)"))
+        for f in failed:
+            print("  - " + _color("31", f))
+        sys.exit(1)
 
     print()
     info("==> Secrets (global)")

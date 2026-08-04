@@ -151,4 +151,5 @@ commands:
         echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh && \
-        echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh
+        echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
+        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh

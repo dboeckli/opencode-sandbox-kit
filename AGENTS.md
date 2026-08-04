@@ -27,7 +27,40 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
 - `python local-test/local-test-kits.py` — automate the 3 scenarios (OpenCode/Claude/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth API call (only proxy env wiring)
+- `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (both kits), no secrets check and no sandbox start (default is starting the sandboxes)
 - GitHub Actions `.github/workflows/e2e.yml` — e2e on push + PR: installs sbx, logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
+
+## Testing (lokale Verifikation per IntelliJ Run-Configs)
+
+> **Wichtig:** In der WSL-Laufzeit ist `sbx` **nicht** im PATH. Validierung und Sandbox-Tests laufen daher auf dem
+> Windows-Host via PowerShell (Docker Desktop nativ) — am einfachsten über die IntelliJ-Run-Configs in `.run/`.
+> `idea_execute_run_configuration` mit der Config **ohne** `waitForExit=false` timeout't nach 15 min, obwohl der Test
+> (~8 min) evtl. noch läuft — dann Prozessstatus via `idea_execute_terminal_command` + `Get-Process python` prüfen.
+
+IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.py` auf):
+
+| Config | PARAMETERS | Zweck |
+|--------|-----------|-------|
+| `local-test-kits` | *(leer)* | Alle 3 Szenarien (OpenCode/Claude/Mammouth): validate + Secrets + Sandbox |
+| `local-test-kits-validate-only` | `--validate-only` | Nur `sbx kit validate` (beide Kits), keine Sandbox |
+| `local-test-kits-opencode` | `opencode` | Nur OpenCode-Szenario (Sandbox) |
+| `local-test-kits-claude` | `claude` | Nur Claude-Szenario (Sandbox) |
+| `local-test-kits-mammouth` | `mammouth` | Nur Mammouth-Szenario (Sandbox) |
+
+Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
+`$PROJECT_DIR$/local-test`, `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
+`PARAMETERS`; IntelliJ erkennt sie (die `get_run_configurations`-Liste kann kurz veraltet sein — direkt per Namen starten
+funktioniert trotzdem).
+
+Äquivalente PowerShell-Befehle:
+
+```powershell
+python local-test\local-test-kits.py --validate-only   # nur Validierung
+python local-test\local-test-kits.py opencode          # nur OpenCode-Sandbox
+python local-test\local-test-kits.py claude            # nur Claude-Sandbox
+python local-test\local-test-kits.py mammouth          # nur Mammouth-Sandbox
+python local-test\local-test-kits.py                   # alle Szenarien
+```
 
 ## GitHub Authentication
 
