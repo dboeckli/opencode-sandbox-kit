@@ -63,7 +63,14 @@ else
   report="$report kubectl:FAIL"
 fi
 
-# 7. Skills
+# 7. helm
+if helm version >/dev/null 2>&1; then
+  report="$report helm:OK"
+else
+  report="$report helm:FAIL"
+fi
+
+# 8. Skills
 if skills ls -g >/dev/null 2>&1; then
   report="$report skills:OK"
 else

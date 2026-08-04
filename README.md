@@ -328,12 +328,17 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | Liberica JDK | 25.0.4 | `/usr/local/java` |
 | Apache Maven | 3.9.16 | `/opt/maven` |
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
+| Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
+| Helm | 3.21.3 (v3) | `/usr/local/bin/helm` |
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
+| renovate | latest | npm global |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht (inkl. `~/.mammouth/bin`).
+
+> **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 
 ### Context7 API-Key (optional)
 

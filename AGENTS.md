@@ -116,9 +116,15 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 | Liberica JDK 25.0.4 | GitHub Releases (bell-sw) |
 | Apache Maven 3.9.16 | dlcdn.apache.org |
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
+| Docker Compose 5.4.0 (Plugin) | GitHub Releases (docker/compose) |
 | kubectl (latest stable) | dl.k8s.io |
+| Helm 3.21.3 (v3) | get.helm.sh |
 | ctx7 | npm |
 | skills | npm (vercel-labs) |
+| prettier | npm |
+| renovate | npm |
+
+> **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 
 ## Mammouth Authentication
 

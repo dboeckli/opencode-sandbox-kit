@@ -4,6 +4,20 @@
   "github-actions": {
     "enabled": false
   },
+  "packageRules": [
+    {
+      "description": "Helm: nur v3 (v4 ist nicht kompatibel mit kokuwaio/helm-maven-plugin 6.17.0, Issue #427)",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["helm/helm"],
+      "allowedVersions": "/^3\\./"
+    },
+    {
+      "description": "Liberica JDK: nur LTS-Releases (8/11/17/21/25), analog workarounds:javaLTSVersions",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["bell-sw/Liberica"],
+      "allowedVersions": "/^(?:8|11|17|21|25)(?:\\.|-|$)/"
+    }
+  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -28,6 +42,24 @@
       "managerFilePatterns": ["**/spec.yaml"],
       "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/cli",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Docker Compose plugin version (spec.yaml / mammouth-agent/spec.yaml)",
+      "managerFilePatterns": ["**/spec.yaml"],
+      "matchStrings": ["COMPOSE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "docker/compose",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Helm version (spec.yaml / mammouth-agent/spec.yaml) — nur v3, siehe packageRules",
+      "managerFilePatterns": ["**/spec.yaml"],
+      "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
     }

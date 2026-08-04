@@ -71,17 +71,27 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
 
+Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
+
 ## kubectl
 
 `kubectl` (latest stable) at `/usr/local/bin/kubectl`. No cluster is pre-configured; check `kubectl config current-context` or configure a kubeconfig as needed.
+
+## Helm
+
+Helm 3.21.3 (v3) at `/usr/local/bin/helm`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v4 ist bewusst nicht verwendet — kokuwaio/helm-maven-plugin (6.17.0) ist nicht v4-kompatibel.
 
 ## Runtime tools / CLIs
 
 Installed runtime CLIs — Node.js, npm, Git, jq, Go, pip, curl, GNU Make — see `context7-tools.md`.
 
+## Renovate
+
+Renovate (inkl. `renovate-config-validator`) via npm global installiert. Config validieren: `renovate-config-validator .github/renovate.json`.
+
 ## Related tooling (not installed)
 
-Not installed in the sandbox, but documented via Context7: Helm, Renovate, Dependabot — see `context7-tools.md`.
+Not installed in the sandbox, but documented via Context7: Dependabot — see `context7-tools.md`.
 
 ## Dependabot & Renovate (Context7 required)
 
