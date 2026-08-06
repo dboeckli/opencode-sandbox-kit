@@ -11,6 +11,9 @@ caps:
     - "*.opencode.ai"
     - context7.com
     - "*.context7.com"
+    # DeepSeek (OpenCode-Modell mit eigenem API-Key)
+    - api.deepseek.com
+    - "*.deepseek.com"
     # Anthropic (Claude Code)
     - anthropic.com
     - api.anthropic.com
@@ -77,6 +80,15 @@ caps:
     - "*.exa.ai"
 
 credentials:
+  - service: deepseek
+    description: "DeepSeek API-Key (https://platform.deepseek.com/api_keys)"
+    apiKey:
+      name: DEEPSEEK_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.deepseek.com
+          header: Authorization
+          format: "Bearer %s"
   - service: context7
     description: "Context7 API-Key (https://context7.com/dashboard)"
     apiKey:
@@ -152,4 +164,5 @@ commands:
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh && \
         echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
+        echo 'export DEEPSEEK_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
         echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh

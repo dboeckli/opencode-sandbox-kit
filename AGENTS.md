@@ -122,7 +122,7 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 - `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
 - `files/home/.config/mammouth/opencode.jsonc` — Mammouth Code config (OpenCode-Fork) with IntelliJ MCP + `mammouth-recommended`
 - `files/home/.config/mammouth/AGENTS.md` — Mammouth Code rules (ctx7 + sandbox tools)
-- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
+ - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
 
 ## Dual agent support
@@ -136,7 +136,7 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
-- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md`
+- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash` mit eigenem `DEEPSEEK_API_KEY` (Proxy-injiziert)
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
@@ -183,6 +183,16 @@ Verifikation:
 sbx secret ls                                                    # Secret ist registriert
 sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head'
 ```
+
+## Docker Sandbox / sbx Dokumentation
+
+Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
+
+- [Templates](https://docs.docker.com/ai/sandboxes/customize/templates/) — Custom Template-Images bauen (Base-Images, Dockerfile, `sbx template save`/`load`)
+- [Kits](https://docs.docker.com/ai/sandboxes/customize/kits/) — Kit-Übersicht (`kind: mixin` vs. `kind: sandbox`)
+- [Kit Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/) — spec.yaml-Felder (`sandbox`, `network`, `credentials`, `commands`, `agentContext`)
+- [Kit Examples](https://docs.docker.com/ai/sandboxes/customize/kit-examples/) — Beispiel-Kits
+- [Build an Agent](https://docs.docker.com/ai/sandboxes/customize/build-an-agent/) — eigenes Agent-Kit bauen (Amp-Tutorial)
 
 ## Caveats
 

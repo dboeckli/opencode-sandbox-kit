@@ -3,7 +3,7 @@
 [![Validate Kit](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml)
 [![Kit e2e](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml)
 
-Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, and kubectl. Enthält zusätzlich ein dediziertes **Mammouth Code Agent-Kit** (`mammouth-agent/`, `kind: sandbox`).
+Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, and kubectl. Enthält zusätzlich ein dediziertes **Mammouth Code Agent-Kit** (`mammouth-agent/`, `kind: sandbox`, entrypoint `mammouth`).
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
@@ -126,7 +126,7 @@ sondern vom Template beim `sbx run`:
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
 `host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md`
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash` mit eigenem `DEEPSEEK_API_KEY`
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
@@ -242,6 +242,7 @@ MCP-Server laufen:
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set -g github -t "<token>"` | `gh` CLI |
 | Anthropic | Anthropic API-Key | `sbx secret set -g anthropic` | Claude Code |
 | Mammouth | Mammouth API-Key | `sbx secret set -g mammouth` | Mammouth Code |
+| DeepSeek | DeepSeek API-Key | `sbx secret set -g deepseek` | OpenCode (Modell `deepseek/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set -g context7` | ctx7 (höheres Rate-Limit) |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
@@ -281,7 +282,7 @@ The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker
 ## Automatisierter Kit-Test
 
 Die 3 Agent-Szenarien (OpenCode, Claude, Mammouth) lassen sich lokal automatisiert testen —
-`local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert beide Kits, prüft die
+`local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle drei Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
 
 ```bash
@@ -299,7 +300,7 @@ python .\local-test\local-test-kits.py --validate-only   # nur Kit-Validierung, 
 ```
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
-globale Secrets gesetzt (`github`, `anthropic`, `mammouth`).
+globale Secrets gesetzt (`github`, `anthropic`, `mammouth`, `context7`).
 
 ## Startup Checks
 
