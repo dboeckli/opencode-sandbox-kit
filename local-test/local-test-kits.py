@@ -170,8 +170,8 @@ def main():
             "name": "kit-test-opencode",
             "agent": "opencode",
             "kit": ROOT,
-            "model": "opencode/deepseek-v4-flash-free",
-            "config": 'grep -q "opencode/deepseek-v4-flash-free" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK',
+            "model": "deepseek/deepseek-v4-flash",
+            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK',
         },
         {
             "name": "kit-test-claude",
