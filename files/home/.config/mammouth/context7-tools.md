@@ -38,6 +38,7 @@ angegeben.
 | Docker (Doku) | `/docker/docs` | https://github.com/docker/docs |
 | Docker Compose | `/docker/compose` | https://github.com/docker/compose |
 | Dockerfile (Referenz) | `/dockerfile` | https://docs.docker.com/reference/dockerfile/ |
+| sbx CLI / Sandbox-Kits | `/docker/docs` | https://github.com/docker/sbx-kits-contrib |
 | kubectl | `/kubernetes/kubectl` | https://github.com/kubernetes/kubectl |
 | Helm | `/helm/helm-www` | https://github.com/helm/helm |
 
@@ -56,6 +57,7 @@ angegeben.
 | gh (GitHub CLI) | `/cli/cli` | https://github.com/cli/cli |
 | Python3 / python | `/python/cpython` | https://github.com/python/cpython |
 | PowerShell | `/microsoftdocs/powershell-docs` | https://github.com/PowerShell/PowerShell |
+| WSL (Windows Subsystem for Linux) | `/microsoftdocs/wsl` | https://github.com/MicrosoftDocs/WSL |
 
 ## Languages / Formate
 

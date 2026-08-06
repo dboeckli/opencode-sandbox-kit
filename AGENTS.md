@@ -5,11 +5,12 @@ Repo: https://github.com/dboeckli/opencode-sandbox-kit
 
 ## Environment (wichtig!)
 
-Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup**:
+Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **Windows-Setup** — der Host
+(IntelliJ MCP via `host.docker.internal:64342`) läuft immer auf Windows:
 
-- **WSL Ubuntu** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, `sbx`), Versions-Checks und Doku-Recherche.
-- **Windows/PowerShell** (User): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
-- **WSL-Setup funktioniert ebenfalls**: Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection.
+- **Agent-Sandbox** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, ...), Versions-Checks und Doku-Recherche. `sbx` ist hier **nicht** verfügbar (nicht im Sandbox-Image installiert).
+- **Windows/PowerShell** (User, **Standard**): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
+- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
 ## Commands
@@ -32,8 +33,9 @@ Der Agent läuft in **WSL Ubuntu** (Linux). Das Kit ist aber ein **Windows-Setup
 
 ## Testing (lokale Verifikation per IntelliJ Run-Configs)
 
-> **Wichtig:** In der WSL-Laufzeit ist `sbx` **nicht** im PATH. Validierung und Sandbox-Tests laufen daher auf dem
-> Windows-Host via PowerShell (Docker Desktop nativ) — am einfachsten über die IntelliJ-Run-Configs in `.run/`.
+> **Wichtig:** In der Sandbox-Laufzeit ist `sbx` **nicht** verfügbar (nicht im Sandbox-Image installiert — unabhängig
+> von WSL). Validierung und Sandbox-Tests laufen daher auf dem Windows-Host via PowerShell (Docker Desktop nativ) —
+> der Agent erreicht sie über den IntelliJ MCP (`idea_execute_run_configuration`) mit den Run-Configs in `.run/`.
 > `idea_execute_run_configuration` mit der Config **ohne** `waitForExit=false` timeout't nach 15 min, obwohl der Test
 > (~8 min) evtl. noch läuft — dann Prozessstatus via `idea_execute_terminal_command` + `Get-Process python` prüfen.
 

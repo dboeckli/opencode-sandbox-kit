@@ -213,8 +213,8 @@ Bevor du das Kit verwenden kannst, brauchst du auf dem Windows-Host:
 | **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
-> **WSL funktioniert ebenfalls:** Das Kit läuft nicht nur aus Windows PowerShell + Docker Desktop, sondern
-> auch aus einem **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 16.04**). `sbx run` / `sbx exec`
+> **WSL als Alternative:** Standard ist Windows PowerShell + Docker Desktop. Das Kit läuft aber auch aus einem
+> **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 16.04**). `sbx run` / `sbx exec`
 > und der IntelliJ-MCP-Zugriff über `host.docker.internal:64342` funktionieren dort genauso — inkl.
 > Secret-Injection (gh/ctx7) und Network-Allow-List.
 
