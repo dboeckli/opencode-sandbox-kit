@@ -87,8 +87,8 @@ Manuelle Nacharbeit (Skript deckt nicht ab):
           - sh
           - -c
           - |
-            if [ -f /home/agent/.claude/settings.json ] && [ -f /etc/claude-code/settings.kit.json ]; then
-              jq -s '.[0] * .[1]' /home/agent/.claude/settings.json /etc/claude-code/settings.kit.json > /tmp/settings.merged.json \
+            if [ -f /home/agent/.claude/settings.json ] && [ -f /home/agent/.claude/settings.kit.json ]; then
+              jq -s '.[0] * .[1]' /home/agent/.claude/settings.json /home/agent/.claude/settings.kit.json > /tmp/settings.merged.json \
                 && mv /tmp/settings.merged.json /home/agent/.claude/settings.json
             fi
         user: "1000"
