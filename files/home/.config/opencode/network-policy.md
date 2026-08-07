@@ -1,6 +1,6 @@
 # Sandbox Network policy (allow-list)
 
-The sandbox uses a **deny-by-default** network policy (authoritative source: `spec.yaml` → `caps.network.allow`).
+The sandbox uses a **deny-by-default** network policy (authoritative source: `spec.yaml` → `permissions.network.allow`).
 Only the hosts below are reachable. Any request to a host not on this list is blocked by the host proxy
 (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens.
 

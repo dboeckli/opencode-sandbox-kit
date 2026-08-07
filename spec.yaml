@@ -1,10 +1,10 @@
-schemaVersion: "1"
+schemaVersion: "2"
 kind: mixin
 name: opencode-sandbox-kit
 displayName: "OpenCode-Konfiguration"
 description: "OpenCode, Context7 und IntelliJ MCP"
 
-caps:
+permissions:
   network:
     allow:
     - opencode.ai
@@ -93,12 +93,12 @@ credentials:
           header: Authorization
           format: "Bearer %s"
 
-commands:
+setup:
   install:
-    - command: "npm install -g ctx7"
-    - command: "npm install -g skills"
-    - command: "npm install -g prettier"
-    - command: "npm install -g renovate"
+    - command: "npm_config_bin_links=true npm install -g ctx7"
+    - command: "npm_config_bin_links=true npm install -g skills"
+    - command: "npm_config_bin_links=true npm install -g prettier"
+    - command: "npm_config_bin_links=true npm install -g renovate"
     - command: "apt-get install -y jq"
     - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-yaml"
     - command: |
@@ -106,7 +106,7 @@ commands:
         curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_amd64" -o /usr/local/bin/shfmt && \
         chmod +x /usr/local/bin/shfmt && \
         shfmt --version
-    - command: "skills add -g --all https://github.com/dboeckli/ai-agent-skills.git"
+    - command: "sh -c 'export PATH=/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH; /usr/local/share/npm-global/bin/skills add -g -y --all https://github.com/dboeckli/ai-agent-skills.git'"
       user: "1000"
     - command: |
         git clone --depth 1 https://github.com/dboeckli/ai-agent-skills.git /tmp/ai-agent-skills && \
@@ -153,12 +153,21 @@ commands:
         mv "$HELM_BIN" /usr/local/bin/helm && \
         rm -rf /tmp/helm.tar.gz /tmp/helm-extract && \
         helm version
-    - command: |
-        echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
-        echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
-        echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
-        echo 'export DEEPSEEK_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
-        echo 'export ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
-        echo 'export ANTHROPIC_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
-        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh && \
-        echo 'if [ -f ~/.claude/settings.json ] && [ -f ~/.claude/settings.kit.json ]; then jq -s ".[0] * .[1]" ~/.claude/settings.json ~/.claude/settings.kit.json > /tmp/settings.merged.json && mv /tmp/settings.merged.json ~/.claude/settings.json; fi' >> /etc/sandbox-persistent.sh
+  startup:
+    - command:
+        - sh
+        - -c
+        - |
+          if [ -f ~/.claude/settings.json ] && [ -f ~/.claude/settings.kit.json ]; then \
+            jq -s '.[0] * .[1]' ~/.claude/settings.json ~/.claude/settings.kit.json > /tmp/settings.merged.json \
+            && mv /tmp/settings.merged.json ~/.claude/settings.json; \
+          fi
+      user: "1000"
+      description: Re-apply kit settings.json after template overwrite
+
+environment:
+  variables:
+    JAVA_HOME: "/usr/local/java"
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet-4-6"
+    ANTHROPIC_MODEL: "claude-sonnet-4-6"
+    npm_config_bin_links: "false"

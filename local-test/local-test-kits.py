@@ -12,7 +12,7 @@ Szenarien:
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
   - Globale Secrets registriert: github, anthropic, mammouth und context7
-    (sbx secret set -g mammouth / sbx secret set -g context7)
+    (sbx secret set mammouth / sbx secret set context7 — seit v0.38 ohne `-g`)
 
 Verwendung:
   python local-test-kits.py                 # alle 3 Kits testen (default: all)

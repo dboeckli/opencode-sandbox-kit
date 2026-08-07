@@ -12,6 +12,71 @@ stille Faltung.
 
 ---
 
+## 0. Teilaufgaben (durchnummerierte Arbeitsliste)
+
+Die Migration wird in folgende Teilaufgaben zerlegt. Reihenfolge ist verbindlich
+(0.x = Vorbereitung, 1.x = Mixin, 2.x = Mammouth, 3.x = Verifikation, 4.x = Doku).
+
+### 0 — Vorbereitung
+
+1. **Feature-Branch anlegen**: `git checkout main && git pull && git checkout -b feat/kit-spec-v2`
+2. **Migrationsskript verfügbar machen**: `docker/sbx-kits-contrib` klonen (z. B.
+   `/tmp/sbx-kits-contrib`) und `scripts/README.md` lesen, um den tatsächlichen
+   Abdeckungsgrad des `migrate-v1-to-v2.go`-Skripts zu prüfen (Rest per Hand).
+3. **Migrationsskript lokal testen**: auf einer Kopie (nicht im Repo) einmal
+   `go run scripts/migrate-v1-to-v2.go <copy>` ausführen und das Ergebnis-Diff prüfen.
+
+### 1 — Mixin-Kit (Root-`spec.yaml`)
+
+4. **Mixin-Spec automatisch migrieren**: `go run scripts/migrate-v1-to-v2.go .` — prüfen,
+   dass `schemaVersion: "2"`, `permissions.network.allow`, `setup.install` und die
+   v2-`credentials[]`-Form entstanden sind; `spec.yaml.bak` vorhanden.
+5. **`setup.startup` für Claude-settings.json einbauen** (manuelle Nacharbeit): den
+   `persistent.sh`-Merge (aktuell Zeile ~164) in einen `setup.startup`-Block verschieben
+   (jq-DeepMerge-Snippet, `user: "1000"`), damit die Kit-settings.json nach jedem
+   Container-Start re-applied wird.
+6. **`setup.files` prüfen**: klären, ob v1 `settings:` genutzt wurde (laut Plan: nein) —
+   falls nein, kein Handlungsbedarf; nur verifizieren, dass `files/`-Tree unverändert gilt.
+7. **Port-Suffixe in `permissions.network.allow` erhalten**: sicherstellen, dass
+   `:443`/`:64342`-Einträge (v. a. `host.docker.internal:64342`) nach der Migration
+   erhalten bleiben (erweiterte Muster werden noch nicht enforced).
+
+### 2 — Mammouth-Agent-Kit (`mammouth-agent/spec.yaml`)
+
+8. **Mammouth-Spec automatisch migrieren**: `go run scripts/migrate-v1-to-v2.go ./mammouth-agent`
+   — prüfen: `agentInstructions.filename`/`content`, flaches `sandbox.entrypoint`,
+   `permissions.network.allow`, `setup.install`, v2-`credentials[]`.
+9. **`environment.variables` für `MAMMOUTH_API_KEY`/`CONTEXT7_API_KEY` bereinigen**:
+   Duplikat-Verdacht klären — `proxyManaged: true` setzt den `proxy-managed`-Sentinel
+   in v2 implizit; die expliziten `environment.variables`-Einträge entfallen, außer für
+   Nicht-Credential-Variablen.
+10. **`persistent.sh`-Entscheidung umsetzen**: klären, ob die Env-Exports (`JAVA_HOME`,
+    `PATH`, Modell-Variablen) komplett in `setup.startup` verlagert werden (Empfehlung)
+    oder `persistent.sh` bestehen bleibt. Kein doppeltes Schreiben.
+
+### 3 — Verifikation
+
+11. **`sbx kit validate`** für beide Kits (`.`, `./mammouth-agent`): 0 Fehler, 0 WARN.
+12. **`sbx kit inspect`** für beide Kits: `--output json | jq '.warnings'` → `[]` bzw. `null`.
+13. **Sandbox-Start-Tests** (Windows-Host): `sbx run opencode` und `sbx run mammouth` mit
+    den v2-Kits; IntelliJ MCP + ctx7 erreichbar, Mammouth installiert.
+14. **Claude-settings.json-Neustart-Test**: Sandbox neu starten und prüfen, dass `statusLine`,
+    `mcpServers`, `permissions`, `hooks` per `setup.startup` wiederhergestellt sind.
+15. **E2E lokal**: `python local-test/local-test-kits.py` (bzw. IntelliJ-Run-Config
+    `local-test-kits`) — alle 3 Szenarien grün.
+16. **CI**: `.github/workflows/e2e.yml`-Run grün.
+
+### 4 — Doku
+
+17. **AGENTS.md-Caveat aktualisieren**: Abschnitt "Kit-spec v1/v2" ersetzen — v2 ist jetzt
+    stabil, keine v1-WARN-Tabelle mehr.
+18. **README.md aktualisieren**: Erwähnungen von `commands`/`caps` auf `setup`/`permissions`
+    umstellen.
+19. **DoD abhaken + Merge-Vorbereitung**: Checkliste in Abschnitt 7 durchgehen, Branch auf
+    `main` mergen.
+
+---
+
 ## 1. Zielbild
 
 | Aspekt | Vorher (v1) | Nachher (v2) |
@@ -217,6 +282,64 @@ Aus `SPEC-v2.md` / `v1-migration.md` (offizielle Quelle, `docker/sbx-kits-contri
 | 7 | Claude settings.json nach Neustart | `statusLine`, `mcpServers`, `permissions`, `hooks` vorhanden (via `setup.startup`) |
 | 8 | `python local-test/local-test-kits.py` (Host, Windows) | alle 3 Szenarien grün |
 | 9 | GitHub Actions `.github/workflows/e2e.yml` | grün |
+
+---
+
+## 6.1 Zwischenstand (Stand: 2026-08-07, Feature-Branch `feature/migratte-to-sbx-v2`)
+
+### Was bereits umgesetzt ist
+
+- [x] **T4/T8 — Specs auf v2 migriert** (Mixin `spec.yaml` + `mammouth-agent/spec.yaml`):
+  `schemaVersion: "2"`, `permissions.network.allow`, `setup.install`, v2-`credentials[]`
+  (`apiKey.name` + `inject[].header/format`), flacher `sandbox.entrypoint`,
+  `agentInstructions.filename`/`content`. Port-Suffixe (`:443`, `:64342`) erhalten.
+- [x] **T5 — Claude-settings-Merge in `setup.startup`** (statt `persistent.sh`-Hack):
+  jq-DeepMerge `/home/agent/.claude/settings.json` × `settings.kit.json`, `user: "1000"`,
+  exec-style argv `["sh","-c", ...]`. Registriert in sbx (`→ register 3 startup command(s)`).
+- [x] **T9 — redundante `environment.variables`-API-Keys entfernt** (mammouth): v2
+  `proxyManaged: true` setzt den `proxy-managed`-Sentinel implizit; die expliziten
+  `MAMMOUTH_API_KEY`/`CONTEXT7_API_KEY`-Einträge entfallen (kein Duplikat).
+- [x] **T10 — `persistent.sh`-Hack raus**: Env-Exports (`JAVA_HOME`, `ANTHROPIC_*`,
+  `npm_config_bin_links`) in den v2-`environment.variables`-Block überführt.
+- [x] **T11 — `sbx kit validate`** (beide Kits, via IntelliJ Run-Config `local-test-kits-validate-only`): **VALID**, keine WARN.
+- [x] **T12 — warnings leer**: Offizieller Loader (`spec.LoadArtifactFromBytes` aus
+  `docker/sbx-kits-contrib/spec`, für beide Specs: `warnings=0`.
+
+### Offenes Problem: Sandbox-Start (T13) scheitert bei `skills add` (exit 127)
+
+> **GELÖST (2026-08-07).** Ursache war **nicht** der Executor-PATH, sondern die in v2 neu
+> als `environment.variables` injizierte `npm_config_bin_links=false`: sbx reicht die
+> `environment.variables` auch an die Install-Kommandos weiter (in v1 lag der Wert nur in
+> `persistent.sh` und galt damit **nicht** für den Install-Executor). Mit
+> `bin_links=false` erzeugt `npm install -g` **keinen** globalen Bin-Symlink — es existiert
+> schlicht kein `skills`-Binary → exit 127. Zusätzlich war der im Kit referenzierte Pfad
+> falsch: Der Symlink liegt (wegen `NPM_CONFIG_PREFIX=/usr/local/share/npm-global`) unter
+> `/usr/local/share/npm-global/bin/skills`, **nicht** `/usr/local/bin/skills`.
+
+**Symptom** (`sbx run opencode --name test-opencode-sandbox --kit . --debug`):
+
+```
+✗ sh -c 'export PATH=/usr/local/bin:/usr/bin:/bin:$PATH; /usr/local/bin/skills add -g -y --all …' (user=1000, exit 127)
+WARN: mcp gateway teardown
+ERROR: failed to create sandbox: failed to apply kit to sandbox
+```
+
+**Fix (in beiden Kits `spec.yaml` + `mammouth-agent/spec.yaml`):**
+1. `npm install -g`-Schritte (ctx7/skills/prettier/renovate) mit `npm_config_bin_links=true`
+   prefixen, damit die globalen Bin-Symlinks trotz `environment.variables`-Wert `false`
+   erzeugt werden.
+2. `skills add`-Befehl auf den korrekten Pfad `/usr/local/share/npm-global/bin/skills`
+   (bzw. PATH-Export inkl. `/usr/local/share/npm-global/bin`) umgestellt.
+
+**Verifiziert:** `sbx create opencode … --kit .` → alle 15 Install-Schritte ✓, Sandbox
+erstellt; `sbx exec` zeigt `which skills ctx7 prettier renovate` + alle 4 Skills in
+`~/.agents/skills`.
+
+**Zu erledigen danach (ungeändert):**
+- T13–T16 Sandbox-Start (opencode/mammouth), Claude-settings-Neustart-Test, E2E (Host) + CI.
+- T17/T18 Doku: AGENTS.md-Caveat "Kit-spec v1/v2" ersetzen; README.md-Erwähnungen von
+  `commands`/`caps` auf `setup`/`permissions` umstellen; README-Referenzen auf
+  `/etc/sandbox-persistent.sh` aktualisieren (jetzt `environment.variables`)`/`setup`.
 
 ---
 

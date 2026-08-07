@@ -119,6 +119,8 @@ Versions: do not assume the installed or latest version. Check the installed ver
 
 Deny-by-default: the sandbox only reaches the hosts listed in `network-policy.md` (in this directory). Check it before any outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...). Anything not listed is blocked (HTTP 403).
 
+The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the MCP list) — `network-policy.md` only informs you so you avoid blocked calls.
+
 ## Startup checks
 
 A plugin injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, skills) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.

@@ -123,9 +123,11 @@ Docs: `npx ctx7 docs /anomalyco/opencode <query>`.
 
 ## Network policy (allow-list)
 
-The sandbox uses a **deny-by-default** network policy (see `spec.yaml` → `caps.network.allow`).
+The sandbox uses a **deny-by-default** network policy (see `spec.yaml` → `permissions.network.allow`).
 Only the hosts below are reachable. Any request to a host not on this list is blocked by the host
-proxy (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens.
+proxy (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens. Enforced by
+the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the MCP list); this file only
+informs you so you avoid blocked calls.
 
 Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...), check
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
