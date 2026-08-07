@@ -77,13 +77,4 @@ else
   report="$report skills:FAIL"
 fi
 
-# 8. Mammouth Code (nur relevant, wenn Mammouth installiert/erwartet)
-if [ -d "$HOME/.mammouth" ] || command -v mammouth >/dev/null 2>&1; then
-  if command -v mammouth >/dev/null 2>&1; then
-    report="$report mammouth:OK"
-  else
-    report="$report mammouth:FAIL"
-  fi
-fi
-
 echo "[startup-checks]$report"

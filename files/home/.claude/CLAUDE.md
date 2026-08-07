@@ -42,7 +42,7 @@ This sandbox is provisioned by the opencode-sandbox-kit. The following tools are
 
 ## IntelliJ IDEA MCP
 
-Connected via `host.docker.internal:64342/sse`; tools prefixed with `idea_` (symbol search, read file, build, inspect problems, SQL, debugger) and listed each session. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority).
+Connected via `host.docker.internal:64342/sse`; tools prefixed with `idea_` (symbol search, read file, build, inspect problems, SQL, debugger) and listed each session. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority). Access is restricted to a read-only whitelist configured in `~/.claude/settings.json` (`permissions`); `idea_execute_run_configuration` is further limited to `local-test-kits-validate-only` by the PreToolUse hook `~/.config/sandbox-kit/intellij-run-config-guard.sh`.
 
 ## Context7
 

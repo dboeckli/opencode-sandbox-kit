@@ -109,7 +109,7 @@ zu nicht-whitelisted Hosts werden zwar von den Agent-Tools versucht, kommen aber
 
 Damit der Agent solche geblockten Calls von vornherein vermeidet (Token-Kosten), ist die vollständige
 Allow-Liste in den Agent-Instructions dokumentiert (`~/.config/opencode/AGENTS.md`, `~/.claude/CLAUDE.md`,
-`~/.config/mammouth/AGENTS.md`, Abschnitt **Network policy (allow-list)**). Beim Anpassen der Liste in
+`~/.config/mammouth/AGENTS.md` im Agent-Kit, Abschnitt **Network policy (allow-list)**). Beim Anpassen der Liste in
 `spec.yaml` muss die Dokumentation synchron gehalten werden.
 
 ## Dual Agent Support
@@ -126,7 +126,7 @@ sondern vom Template beim `sbx run`:
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
 `host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash` mit eigenem `DEEPSEEK_API_KEY`
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
@@ -193,10 +193,18 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 
 `~/.claude/settings.json` enthält:
 
-- **Modell**: `claude-sonnet-4-6` als Default (`"model"`)
+- **Modell**: `claude-sonnet-4-6` als Default (`"model"`). Zusätzlich per Env-Variablen abgesichert
+  (`ANTHROPIC_DEFAULT_SONNET_MODEL` + `ANTHROPIC_MODEL` via `/etc/sandbox-persistent.sh`), damit das Template
+  die settings.json nicht mit einem Default-Modell (Opus 5) überschreiben kann.
 - **IntelliJ MCP**: SSE-Endpoint `http://host.docker.internal:64342/sse`
 - **StatusLine**: `bash ~/.claude/statusline.sh` – zeigt Modell, Kontext-Tokens, Kosten, geänderte Zeilen und Session-Dauer
 - **SessionStart-Hook**: führt die Sandbox-Checks aus und übergibt den Report als System-Message
+- **Permission-Whitelist + Run-Config-Guard**: siehe Abschnitt "IntelliJ MCP Zugriff einschränken"
+
+> **Hinweis:** Das claude-code-docker-Template überschreibt `~/.claude/settings.json` beim Start (u.a. mit
+> `apiKeyHelper: echo proxy-managed`, `defaultMode: bypassPermissions`). Das Modell wird deshalb nicht nur in
+> der settings.json gesetzt, sondern zusätzlich fest über die Env-Variablen erzwungen. Nach Änderungen am
+> Kit die Sandbox neu erstellen (bzw. `sbx kit add`), damit die Env-Variablen greifen.
 
 Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) installiert.
@@ -235,6 +243,52 @@ MCP-Server laufen:
 > `http://127.0.0.1:64342/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig — die
 > Konfiguration liegt bereits in `opencode.jsonc` / `settings.json`.
 
+### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
+
+Für **OpenCode (Mixin-Kit), Claude Code und Mammouth Code (Agent-Kit)** ist der Zugriff auf die `idea_*`-Tools
+per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen erlaubt). Die Config liegt je
+Agent-Location vor:
+
+**OpenCode / Mammouth** (Mammouth ist ein OpenCode-Fork und nutzt dieselben `permission`-Regeln und
+Plugin-Hooks) — unter `~/.config/opencode/opencode.jsonc` und `~/.config/mammouth/opencode.jsonc`
+(nur Agent-Kit):
+
+- `"idea_*": "deny"` zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt**: opencode wertet die letzte
+  passende Rule aus (`findLast`), deshalb Deny vor Allows.
+- **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
+  `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
+  `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
+  `idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
+  `idea_validate_inspection_kts`.
+- **`ask`**: `idea_execute_run_configuration` — nur mit Bestätigung und nur für die im Run-Config-Guard
+  erlaubte Config.
+- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
+  `idea_execute_tool`, `idea_open_file_in_editor`, `idea_reformat_file`, `idea_rename_refactoring`,
+  `idea_build_project`, `idea_notebookEdit`, `idea_xdebug_set_*`, `idea_xdebug_run_to_line`,
+  `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — sie
+  tauchen gar nicht erst in der Tool-Liste auf.
+
+**Claude Code** — `~/.claude/settings.json` (`permissions`-Block): kein Deny-by-Default-Wildcard wie bei
+OpenCode (Claude wertet `deny` vor `allow` aus, ein breites `mcp__idea__*`-Deny würde alle Allows
+überdecken). Stattdessen eine explizite **`allow`-Whitelist** der nur-lesenden MCP-Tools als
+`mcp__idea__<tool>` (analog zur OpenCode-Allowlist), eine **`deny`-Blocklist** für die
+schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Standard-Prompt zurück.
+`idea_execute_run_configuration` ist nicht in `allow` — der PreToolUse-Guard trifft die Entscheidung.
+
+**Run-Config-Guard**: MCP-Tools reporten dem Permission-System immer
+`resource: "*"` (nie die Tool-Inputs), deshalb kann `idea_execute_run_configuration` nicht per reiner
+`permission`-Config auf einzelne Run-Configs begrenzt werden.
+- OpenCode/Mammouth (`~/.config/opencode/plugins/intellij-run-config-guard.js` und
+  `~/.config/mammouth/plugins/intellij-run-config-guard.js` im Agent-Kit): Plugin-Hook `tool.execute.before`
+  liest `configurationName` und erlaubt ausschließlich `local-test-kits-validate-only` — jede andere Config
+  wirft einen Fehler.
+- Claude Code (`~/.config/sandbox-kit/intellij-run-config-guard.sh`): PreToolUse-Hook gematcht auf
+  `mcp__idea__execute_run_configuration`. Liest `tool_input.configurationName`; erlaubt
+  `local-test-kits-validate-only` (exit 0), blockt alles andere (`permissionDecision: deny`, exit 2). Andere
+  MCP-Tools passieren den Hook unverändert.
+
+> Config und Plugins werden beim Start geladen (kein Hot-Reload) — nach Änderungen opencode/mammouth/claude neu starten.
+
 ### API-Keys / Secrets
 
 | Service | Secret | Befehl | Benötigt für |
@@ -242,7 +296,7 @@ MCP-Server laufen:
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set -g github -t "<token>"` | `gh` CLI |
 | Anthropic | Anthropic API-Key | `sbx secret set -g anthropic` | Claude Code |
 | Mammouth | Mammouth API-Key | `sbx secret set -g mammouth` | Mammouth Code |
-| DeepSeek | DeepSeek API-Key | `sbx secret set -g deepseek` | OpenCode (Modell `deepseek/…`) |
+| DeepSeek | DeepSeek API-Key | `sbx secret set -g deepseek` | OpenCode (optional, Modell `deepseek/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set -g context7` | ctx7 (höheres Rate-Limit) |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
@@ -305,12 +359,11 @@ globale Secrets gesetzt (`github`, `anthropic`, `mammouth`, `context7`).
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Skills, Mammouth) und zeigt den Report als
-`[startup-checks] ...` an. Beispiel (Mammouth Agent-Kit; ohne installiertes Mammouth entfällt der
-`mammouth`-Check):
+(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Skills) und zeigt den Report als
+`[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -318,7 +371,7 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
   (Auto-Session) startet direkt im Session-View, sodass die Sidebar mit den Blöcken **Startup checks**
   und **Skills** sofort sichtbar ist – ohne ersten Prompt.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message.
-- **Mammouth Code**: Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
+- **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
 - **Manuell**: `bash ~/.config/sandbox-kit/run-checks.sh`
 - **Referenz**: `~/.config/sandbox-kit/startup-checks.md`
 
@@ -339,7 +392,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | renovate | latest | npm global |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
-`JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht (inkl. `~/.mammouth/bin`).
+`JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht.
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 
@@ -499,13 +552,13 @@ go run scripts/migrate-v1-to-v2.go <kit-dir>
 Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md
 (enthalten im `sbx-kits-contrib`-Repo; nicht in Context7, `docker/docs` dokumentiert noch v1).
 
-### Mammouth Code wird im Mixin-Kit nicht automatisch installiert
+### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
-Das **Mixin-Kit** (Repo-Root, `sbx run opencode/claude --kit .`) legt nur die Konfiguration an
-(`~/.config/mammouth/`, PATH-Export). Die Installation (`curl -fsSL https://code.mammouth.ai/install.sh | bash`)
-erfolgt bewusst manuell in der Sandbox, damit der API-Key-Workflow klar bleibt. Das **dedizierte Agent-Kit**
-(`mammouth-agent/`, `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) installiert Mammouth dagegen automatisch
-beim Build. Ohne Installation meldet der Startup-Check `mammouth:FAIL`.
+Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
+`sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) betrieben, das Mammouth automatisch
+beim Build installiert (`curl -fsSL https://code.mammouth.ai/install.sh | bash` + Symlink). Das Mixin-Kit
+(`sbx run opencode/claude --kit .`) ist bewusst auf OpenCode und Claude Code fokussiert und enthält keine
+Mammouth-Konfiguration.
 
 ### Pre-installed Tools im Base Image
 

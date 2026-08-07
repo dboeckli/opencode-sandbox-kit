@@ -19,12 +19,6 @@ caps:
     - api.anthropic.com
     - "*.anthropic.com"
     - platform.claude.com
-    # Mammouth AI
-    - mammouth.ai
-    - "*.mammouth.ai"
-    - code.mammouth.ai
-    - api.mammouth.ai
-    - model-explorer.mammouth.ai
     - github.com
     - api.github.com
     - "*.github.com"
@@ -162,7 +156,9 @@ commands:
     - command: |
         echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
-        echo 'export PATH="$HOME/.mammouth/bin:$PATH"' >> /etc/sandbox-persistent.sh && \
         echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
         echo 'export DEEPSEEK_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
-        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh
+        echo 'export ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
+        echo 'export ANTHROPIC_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
+        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh && \
+        echo 'if [ -f ~/.claude/settings.json ] && [ -f ~/.claude/settings.kit.json ]; then jq -s ".[0] * .[1]" ~/.claude/settings.json ~/.claude/settings.kit.json > /tmp/settings.merged.json && mv /tmp/settings.merged.json ~/.claude/settings.json; fi' >> /etc/sandbox-persistent.sh
