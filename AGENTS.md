@@ -64,6 +64,35 @@ python local-test\local-test-kits.py mammouth          # nur Mammouth-Sandbox
 python local-test\local-test-kits.py                   # alle Szenarien
 ```
 
+## IntelliJ MCP: Permission-Whitelist + Run-Config-Guard
+
+Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für OpenCode per **Whitelist** eingeschränkt —
+Deny-by-Default, nur lesende Operationen sind erlaubt:
+
+- **Whitelist** (`files/home/.config/opencode/opencode.jsonc`, `permission`): breites `"idea_*": "deny"`
+  zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus
+  (`findLast`), deshalb Deny vor Allows.
+- **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
+  `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
+  `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
+  `idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
+  `idea_validate_inspection_kts` (39 Tools).
+- **`ask`**: `idea_execute_run_configuration` — braucht Bestätigung und wird zusätzlich durch den
+  Run-Config-Guard auf `local-test-kits-validate-only` begrenzt.
+- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
+  `idea_execute_tool`, `idea_open_file_in_editor`, `idea_reformat_file`, `idea_rename_refactoring`,
+  `idea_build_project`, `idea_notebookEdit`, `idea_xdebug_set_*`, `idea_xdebug_run_to_line`,
+  `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — via
+  `visibleTools()` nicht einmal sichtbar.
+
+**Run-Config-Guard** (`files/home/.config/opencode/plugins/intellij-run-config-guard.js`): Das
+Permission-System sieht bei MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist
+`configurationName` nur im Plugin-Hook `tool.execute.before` sichtbar. Der Guard erlaubt dort ausschließlich
+die Run-Config `local-test-kits-validate-only` und blockt alle anderen mit einem Fehler.
+
+> **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
+> opencode neu starten.
+
 ## GitHub Authentication
 
 Für `gh` CLI in der Sandbox ein persönliches GitHub-Token (Name: `opencode-sandbox-kit-github-token`) erstellen und als Secret speichern:
@@ -118,7 +147,8 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 ## Layout
 
 - `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
-- `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse`
+- `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
 - `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse`
 - `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)

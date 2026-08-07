@@ -235,6 +235,34 @@ MCP-Server laufen:
 > `http://127.0.0.1:64342/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig — die
 > Konfiguration liegt bereits in `opencode.jsonc` / `settings.json`.
 
+### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
+
+Für OpenCode ist der Zugriff auf die `idea_*`-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende
+Operationen erlaubt) — in `~/.config/opencode/opencode.jsonc` unter `permission`:
+
+- `"idea_*": "deny"` zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt**: opencode wertet die letzte
+  passende Rule aus (`findLast`), deshalb Deny vor Allows.
+- **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
+  `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
+  `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
+  `idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
+  `idea_validate_inspection_kts`.
+- **`ask`**: `idea_execute_run_configuration` — nur mit Bestätigung und nur für die im Run-Config-Guard
+  erlaubte Config.
+- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
+  `idea_execute_tool`, `idea_open_file_in_editor`, `idea_reformat_file`, `idea_rename_refactoring`,
+  `idea_build_project`, `idea_notebookEdit`, `idea_xdebug_set_*`, `idea_xdebug_run_to_line`,
+  `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — sie
+  tauchen gar nicht erst in der Tool-Liste auf.
+
+**Run-Config-Guard** (`~/.config/opencode/plugins/intellij-run-config-guard.js`): MCP-Tools reporten dem
+Permission-System immer `resource: "*"` (nie die Tool-Inputs), deshalb kann `idea_execute_run_configuration`
+nicht per `permission`-Config auf einzelne Run-Configs begrenzt werden. Der Plugin-Hook `tool.execute.before`
+liest `configurationName` und erlaubt ausschließlich `local-test-kits-validate-only` — jede andere Config
+wirft einen Fehler.
+
+> Config und Plugins werden beim Start geladen (kein Hot-Reload) — nach Änderungen opencode neu starten.
+
 ### API-Keys / Secrets
 
 | Service | Secret | Befehl | Benötigt für |
