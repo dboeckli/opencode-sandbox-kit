@@ -168,7 +168,7 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
-- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash` mit eigenem `DEEPSEEK_API_KEY` (Proxy-injiziert)
+- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 

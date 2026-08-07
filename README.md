@@ -126,7 +126,7 @@ sondern vom Template beim `sbx run`:
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
 `host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash` mit eigenem `DEEPSEEK_API_KEY`
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
@@ -274,7 +274,7 @@ einen Fehler.
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set -g github -t "<token>"` | `gh` CLI |
 | Anthropic | Anthropic API-Key | `sbx secret set -g anthropic` | Claude Code |
 | Mammouth | Mammouth API-Key | `sbx secret set -g mammouth` | Mammouth Code |
-| DeepSeek | DeepSeek API-Key | `sbx secret set -g deepseek` | OpenCode (Modell `deepseek/…`) |
+| DeepSeek | DeepSeek API-Key | `sbx secret set -g deepseek` | OpenCode (optional, Modell `deepseek/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set -g context7` | ctx7 (höheres Rate-Limit) |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
