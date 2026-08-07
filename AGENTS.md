@@ -18,7 +18,6 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 - `sbx kit validate .` — validate the kit; run it after every change and report the output as evidence before committing
 - `sbx run opencode --name opencode-sandbox --kit .` — test the kit with an OpenCode sandbox (via PowerShell on Windows)
 - `sbx run claude --name claude-sandbox --kit .` — test the kit with a Claude Code sandbox (via PowerShell on Windows)
-- `sbx run opencode --name mammouth-sandbox --kit .` — test the mixin kit with an OpenCode sandbox, then run `mammouth` manually in the terminal (Mammouth Code, OpenCode-Fork)
 - `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`)
 - `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — run from remote Git repo
 - `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
@@ -66,13 +65,13 @@ python local-test\local-test-kits.py                   # alle Szenarien
 
 ## IntelliJ MCP: Permission-Whitelist + Run-Config-Guard
 
-Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für **OpenCode und Mammouth Code** per **Whitelist**
-eingeschränkt — Deny-by-Default, nur lesende Operationen sind erlaubt. Mammouth ist ein OpenCode-Fork und
-nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Config liegt daher doppelt vor (je Location pro Agent):
+Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für **OpenCode (Mixin-Kit) und Mammouth Code (Agent-Kit)**
+per **Whitelist** eingeschränkt — Deny-by-Default, nur lesende Operationen sind erlaubt. Mammouth ist ein
+OpenCode-Fork und nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Config liegt daher je Agent-Location vor:
 
 - **Whitelist** (`permission`-Block in `files/home/.config/opencode/opencode.jsonc` und
-  `files/home/.config/mammouth/opencode.jsonc`): breites `"idea_*": "deny"` zuerst, danach gezielte
-  `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
+  `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`): breites `"idea_*": "deny"` zuerst, danach
+  gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
   deshalb Deny vor Allows.
 - **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
   `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
@@ -88,7 +87,7 @@ nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Config liegt daher dop
   `visibleTools()` nicht einmal sichtbar.
 
 **Run-Config-Guard** (`files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
-`files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Das Permission-System sieht bei
+`mammouth-agent/files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Das Permission-System sieht bei
 MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationName` nur im Plugin-Hook
 `tool.execute.before` sichtbar. Der Guard erlaubt dort ausschließlich die Run-Config
 `local-test-kits-validate-only` und blockt alle anderen mit einem Fehler.
@@ -155,10 +154,7 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 - `files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
 - `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse`
 - `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
-- `files/home/.config/mammouth/opencode.jsonc` — Mammouth Code config (OpenCode-Fork) with IntelliJ MCP + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
-- `files/home/.config/mammouth/plugins/intellij-run-config-guard.js` — Mammouth-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
-- `files/home/.config/mammouth/AGENTS.md` — Mammouth Code rules (ctx7 + sandbox tools)
- - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
+- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
 
 ## Dual agent support
@@ -174,7 +170,7 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash` mit eigenem `DEEPSEEK_API_KEY` (Proxy-injiziert)
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
-- Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
+- Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 
 > **Mammouth Code**: Installiert das Agent-Kit automatisch beim Build (`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. `~/.mammouth/bin` wird zusätzlich via `/etc/sandbox-persistent.sh` exportiert. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
 
@@ -235,5 +231,5 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 - **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig.
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
-- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das Mixin-Kit installiert bewusst **nicht** automatisch – nur Config + PATH-Export; Installation manuell via `curl -fsSL https://code.mammouth.ai/install.sh | bash`. Ohne Installation meldet der Startup-Check `mammouth:FAIL`.
+- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das Mixin-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run mammouth`).
 - **Kit-spec v1/v2**: Beide Kits (Mixin `spec.yaml` und `mammouth-agent/spec.yaml`) nutzen `schemaVersion: "1"` mit den v2-Feldnamen `caps.network.allow` + `credentials[].apiKey` — das validiert mit der aktuellen stabilen `sbx` **v0.37.1** ohne WARN. Die finale v2-Grammatik (`schemaVersion: "2"`, `permissions.network.allow`, `agentInstructions`, `setup`, flacher `entrypoint`) wird von v0.37.1 noch **nicht** unterstützt (`sbx kit validate` meldet "field ... not found"); eine Sandbox mit `schemaVersion: "2"` ließ sich zudem nicht starten. Erst **v0.38.0-rc1** (Pre-Release, 2026-07-31) bringt die strikte v2-Grammatik (bundles `sbx-kits-contrib` v0.12.0) — nach einem Upgrade das Kit per `go run scripts/migrate-v1-to-v2.go <kit-dir>` migrieren. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.

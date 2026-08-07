@@ -109,7 +109,7 @@ zu nicht-whitelisted Hosts werden zwar von den Agent-Tools versucht, kommen aber
 
 Damit der Agent solche geblockten Calls von vornherein vermeidet (Token-Kosten), ist die vollständige
 Allow-Liste in den Agent-Instructions dokumentiert (`~/.config/opencode/AGENTS.md`, `~/.claude/CLAUDE.md`,
-`~/.config/mammouth/AGENTS.md`, Abschnitt **Network policy (allow-list)**). Beim Anpassen der Liste in
+`~/.config/mammouth/AGENTS.md` im Agent-Kit, Abschnitt **Network policy (allow-list)**). Beim Anpassen der Liste in
 `spec.yaml` muss die Dokumentation synchron gehalten werden.
 
 ## Dual Agent Support
@@ -237,10 +237,10 @@ MCP-Server laufen:
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
-Für **OpenCode und Mammouth Code** ist der Zugriff auf die `idea_*`-Tools per **Whitelist** geregelt
-(Deny-by-Default, nur lesende Operationen erlaubt). Mammouth ist ein OpenCode-Fork und nutzt dieselben
-`permission`-Regeln und Plugin-Hooks; die Config liegt daher doppelt vor — unter
-`~/.config/opencode/opencode.jsonc` und `~/.config/mammouth/opencode.jsonc`:
+Für **OpenCode (Mixin-Kit) und Mammouth Code (Agent-Kit)** ist der Zugriff auf die `idea_*`-Tools per
+**Whitelist** geregelt (Deny-by-Default, nur lesende Operationen erlaubt). Mammouth ist ein OpenCode-Fork
+und nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Config liegt daher je Agent-Location vor —
+unter `~/.config/opencode/opencode.jsonc` und `~/.config/mammouth/opencode.jsonc` (nur Agent-Kit):
 
 - `"idea_*": "deny"` zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt**: opencode wertet die letzte
   passende Rule aus (`findLast`), deshalb Deny vor Allows.
@@ -258,7 +258,8 @@ Für **OpenCode und Mammouth Code** ist der Zugriff auf die `idea_*`-Tools per *
   tauchen gar nicht erst in der Tool-Liste auf.
 
 **Run-Config-Guard** (`~/.config/opencode/plugins/intellij-run-config-guard.js` und
-`~/.config/mammouth/plugins/intellij-run-config-guard.js`): MCP-Tools reporten dem Permission-System immer
+`~/.config/mammouth/plugins/intellij-run-config-guard.js` im Agent-Kit): MCP-Tools reporten dem
+Permission-System immer
 `resource: "*"` (nie die Tool-Inputs), deshalb kann `idea_execute_run_configuration` nicht per
 `permission`-Config auf einzelne Run-Configs begrenzt werden. Der Plugin-Hook `tool.execute.before` liest
 `configurationName` und erlaubt ausschließlich `local-test-kits-validate-only` — jede andere Config wirft
@@ -336,12 +337,11 @@ globale Secrets gesetzt (`github`, `anthropic`, `mammouth`, `context7`).
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Skills, Mammouth) und zeigt den Report als
-`[startup-checks] ...` an. Beispiel (Mammouth Agent-Kit; ohne installiertes Mammouth entfällt der
-`mammouth`-Check):
+(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Skills) und zeigt den Report als
+`[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -349,7 +349,7 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
   (Auto-Session) startet direkt im Session-View, sodass die Sidebar mit den Blöcken **Startup checks**
   und **Skills** sofort sichtbar ist – ohne ersten Prompt.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message.
-- **Mammouth Code**: Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
+- **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
 - **Manuell**: `bash ~/.config/sandbox-kit/run-checks.sh`
 - **Referenz**: `~/.config/sandbox-kit/startup-checks.md`
 
@@ -370,7 +370,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | renovate | latest | npm global |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
-`JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht (inkl. `~/.mammouth/bin`).
+`JAVA_HOME` und `PATH` werden via `/etc/sandbox-persistent.sh` in jeder Shell verfügbar gemacht.
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 
@@ -530,13 +530,13 @@ go run scripts/migrate-v1-to-v2.go <kit-dir>
 Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md
 (enthalten im `sbx-kits-contrib`-Repo; nicht in Context7, `docker/docs` dokumentiert noch v1).
 
-### Mammouth Code wird im Mixin-Kit nicht automatisch installiert
+### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
-Das **Mixin-Kit** (Repo-Root, `sbx run opencode/claude --kit .`) legt nur die Konfiguration an
-(`~/.config/mammouth/`, PATH-Export). Die Installation (`curl -fsSL https://code.mammouth.ai/install.sh | bash`)
-erfolgt bewusst manuell in der Sandbox, damit der API-Key-Workflow klar bleibt. Das **dedizierte Agent-Kit**
-(`mammouth-agent/`, `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) installiert Mammouth dagegen automatisch
-beim Build. Ohne Installation meldet der Startup-Check `mammouth:FAIL`.
+Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
+`sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) betrieben, das Mammouth automatisch
+beim Build installiert (`curl -fsSL https://code.mammouth.ai/install.sh | bash` + Symlink). Das Mixin-Kit
+(`sbx run opencode/claude --kit .`) ist bewusst auf OpenCode und Claude Code fokussiert und enthält keine
+Mammouth-Konfiguration.
 
 ### Pre-installed Tools im Base Image
 

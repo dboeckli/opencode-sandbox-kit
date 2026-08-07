@@ -33,14 +33,11 @@ Erwartet: `HTTP 200`. Das SSE-Endpoint hält die Verbindung offen — `-m 3` bee
 | 6 | kubectl | `kubectl version --client` |
 | 7 | Helm | `helm version` |
 | 8 | Skills | `skills ls -g` |
-| 9 | Mammouth Code | `command -v mammouth` — nur ausgeführt, wenn `~/.mammouth` existiert oder `mammouth` im PATH ist. In OpenCode-/Claude-Sandboxes ohne Mammouth wird der Check **übersprungen** (kein `mammouth:FAIL`-Rauschen); in einer Mammouth-Sandbox gilt fehlender Binary als `FAIL`. |
 
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK helm:OK skills:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK helm:OK skills:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).
-
-The `mammouth:` entry appears only when Mammouth is present (`~/.mammouth` or binary in PATH) — i.e. in a Mammouth sandbox or after a manual install. In a plain OpenCode/Claude sandbox the entry is omitted.
