@@ -27,7 +27,19 @@ Mammouth Code is not in Context7 (no `/mammouth-ai/code` library). Use the offic
 
 ## IntelliJ IDEA MCP
 
-The IntelliJ MCP server is connected via `host.docker.internal:64342/sse`. Tools are prefixed with `idea_` (e.g. `idea_search_symbol`, `idea_read_file`, `idea_build_project`, `idea_get_file_problems`, `idea_execute_sql_query`, debugger tools). The full set of available `idea_*` tools is exposed to the agent automatically by the MCP server — they appear in the tool list at the start of every session. Use them to interact with the IntelliJ IDE on the Windows host: navigate code, run inspections, build, debug, and query the database. These tools require IntelliJ IDEA to be running on the host with the MCP server plugin enabled.
+The IntelliJ MCP server is connected via `host.docker.internal:64342/sse`. Tools are prefixed with `idea_` and
+exposed via a **permission-whitelist** in `~/.config/mammouth/opencode.jsonc` (Deny-by-Default, nur lesende
+Operationen erlaubt): `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
+`idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
+`idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
+`idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
+`idea_validate_inspection_kts`. Schreibende/ausführende Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
+`idea_execute_tool`, `idea_build_project`, `idea_execute_sql_query`, Debugger-Steuerung, ...) sind versteckt
+und nicht aufrufbar. `idea_execute_run_configuration` ist nur mit Bestätigung und nur für die im
+Run-Config-Guard (`~/.config/mammouth/plugins/intellij-run-config-guard.js`) erlaubte Config
+(`local-test-kits-validate-only`) möglich. Use them to interact with the IntelliJ IDE on the Windows host:
+navigate code, run inspections, and query the database. These tools require IntelliJ IDEA to be running on the
+host with the MCP server plugin enabled.
 Docs: `npx ctx7 docs /websites/jetbrains_help <query>` (JetBrains product docs, general); `/jetbrains/intellij-sdk-docs` (plugin SDK), `/jetbrains/intellij-community` (platform/MCP).
 
 ## Context7

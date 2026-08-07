@@ -1,6 +1,27 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "opencode/deepseek-v4-flash-free",
+  "permission": {
+    "idea_*": "deny",
+    "idea_execute_run_configuration": "ask",
+    "idea_analyze_calls": "allow",
+    "idea_fetch_query_result": "allow",
+    "idea_generate_*": "allow",
+    "idea_get_*": "allow",
+    "idea_git_status": "allow",
+    "idea_introspect_schema": "allow",
+    "idea_lint_files": "allow",
+    "idea_list_*": "allow",
+    "idea_preview_table_data": "allow",
+    "idea_read*": "allow",
+    "idea_run_inspection_kts": "allow",
+    "idea_search_*": "allow",
+    "idea_skill_search": "allow",
+    "idea_test_database_connection": "allow",
+    "idea_validate_inspection_kts": "allow",
+    "idea_xdebug_get_*": "allow",
+    "idea_xdebug_list_*": "allow"
+  },
   "mcp": {
     "idea": {
       "type": "remote",

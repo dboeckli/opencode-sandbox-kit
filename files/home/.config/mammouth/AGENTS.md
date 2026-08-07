@@ -50,7 +50,13 @@ docs (see `context7-tools.md`) apply for CLI/configuration details.
 
 ## IntelliJ IDEA MCP
 
-Connected via `host.docker.internal:64342/sse`; tools prefixed with `idea_` (symbol search, read file, build, inspect problems, SQL, debugger) and listed each session. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority).
+Connected via `host.docker.internal:64342/sse`; tools prefixed with `idea_` (symbol search, read file, inspect
+problems, SQL, debugger) and listed each session. Access is restricted by a **permission-whitelist**
+(`~/.config/mammouth/opencode.jsonc`, Deny-by-Default): only read-only `idea_*` tools are allowed,
+`idea_execute_run_configuration` only for the Run-Config allowed in
+`~/.config/mammouth/plugins/intellij-run-config-guard.js` (`local-test-kits-validate-only`). Interacts with
+the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself
+(see lookup priority).
 
 ## Context7
 

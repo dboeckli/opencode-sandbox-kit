@@ -66,12 +66,14 @@ python local-test\local-test-kits.py                   # alle Szenarien
 
 ## IntelliJ MCP: Permission-Whitelist + Run-Config-Guard
 
-Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für OpenCode per **Whitelist** eingeschränkt —
-Deny-by-Default, nur lesende Operationen sind erlaubt:
+Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für **OpenCode und Mammouth Code** per **Whitelist**
+eingeschränkt — Deny-by-Default, nur lesende Operationen sind erlaubt. Mammouth ist ein OpenCode-Fork und
+nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Config liegt daher doppelt vor (je Location pro Agent):
 
-- **Whitelist** (`files/home/.config/opencode/opencode.jsonc`, `permission`): breites `"idea_*": "deny"`
-  zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus
-  (`findLast`), deshalb Deny vor Allows.
+- **Whitelist** (`permission`-Block in `files/home/.config/opencode/opencode.jsonc` und
+  `files/home/.config/mammouth/opencode.jsonc`): breites `"idea_*": "deny"` zuerst, danach gezielte
+  `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
+  deshalb Deny vor Allows.
 - **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
   `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
   `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
@@ -85,13 +87,14 @@ Deny-by-Default, nur lesende Operationen sind erlaubt:
   `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — via
   `visibleTools()` nicht einmal sichtbar.
 
-**Run-Config-Guard** (`files/home/.config/opencode/plugins/intellij-run-config-guard.js`): Das
-Permission-System sieht bei MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist
-`configurationName` nur im Plugin-Hook `tool.execute.before` sichtbar. Der Guard erlaubt dort ausschließlich
-die Run-Config `local-test-kits-validate-only` und blockt alle anderen mit einem Fehler.
+**Run-Config-Guard** (`files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
+`files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Das Permission-System sieht bei
+MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationName` nur im Plugin-Hook
+`tool.execute.before` sichtbar. Der Guard erlaubt dort ausschließlich die Run-Config
+`local-test-kits-validate-only` und blockt alle anderen mit einem Fehler.
 
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
-> opencode neu starten.
+> opencode/mammouth neu starten.
 
 ## GitHub Authentication
 
@@ -152,7 +155,8 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 - `files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
 - `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse`
 - `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
-- `files/home/.config/mammouth/opencode.jsonc` — Mammouth Code config (OpenCode-Fork) with IntelliJ MCP + `mammouth-recommended`
+- `files/home/.config/mammouth/opencode.jsonc` — Mammouth Code config (OpenCode-Fork) with IntelliJ MCP + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `files/home/.config/mammouth/plugins/intellij-run-config-guard.js` — Mammouth-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `files/home/.config/mammouth/AGENTS.md` — Mammouth Code rules (ctx7 + sandbox tools)
  - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit

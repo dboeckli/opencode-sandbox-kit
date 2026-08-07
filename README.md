@@ -237,8 +237,10 @@ MCP-Server laufen:
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
-Für OpenCode ist der Zugriff auf die `idea_*`-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende
-Operationen erlaubt) — in `~/.config/opencode/opencode.jsonc` unter `permission`:
+Für **OpenCode und Mammouth Code** ist der Zugriff auf die `idea_*`-Tools per **Whitelist** geregelt
+(Deny-by-Default, nur lesende Operationen erlaubt). Mammouth ist ein OpenCode-Fork und nutzt dieselben
+`permission`-Regeln und Plugin-Hooks; die Config liegt daher doppelt vor — unter
+`~/.config/opencode/opencode.jsonc` und `~/.config/mammouth/opencode.jsonc`:
 
 - `"idea_*": "deny"` zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt**: opencode wertet die letzte
   passende Rule aus (`findLast`), deshalb Deny vor Allows.
@@ -255,13 +257,14 @@ Operationen erlaubt) — in `~/.config/opencode/opencode.jsonc` unter `permissio
   `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — sie
   tauchen gar nicht erst in der Tool-Liste auf.
 
-**Run-Config-Guard** (`~/.config/opencode/plugins/intellij-run-config-guard.js`): MCP-Tools reporten dem
-Permission-System immer `resource: "*"` (nie die Tool-Inputs), deshalb kann `idea_execute_run_configuration`
-nicht per `permission`-Config auf einzelne Run-Configs begrenzt werden. Der Plugin-Hook `tool.execute.before`
-liest `configurationName` und erlaubt ausschließlich `local-test-kits-validate-only` — jede andere Config
-wirft einen Fehler.
+**Run-Config-Guard** (`~/.config/opencode/plugins/intellij-run-config-guard.js` und
+`~/.config/mammouth/plugins/intellij-run-config-guard.js`): MCP-Tools reporten dem Permission-System immer
+`resource: "*"` (nie die Tool-Inputs), deshalb kann `idea_execute_run_configuration` nicht per
+`permission`-Config auf einzelne Run-Configs begrenzt werden. Der Plugin-Hook `tool.execute.before` liest
+`configurationName` und erlaubt ausschließlich `local-test-kits-validate-only` — jede andere Config wirft
+einen Fehler.
 
-> Config und Plugins werden beim Start geladen (kein Hot-Reload) — nach Änderungen opencode neu starten.
+> Config und Plugins werden beim Start geladen (kein Hot-Reload) — nach Änderungen opencode/mammouth neu starten.
 
 ### API-Keys / Secrets
 
