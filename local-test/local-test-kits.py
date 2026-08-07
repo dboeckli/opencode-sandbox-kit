@@ -178,7 +178,7 @@ def main():
             "agent": "claude",
             "kit": ROOT,
             "model": "claude-sonnet-4-6",
-            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && echo CONFIG-OK',
+            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" ~/.claude/settings.json && echo CONFIG-OK',
         },
         {
             "name": "kit-test-mammouth",

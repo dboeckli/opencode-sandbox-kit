@@ -158,4 +158,7 @@ commands:
         echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
         echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
         echo 'export DEEPSEEK_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
-        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh
+        echo 'export ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
+        echo 'export ANTHROPIC_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
+        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh && \
+        echo 'if [ -f ~/.claude/settings.json ] && [ -f /etc/claude-code/settings.kit.json ]; then jq -s ".[0] * .[1]" ~/.claude/settings.json /etc/claude-code/settings.kit.json > /tmp/settings.merged.json && mv /tmp/settings.merged.json ~/.claude/settings.json; fi' >> /etc/sandbox-persistent.sh

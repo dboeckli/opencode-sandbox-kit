@@ -65,14 +65,19 @@ python local-test\local-test-kits.py                   # alle Szenarien
 
 ## IntelliJ MCP: Permission-Whitelist + Run-Config-Guard
 
-Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für **OpenCode (Mixin-Kit) und Mammouth Code (Agent-Kit)**
-per **Whitelist** eingeschränkt — Deny-by-Default, nur lesende Operationen sind erlaubt. Mammouth ist ein
-OpenCode-Fork und nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Config liegt daher je Agent-Location vor:
+Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für **OpenCode (Mixin-Kit), Claude Code und
+Mammouth Code (Agent-Kit)** per **Whitelist** eingeschränkt — Deny-by-Default, nur lesende Operationen sind
+erlaubt. Die Config liegt je Agent-Location vor:
 
-- **Whitelist** (`permission`-Block in `files/home/.config/opencode/opencode.jsonc` und
-  `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`): breites `"idea_*": "deny"` zuerst, danach
+- **OpenCode / Mammouth** (OpenCode-Fork, nutzt dieselben `permission`-Regeln und Plugin-Hooks):
+  `permission`-Block in `files/home/.config/opencode/opencode.jsonc` und
+  `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`: breites `"idea_*": "deny"` zuerst, danach
   gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
   deshalb Deny vor Allows.
+- **Claude Code**: `permissions`-Block in `files/home/.claude/settings.json`. Kein Deny-by-Default wie bei
+  OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__idea__<tool>`), eine
+  `deny`-Blocklist für die schreibenden/ausführenden Tools. Nicht gelistete Tools fallen auf den
+  Standard-Prompt zurück. Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
 - **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
   `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
   `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
@@ -86,11 +91,16 @@ OpenCode-Fork und nutzt dieselben `permission`-Regeln und Plugin-Hooks; die Conf
   `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — via
   `visibleTools()` nicht einmal sichtbar.
 
-**Run-Config-Guard** (`files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
-`mammouth-agent/files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Das Permission-System sieht bei
-MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationName` nur im Plugin-Hook
-`tool.execute.before` sichtbar. Der Guard erlaubt dort ausschließlich die Run-Config
-`local-test-kits-validate-only` und blockt alle anderen mit einem Fehler.
+**Run-Config-Guard**: Das Permission-System sieht bei
+MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationName` nur im Hook sichtbar.
+- OpenCode/Mammouth (`files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
+  `mammouth-agent/files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Plugin-Hook
+  `tool.execute.before`. Erlaubt dort ausschließlich die Run-Config `local-test-kits-validate-only` und blockt
+  alle anderen mit einem Fehler.
+- Claude Code (`files/home/.config/sandbox-kit/intellij-run-config-guard.sh`): PreToolUse-Hook gematcht auf
+  `mcp__idea__execute_run_configuration`. Liest `tool_input.configurationName` aus dem Hook-Payload; erlaubt
+  `local-test-kits-validate-only` (exit 0 = pass), blockt alles andere (`permissionDecision: deny`, exit 2).
+  Andere MCP-Tools passieren den Hook unverändert.
 
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
 > opencode/mammouth neu starten.
@@ -152,7 +162,8 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 - `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
-- `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse`
+- `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
 - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
@@ -169,7 +180,7 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
-- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
+- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via `/etc/sandbox-persistent.sh`) abgesichert. Das Template überschreibt die settings.json beim Start — ein `jq`-Deep-Merge in `/etc/sandbox-persistent.sh` spielt nach dem Template-Overwrite wieder `model`, `statusLine`, `mcpServers`, `permissions` und `hooks` aus der Kit-Referenz `files/etc/claude-code/settings.kit.json` ein (Template-Keys wie `apiKeyHelper` bleiben erhalten). Referenz bei Änderungen an `files/home/.claude/settings.json` synchron halten.
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 
 > **Mammouth Code**: Installiert das Agent-Kit automatisch beim Build (`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. `~/.mammouth/bin` wird zusätzlich via `/etc/sandbox-persistent.sh` exportiert. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
