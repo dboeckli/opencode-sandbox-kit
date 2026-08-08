@@ -37,6 +37,10 @@ Before declaring a task done, verify it: run the project's build/test/lint comma
 
 Token-efficient responses: telegram style, no filler/pleasantries, no full-file dumps — show only changed lines/methods. Detect the project's stack from the repo; never assume a framework (e.g. Spring Boot). Full rules: `response-style.md` (in this directory).
 
+## Git commits (Nachfragen-Pflicht)
+
+Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen, ob ein Commit erstellt werden soll.
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the opencode-sandbox-kit. The following tools are installed and available:
 
@@ -118,6 +122,8 @@ Versions: do not assume the installed or latest version. Check the installed ver
 ## Network policy
 
 Deny-by-default: the sandbox only reaches the hosts listed in `network-policy.md` (in this directory). Check it before any outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...). Anything not listed is blocked (HTTP 403).
+
+The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the MCP list) — `network-policy.md` only informs you so you avoid blocked calls.
 
 ## Startup checks
 

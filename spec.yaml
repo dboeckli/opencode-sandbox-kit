@@ -1,10 +1,10 @@
-schemaVersion: "1"
+schemaVersion: "2"
 kind: mixin
 name: opencode-sandbox-kit
 displayName: "OpenCode-Konfiguration"
 description: "OpenCode, Context7 und IntelliJ MCP"
 
-caps:
+permissions:
   network:
     allow:
     - opencode.ai
@@ -93,12 +93,12 @@ credentials:
           header: Authorization
           format: "Bearer %s"
 
-commands:
+setup:
   install:
-    - command: "npm install -g ctx7"
-    - command: "npm install -g skills"
-    - command: "npm install -g prettier"
-    - command: "npm install -g renovate"
+    - command: "npm_config_bin_links=true npm install -g ctx7"
+    - command: "npm_config_bin_links=true npm install -g skills"
+    - command: "npm_config_bin_links=true npm install -g prettier"
+    - command: "npm_config_bin_links=true npm install -g renovate"
     - command: "apt-get install -y jq"
     - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-yaml"
     - command: |
@@ -106,7 +106,7 @@ commands:
         curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_amd64" -o /usr/local/bin/shfmt && \
         chmod +x /usr/local/bin/shfmt && \
         shfmt --version
-    - command: "skills add -g --all https://github.com/dboeckli/ai-agent-skills.git"
+    - command: "sh -c 'export PATH=/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH; /usr/local/share/npm-global/bin/skills add -g -y --all https://github.com/dboeckli/ai-agent-skills.git'"
       user: "1000"
     - command: |
         git clone --depth 1 https://github.com/dboeckli/ai-agent-skills.git /tmp/ai-agent-skills && \
@@ -154,11 +154,68 @@ commands:
         rm -rf /tmp/helm.tar.gz /tmp/helm-extract && \
         helm version
     - command: |
-        echo 'export JAVA_HOME=/usr/local/java' >> /etc/sandbox-persistent.sh && \
-        echo 'export PATH=/usr/local/java/bin:/opt/maven/bin:$PATH' >> /etc/sandbox-persistent.sh && \
-        echo 'export CONTEXT7_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
-        echo 'export DEEPSEEK_API_KEY=proxy-managed' >> /etc/sandbox-persistent.sh && \
-        echo 'export ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
-        echo 'export ANTHROPIC_MODEL=claude-sonnet-4-6' >> /etc/sandbox-persistent.sh && \
-        echo 'export npm_config_bin_links=false' >> /etc/sandbox-persistent.sh && \
-        echo 'if [ -f ~/.claude/settings.json ] && [ -f ~/.claude/settings.kit.json ]; then jq -s ".[0] * .[1]" ~/.claude/settings.json ~/.claude/settings.kit.json > /tmp/settings.merged.json && mv /tmp/settings.merged.json ~/.claude/settings.json; fi' >> /etc/sandbox-persistent.sh
+        mkdir -p /etc/claude-code && \
+        cat > /etc/claude-code/managed-settings.json <<'EOF'
+        {
+          "statusLine": {
+            "type": "command",
+            "command": "bash ~/.claude/statusline.sh"
+          },
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "mcp__idea__execute_run_configuration",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "bash ~/.config/sandbox-kit/intellij-run-config-guard.sh"
+                  }
+                ]
+              }
+            ],
+            "SessionStart": [
+              {
+                "matcher": "*",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "bash ~/.config/sandbox-kit/run-checks-hook.sh"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        EOF
+      description: Write managed-settings.json to /etc/claude-code — highest precedence, not overwritten by the template (statusLine + PreToolUse/SessionStart hooks always configured at session start)
+  startup:
+    - command:
+        - python3
+        - -c
+        - |
+          import json, os
+          sf = os.path.expanduser('~/.claude/settings.json')
+          kf = os.path.expanduser('~/.claude/settings.kit.json')
+          if not (os.path.exists(sf) and os.path.exists(kf)):
+              exit(0)
+          with open(sf) as f: base = json.load(f)
+          with open(kf) as f: kit = json.load(f)
+          def merge(b, o):
+              r = dict(b)
+              for k, v in o.items():
+                  if k in r and isinstance(r[k], dict) and isinstance(v, dict):
+                      r[k] = merge(r[k], v)
+                  else:
+                      r[k] = v
+              return r
+          with open(sf, 'w') as f:
+              json.dump(merge(base, kit), f, indent=2)
+      user: "1000"
+      description: Re-apply kit settings after template overwrite — Python merge (faster than jq, handles arrays correctly)
+
+environment:
+  variables:
+    JAVA_HOME: "/usr/local/java"
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet-4-6"
+    ANTHROPIC_MODEL: "claude-sonnet-4-6"
+    npm_config_bin_links: "false"

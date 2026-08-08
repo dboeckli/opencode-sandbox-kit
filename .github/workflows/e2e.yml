@@ -37,21 +37,20 @@ jobs:
           ls -la /dev/kvm
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-      - name: Download sbx (latest release)
+      - name: Download sbx (pinned version)
+        # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
+        # (customManager docker/sbx-releases in .github/renovate.json).
+        env:
+          SBX_VERSION: v0.38.0
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION=$(curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            https://api.github.com/repos/docker/sbx-releases/releases/latest \
-            | jq -r .tag_name)
-          echo "Resolved latest sbx release: ${VERSION}"
+          echo "using sbx ${SBX_VERSION}"
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://github.com/docker/sbx-releases/releases/download/${VERSION}/DockerSandboxes-linux.tar.gz" \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
             -o /tmp/DockerSandboxes-linux.tar.gz
           tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install sbx
         run: |
@@ -134,14 +133,36 @@ jobs:
         # exist (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
         # `gh auth status` passes inside the sandbox; anthropic, mammouth and
         # context7 get fake keys — enough to prove the kit's proxy env wiring.
+        # `-g` was removed in sbx v0.38 (secrets are global by default);
+        # `-f` overwrites an existing entry.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          printf '%s' "$GITHUB_TOKEN" | sbx secret set -g github
-          printf '%s' 'sk-ant-fake-ci-key' | sbx secret set -g anthropic -f
-          printf '%s' 'mammouth-fake-ci-key' | sbx secret set -g mammouth -f
-          printf '%s' 'ctx7op-fake-ci-key' | sbx secret set -g context7 -f
+          printf '%s' "$GITHUB_TOKEN" | sbx secret set github
+          printf '%s' 'sk-ant-fake-ci-key' | sbx secret set anthropic -f
+          printf '%s' 'mammouth-fake-ci-key' | sbx secret set mammouth -f
+          printf '%s' 'ctx7op-fake-ci-key' | sbx secret set context7 -f
+
+      - name: Pre-create credential bindings (third-party v2 kit)
+        # Third-party schemaVersion:"2" kits require an approved credential
+        # binding per declared service (apiKey + domains). On a fresh runner
+        # nothing has been approved interactively, so write the file first —
+        # otherwise the sandbox starts with the credentials withheld.
+        run: |
+          mkdir -p "$HOME/.config/sbx"
+          cat > "$HOME/.config/sbx/credentials.yaml" <<'EOF'
+          bindings:
+            context7:
+              apiKey:
+                domains: [context7.com]
+            deepseek:
+              apiKey:
+                domains: [api.deepseek.com]
+            mammouth:
+              apiKey:
+                domains: [api.mammouth.ai]
+          EOF
 
       - name: Initialize global network policy (balanced)
         # On a fresh runner the global policy is uninitialized, which makes

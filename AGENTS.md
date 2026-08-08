@@ -13,6 +13,12 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 - **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
+## Git commits (Nachfragen-Pflicht)
+
+Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen
+nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen,
+ob ein Commit erstellt werden soll.
+
 ## Commands
 
 - `sbx kit validate .` — validate the kit; run it after every change and report the output as evidence before committing
@@ -23,12 +29,12 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 - `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
-- ctx7 installiert das Kit via `npm install -g ctx7` (spec.yaml `commands.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
+- ctx7 installiert das Kit via `npm install -g ctx7` (spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`)
 - `python local-test/local-test-kits.py` — automate the 3 scenarios (OpenCode/Claude/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (both kits), no secrets check and no sandbox start (default is starting the sandboxes)
-- GitHub Actions `.github/workflows/e2e.yml` — e2e on push + PR: installs sbx, logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
+- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.38.0`, mantained via Renovate customManager `docker/sbx-releases`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
 
 ## Testing (lokale Verifikation per IntelliJ Run-Configs)
 
@@ -78,6 +84,11 @@ erlaubt. Die Config liegt je Agent-Location vor:
   OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__idea__<tool>`), eine
   `deny`-Blocklist für die schreibenden/ausführenden Tools. Nicht gelistete Tools fallen auf den
   Standard-Prompt zurück. Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
+  Hooks + statusLine liegen **nicht** in der user-`settings.json`, sondern in der `managed-settings.json`
+  unter `/etc/claude-code/` (via `setup.install`): höchste Precedence, wird vom Template nicht überschrieben —
+  umgeht die Race Condition, bei der das Template die user-`settings.json` beim Start überschreibt (siehe
+  `session-start-hook-fix.md`). Doppeltes Feuern wird vermieden, weil `files/home/.claude/settings.json` und
+  `settings.kit.json` bewusst **keine** `hooks`/`statusLine` mehr enthalten.
 - **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
   `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
   `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
@@ -107,10 +118,17 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 
 ## GitHub Authentication
 
+> **`sbx secret` (v0.38+):** Seit v0.38 ist das `-g`-Flag bei `sbx secret set` entfernt — Service-Secrets sind
+> standardmäßig **global**, der Service ist ein Positionsargument (`sbx secret set github` statt
+> `sbx secret set -g github`). Mit `--sandbox <name>` wird ein Secret auf eine Sandbox gescoped.
+> Kit-deklarierte Services (context7, deepseek, mammouth) funktionieren identisch zu den Built-ins.
+> **Neu:** Third-Party-v2-Kits benötigen pro Service ein **Credential-Binding** (`credentials.yaml`,
+> Windows: `%APPDATA%\sbx\credentials.yaml`) — beim ersten Lauf interaktiv abgefragt, in CI vorab anlegen.
+
 Für `gh` CLI in der Sandbox ein persönliches GitHub-Token (Name: `opencode-sandbox-kit-github-token`) erstellen und als Secret speichern:
 
 ```powershell
-sbx secret set -g github -t "<github-token>"
+sbx secret set github -t "<github-token>"
 ```
 
 Das Token wird via Proxy automatisch injiziert – `gh auth status` sollte in der Sandbox funktionieren.
@@ -120,13 +138,13 @@ Das Token wird via Proxy automatisch injiziert – `gh auth status` sollte in de
 Für Claude Code in der Sandbox wird der Anthropic API-Key als Secret gespeichert und vom Proxy verwaltet – der Key liegt nie im Sandbox-Filesystem:
 
 ```powershell
-sbx secret set -g anthropic
+sbx secret set anthropic
 ```
 
 Es wird davon ausgegangen, dass `ANTHROPIC_API_KEY` nicht als Env-Variable gesetzt ist – der Key wird interaktiv eingegeben. Falls bereits ein OAuth-Token existiert, wird nachgefragt – mit `-f` überschreiben:
 
 ```powershell
-sbx secret set -g anthropic -f
+sbx secret set anthropic -f
 ```
 
 In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls über den Proxy trotzdem funktionieren.
@@ -138,7 +156,7 @@ Das Kit deklariert den Service `context7` (`credentials[].apiKey` mit `name: CON
 `proxyManaged: true`). Den Key als Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
 
 ```powershell
-sbx secret set -g context7
+sbx secret set context7
 ```
 
 In der Sandbox ist `CONTEXT7_API_KEY=proxy-managed` gesetzt (Platzhalter); die ctx7-CLI sendet
@@ -180,10 +198,10 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
-- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via `/etc/sandbox-persistent.sh`) abgesichert. Das Template überschreibt die settings.json beim Start — ein `jq`-DeepMerge in `/etc/sandbox-persistent.sh` spielt nach dem Template-Overwrite wieder `model`, `statusLine`, `mcpServers`, `permissions` und `hooks` aus der Kit-Referenz `files/home/.claude/settings.kit.json` ein (Template-Keys wie `apiKeyHelper` bleiben erhalten). Referenz bei Änderungen an `files/home/.claude/settings.json` synchron halten.
+- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 
-> **Mammouth Code**: Installiert das Agent-Kit automatisch beim Build (`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. `~/.mammouth/bin` wird zusätzlich via `/etc/sandbox-persistent.sh` exportiert. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
+> **Mammouth Code**: Installiert das Agent-Kit automatisch beim Build (`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
 
 ## Tools installed by the kit
 
@@ -209,8 +227,8 @@ der Key liegt nie im Sandbox-Filesystem. Es gibt keinen eingebauten Provider wie
 daher den Kit-deklarierten Service `mammouth` nutzen:
 
 ```powershell
-# Kit-deklarierter Service (wie sbx secret set -g anthropic)
-sbx secret set -g mammouth
+# Kit-deklarierter Service (wie sbx secret set anthropic)
+sbx secret set mammouth
 ```
 
 Der Key stammt aus https://mammouth.ai/app/account/settings/api.
@@ -226,6 +244,19 @@ Verifikation:
 sbx secret ls                                                    # Secret ist registriert
 sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head'
 ```
+
+## Netzwerk-Policy (Deny-by-Default)
+
+- **Quelle**: `permissions.network.allow` in `spec.yaml` (bzw. `mammouth-agent/spec.yaml`). Nur gelistete
+  Domains sind erreichbar, alles andere → HTTP 403.
+- **Enforcement**: Nicht das Kit, sondern die Sandbox selbst erzwingt die Liste — über den **Sandbox-Proxy**
+  (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; die Template
+  (`docker/sandbox-templates:opencode-docker`) trägt ihn automatisch als `mcp-gateway`-MCP-Server in die
+  Agent-Config ein (daher „mcp-gateway Connected“ in OpenCode — kein Fehler). Derselbe Proxy macht die
+  **Credential-Injection** (`proxy-managed`-Platzhalter → echter Key, siehe Auth-Abschnitte oben).
+- **`files/home/.../network-policy.md` ist rein informativ**: Nur Doku der Allow-Liste in den Agent-Instructions
+  (damit der Agent geblockte Calls vermeidet). Erzwingt nichts. Bei Änderungen an `permissions.network.allow`
+  synchron aktualisieren (3 Dateien: OpenCode, Claude, Mammouth).
 
 ## Docker Sandbox / sbx Dokumentation
 
@@ -243,4 +274,4 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
 - **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das Mixin-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run mammouth`).
-- **Kit-spec v1/v2**: Beide Kits (Mixin `spec.yaml` und `mammouth-agent/spec.yaml`) nutzen `schemaVersion: "1"` mit den v2-Feldnamen `caps.network.allow` + `credentials[].apiKey` — das validiert mit der aktuellen stabilen `sbx` **v0.37.1** ohne WARN. Die finale v2-Grammatik (`schemaVersion: "2"`, `permissions.network.allow`, `agentInstructions`, `setup`, flacher `entrypoint`) wird von v0.37.1 noch **nicht** unterstützt (`sbx kit validate` meldet "field ... not found"); eine Sandbox mit `schemaVersion: "2"` ließ sich zudem nicht starten. Erst **v0.38.0-rc1** (Pre-Release, 2026-07-31) bringt die strikte v2-Grammatik (bundles `sbx-kits-contrib` v0.12.0) — nach einem Upgrade das Kit per `go run scripts/migrate-v1-to-v2.go <kit-dir>` migrieren. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.
+- **Kit-spec v2**: Beide Kits (Mixin `spec.yaml` und `mammouth-agent/spec.yaml`) nutzen die **stabilen** v2-Felder `schemaVersion: "2"` + `permissions.network.allow` + `setup` + `agentInstructions` (flacher `entrypoint`) — benötigt **sbx v0.38+** (strikte v2-Grammatik; ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler). Validieren mit `sbx kit validate .` (bzw. `./mammouth-agent`) und `sbx kit inspect ... --output json | jq '.warnings'` (erwartet `[]`). Migration aufs offizielle Skript: `git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git && go run scripts/migrate-v1-to-v2.go <kit-dir>`. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.

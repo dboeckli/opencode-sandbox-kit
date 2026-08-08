@@ -13,10 +13,29 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Docker sbx CLI
+      - name: Download sbx (pinned version)
+        # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
+        # (customManager docker/sbx-releases in .github/renovate.json).
+        env:
+          SBX_VERSION: v0.38.0
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
-          sudo apt-get install -y docker-sbx
+          set -euo pipefail
+          echo "using sbx ${SBX_VERSION}"
+          curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
+            -o /tmp/DockerSandboxes-linux.tar.gz
+          tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
+
+      - name: Install sbx
+        run: |
+          set -euo pipefail
+          sudo PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
+          echo "${HOME}/.docker/sbx/bin" >> "$GITHUB_PATH"
+
+      - name: Verify sbx installation
+        run: sbx version
 
       - name: Validate kit spec
         run: sbx kit validate .
