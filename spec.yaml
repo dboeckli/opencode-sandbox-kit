@@ -153,17 +153,65 @@ setup:
         mv "$HELM_BIN" /usr/local/bin/helm && \
         rm -rf /tmp/helm.tar.gz /tmp/helm-extract && \
         helm version
+    - command: |
+        mkdir -p /etc/claude-code && \
+        cat > /etc/claude-code/managed-settings.json <<'EOF'
+        {
+          "statusLine": {
+            "type": "command",
+            "command": "bash ~/.claude/statusline.sh"
+          },
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "mcp__idea__execute_run_configuration",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "bash ~/.config/sandbox-kit/intellij-run-config-guard.sh"
+                  }
+                ]
+              }
+            ],
+            "SessionStart": [
+              {
+                "matcher": "*",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "bash ~/.config/sandbox-kit/run-checks-hook.sh"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        EOF
+      description: Write managed-settings.json to /etc/claude-code — highest precedence, not overwritten by the template (statusLine + PreToolUse/SessionStart hooks always configured at session start)
   startup:
     - command:
-        - sh
+        - python3
         - -c
         - |
-          if [ -f ~/.claude/settings.json ] && [ -f ~/.claude/settings.kit.json ]; then \
-            jq -s '.[0] * .[1]' ~/.claude/settings.json ~/.claude/settings.kit.json > /tmp/settings.merged.json \
-            && mv /tmp/settings.merged.json ~/.claude/settings.json; \
-          fi
+          import json, os
+          sf = os.path.expanduser('~/.claude/settings.json')
+          kf = os.path.expanduser('~/.claude/settings.kit.json')
+          if not (os.path.exists(sf) and os.path.exists(kf)):
+              exit(0)
+          with open(sf) as f: base = json.load(f)
+          with open(kf) as f: kit = json.load(f)
+          def merge(b, o):
+              r = dict(b)
+              for k, v in o.items():
+                  if k in r and isinstance(r[k], dict) and isinstance(v, dict):
+                      r[k] = merge(r[k], v)
+                  else:
+                      r[k] = v
+              return r
+          with open(sf, 'w') as f:
+              json.dump(merge(base, kit), f, indent=2)
       user: "1000"
-      description: Re-apply kit settings.json after template overwrite
+      description: Re-apply kit settings after template overwrite — Python merge (faster than jq, handles arrays correctly)
 
 environment:
   variables:

@@ -209,6 +209,8 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 - **IntelliJ MCP**: SSE-Endpoint `http://host.docker.internal:64342/sse`
 - **StatusLine**: `bash ~/.claude/statusline.sh` – zeigt Modell, Kontext-Tokens, Kosten, geänderte Zeilen und Session-Dauer
 - **SessionStart-Hook**: führt die Sandbox-Checks aus und übergibt den Report als System-Message
+  (StatusLine + Hooks liegen in `managed-settings.json` unter `/etc/claude-code/` – höchste Precedence,
+  Template-sicher, kein Settings-Race beim Start, siehe `session-start-hook-fix.md`)
 - **Permission-Whitelist + Run-Config-Guard**: siehe Abschnitt "IntelliJ MCP Zugriff einschränken"
 
 > **Hinweis:** Das claude-code-docker-Template überschreibt `~/.claude/settings.json` beim Start (u.a. mit
@@ -385,7 +387,7 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
   System-Prompt und schreibt ihn nach `~/.config/sandbox-kit/startup-checks.report`. Ein TUI-Plugin
   (Auto-Session) startet direkt im Session-View, sodass die Sidebar mit den Blöcken **Startup checks**
   und **Skills** sofort sichtbar ist – ohne ersten Prompt.
-- **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message.
+- **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
 - **Manuell**: `bash ~/.config/sandbox-kit/run-checks.sh`
 - **Referenz**: `~/.config/sandbox-kit/startup-checks.md`

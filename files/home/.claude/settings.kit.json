@@ -1,9 +1,5 @@
 {
   "model": "claude-sonnet-4-6",
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
-  },
   "mcpServers": {
     "idea": {
       "type": "sse",
@@ -66,30 +62,6 @@
       "mcp__idea__xdebug_set_breakpoint",
       "mcp__idea__xdebug_set_breakpoints",
       "mcp__idea__xdebug_start_debugger_session"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "mcp__idea__execute_run_configuration",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.config/sandbox-kit/intellij-run-config-guard.sh"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.config/sandbox-kit/run-checks-hook.sh"
-          }
-        ]
-      }
     ]
   }
 }

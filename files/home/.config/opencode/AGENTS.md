@@ -37,6 +37,10 @@ Before declaring a task done, verify it: run the project's build/test/lint comma
 
 Token-efficient responses: telegram style, no filler/pleasantries, no full-file dumps — show only changed lines/methods. Detect the project's stack from the repo; never assume a framework (e.g. Spring Boot). Full rules: `response-style.md` (in this directory).
 
+## Git commits (Nachfragen-Pflicht)
+
+Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen, ob ein Commit erstellt werden soll.
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the opencode-sandbox-kit. The following tools are installed and available:
 

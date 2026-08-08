@@ -131,6 +131,12 @@ def main():
     agent = args.agent
 
     print()
+    _, sbx_ver = run_sbx(["version"])
+    if not sbx_ver:
+        _, sbx_ver = run_sbx(["--version"])
+    info(f"sbx version: {sbx_ver or 'UNKNOWN'}")
+
+    print()
     info("==> Kit-Validierung")
     info(f"  --> validate: {ROOT}")
     code, _ = run_sbx(["kit", "validate", ROOT], stream=True)
@@ -178,7 +184,7 @@ def main():
             "agent": "claude",
             "kit": ROOT,
             "model": "claude-sonnet-4-6",
-            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" ~/.claude/settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "PERSIST=$(grep -c settings.kit.json /etc/sandbox-persistent.sh 2>/dev/null || echo 0)"; exit 1; }',
+            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
         },
         {
             "name": "kit-test-mammouth",
@@ -205,7 +211,7 @@ def main():
 
         ws = tempfile.mkdtemp(prefix="sbx-kit-test-")
         info("  Sandbox erzeugen ...")
-        code, _ = run_sbx(["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"], "-q"], stream=True)
+        code, _ = run_sbx(["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]], stream=True)
         if code != 0:
             fail("sandbox create")
             blocked_requests(s["name"])

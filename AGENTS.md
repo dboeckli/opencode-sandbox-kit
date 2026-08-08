@@ -13,6 +13,12 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 - **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
+## Git commits (Nachfragen-Pflicht)
+
+Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen
+nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen,
+ob ein Commit erstellt werden soll.
+
 ## Commands
 
 - `sbx kit validate .` — validate the kit; run it after every change and report the output as evidence before committing
@@ -78,6 +84,11 @@ erlaubt. Die Config liegt je Agent-Location vor:
   OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__idea__<tool>`), eine
   `deny`-Blocklist für die schreibenden/ausführenden Tools. Nicht gelistete Tools fallen auf den
   Standard-Prompt zurück. Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
+  Hooks + statusLine liegen **nicht** in der user-`settings.json`, sondern in der `managed-settings.json`
+  unter `/etc/claude-code/` (via `setup.install`): höchste Precedence, wird vom Template nicht überschrieben —
+  umgeht die Race Condition, bei der das Template die user-`settings.json` beim Start überschreibt (siehe
+  `session-start-hook-fix.md`). Doppeltes Feuern wird vermieden, weil `files/home/.claude/settings.json` und
+  `settings.kit.json` bewusst **keine** `hooks`/`statusLine` mehr enthalten.
 - **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
   `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
   `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
@@ -187,7 +198,7 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
-- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (jq-DeepMerge) spielt nach dem Template-Overwrite wieder `model`, `statusLine`, `mcpServers`, `permissions` und `hooks` aus der Kit-Referenz `files/home/.claude/settings.kit.json` ein (Template-Keys wie `apiKeyHelper` bleiben erhalten). Referenz bei Änderungen an `files/home/.claude/settings.json` synchron halten.
+- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 
 > **Mammouth Code**: Installiert das Agent-Kit automatisch beim Build (`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
