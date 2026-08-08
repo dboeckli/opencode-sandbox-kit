@@ -37,21 +37,20 @@ jobs:
           ls -la /dev/kvm
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-      - name: Download sbx (latest release)
+      - name: Download sbx (pinned version)
+        # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
+        # (customManager docker/sbx-releases in .github/renovate.json).
+        env:
+          SBX_VERSION: v0.38.0
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION=$(curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            https://api.github.com/repos/docker/sbx-releases/releases/latest \
-            | jq -r .tag_name)
-          echo "Resolved latest sbx release: ${VERSION}"
+          echo "using sbx ${SBX_VERSION}"
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://github.com/docker/sbx-releases/releases/download/${VERSION}/DockerSandboxes-linux.tar.gz" \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
             -o /tmp/DockerSandboxes-linux.tar.gz
           tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install sbx
         run: |

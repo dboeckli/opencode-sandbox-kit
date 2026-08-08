@@ -319,6 +319,10 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
 
+> Die GitHub-Actions-Pipelines (`validate.yml`, `e2e.yml`) installieren eine **gepinnte `sbx`-Version**
+> (`SBX_VERSION`-Env, aktuell `v0.38.0`) statt `latest`. Updates übernimmt
+> Renovate (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
+
 Detaillierte Anleitungen:
 - [GitHub Authentication](#github-authentication)
 - [Anthropic Authentication](#anthropic-authentication)

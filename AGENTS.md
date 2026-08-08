@@ -34,7 +34,7 @@ ob ein Commit erstellt werden soll.
 - `python local-test/local-test-kits.py` — automate the 3 scenarios (OpenCode/Claude/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (both kits), no secrets check and no sandbox start (default is starting the sandboxes)
-- GitHub Actions `.github/workflows/e2e.yml` — e2e on push + PR: installs sbx, logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
+- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.38.0`, mantained via Renovate customManager `docker/sbx-releases`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
 
 ## Testing (lokale Verifikation per IntelliJ Run-Configs)
 
