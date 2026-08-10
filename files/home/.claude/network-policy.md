@@ -8,7 +8,7 @@ Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `web
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
-- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`
+- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
 - **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`

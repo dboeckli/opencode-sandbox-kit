@@ -15,6 +15,35 @@
           "name": "DeepSeek V4 Pro"
         }
       }
+    },
+    "openrouter": {
+      "options": {
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "~anthropic/claude-sonnet-latest": {
+          "name": "Claude Sonnet (OpenRouter)"
+        },
+        "~google/gemini-flash-latest": {
+          "name": "Gemini Flash (OpenRouter)"
+        }
+      }
+    },
+    "google": {
+      "options": {
+        "apiKey": "{env:GOOGLE_GENERATIVE_AI_API_KEY}"
+      },
+      "models": {
+        "gemini-3.5-flash": {
+          "name": "Gemini 3.5 Flash"
+        },
+        "gemini-3-flash": {
+          "name": "Gemini 3 Flash"
+        },
+        "gemini-3-pro": {
+          "name": "Gemini 3 Pro"
+        }
+      }
     }
   },
   "permission": {
