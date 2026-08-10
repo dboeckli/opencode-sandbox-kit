@@ -305,7 +305,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 
 > **`sbx secret` (v0.38+):** Das `-g`-Flag bei `sbx secret set` ist entfernt — Service-Secrets sind standardmäßig
 > **global**, der Service ist ein Positionsargument (`sbx secret set github`). Mit `--sandbox <name>` scopen.
-> Kit-deklarierte Services (context7/deepseek/mammouth) funktionieren identisch. Third-Party-v2-Kits brauchen
+> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth) funktionieren identisch. Third-Party-v2-Kits brauchen
 > zusätzlich pro Service ein **Credential-Binding** (`%APPDATA%\sbx\credentials.yaml`; beim ersten Lauf interaktiv).
 
 | Service | Secret | Befehl | Benötigt für |
@@ -314,6 +314,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode (optional, Modell `deepseek/…`) |
+| OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
@@ -327,6 +328,7 @@ Detaillierte Anleitungen:
 - [GitHub Authentication](#github-authentication)
 - [Anthropic Authentication](#anthropic-authentication)
 - [Mammouth Code Agent-Kit](#mammouth-code-agent-kit)
+- [OpenRouter API-Key (optional)](#openrouter-api-key-optional)
 - [Context7 API-Key (optional)](#context7-api-key-optional)
 
 ## Usage (PowerShell on Windows)
@@ -456,6 +458,42 @@ Ein manueller Live-Call (Key wird dann vom Proxy injiziert) ist optional möglic
 ```powershell
 sbx exec opencode-sandbox bash -c 'npx ctx7 docs /vercel/next.js "app router"'
 ```
+
+### OpenRouter API-Key (optional)
+
+OpenRouter bietet Zugriff auf viele Modelle (Anthropic, OpenAI, Google, DeepSeek, ...) über einen
+einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider konfiguriert
+(`files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
+Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
+
+`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
+— das Kit deklariert ihn **bewusst nicht** in `spec.yaml` (eine zweite Deklaration führt zu
+`credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
+Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
+und der Proxy injiziert den echten Key bei Requests an `openrouter.ai` — der Key liegt nie im
+Sandbox-Filesystem:
+
+```powershell
+# Built-in-Service (wie sbx secret set anthropic / github)
+sbx secret set openrouter
+```
+
+> **Wichtig:** `OPENROUTER_API_KEY` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> OpenCode liest die Variable als `apiKey` für den OpenRouter-Provider; der Proxy ersetzt den
+> Platzhalter transparent bei Outbound-Requests an `openrouter.ai`. Das ist gewollt, kein Fehler.
+> `echo $OPENROUTER_API_KEY` zeigt `proxy-managed` (nie den echten Key).
+
+Verifikation (identisch zur Prüfung im automatisierten Test `local-test-kits.py` — ohne Live-API-Call):
+
+```powershell
+# 1. Secret ist registriert
+sbx secret ls
+
+# 2. In der Sandbox: Platzhalter sichtbar (nie der echte Key)
+sbx exec opencode-sandbox bash -c 'echo $OPENROUTER_API_KEY'   # → proxy-managed
+```
+
+Modellwechsel in OpenCode via `/models` (z. B. `openrouter/~anthropic/claude-sonnet-latest`).
 
 ## Skills
 

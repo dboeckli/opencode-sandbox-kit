@@ -15,6 +15,19 @@
           "name": "DeepSeek V4 Pro"
         }
       }
+    },
+    "openrouter": {
+      "options": {
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "~anthropic/claude-sonnet-latest": {
+          "name": "Claude Sonnet (OpenRouter)"
+        },
+        "~google/gemini-flash-latest": {
+          "name": "Gemini Flash (OpenRouter)"
+        }
+      }
     }
   },
   "permission": {

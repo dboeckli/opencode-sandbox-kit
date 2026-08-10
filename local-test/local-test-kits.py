@@ -11,8 +11,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic, mammouth und context7
-    (sbx secret set mammouth / sbx secret set context7 — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, anthropic, mammouth, context7 und openrouter
+    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter — seit v0.38 ohne `-g`)
 
 Verwendung:
   python local-test-kits.py                 # alle 3 Kits testen (default: all)
@@ -158,7 +158,7 @@ def main():
     print()
     info("==> Secrets (global)")
     _, secret_out = run_sbx(["secret", "ls"])
-    for sname in ("github", "anthropic", "mammouth", "context7"):
+    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter"):
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
         pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
 
@@ -288,6 +288,19 @@ def main():
             pass_("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)")
         else:
             fail("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)", out)
+
+        openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
+        if s["agent"] == "opencode":
+            if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
+                pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
+            else:
+                fail("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)", out)
+        else:
+            if c2 == 0 and "OPENROUTER_API_KEY=<unset>" in out:
+                pass_("openrouter not wired (only opencode template declares openrouter)")
+            else:
+                fail("openrouter not wired (only opencode template declares openrouter)", out)
 
         if s.get("run_checks"):
             c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")

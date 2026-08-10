@@ -2,7 +2,7 @@ name: Kit e2e
 
 # End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
 # non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
-# register fake API-key secrets for github/anthropic/mammouth/context7, and run the 3 agent scenarios
+# register fake API-key secrets for github/anthropic/mammouth/context7/openrouter, and run the 3 agent scenarios
 # (OpenCode / Claude / Mammouth) from local-test/local-test-kits.py with
 # `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
 #
@@ -128,11 +128,12 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, anthropic/mammouth/context7 fake)
-        # local-test/local-test-kits.py asserts these four global services
+      - name: Register sandbox secrets (github real, anthropic/mammouth/context7/openrouter fake)
+        # local-test/local-test-kits.py asserts these five global services
         # exist (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
-        # `gh auth status` passes inside the sandbox; anthropic, mammouth and
-        # context7 get fake keys — enough to prove the kit's proxy env wiring.
+        # `gh auth status` passes inside the sandbox; anthropic, mammouth,
+        # context7 and openrouter get fake keys — enough to prove the kit's
+        # proxy env wiring.
         # `-g` was removed in sbx v0.38 (secrets are global by default);
         # `-f` overwrites an existing entry.
         env:
@@ -143,6 +144,7 @@ jobs:
           printf '%s' 'sk-ant-fake-ci-key' | sbx secret set anthropic -f
           printf '%s' 'mammouth-fake-ci-key' | sbx secret set mammouth -f
           printf '%s' 'ctx7op-fake-ci-key' | sbx secret set context7 -f
+          printf '%s' 'openrouter-fake-ci-key' | sbx secret set openrouter -f
 
       - name: Pre-create credential bindings (third-party v2 kit)
         # Third-party schemaVersion:"2" kits require an approved credential

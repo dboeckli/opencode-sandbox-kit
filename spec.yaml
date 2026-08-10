@@ -14,6 +14,9 @@ permissions:
     # DeepSeek (OpenCode-Modell mit eigenem API-Key)
     - api.deepseek.com
     - "*.deepseek.com"
+    # OpenRouter (OpenCode-Zusatz-Provider, API auf openrouter.ai)
+    - openrouter.ai
+    - "*.openrouter.ai"
     # Anthropic (Claude Code)
     - anthropic.com
     - api.anthropic.com
