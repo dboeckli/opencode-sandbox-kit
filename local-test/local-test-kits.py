@@ -11,8 +11,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic, mammouth, context7 und openrouter
-    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter und google
+    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google — seit v0.38 ohne `-g`)
 
 Verwendung:
   python local-test-kits.py                 # alle 3 Kits testen (default: all)
@@ -158,7 +158,9 @@ def main():
     print()
     info("==> Secrets (global)")
     _, secret_out = run_sbx(["secret", "ls"])
-    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter"):
+    for line in secret_out.splitlines():
+        print("      " + line)
+    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google"):
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
         pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
 
@@ -301,6 +303,23 @@ def main():
                 pass_("openrouter not wired (only opencode template declares openrouter)")
             else:
                 fail("openrouter not wired (only opencode template declares openrouter)", out)
+
+        # Built-in google service: the opencode template injects the placeholder
+        # under GOOGLE_GENERATIVE_AI_API_KEY (the env name the AI SDK's google
+        # provider reads by default) — assert that for the opencode template,
+        # while claude/mammouth must have it unset.
+        google_env_cmd = 'echo "GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], google_env_cmd)
+        if s["agent"] == "opencode":
+            if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
+                pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
+            else:
+                fail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
+        else:
+            if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
+                pass_("google not wired (only opencode template declares google)")
+            else:
+                fail("google not wired (only opencode template declares google)", out)
 
         if s.get("run_checks"):
             c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")

@@ -180,6 +180,25 @@ In der Sandbox ist `OPENROUTER_API_KEY=proxy-managed` gesetzt (Platzhalter); Ope
 `Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
 an `openrouter.ai`. `echo $OPENROUTER_API_KEY` zeigt nie den echten Key.
 
+## Google Authentication
+
+Google Gemini ist als zusätzlicher Provider im OpenCode-Setup konfiguriert (`provider.google` in
+`files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `google` ist ein
+**Built-in-Service des `opencode`-Templates** (wie `openrouter`) — das Kit deklariert ihn **bewusst nicht**
+in `spec.yaml` (Doppel-Deklaration → `credential ... defined in both "opencode" and ...`). Den Key als
+Secret registrieren; das Template setzt den Platzhalter `GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed`,
+der Proxy injiziert den echten Key bei Requests an `generativelanguage.googleapis.com` – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# 1. API-Key erstellen: https://aistudio.google.com/apikey
+# 2. Secret registrieren (Built-in-Service)
+sbx secret set google
+```
+
+In der Sandbox ist `GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed` gesetzt (Platzhalter); OpenCode sendet
+den Platzhalter als Key, der Proxy ersetzt ihn transparent bei Requests
+an `generativelanguage.googleapis.com`. `echo $GOOGLE_GENERATIVE_AI_API_KEY` zeigt nie den echten Key.
+
 ### Token-Scopes (aktuell konfiguriert)
 
 | Scope | Beschreibung |

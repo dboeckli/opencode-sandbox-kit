@@ -17,6 +17,8 @@ permissions:
     # OpenRouter (OpenCode-Zusatz-Provider, API auf openrouter.ai)
     - openrouter.ai
     - "*.openrouter.ai"
+    # Google Gemini (OpenCode-Zusatz-Provider, API auf generativelanguage.googleapis.com)
+    - generativelanguage.googleapis.com
     # Anthropic (Claude Code)
     - anthropic.com
     - api.anthropic.com

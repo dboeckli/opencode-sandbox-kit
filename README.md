@@ -315,10 +315,28 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode (optional, Modell `deepseek/…`) |
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
+| Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
+
+#### API-Keys & Billing: Konsolen-URLs
+
+| Service | API-Key ansehen/erstellen | Abrechnung / Billing |
+|---------|---------------------------|----------------------|
+| OpenCode Zen | https://opencode.ai/auth | https://opencode.ai/auth (Guthaben) |
+| Google Gemini | https://aistudio.google.com/apikey | https://console.cloud.google.com/billing |
+| Anthropic | https://console.anthropic.com/settings/keys | https://console.anthropic.com/settings/billing |
+| OpenRouter | https://openrouter.ai/settings/keys | https://openrouter.ai/settings/credits |
+| DeepSeek | https://platform.deepseek.com/api_keys | https://platform.deepseek.com/top_up |
+| GitHub | https://github.com/settings/tokens | — |
+| Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
+
+> **Hinweis:** OpenCode Zen und Direkt-Provider (Google, Anthropic, ...) sind **getrennte Abrechnung**.
+> Die Kosten-Anzeige in OpenCode (`$ x.xx spent`) ist eine **lokale Schätzung** aus
+> `Token-Verbrauch × Modellpreis` — keine echte Abbuchung. Abgerechnet wird beim jeweiligen Provider
+> über dessen Key/Guthaben.
 
 > Die GitHub-Actions-Pipelines (`validate.yml`, `e2e.yml`) installieren eine **gepinnte `sbx`-Version**
 > (`SBX_VERSION`-Env, aktuell `v0.38.0`) statt `latest`. Updates übernimmt
@@ -329,6 +347,7 @@ Detaillierte Anleitungen:
 - [Anthropic Authentication](#anthropic-authentication)
 - [Mammouth Code Agent-Kit](#mammouth-code-agent-kit)
 - [OpenRouter API-Key (optional)](#openrouter-api-key-optional)
+- [Google AI Studio API-Key (optional)](#google-ai-studio-api-key-optional)
 - [Context7 API-Key (optional)](#context7-api-key-optional)
 
 ## Usage (PowerShell on Windows)
@@ -494,6 +513,45 @@ sbx exec opencode-sandbox bash -c 'echo $OPENROUTER_API_KEY'   # → proxy-manag
 ```
 
 Modellwechsel in OpenCode via `/models` (z. B. `openrouter/~anthropic/claude-sonnet-latest`).
+
+### Google AI Studio API-Key (optional)
+
+Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günstigen Pro-Tier — in OpenCode als
+zusätzlicher Provider konfiguriert (`files/home/.config/opencode/opencode.jsonc` → `provider.google`,
+DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
+
+`google` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
+— das Kit deklariert ihn **bewusst nicht** in `spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
+Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
+`GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
+Proxy injiziert den echten Key bei Requests an
+`generativelanguage.googleapis.com` — der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# 1. Google AI Studio API-Key erstellen
+#    https://aistudio.google.com/apikey
+
+# 2. Built-in-Service (wie sbx secret set anthropic / github)
+sbx secret set google
+```
+
+> **Wichtig:** Der Google-Platzhalter liegt in der Sandbox unter `GOOGLE_GENERATIVE_AI_API_KEY` auf
+> `proxy-managed`. OpenCode liest die Variable als `apiKey` für den Google-Provider; der Proxy ersetzt
+> den Platzhalter transparent bei Outbound-Requests an `generativelanguage.googleapis.com`.
+> Das ist gewollt, kein Fehler. `echo $GOOGLE_GENERATIVE_AI_API_KEY` zeigt `proxy-managed`
+> (nie den echten Key).
+
+Verifikation (identisch zur Prüfung im automatisierten Test `local-test-kits.py` — ohne Live-API-Call):
+
+```powershell
+# 1. Secret ist registriert
+sbx secret ls
+
+# 2. In der Sandbox: Platzhalter sichtbar (nie der echte Key)
+sbx exec opencode-sandbox bash -c 'echo "${GOOGLE_GENERATIVE_AI_API_KEY:-<unset>}"'   # → proxy-managed
+```
+
+Modellwechsel in OpenCode via `/models` (z. B. `google/gemini-3.5-flash`).
 
 ## Skills
 
