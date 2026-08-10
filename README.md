@@ -348,6 +348,10 @@ sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli
 sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
 sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "C:\development\projects\spring-6-reactive"
 
+# Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
+sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "/mnt/c/development/projects/spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "/mnt/c/development/projects/spring-6-reactive"
+
 # Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
 sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
 ```

@@ -43,6 +43,9 @@ permissions:
       - "models.dev:443"
       - "registry.npmjs.org:443"
       - "dlcdn.apache.org:443"
+      # Apache Camel (Doku, Dependencies)
+      - "camel.apache.org:443"
+      - "*.camel.apache.org:443"
       # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
       - "localhost:64342"
       - "127.0.0.1:64342"

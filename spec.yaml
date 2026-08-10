@@ -28,6 +28,9 @@ permissions:
     - models.dev
     - registry.npmjs.org
     - dlcdn.apache.org
+    # Apache Camel (Doku, Dependencies)
+    - camel.apache.org
+    - "*.camel.apache.org"
     # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
     - "localhost:64342"
     - "127.0.0.1:64342"
