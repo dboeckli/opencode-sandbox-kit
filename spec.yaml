@@ -80,6 +80,8 @@ permissions:
     - add-skill.vercel.sh
     # Web search (last resort, allow-list for websearch/webfetch provider)
     - "*.exa.ai"
+    # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
+    - api.stackexchange.com
 
 credentials:
   - service: deepseek
@@ -98,6 +100,15 @@ credentials:
       proxyManaged: true
       inject:
         - domain: context7.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: stackoverflow
+    description: "Stack Overflow API-Key (https://stackapps.com/applications)"
+    apiKey:
+      name: STACKOVERFLOW_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.stackexchange.com
           header: Authorization
           format: "Bearer %s"
 
