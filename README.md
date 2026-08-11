@@ -118,7 +118,7 @@ ist genau dieser Proxy: kein Fehler und kein Kit-Bestandteil, sondern Template-I
 
 **`network-policy.md` ist rein informativ:** Die Allow-Liste ist zusätzlich in den Agent-Instructions
 dokumentiert (`~/.config/opencode/network-policy.md`, `~/.claude/network-policy.md`, im Agent-Kit
-`~/.config/mammouth/...`), damit der Agent geblockte Calls von vornherein vermeidet (Token-Kosten) — erzwingen
+`~/.config/mammouth/network-policy.md`), damit der Agent geblockte Calls von vornherein vermeidet (Token-Kosten) — erzwingen
 tut sie nichts. Das Enforcement passiert ausschließlich am Sandbox-Proxy. Beim Anpassen der Liste in
 `spec.yaml` muss diese Dokumentation synchron gehalten werden.
 

@@ -125,29 +125,14 @@ Docs: `npx ctx7 docs /cli/cli <query>` (GitHub CLI).
 OpenCode is an agent CLI (and the base for Mammouth Code). For configuration of `opencode.json`, agents, skills, and MCP servers:
 Docs: `npx ctx7 docs /anomalyco/opencode <query>`.
 
-## Network policy (allow-list)
+## Network policy
 
-The sandbox uses a **deny-by-default** network policy (see `spec.yaml` → `permissions.network.allow`).
-Only the hosts below are reachable. Any request to a host not on this list is blocked by the host
-proxy (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens. Enforced by
-the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the MCP list); this file only
-informs you so you avoid blocked calls.
+Deny-by-default: the sandbox only reaches the hosts listed in `network-policy.md` (in this directory).
+Check it before any outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...).
+Anything not listed is blocked (HTTP 403).
 
-Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...), check
-this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
-for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
-
-- **Agent APIs**: `mammouth.ai`, `*.mammouth.ai`, `code.mammouth.ai`, `api.mammouth.ai`, `model-explorer.mammouth.ai`, `opencode.ai`, `*.opencode.ai`
-- **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
-- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
-- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
-- **Skills CLI**: `add-skill.vercel.sh`
-- **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
-- **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
-
-Not reachable (blocked): general web search providers (e.g. `*.exa.ai`), Anthropic, telemetry, and
-any other host.
+The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the
+MCP list) — `network-policy.md` only informs you so you avoid blocked calls.
 
 ## Stack Overflow API (optionale Fallback-Quelle)
 
