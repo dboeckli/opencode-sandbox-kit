@@ -317,6 +317,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
 | Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
+| Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
@@ -332,6 +333,7 @@ Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-V
 | DeepSeek | https://platform.deepseek.com/api_keys | https://platform.deepseek.com/top_up |
 | GitHub | https://github.com/settings/tokens | — |
 | Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
+| Stack Overflow | https://stackapps.com/applications | — |
 
 > **Hinweis:** OpenCode Zen und Direkt-Provider (Google, Anthropic, ...) sind **getrennte Abrechnung**.
 > Die Kosten-Anzeige in OpenCode (`$ x.xx spent`) ist eine **lokale Schätzung** aus
@@ -552,6 +554,44 @@ sbx exec opencode-sandbox bash -c 'echo "${GOOGLE_GENERATIVE_AI_API_KEY:-<unset>
 ```
 
 Modellwechsel in OpenCode via `/models` (z. B. `google/gemini-3.5-flash`).
+
+### Stack Overflow API-Key (optional)
+
+Stack Overflow (`api.stackexchange.com`) ist eine **optionale Fallback-Quelle** bei konkreten
+Fehlermeldungen (Exception-Stacktraces, Build-Fehler, Plugin-Konflikte), wenn Context7 keine
+Ergebnisse liefert. Den API-Key anlegen unter **https://stackapps.com/applications** (Application
+registrieren, dann `key` kopieren). Das Kit deklariert den Service `stackoverflow` (`credentials[].apiKey` mit
+`name: STACKOVERFLOW_API_KEY`, `proxyManaged: true`) — wie `context7` ein Kit-deklarierter
+Service. Den Key als Secret registrieren, damit der Proxy ihn für Requests an
+`api.stackexchange.com` als `Authorization: Bearer` injiziert — der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# Kit-deklarierter Service (wie sbx secret set context7)
+sbx secret set stackoverflow
+```
+
+> **Wichtig:** `STACKOVERFLOW_API_KEY` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> Der Agent sendet `Authorization: Bearer proxy-managed`; der Proxy ersetzt den Platzhalter
+> transparent bei Outbound-Requests an `api.stackexchange.com`. Das ist gewollt, kein Fehler.
+> `echo $STACKOVERFLOW_API_KEY` zeigt `proxy-managed` (nie den echten Key).
+
+Die API-Doku liegt **offline im Kit**: `files/home/stackexchange-api.md` → `~/stackexchange-api.md`
+(kompakte Endpoint-Tabelle, generische Parameter, API-Version `api_revision`); Detail-Doku mit allen
+Parametern je Methode in `~/stackexchange-api-detail.md` (nur bei Bedarf lesen). Das spart Kontext —
+die Website https://api.stackexchange.com/docs wird nur noch bei Unklarheiten abgerufen. Die
+API-Version (`api_revision`) kann per `GET /2.3/info?site=stackoverflow` verifiziert werden.
+Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py --validate-only`,
+IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
+Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
+**schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
+Beide Kits führen identische Kopien (`mammouth-agent/files/home/`), weil jeder Agent sein eigenes
+`files/home/`-Mapping hat.
+
+Nutzungsregeln (SO-1…SO-4):
+- **Letzte Quelle** in der Abfragehierarchie (nach Context7/anderen Quellen, nur bei leeren Ergebnissen).
+- Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis**.
+- **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
+- Calls ohne registriertes Secret oder ohne Zustimmung werden nicht ausgeführt (Netzwerk-Policy blockt).
 
 ## Skills
 
