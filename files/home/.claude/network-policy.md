@@ -8,10 +8,10 @@ Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `web
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
-- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`
+- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
+- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
@@ -19,6 +19,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **MongoDB**: `repo.mongodb.org` (apt im Helm-Test-Pod)
 - **Skills CLI**: `add-skill.vercel.sh`
 - **Web search (last resort)**: `*.exa.ai`
+- **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
 
 Not reachable (blocked): telemetry, and any other host not on this list.

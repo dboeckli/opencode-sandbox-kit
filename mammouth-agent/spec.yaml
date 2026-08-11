@@ -43,6 +43,9 @@ permissions:
       - "models.dev:443"
       - "registry.npmjs.org:443"
       - "dlcdn.apache.org:443"
+      # Apache Camel (Doku, Dependencies)
+      - "camel.apache.org:443"
+      - "*.camel.apache.org:443"
       # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
       - "localhost:64342"
       - "127.0.0.1:64342"
@@ -87,6 +90,8 @@ permissions:
       - "add-skill.vercel.sh:443"
       # Web search (last resort, allow-list for websearch/webfetch provider)
       - "*.exa.ai:443"
+      # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
+      - "api.stackexchange.com:443"
 
 credentials:
   - service: mammouth
@@ -105,6 +110,15 @@ credentials:
       proxyManaged: true
       inject:
         - domain: context7.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: stackoverflow
+    description: "Stack Overflow API-Key (https://stackapps.com/applications)"
+    apiKey:
+      name: STACKOVERFLOW_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.stackexchange.com
           header: Authorization
           format: "Bearer %s"
 
