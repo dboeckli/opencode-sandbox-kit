@@ -140,13 +140,35 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Agent APIs**: `mammouth.ai`, `*.mammouth.ai`, `code.mammouth.ai`, `api.mammouth.ai`, `model-explorer.mammouth.ai`, `opencode.ai`, `*.opencode.ai`
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
+- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
 - **Skills CLI**: `add-skill.vercel.sh`
+- **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
 
 Not reachable (blocked): general web search providers (e.g. `*.exa.ai`), Anthropic, telemetry, and
 any other host.
+
+## Stack Overflow API (optionale Fallback-Quelle)
+
+Stack Overflow ist die **letzte Quelle** in der Abfragehierarchie (SO-1). Sie wird **nie** über
+`websearch`/`webfetch` genutzt (SO-3) — nur als direkter API-Call gegen `api.stackexchange.com`.
+
+Auslöser (SO-4) sind konkrete Fehlermuster bei **leerem Context7-Ergebnis** (und anderen
+Quellen): Exception-Stacktraces, Build-Fehler, Plugin-Konflikte.
+
+Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis** (SO-2):
+
+> «Context7 liefert keine Ergebnisse. Darf ich Stack Overflow durchsuchen?»
+
+Erst nach Zustimmung erfolgt der Call, z. B.
+`curl "https://api.stackexchange.com/2.3/search?site=stackoverflow" -H "Authorization: Bearer $STACKOVERFLOW_API_KEY"`.
+Doku zur API: **lokal in `~/stackexchange-api.md`** (kompakte Endpoint-Tabelle, generische
+Parameter, API-Version `api_revision`) — offline, spart Kontext. Detail-Doku (alle Parameter je
+Methode) in `~/stackexchange-api-detail.md` nur bei Bedarf lesen; die Website
+https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
+Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
+nicht ausgeführt.
 
 ## Startup checks
 
