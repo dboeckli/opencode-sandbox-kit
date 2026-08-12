@@ -48,7 +48,7 @@ IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.p
 
 | Config | PARAMETERS | Zweck |
 |--------|-----------|-------|
-| `local-test-kits` | *(leer)* | Alle 3 Szenarien (OpenCode/Claude/Mammouth): validate + Secrets + Sandbox |
+| `local-test-kits-full` | *(leer)* | Alle 3 Szenarien (OpenCode/Claude/Mammouth): validate + Secrets + Sandbox |
 | `local-test-kits-validate-only` | `--validate-only` | Nur `sbx kit validate` (beide Kits), keine Sandbox |
 | `local-test-kits-opencode` | `opencode` | Nur OpenCode-Szenario (Sandbox) |
 | `local-test-kits-claude` | `claude` | Nur Claude-Szenario (Sandbox) |
