@@ -10,7 +10,7 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 
 - **Agent-Sandbox** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, ...), Versions-Checks und Doku-Recherche. `sbx` ist hier **nicht** verfügbar (nicht im Sandbox-Image installiert).
 - **Windows/PowerShell** (User, **Standard**): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
-- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 16.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
+- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
 ## Git commits (Nachfragen-Pflicht)
@@ -48,7 +48,7 @@ IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.p
 
 | Config | PARAMETERS | Zweck |
 |--------|-----------|-------|
-| `local-test-kits` | *(leer)* | Alle 3 Szenarien (OpenCode/Claude/Mammouth): validate + Secrets + Sandbox |
+| `local-test-kits-full` | *(leer)* | Alle 3 Szenarien (OpenCode/Claude/Mammouth): validate + Secrets + Sandbox |
 | `local-test-kits-validate-only` | `--validate-only` | Nur `sbx kit validate` (beide Kits), keine Sandbox |
 | `local-test-kits-opencode` | `opencode` | Nur OpenCode-Szenario (Sandbox) |
 | `local-test-kits-claude` | `claude` | Nur Claude-Szenario (Sandbox) |
@@ -121,7 +121,7 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 > **`sbx secret` (v0.38+):** Seit v0.38 ist das `-g`-Flag bei `sbx secret set` entfernt — Service-Secrets sind
 > standardmäßig **global**, der Service ist ein Positionsargument (`sbx secret set github` statt
 > `sbx secret set -g github`). Mit `--sandbox <name>` wird ein Secret auf eine Sandbox gescoped.
-> Kit-deklarierte Services (context7, deepseek, mammouth) funktionieren identisch zu den Built-ins.
+> Kit-deklarierte Services (context7, deepseek, openrouter, mammouth) funktionieren identisch zu den Built-ins.
 > **Neu:** Third-Party-v2-Kits benötigen pro Service ein **Credential-Binding** (`credentials.yaml`,
 > Windows: `%APPDATA%\sbx\credentials.yaml`) — beim ersten Lauf interaktiv abgefragt, in CI vorab anlegen.
 
@@ -163,6 +163,42 @@ In der Sandbox ist `CONTEXT7_API_KEY=proxy-managed` gesetzt (Platzhalter); die c
 `Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
 an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 
+## OpenRouter Authentication
+
+OpenRouter ist als zusätzlicher Provider im OpenCode-Setup konfiguriert (`provider.openrouter` in
+`files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `openrouter` ist ein
+**Built-in-Service des `opencode`-Templates** — das Kit deklariert ihn **bewusst nicht** in `spec.yaml`
+(Doppel-Deklaration → `credential ... defined in both "opencode" and ...`). Den Key als Secret
+registrieren; das Template setzt `OPENROUTER_API_KEY=proxy-managed`, der Proxy injiziert den echten
+Key bei Requests an `openrouter.ai` – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set openrouter
+```
+
+In der Sandbox ist `OPENROUTER_API_KEY=proxy-managed` gesetzt (Platzhalter); OpenCode sendet
+`Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
+an `openrouter.ai`. `echo $OPENROUTER_API_KEY` zeigt nie den echten Key.
+
+## Google Authentication
+
+Google Gemini ist als zusätzlicher Provider im OpenCode-Setup konfiguriert (`provider.google` in
+`files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `google` ist ein
+**Built-in-Service des `opencode`-Templates** (wie `openrouter`) — das Kit deklariert ihn **bewusst nicht**
+in `spec.yaml` (Doppel-Deklaration → `credential ... defined in both "opencode" and ...`). Den Key als
+Secret registrieren; das Template setzt den Platzhalter `GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed`,
+der Proxy injiziert den echten Key bei Requests an `generativelanguage.googleapis.com` – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# 1. API-Key erstellen: https://aistudio.google.com/apikey
+# 2. Secret registrieren (Built-in-Service)
+sbx secret set google
+```
+
+In der Sandbox ist `GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed` gesetzt (Platzhalter); OpenCode sendet
+den Platzhalter als Key, der Proxy ersetzt ihn transparent bei Requests
+an `generativelanguage.googleapis.com`. `echo $GOOGLE_GENERATIVE_AI_API_KEY` zeigt nie den echten Key.
+
 ### Token-Scopes (aktuell konfiguriert)
 
 | Scope | Beschreibung |
@@ -173,6 +209,40 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 | `read:user` | Benutzerdaten lesen |
 
 > **Hinweis:** Für Private-Repo-Zugriff, Push oder PR/Issue-Erstellung wird zusätzlich das `repo`-Scope benötigt. Dies kann via `gh auth refresh -h github.com -s repo` nachgefordert werden.
+
+## Stack Overflow Authentication
+
+Stack Overflow ist eine **optionale Fallback-Quelle** (`api.stackexchange.com`) bei konkreten
+Fehlermeldungen (Exception-Stacktraces, Build-Fehler, Plugin-Konflikte), wenn Context7 **keine
+Ergebnisse** liefert. Den API-Key anlegen unter https://stackapps.com/applications (Application
+registrieren, dann `key` kopieren). Das Kit deklariert den Service `stackoverflow`
+(`credentials[].apiKey` mit `name: STACKOVERFLOW_API_KEY`, `proxyManaged: true`). Den Key als
+Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set stackoverflow
+```
+
+In der Sandbox ist `STACKOVERFLOW_API_KEY=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
+an `api.stackexchange.com`. `echo $STACKOVERFLOW_API_KEY` zeigt nie den echten Key.
+
+Die API-Doku liegt **offline im Kit**: `files/home/stackexchange-api.md` → `~/stackexchange-api.md`
+(kompakte Endpoint-Tabelle, generische Parameter, API-Version `api_revision`); Detail-Doku mit allen
+Parametern je Methode in `~/stackexchange-api-detail.md` (nur bei Bedarf lesen). Das spart Kontext —
+die Website https://api.stackexchange.com/docs wird nur noch bei Unklarheiten abgerufen. Die
+API-Version (`api_revision`) kann per `GET /2.3/info?site=stackoverflow` verifiziert werden.
+Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py --validate-only`,
+IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
+Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
+**schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
+Beide Kits führen identische Kopien (`mammouth-agent/files/home/`), weil jeder Agent sein eigenes
+`files/home/`-Mapping hat.
+
+Nutzungsregeln (siehe `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`):
+- **Letzte Quelle** in der Abfragehierarchie (nach Context7/anderen Quellen, nur bei leeren Ergebnissen).
+- **Vor jedem API-Call** fragt die KI den Benutzer explizit um Erlaubnis.
+- **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 
 ## Layout
 
@@ -217,6 +287,12 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 | skills | npm (vercel-labs) |
 | prettier | npm |
 | renovate | npm |
+
+> **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
+> `npm_config_bin_links=true` (`spec.yaml:117-120`), damit die globalen CLIs als Symlinks nach
+> `/usr/local/share/npm-global/bin` landen. Zur Laufzeit setzt das Kit dagegen
+> `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit npm-Aufrufe des Agents keine
+> bin-link-Seiteneffekte erzeugen. Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 

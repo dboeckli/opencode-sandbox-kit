@@ -26,8 +26,30 @@ When you need current information about a library, framework, SDK, API, CLI tool
 2. **Context7** — `npx ctx7 docs <libraryId> <query>` (find unknown IDs via `npx ctx7 library "<name>" "<topic>"`) is the **primary source for external library, framework, SDK, API, and CLI documentation**.
 3. **GitHub / `gh`** — `gh api` / `gh release` for anything hosted on GitHub and for version/release info (e.g. `gh api repos/anomalyco/opencode/releases/latest`)
 4. **Web search** — `websearch` / `webfetch` only as last resort, and only against the allow-listed hosts in the network policy below.
+5. **Stack Overflow API** — **letzte Quelle** bei konkreten Fehlermeldungen (Exception-Stacktraces, Build-Fehler, Plugin-Konflikte) mit leerem Context7-Ergebnis; nur als direkter API-Call gegen `api.stackexchange.com`, **nie** via `websearch`/`webfetch`. Fragt den Benutzer vor jedem Call explizit um Erlaubnis.
 
 **Failure handling:** if IntelliJ MCP, Context7 (`npx ctx7`), or the GitHub API (`gh api`) is unavailable or fails (not running, error, not found, timeout, rate limit, 403), tell the user immediately which source failed and how the result is affected, then fall back per the steps above. Do not silently degrade.
+
+## Stack Overflow API (optionale Fallback-Quelle)
+
+Stack Overflow ist die **letzte Quelle** in der Abfragehierarchie (SO-1). Sie wird **nie** über
+`websearch`/`webfetch` genutzt (SO-3) — nur als direkter API-Call gegen `api.stackexchange.com`.
+
+Auslöser (SO-4) sind konkrete Fehlermuster bei **leerem Context7-Ergebnis** (und anderen
+Quellen): Exception-Stacktraces, Build-Fehler, Plugin-Konflikte.
+
+Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis** (SO-2):
+
+> «Context7 liefert keine Ergebnisse. Darf ich Stack Overflow durchsuchen?»
+
+Erst nach Zustimmung erfolgt der Call, z. B.
+`curl "https://api.stackexchange.com/2.3/search?site=stackoverflow" -H "Authorization: Bearer $STACKOVERFLOW_API_KEY"`.
+Doku zur API: **lokal in `~/stackexchange-api.md`** (kompakte Endpoint-Tabelle, generische
+Parameter, API-Version `api_revision`) — offline, spart Kontext. Detail-Doku (alle Parameter je
+Methode) in `~/stackexchange-api-detail.md` nur bei Bedarf lesen; die Website
+https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
+Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
+nicht ausgeführt.
 
 ## Verification
 
@@ -127,5 +149,5 @@ The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Conne
 
 ## Startup checks
 
-A SessionStart hook runs the sandbox checks and passes a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, skills) as a system message at the start of the session. When you receive it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
+A SessionStart hook runs the sandbox checks and passes a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, skills) as a system message at the start of the session. When you receive it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->

@@ -3,7 +3,6 @@
 The startup checks run **automatically** at the start of each session:
 - **OpenCode**: a server plugin (`~/.config/opencode/plugins/startup-checks.js`) runs the checks immediately at plugin load, injects the report into the system prompt via `experimental.chat.system.transform`, and writes it to `~/.config/sandbox-kit/startup-checks.report` for the TUI sidebar plugin.
 - **OpenCode TUI**: an auto-session plugin (`~/.config/opencode/plugins/auto-session.tsx`, registered in `tui.json`) creates a new session at startup and navigates directly into the session view, so the sidebar info panel is visible immediately (no first prompt needed). The `startup-checks-tui.tsx` plugin shows two blocks in that panel (`sidebar_content` slot): **Startup checks** (order 150) and **Skills** (order 155, lists `~/.agents/skills/` dirs containing `SKILL.md`).
-- **Claude Code**: a `SessionStart` hook (`~/.config/sandbox-kit/run-checks-hook.sh`, registered in `managed-settings.json` under `/etc/claude-code/`) passes the report as a system message.
 
 The actual checks live in `~/.config/sandbox-kit/run-checks.sh`. You only need to read this file or run the script manually when the automatic report is missing or a check fails.
 

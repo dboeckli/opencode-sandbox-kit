@@ -118,7 +118,7 @@ ist genau dieser Proxy: kein Fehler und kein Kit-Bestandteil, sondern Template-I
 
 **`network-policy.md` ist rein informativ:** Die Allow-Liste ist zusätzlich in den Agent-Instructions
 dokumentiert (`~/.config/opencode/network-policy.md`, `~/.claude/network-policy.md`, im Agent-Kit
-`~/.config/mammouth/...`), damit der Agent geblockte Calls von vornherein vermeidet (Token-Kosten) — erzwingen
+`~/.config/mammouth/network-policy.md`), damit der Agent geblockte Calls von vornherein vermeidet (Token-Kosten) — erzwingen
 tut sie nichts. Das Enforcement passiert ausschließlich am Sandbox-Proxy. Beim Anpassen der Liste in
 `spec.yaml` muss diese Dokumentation synchron gehalten werden.
 
@@ -210,7 +210,7 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 - **StatusLine**: `bash ~/.claude/statusline.sh` – zeigt Modell, Kontext-Tokens, Kosten, geänderte Zeilen und Session-Dauer
 - **SessionStart-Hook**: führt die Sandbox-Checks aus und übergibt den Report als System-Message
   (StatusLine + Hooks liegen in `managed-settings.json` unter `/etc/claude-code/` – höchste Precedence,
-  Template-sicher, kein Settings-Race beim Start, siehe `session-start-hook-fix.md`)
+  Template-sicher, kein Settings-Race beim Start, siehe [session-start-hook-fix.md](docs/session-start-hook-fix.md))
 - **Permission-Whitelist + Run-Config-Guard**: siehe Abschnitt "IntelliJ MCP Zugriff einschränken"
 
 > **Hinweis:** Das claude-code-docker-Template überschreibt `~/.claude/settings.json` beim Start (u.a. mit
@@ -227,14 +227,14 @@ Bevor du das Kit verwenden kannst, brauchst du auf dem Windows-Host:
 
 | Voraussetzung | Beschreibung | Benötigt für |
 |---------------|--------------|--------------|
-| **Docker Desktop** (Windows) | Laufender Docker Daemon — native Windows-Installation **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 16.04**) | Sandbox-Ausführung |
+| **Docker Desktop** (Windows) | Laufender Docker Daemon — native Windows-Installation **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 26.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
 > **WSL als Alternative:** Standard ist Windows PowerShell + Docker Desktop. Das Kit läuft aber auch aus einem
-> **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 16.04**). `sbx run` / `sbx exec`
+> **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 26.04**). `sbx run` / `sbx exec`
 > und der IntelliJ-MCP-Zugriff über `host.docker.internal:64342` funktionieren dort genauso — inkl.
 > Secret-Injection (gh/ctx7) und Network-Allow-List.
 
@@ -305,7 +305,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 
 > **`sbx secret` (v0.38+):** Das `-g`-Flag bei `sbx secret set` ist entfernt — Service-Secrets sind standardmäßig
 > **global**, der Service ist ein Positionsargument (`sbx secret set github`). Mit `--sandbox <name>` scopen.
-> Kit-deklarierte Services (context7/deepseek/mammouth) funktionieren identisch. Third-Party-v2-Kits brauchen
+> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth) funktionieren identisch. Third-Party-v2-Kits brauchen
 > zusätzlich pro Service ein **Credential-Binding** (`%APPDATA%\sbx\credentials.yaml`; beim ersten Lauf interaktiv).
 
 | Service | Secret | Befehl | Benötigt für |
@@ -314,10 +314,31 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode (optional, Modell `deepseek/…`) |
+| OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
+| Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
+| Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
+
+#### API-Keys & Billing: Konsolen-URLs
+
+| Service | API-Key ansehen/erstellen | Abrechnung / Billing |
+|---------|---------------------------|----------------------|
+| OpenCode Zen | https://opencode.ai/auth | https://opencode.ai/auth (Guthaben) |
+| Google Gemini | https://aistudio.google.com/apikey | https://console.cloud.google.com/billing |
+| Anthropic | https://console.anthropic.com/settings/keys | https://console.anthropic.com/settings/billing |
+| OpenRouter | https://openrouter.ai/settings/keys | https://openrouter.ai/settings/credits |
+| DeepSeek | https://platform.deepseek.com/api_keys | https://platform.deepseek.com/top_up |
+| GitHub | https://github.com/settings/tokens | — |
+| Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
+| Stack Overflow | https://stackapps.com/applications | — |
+
+> **Hinweis:** OpenCode Zen und Direkt-Provider (Google, Anthropic, ...) sind **getrennte Abrechnung**.
+> Die Kosten-Anzeige in OpenCode (`$ x.xx spent`) ist eine **lokale Schätzung** aus
+> `Token-Verbrauch × Modellpreis` — keine echte Abbuchung. Abgerechnet wird beim jeweiligen Provider
+> über dessen Key/Guthaben.
 
 > Die GitHub-Actions-Pipelines (`validate.yml`, `e2e.yml`) installieren eine **gepinnte `sbx`-Version**
 > (`SBX_VERSION`-Env, aktuell `v0.38.0`) statt `latest`. Updates übernimmt
@@ -327,6 +348,8 @@ Detaillierte Anleitungen:
 - [GitHub Authentication](#github-authentication)
 - [Anthropic Authentication](#anthropic-authentication)
 - [Mammouth Code Agent-Kit](#mammouth-code-agent-kit)
+- [OpenRouter API-Key (optional)](#openrouter-api-key-optional)
+- [Google AI Studio API-Key (optional)](#google-ai-studio-api-key-optional)
 - [Context7 API-Key (optional)](#context7-api-key-optional)
 
 ## Usage (PowerShell on Windows)
@@ -347,6 +370,10 @@ sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/
 sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
 sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
 sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "C:\development\projects\spring-6-reactive"
+
+# Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
+sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "/mnt/c/development/projects/spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "/mnt/c/development/projects/spring-6-reactive"
 
 # Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
 sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
@@ -384,7 +411,7 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
 `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK skills:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK helm:OK skills:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -415,6 +442,17 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
+
+### npm bin-links: Install vs. Laufzeit
+
+Die global installierten npm-CLIs (ctx7, skills, prettier, renovate) werden mit explizitem Prefix
+`npm_config_bin_links=true` installiert (`spec.yaml:117-120`) — dadurch legt npm die Bin-Links an und
+die CLIs landen als Symlinks in `/usr/local/share/npm-global/bin` (auf dem PATH). Zur Laufzeit setzt das Kit
+dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit spätere npm-Aufrufe
+durch den Agent keine bin-link-Seiteneffekte erzeugen. Der Unterschied ist Absicht, kein Fehler; an beiden
+Stellen nichts ändern.
+
+Verifikation in einer laufenden Sandbox: `npm config get bin-links` → `false` (das `npm_config_bin_links`-Env überschreibt den Default).
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 
@@ -452,6 +490,119 @@ Ein manueller Live-Call (Key wird dann vom Proxy injiziert) ist optional möglic
 ```powershell
 sbx exec opencode-sandbox bash -c 'npx ctx7 docs /vercel/next.js "app router"'
 ```
+
+### OpenRouter API-Key (optional)
+
+OpenRouter bietet Zugriff auf viele Modelle (Anthropic, OpenAI, Google, DeepSeek, ...) über einen
+einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider konfiguriert
+(`files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
+Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
+
+`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
+— das Kit deklariert ihn **bewusst nicht** in `spec.yaml` (eine zweite Deklaration führt zu
+`credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
+Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
+und der Proxy injiziert den echten Key bei Requests an `openrouter.ai` — der Key liegt nie im
+Sandbox-Filesystem:
+
+```powershell
+# Built-in-Service (wie sbx secret set anthropic / github)
+sbx secret set openrouter
+```
+
+> **Wichtig:** `OPENROUTER_API_KEY` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> OpenCode liest die Variable als `apiKey` für den OpenRouter-Provider; der Proxy ersetzt den
+> Platzhalter transparent bei Outbound-Requests an `openrouter.ai`. Das ist gewollt, kein Fehler.
+> `echo $OPENROUTER_API_KEY` zeigt `proxy-managed` (nie den echten Key).
+
+Verifikation (identisch zur Prüfung im automatisierten Test `local-test-kits.py` — ohne Live-API-Call):
+
+```powershell
+# 1. Secret ist registriert
+sbx secret ls
+
+# 2. In der Sandbox: Platzhalter sichtbar (nie der echte Key)
+sbx exec opencode-sandbox bash -c 'echo $OPENROUTER_API_KEY'   # → proxy-managed
+```
+
+Modellwechsel in OpenCode via `/models` (z. B. `openrouter/~anthropic/claude-sonnet-latest`).
+
+### Google AI Studio API-Key (optional)
+
+Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günstigen Pro-Tier — in OpenCode als
+zusätzlicher Provider konfiguriert (`files/home/.config/opencode/opencode.jsonc` → `provider.google`,
+DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
+
+`google` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
+— das Kit deklariert ihn **bewusst nicht** in `spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
+Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
+`GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
+Proxy injiziert den echten Key bei Requests an
+`generativelanguage.googleapis.com` — der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# 1. Google AI Studio API-Key erstellen
+#    https://aistudio.google.com/apikey
+
+# 2. Built-in-Service (wie sbx secret set anthropic / github)
+sbx secret set google
+```
+
+> **Wichtig:** Der Google-Platzhalter liegt in der Sandbox unter `GOOGLE_GENERATIVE_AI_API_KEY` auf
+> `proxy-managed`. OpenCode liest die Variable als `apiKey` für den Google-Provider; der Proxy ersetzt
+> den Platzhalter transparent bei Outbound-Requests an `generativelanguage.googleapis.com`.
+> Das ist gewollt, kein Fehler. `echo $GOOGLE_GENERATIVE_AI_API_KEY` zeigt `proxy-managed`
+> (nie den echten Key).
+
+Verifikation (identisch zur Prüfung im automatisierten Test `local-test-kits.py` — ohne Live-API-Call):
+
+```powershell
+# 1. Secret ist registriert
+sbx secret ls
+
+# 2. In der Sandbox: Platzhalter sichtbar (nie der echte Key)
+sbx exec opencode-sandbox bash -c 'echo "${GOOGLE_GENERATIVE_AI_API_KEY:-<unset>}"'   # → proxy-managed
+```
+
+Modellwechsel in OpenCode via `/models` (z. B. `google/gemini-3.5-flash`).
+
+### Stack Overflow API-Key (optional)
+
+Stack Overflow (`api.stackexchange.com`) ist eine **optionale Fallback-Quelle** bei konkreten
+Fehlermeldungen (Exception-Stacktraces, Build-Fehler, Plugin-Konflikte), wenn Context7 keine
+Ergebnisse liefert. Den API-Key anlegen unter **https://stackapps.com/applications** (Application
+registrieren, dann `key` kopieren). Das Kit deklariert den Service `stackoverflow` (`credentials[].apiKey` mit
+`name: STACKOVERFLOW_API_KEY`, `proxyManaged: true`) — wie `context7` ein Kit-deklarierter
+Service. Den Key als Secret registrieren, damit der Proxy ihn für Requests an
+`api.stackexchange.com` als `Authorization: Bearer` injiziert — der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# Kit-deklarierter Service (wie sbx secret set context7)
+sbx secret set stackoverflow
+```
+
+> **Wichtig:** `STACKOVERFLOW_API_KEY` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> Der Agent sendet `Authorization: Bearer proxy-managed`; der Proxy ersetzt den Platzhalter
+> transparent bei Outbound-Requests an `api.stackexchange.com`. Das ist gewollt, kein Fehler.
+> `echo $STACKOVERFLOW_API_KEY` zeigt `proxy-managed` (nie den echten Key).
+
+Die API-Doku liegt **offline im Kit**: `files/home/stackexchange-api.md` → `~/stackexchange-api.md`
+(kompakte Endpoint-Tabelle, generische Parameter, API-Version `api_revision`); Detail-Doku mit allen
+Parametern je Methode in `~/stackexchange-api-detail.md` (nur bei Bedarf lesen). Das spart Kontext —
+die Website https://api.stackexchange.com/docs wird nur noch bei Unklarheiten abgerufen. Die
+API-Version (`api_revision`) kann per `GET /2.3/info?site=stackoverflow` verifiziert werden.
+Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py --validate-only`,
+IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
+Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
+**schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
+Beide Kits führen identische Kopien (`mammouth-agent/files/home/`), weil jeder Agent sein eigenes
+`files/home/`-Mapping hat.
+
+Nutzungsregeln (SO-1…SO-4):
+- **Letzte Quelle** in der Abfragehierarchie (nach Context7/anderen Quellen, nur bei leeren Ergebnissen).
+- Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis**.
+- **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
+- Calls ohne registriertes Secret oder ohne Zustimmung werden nicht ausgeführt (Netzwerk-Policy blockt).
 
 ## Skills
 
