@@ -227,14 +227,14 @@ Bevor du das Kit verwenden kannst, brauchst du auf dem Windows-Host:
 
 | Voraussetzung | Beschreibung | Benötigt für |
 |---------------|--------------|--------------|
-| **Docker Desktop** (Windows) | Laufender Docker Daemon — native Windows-Installation **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 16.04**) | Sandbox-Ausführung |
+| **Docker Desktop** (Windows) | Laufender Docker Daemon — native Windows-Installation **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 26.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
 > **WSL als Alternative:** Standard ist Windows PowerShell + Docker Desktop. Das Kit läuft aber auch aus einem
-> **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 16.04**). `sbx run` / `sbx exec`
+> **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 26.04**). `sbx run` / `sbx exec`
 > und der IntelliJ-MCP-Zugriff über `host.docker.internal:64342` funktionieren dort genauso — inkl.
 > Secret-Injection (gh/ctx7) und Network-Allow-List.
 
@@ -442,6 +442,17 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
+
+### npm bin-links: Install vs. Laufzeit
+
+Die global installierten npm-CLIs (ctx7, skills, prettier, renovate) werden mit explizitem Prefix
+`npm_config_bin_links=true` installiert (`spec.yaml:117-120`) — dadurch legt npm die Bin-Links an und
+die CLIs landen als Symlinks in `/usr/local/share/npm-global/bin` (auf dem PATH). Zur Laufzeit setzt das Kit
+dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit spätere npm-Aufrufe
+durch den Agent keine bin-link-Seiteneffekte erzeugen. Der Unterschied ist Absicht, kein Fehler; an beiden
+Stellen nichts ändern.
+
+Verifikation in einer laufenden Sandbox: `npm config get bin-links` → `false` (das `npm_config_bin_links`-Env überschreibt den Default).
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
 
