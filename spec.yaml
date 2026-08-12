@@ -14,6 +14,11 @@ permissions:
     # DeepSeek (OpenCode-Modell mit eigenem API-Key)
     - api.deepseek.com
     - "*.deepseek.com"
+    # OpenRouter (OpenCode-Zusatz-Provider, API auf openrouter.ai)
+    - openrouter.ai
+    - "*.openrouter.ai"
+    # Google Gemini (OpenCode-Zusatz-Provider, API auf generativelanguage.googleapis.com)
+    - generativelanguage.googleapis.com
     # Anthropic (Claude Code)
     - anthropic.com
     - api.anthropic.com
@@ -28,6 +33,9 @@ permissions:
     - models.dev
     - registry.npmjs.org
     - dlcdn.apache.org
+    # Apache Camel (Doku, Dependencies)
+    - camel.apache.org
+    - "*.camel.apache.org"
     # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
     - "localhost:64342"
     - "127.0.0.1:64342"
@@ -72,6 +80,8 @@ permissions:
     - add-skill.vercel.sh
     # Web search (last resort, allow-list for websearch/webfetch provider)
     - "*.exa.ai"
+    # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
+    - api.stackexchange.com
 
 credentials:
   - service: deepseek
@@ -92,6 +102,15 @@ credentials:
         - domain: context7.com
           header: Authorization
           format: "Bearer %s"
+  - service: stackoverflow
+    description: "Stack Overflow API-Key (https://stackapps.com/applications)"
+    apiKey:
+      name: STACKOVERFLOW_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.stackexchange.com
+          header: Authorization
+          format: "Bearer %s"
 
 setup:
   install:
@@ -99,8 +118,7 @@ setup:
     - command: "npm_config_bin_links=true npm install -g skills"
     - command: "npm_config_bin_links=true npm install -g prettier"
     - command: "npm_config_bin_links=true npm install -g renovate"
-    - command: "apt-get install -y jq"
-    - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-yaml"
+    - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y jq python3-yaml"
     - command: |
         SHFMT_VER="3.13.0" && \
         curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_amd64" -o /usr/local/bin/shfmt && \

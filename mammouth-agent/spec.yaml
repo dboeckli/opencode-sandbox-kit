@@ -43,6 +43,9 @@ permissions:
       - "models.dev:443"
       - "registry.npmjs.org:443"
       - "dlcdn.apache.org:443"
+      # Apache Camel (Doku, Dependencies)
+      - "camel.apache.org:443"
+      - "*.camel.apache.org:443"
       # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
       - "localhost:64342"
       - "127.0.0.1:64342"
@@ -87,6 +90,8 @@ permissions:
       - "add-skill.vercel.sh:443"
       # Web search (last resort, allow-list for websearch/webfetch provider)
       - "*.exa.ai:443"
+      # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
+      - "api.stackexchange.com:443"
 
 credentials:
   - service: mammouth
@@ -107,6 +112,15 @@ credentials:
         - domain: context7.com
           header: Authorization
           format: "Bearer %s"
+  - service: stackoverflow
+    description: "Stack Overflow API-Key (https://stackapps.com/applications)"
+    apiKey:
+      name: STACKOVERFLOW_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.stackexchange.com
+          header: Authorization
+          format: "Bearer %s"
 
 setup:
   install:
@@ -114,9 +128,7 @@ setup:
     - command: "npm_config_bin_links=true npm install -g skills"
     - command: "npm_config_bin_links=true npm install -g prettier"
     - command: "npm_config_bin_links=true npm install -g renovate"
-    - command: "apt-get install -y jq"
-    - command: "apt-get install -y python3 python3-pip"
-    - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-yaml"
+    - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y jq python3 python3-pip python3-yaml"
     - command: |
         SHFMT_VER="3.13.0" && \
         curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_amd64" -o /usr/local/bin/shfmt && \
