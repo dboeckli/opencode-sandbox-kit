@@ -125,30 +125,37 @@ Docs: `npx ctx7 docs /cli/cli <query>` (GitHub CLI).
 OpenCode is an agent CLI (and the base for Mammouth Code). For configuration of `opencode.json`, agents, skills, and MCP servers:
 Docs: `npx ctx7 docs /anomalyco/opencode <query>`.
 
-## Network policy (allow-list)
+## Network policy
 
-The sandbox uses a **deny-by-default** network policy (see `spec.yaml` → `permissions.network.allow`).
-Only the hosts below are reachable. Any request to a host not on this list is blocked by the host
-proxy (HTTP 403) and never leaves the sandbox — the attempt only wastes time and tokens. Enforced by
-the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the MCP list); this file only
-informs you so you avoid blocked calls.
+Deny-by-default: the sandbox only reaches the hosts listed in `network-policy.md` (in this directory).
+Check it before any outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...).
+Anything not listed is blocked (HTTP 403).
 
-Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `webfetch`, ...), check
-this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
-for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
+The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Connected" entry in the
+MCP list) — `network-policy.md` only informs you so you avoid blocked calls.
 
-- **Agent APIs**: `mammouth.ai`, `*.mammouth.ai`, `code.mammouth.ai`, `api.mammouth.ai`, `model-explorer.mammouth.ai`, `opencode.ai`, `*.opencode.ai`
-- **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
-- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
-- **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`
-- **Skills CLI**: `add-skill.vercel.sh`
-- **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
+## Stack Overflow API (optionale Fallback-Quelle)
 
-Not reachable (blocked): general web search providers (e.g. `*.exa.ai`), Anthropic, telemetry, and
-any other host.
+Stack Overflow ist die **letzte Quelle** in der Abfragehierarchie (SO-1). Sie wird **nie** über
+`websearch`/`webfetch` genutzt (SO-3) — nur als direkter API-Call gegen `api.stackexchange.com`.
+
+Auslöser (SO-4) sind konkrete Fehlermuster bei **leerem Context7-Ergebnis** (und anderen
+Quellen): Exception-Stacktraces, Build-Fehler, Plugin-Konflikte.
+
+Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis** (SO-2):
+
+> «Context7 liefert keine Ergebnisse. Darf ich Stack Overflow durchsuchen?»
+
+Erst nach Zustimmung erfolgt der Call, z. B.
+`curl "https://api.stackexchange.com/2.3/search?site=stackoverflow" -H "Authorization: Bearer $STACKOVERFLOW_API_KEY"`.
+Doku zur API: **lokal in `~/stackexchange-api.md`** (kompakte Endpoint-Tabelle, generische
+Parameter, API-Version `api_revision`) — offline, spart Kontext. Detail-Doku (alle Parameter je
+Methode) in `~/stackexchange-api-detail.md` nur bei Bedarf lesen; die Website
+https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
+Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
+nicht ausgeführt.
 
 ## Startup checks
 
-A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, skills, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
+A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, skills, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->

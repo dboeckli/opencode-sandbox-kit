@@ -81,6 +81,8 @@ angegeben.
 |---|---|---|
 | OpenCode | `/anomalyco/opencode` | https://github.com/anomalyco/opencode |
 | OpenCode (Website) | `/websites/opencode_ai` | https://opencode.ai/ |
+| OpenRouter | `/websites/openrouter_ai` | https://openrouter.ai/docs |
+| Google Gen AI SDK (JS) | `/websites/googleapis_github_io_js-genai` | https://googleapis.github.io/js-genai/ |
 | websearch | (agent-native, keine ctx7-Library) | https://opencode.ai/docs/ |
 | webfetch | (agent-native, keine ctx7-Library) | https://opencode.ai/docs/ |
 
