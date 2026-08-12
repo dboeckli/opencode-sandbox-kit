@@ -11,8 +11,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic, mammouth und context7
-    (sbx secret set mammouth / sbx secret set context7 — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter, google und stackoverflow
+    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow — seit v0.38 ohne `-g`)
 
 Verwendung:
   python local-test-kits.py                 # alle 3 Kits testen (default: all)
@@ -40,11 +40,19 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from shutil import which
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 passed = []
 failed = []
+
+# Stack Exchange API: Update-Check über den offiziellen Change-Log.
+# Er listet Versionen neueste-zuerst ("Version 2.3" zuerst). Die dokumentierte
+# Version steht in den offline-Doku-Dateien des Kits (Basis-URL api.stackexchange.com/<v>).
+SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
+SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
+SO_DOC_FILES = ("files/home/stackexchange-api.md", "mammouth-agent/files/home/stackexchange-api.md")
 
 
 def enable_ansi():
@@ -116,6 +124,50 @@ def blocked_requests(name):
     return code
 
 
+def _so_doc_version():
+    for rel in SO_DOC_FILES:
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            m = re.search(r"api\.stackexchange\.com/(\d+\.\d+)", f.read())
+        if m:
+            return m.group(1), path
+    return None, None
+
+
+def check_stackoverflow_api_update():
+    """Vergleicht die im Kit dokumentierte Stack Exchange API-Version mit dem
+    offiziellen Change-Log. Schlaegt fehl, wenn der Change-Log eine neuere
+    Version ausweist (Doku-Dateien muessen aktualisiert werden)."""
+    documented, doc_path = _so_doc_version()
+    if not documented:
+        fail("stackoverflow API version (nicht in Doku-Datei gefunden)")
+        return
+    try:
+        with urllib.request.urlopen(SO_CHANGE_LOG_URL, timeout=30) as resp:
+            html = resp.read().decode("utf-8", "replace")
+    except Exception as e:
+        fail("stackoverflow API version (Change-Log nicht abrufbar)", str(e))
+        return
+    versions = SO_CHANGE_LOG_RE.findall(html)
+    if not versions:
+        fail("stackoverflow API version (keine Versionen im Change-Log)", html[:200])
+        return
+    newest = versions[0]
+
+    def key(v):
+        return tuple(int(x) for x in v.split("."))
+
+    if key(newest) > key(documented):
+        fail(
+            f"stackoverflow API update available (dokumentiert {documented}, Change-Log {newest})",
+            f"Aktualisiere {os.path.relpath(doc_path, ROOT)} (Endpoint-Referenz + api_revision)",
+        )
+    else:
+        pass_(f"stackoverflow API version up-to-date (v{documented})")
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -147,6 +199,9 @@ def main():
 
     if args.validate_only:
         print()
+        info("==> Stack Exchange API Update-Check")
+        check_stackoverflow_api_update()
+        print()
         if not failed:
             print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))
             sys.exit(0)
@@ -158,7 +213,9 @@ def main():
     print()
     info("==> Secrets (global)")
     _, secret_out = run_sbx(["secret", "ls"])
-    for sname in ("github", "anthropic", "mammouth", "context7"):
+    for line in secret_out.splitlines():
+        print("      " + line)
+    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google", "stackoverflow"):
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
         pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
 
@@ -288,6 +345,53 @@ def main():
             pass_("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)")
         else:
             fail("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)", out)
+
+        openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
+        if s["agent"] == "opencode":
+            if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
+                pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
+            else:
+                fail("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)", out)
+        else:
+            if c2 == 0 and "OPENROUTER_API_KEY=<unset>" in out:
+                pass_("openrouter not wired (only opencode template declares openrouter)")
+            else:
+                fail("openrouter not wired (only opencode template declares openrouter)", out)
+
+        # Built-in google service: the opencode template injects the placeholder
+        # under GOOGLE_GENERATIVE_AI_API_KEY (the env name the AI SDK's google
+        # provider reads by default) — assert that for the opencode template,
+        # while claude/mammouth must have it unset.
+        google_env_cmd = 'echo "GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], google_env_cmd)
+        if s["agent"] == "opencode":
+            if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
+                pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
+            else:
+                fail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
+        else:
+            if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
+                pass_("google not wired (only opencode template declares google)")
+            else:
+                fail("google not wired (only opencode template declares google)", out)
+
+        # Kit-deklarierter stackoverflow-Service (beide Kits) → Platzhalter in allen 3 Szenarien
+        stackoverflow_env_cmd = 'echo "STACKOVERFLOW_API_KEY=${STACKOVERFLOW_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], stackoverflow_env_cmd)
+        if c2 == 0 and "STACKOVERFLOW_API_KEY=proxy-managed" in out:
+            pass_("stackoverflow proxy env wiring (STACKOVERFLOW_API_KEY=proxy-managed)")
+        else:
+            fail("stackoverflow proxy env wiring (STACKOVERFLOW_API_KEY=proxy-managed)", out)
+
+        # Offline API-Doku aus files/home/ → ~/stackexchange-api.md + -detail.md
+        stackoverflow_doc_cmd = 'test -f ~/stackexchange-api.md -a -f ~/stackexchange-api-detail.md && echo "stackexchange api docs present"'
+        c2, out = exec_sandbox(s["name"], stackoverflow_doc_cmd)
+        if c2 == 0 and "stackexchange api docs present" in out:
+            pass_("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)")
+        else:
+            fail("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)", out)
+
 
         if s.get("run_checks"):
             c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")
