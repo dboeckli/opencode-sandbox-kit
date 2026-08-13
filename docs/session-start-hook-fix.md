@@ -10,7 +10,7 @@ Template-Overwrite erneut angewendet werden.
 ## Race Condition
 
 Für die meisten Kit-Felder reicht der `setup.startup`-Hook-Merge (Python, `settings.kit.json`
-in `~/.claude/settings.json` mergen, siehe `spec.yaml:191-214`). **Hooks und `statusLine`
+in `~/.claude/settings.json` mergen, siehe `spec.yaml:157-180`). **Hooks und `statusLine`
 reichen damit nicht**: Der Merge ist asynchron zum Session-Start, die Hooks würden erst ab der
 nächsten Session greifen bzw. teils gar nicht — unzuverlässig und nicht Template-sicher.
 
@@ -19,7 +19,7 @@ nächsten Session greifen bzw. teils gar nicht — unzuverlässig und nicht Temp
 Hooks + `statusLine` gehören in die **`managed-settings.json`** unter `/etc/claude-code/`:
 
 - Höchste Precedence — wird vom Template nicht überschrieben.
-- Wird bei `setup.install` geschrieben (`spec.yaml:156-190`) und existiert bereits beim ersten
+- Wird bei `setup.install` geschrieben (`spec.yaml:122-156`) und existiert bereits beim ersten
   Session-Start, bevor der Template-Overwrite stattfinden kann.
 
 ```json

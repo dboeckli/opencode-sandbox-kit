@@ -21,8 +21,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Liberica JDK version (spec.yaml / mammouth-agent/spec.yaml)",
-      "managerFilePatterns": ["**/spec.yaml"],
+      "description": "Liberica JDK version (install-tooling.sh, beide Kit-Kopien)",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["LIBERICA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+)\""],
       "depNameTemplate": "bell-sw/Liberica",
       "datasourceTemplate": "github-releases",
@@ -30,16 +30,16 @@
     },
     {
       "customType": "regex",
-      "description": "Apache Maven version (spec.yaml / mammouth-agent/spec.yaml)",
-      "managerFilePatterns": ["**/spec.yaml"],
+      "description": "Apache Maven version (install-tooling.sh, beide Kit-Kopien)",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["MAVEN_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "org.apache.maven:apache-maven",
       "datasourceTemplate": "maven"
     },
     {
       "customType": "regex",
-      "description": "Docker CLI version (spec.yaml / mammouth-agent/spec.yaml)",
-      "managerFilePatterns": ["**/spec.yaml"],
+      "description": "Docker CLI version (install-tooling.sh, beide Kit-Kopien)",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/cli",
       "datasourceTemplate": "github-releases",
@@ -47,8 +47,8 @@
     },
     {
       "customType": "regex",
-      "description": "Docker Compose plugin version (spec.yaml / mammouth-agent/spec.yaml)",
-      "managerFilePatterns": ["**/spec.yaml"],
+      "description": "Docker Compose plugin version (install-tooling.sh, beide Kit-Kopien)",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["COMPOSE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/compose",
       "datasourceTemplate": "github-releases",
@@ -56,10 +56,19 @@
     },
     {
       "customType": "regex",
-      "description": "Helm version (spec.yaml / mammouth-agent/spec.yaml) — nur v3, siehe packageRules",
-      "managerFilePatterns": ["**/spec.yaml"],
+      "description": "Helm version (install-tooling.sh, beide Kit-Kopien) — nur v3, siehe packageRules",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "shfmt version (install-tooling.sh, beide Kit-Kopien)",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "matchStrings": ["SHFMT_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "mvdan/sh",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
     },

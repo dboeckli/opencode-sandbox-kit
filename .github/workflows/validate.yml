@@ -42,3 +42,13 @@ jobs:
 
       - name: Validate Mammouth agent kit spec
         run: sbx kit validate ./mammouth-agent/
+
+      - name: Check install-script copies are in sync
+        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (beide Kits);
+        # beide Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
+        # andere per cp synchronisieren; Renovate aktualisiert beide gemeinsam).
+        run: |
+          set -euo pipefail
+          for f in install-tooling.sh install-tooling-user.sh; do
+            cmp "files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+          done

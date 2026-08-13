@@ -443,12 +443,32 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
 
+### Install-Skripte (Single Source of Truth)
+
+Der komplette `setup.install`-Tooling-Block ist in beide Kit-Specs (`spec.yaml`, `mammouth-agent/spec.yaml`)
+dedupliziert. Die Install-Befehle sind in **zwei gemeinsamen Skripten** gebündelt, die als identische Kopien
+in den `files/home/.local/bin/`-Bundles beider Kits liegen (kein separates Kanonik-Verzeichnis):
+
+| Skript (files/home/.local/bin/) | Nutzer | Inhalt |
+|--------|--------|--------|
+| `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm |
+| `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`) + Claude statusline |
+
+Beide Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
+`setup.install` im Sandbox-Home (siehe [Docker Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)),
+Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
+
+**Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie vornehmen, dann die
+zweite identisch halten (`mammouth-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
+(`local-test/local-test-kits.py`, IntelliJ-Config `local-test-kits-validate-only`) schlägt fehl, wenn die
+beiden Kit-Kopien abweichen. Renovate trackt die Versionen via `customManager` gegen **beide** Kopien.
+
 ### npm bin-links: Install vs. Laufzeit
 
 Die global installierten npm-CLIs (ctx7, skills, prettier, renovate) werden mit explizitem Prefix
-`npm_config_bin_links=true` installiert (`spec.yaml:117-120`) — dadurch legt npm die Bin-Links an und
+`npm_config_bin_links=true` installiert (`install-tooling.sh`) — dadurch legt npm die Bin-Links an und
 die CLIs landen als Symlinks in `/usr/local/share/npm-global/bin` (auf dem PATH). Zur Laufzeit setzt das Kit
-dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit spätere npm-Aufrufe
+dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml`), damit spätere npm-Aufrufe
 durch den Agent keine bin-link-Seiteneffekte erzeugen. Der Unterschied ist Absicht, kein Fehler; an beiden
 Stellen nichts ändern.
 

@@ -54,6 +54,15 @@ SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
 SO_DOC_FILES = ("files/home/stackexchange-api.md", "mammouth-agent/files/home/stackexchange-api.md")
 
+# Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
+# Bundles beider Kits. `setup.install` konsumiert sie aus dem Sandbox-Home. Beide
+# Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
+# Renovate aktualisiert beide gemeinsam).
+INSTALL_SCRIPT_PAIRS = (
+    ("files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"),
+    ("files/home/.local/bin/install-tooling-user.sh", "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
+)
+
 
 def enable_ansi():
     if os.name == "nt":
@@ -168,6 +177,34 @@ def check_stackoverflow_api_update():
         pass_(f"stackoverflow API version up-to-date (v{documented})")
 
 
+def check_install_scripts_sync():
+    """Dokumentierte Reihenfolge: files/home/ wird VOR setup.install in die Sandbox
+    kopiert → die Install-Skripte werden aus den files/home-Kopien ausgefuerht.
+    Diese Pruefung stellt sicher, dass die Kopien in beiden Kits identisch sind (die
+    Dateien sind das Editiertarget, kein separates Kanonik-Verzeichnis)."""
+    for file_a, file_b in INSTALL_SCRIPT_PAIRS:
+        src = os.path.join(ROOT, file_a)
+        dst = os.path.join(ROOT, file_b)
+        if not os.path.isfile(src):
+            fail(f"install script missing: {file_a}")
+            continue
+        if not os.path.isfile(dst):
+            fail(f"install script copy missing: {file_b}",
+                 f"Kopiere die Datei nach {file_b}")
+            continue
+        with open(src, encoding="utf-8") as f:
+            a = f.read()
+        with open(dst, encoding="utf-8") as f:
+            b = f.read()
+        if a != b:
+            fail(
+                f"install script drift: {file_b} != {file_a}",
+                "Edit both files identically (or copy one to the other)",
+            )
+        else:
+            pass_(f"install script synced ({file_a})")
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -201,6 +238,9 @@ def main():
         print()
         info("==> Stack Exchange API Update-Check")
         check_stackoverflow_api_update()
+        print()
+        info("==> Install-Skripte (Single Source of Truth) sync check")
+        check_install_scripts_sync()
         print()
         if not failed:
             print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))

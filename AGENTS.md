@@ -275,6 +275,13 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 
 ## Tools installed by the kit
 
+> Die Tooling-Installation ist in beiden Kit-Specs dedupliziert: `setup.install` führt nur noch
+> `bash /home/agent/.local/bin/install-tooling*.sh` aus. Die Skripte liegen als identische Kopien in
+> den `files/home/.local/bin/`-Bundles beider Kits (kein separates Kanonik-Verzeichnis). **Versionsänderungen**
+> (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie machen, dann die zweite identisch halten
+> (`mammouth-agent/files/home/.local/bin/`) → der Validate-only-Lauf (`local-test-kits-validate-only`)
+> schlägt bei Drift fehl.
+
 | Tool | Source |
 |------|--------|
 | Liberica JDK 25.0.4 | GitHub Releases (bell-sw) |
@@ -289,9 +296,9 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 | renovate | npm |
 
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
-> `npm_config_bin_links=true` (`spec.yaml:117-120`), damit die globalen CLIs als Symlinks nach
+> `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach
 > `/usr/local/share/npm-global/bin` landen. Zur Laufzeit setzt das Kit dagegen
-> `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit npm-Aufrufe des Agents keine
+> `environment.variables.npm_config_bin_links: "false"` (`spec.yaml`), damit npm-Aufrufe des Agents keine
 > bin-link-Seiteneffekte erzeugen. Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.
