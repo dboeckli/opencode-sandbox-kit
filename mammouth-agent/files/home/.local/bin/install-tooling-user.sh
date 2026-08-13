@@ -23,3 +23,13 @@ mkdir -p ~/.claude
 cp /tmp/ai-agent-skills/scripts/statusline.sh ~/.claude/statusline.sh
 chmod +x ~/.claude/statusline.sh
 rm -rf /tmp/ai-agent-skills
+
+# --- Repsy docs (offline reference) → ~/docs/repsy-docs ---
+# Shallow clone of the Hugo markdown source (content/), no theme submodule needed.
+# Idempotent: existing checkout is fast-forwarded on re-install (e.g. `sbx kit add`).
+if [ -d ~/docs/repsy-docs/.git ]; then
+  git -C ~/docs/repsy-docs pull --ff-only --quiet
+else
+  mkdir -p ~/docs
+  git clone --depth 1 --single-branch https://github.com/repsyio/repsy-docs.git ~/docs/repsy-docs
+fi

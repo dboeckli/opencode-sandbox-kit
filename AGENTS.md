@@ -244,6 +244,23 @@ Nutzungsregeln (siehe `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAU
 - **Vor jedem API-Call** fragt die KI den Benutzer explizit um Erlaubnis.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 
+## Offline Dokumentation (Repsy)
+
+Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist
+**nicht in Context7** verfügbar. Das Kit checked den Hugo-Markdown-Source beim `setup.install`
+(als User 1000) offline nach `~/docs/repsy-docs/` aus — Shallow-Clone (ohne Theme-Submodule,
+nur `content/`), idempotent (`git pull --ff-only` bei erneutem Install):
+
+```bash
+git clone --depth 1 --single-branch https://github.com/repsyio/repsy-docs.git ~/docs/repsy-docs
+```
+
+Der Agent liest bei Bedarf **direkt den Markdown-Source** (token-effizienter als HTML-Parsing
+der gerenderten Site) und kann per `git -C ~/docs/repsy-docs pull --ff-only` aktualisieren. Der
+Clone läuft über `files/home/.local/bin/install-tooling-user.sh` (beide Kit-Kopien, Drift-Check
+greift automatisch) — `github.com` ist bereits in der Network-Allowlist, keine spec.yaml-Änderung
+nötig.
+
 ## Layout
 
 - `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)

@@ -155,6 +155,27 @@ https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
 Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
 nicht ausgeführt.
 
+## Offline documentation (Repsy)
+
+Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist **nicht in
+Context7** verfügbar. Der Hugo-Markdown-Source liegt offline im Checkout
+`~/docs/repsy-docs/` (Shallow-Clone von https://github.com/repsyio/repsy-docs, installiert via
+`setup.install`).
+
+Wenn die Repsy-Doku benötigt wird: **direkt im Markdown-Source lesen** (token-effizienter als
+HTML-Parsing der Website), z. B.:
+
+```bash
+ls ~/docs/repsy-docs/content/            # maven, helm, nuget, npm, pypi, cargo, go, ruby, docker, ...
+grep -r "repo.repsy.io" ~/docs/repsy-docs/content/maven/
+```
+
+Aktualisieren (falls neuere Doku erwartet wird):
+
+```bash
+git -C ~/docs/repsy-docs pull --ff-only --quiet
+```
+
 ## Startup checks
 
 A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, skills, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.

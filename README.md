@@ -452,7 +452,7 @@ in den `files/home/.local/bin/`-Bundles beider Kits liegen (kein separates Kanon
 | Skript (files/home/.local/bin/) | Nutzer | Inhalt |
 |--------|--------|--------|
 | `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm |
-| `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`) + Claude statusline |
+| `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`), Claude statusline, Repsy-Doku-Checkout (`~/docs/repsy-docs`) |
 
 Beide Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
 `setup.install` im Sandbox-Home (siehe [Docker Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)),
@@ -623,6 +623,23 @@ Nutzungsregeln (SO-1…SO-4):
 - Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis**.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 - Calls ohne registriertes Secret oder ohne Zustimmung werden nicht ausgeführt (Netzwerk-Policy blockt).
+
+### Repsy Doku (offline)
+
+Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist
+**nicht in Context7** verfügbar. `install-tooling-user.sh` checked den Hugo-Markdown-Source beim
+`setup.install` (als User 1000) offline nach `~/docs/repsy-docs/` aus — Shallow-Clone ohne
+Theme-Submodule, idempotent (`git pull --ff-only` bei erneutem Install, z. B. `sbx kit add`):
+
+```bash
+git clone --depth 1 --single-branch https://github.com/repsyio/repsy-docs.git ~/docs/repsy-docs
+```
+
+Der Agent liest bei Bedarf **direkt den Markdown-Source** (`~/docs/repsy-docs/content/`,
+~60 `.md`-Dateien) — token-effizienter als HTML-Parsing der gerenderten Site — und aktualisiert
+per `git -C ~/docs/repsy-docs pull --ff-only`. `github.com` ist bereits in der
+Network-Allowlist, daher keine spec.yaml-Änderung.
+Nutzungsregeln in `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`.
 
 ## Skills
 

@@ -51,6 +51,27 @@ https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
 Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
 nicht ausgeführt.
 
+## Offline documentation (Repsy)
+
+Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist **nicht in
+Context7** verfügbar. Der Hugo-Markdown-Source liegt offline im Checkout
+`~/docs/repsy-docs/` (Shallow-Clone von https://github.com/repsyio/repsy-docs, installiert via
+`setup.install`).
+
+Wenn die Repsy-Doku benötigt wird: **direkt im Markdown-Source lesen** (token-effizienter als
+HTML-Parsing der Website), z. B.:
+
+```bash
+ls ~/docs/repsy-docs/content/            # maven, helm, nuget, npm, pypi, cargo, go, ruby, docker, ...
+grep -r "repo.repsy.io" ~/docs/repsy-docs/content/maven/
+```
+
+Aktualisieren (falls neuere Doku erwartet wird):
+
+```bash
+git -C ~/docs/repsy-docs pull --ff-only --quiet
+```
+
 ## Verification
 
 Before declaring a task done, verify it: run the project's build/test/lint commands (see the repo's `AGENTS.md`/`README`) and report the output as evidence, iterating until they pass. For non-trivial changes, use a fresh-context subagent to review the diff.
