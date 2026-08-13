@@ -27,6 +27,9 @@ ob ein Commit erstellt werden soll.
 - `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`)
 - `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — run from remote Git repo
 - `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
+- `sbx run opencode --name opencode-sandbox --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support: Host-kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
+- `sbx run claude --name claude-sandbox --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Claude Code)
+- `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Mammouth Code)
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
 - ctx7 installiert das Kit via `npm install -g ctx7` (spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)

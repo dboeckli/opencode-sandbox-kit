@@ -24,5 +24,6 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
+- **Docker Desktop Kubernetes (Windows host)**: `localhost:6443`, `127.0.0.1:6443`, `host.docker.internal:6443` (kube-apiserver)
 
 Not reachable (blocked): Anthropic, telemetry, and any other host not on this list.

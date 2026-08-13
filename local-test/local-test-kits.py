@@ -61,6 +61,7 @@ SO_DOC_FILES = ("files/home/stackexchange-api.md", "mammouth-agent/files/home/st
 INSTALL_SCRIPT_PAIRS = (
     ("files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"),
     ("files/home/.local/bin/install-tooling-user.sh", "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("files/home/.local/bin/regenerate-kubeconfig.py", "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
 )
 
 

@@ -40,6 +40,10 @@ permissions:
     - "localhost:64342"
     - "127.0.0.1:64342"
     - "host.docker.internal:64342"
+    # Docker Desktop Kubernetes (kube-apiserver, Host via Docker Desktop DNS)
+    - "localhost:6443"
+    - "127.0.0.1:6443"
+    - "host.docker.internal:6443"
     # Maven Central
     - maven.org
     - repo1.maven.org
@@ -189,6 +193,11 @@ setup:
               json.dump(merge(base, kit), f, indent=2)
       user: "1000"
       description: Re-apply kit settings after template overwrite — Python merge (faster than jq, handles arrays correctly)
+    - command:
+        - python3
+        - /home/agent/.local/bin/regenerate-kubeconfig.py
+      user: "1000"
+      description: Regenerate ~/.kube/config from the read-only host kubeconfig mount (Docker Desktop Kubernetes) — idempotent, no-op without mount
 
 environment:
   variables:
