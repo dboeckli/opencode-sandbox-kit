@@ -318,6 +318,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
 | Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
+| Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
@@ -334,6 +335,7 @@ Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-V
 | GitHub | https://github.com/settings/tokens | — |
 | Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
 | Stack Overflow | https://stackapps.com/applications | — |
+| Cloudsmith | https://cloudsmith.io/user/settings/api-keys/ | https://cloudsmith.io/user/settings/billing/ |
 
 > **Hinweis:** OpenCode Zen und Direkt-Provider (Google, Anthropic, ...) sind **getrennte Abrechnung**.
 > Die Kosten-Anzeige in OpenCode (`$ x.xx spent`) ist eine **lokale Schätzung** aus
@@ -443,12 +445,32 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
 
+### Install-Skripte (Single Source of Truth)
+
+Der komplette `setup.install`-Tooling-Block ist in beide Kit-Specs (`spec.yaml`, `mammouth-agent/spec.yaml`)
+dedupliziert. Die Install-Befehle sind in **zwei gemeinsamen Skripten** gebündelt, die als identische Kopien
+in den `files/home/.local/bin/`-Bundles beider Kits liegen (kein separates Kanonik-Verzeichnis):
+
+| Skript (files/home/.local/bin/) | Nutzer | Inhalt |
+|--------|--------|--------|
+| `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm |
+| `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`), Claude statusline, Repsy-Doku-Checkout (`~/docs/repsy-docs`) |
+
+Beide Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
+`setup.install` im Sandbox-Home (siehe [Docker Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)),
+Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
+
+**Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie vornehmen, dann die
+zweite identisch halten (`mammouth-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
+(`local-test/local-test-kits.py`, IntelliJ-Config `local-test-kits-validate-only`) schlägt fehl, wenn die
+beiden Kit-Kopien abweichen. Renovate trackt die Versionen via `customManager` gegen **beide** Kopien.
+
 ### npm bin-links: Install vs. Laufzeit
 
 Die global installierten npm-CLIs (ctx7, skills, prettier, renovate) werden mit explizitem Prefix
-`npm_config_bin_links=true` installiert (`spec.yaml:117-120`) — dadurch legt npm die Bin-Links an und
+`npm_config_bin_links=true` installiert (`install-tooling.sh`) — dadurch legt npm die Bin-Links an und
 die CLIs landen als Symlinks in `/usr/local/share/npm-global/bin` (auf dem PATH). Zur Laufzeit setzt das Kit
-dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit spätere npm-Aufrufe
+dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml`), damit spätere npm-Aufrufe
 durch den Agent keine bin-link-Seiteneffekte erzeugen. Der Unterschied ist Absicht, kein Fehler; an beiden
 Stellen nichts ändern.
 
@@ -603,6 +625,40 @@ Nutzungsregeln (SO-1…SO-4):
 - Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis**.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 - Calls ohne registriertes Secret oder ohne Zustimmung werden nicht ausgeführt (Netzwerk-Policy blockt).
+
+### Cloudsmith Authentication
+
+Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku ist via
+Context7 verfügbar (`npx ctx7 docs /websites/cloudsmith <query>` bzw.
+`/cloudsmith-io/cloudsmith-api` für die API-Bindings). Den API-Key anlegen unter
+https://cloudsmith.io/user/settings/api-keys/. Das Kit deklariert den Service `cloudsmith`
+(`credentials[].apiKey` mit `name: CLOUDSMITH_API_KEY`, `proxyManaged: true`). Den Key als
+Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set cloudsmith
+```
+
+In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
+`api.cloudsmith.io`. `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
+
+### Repsy Doku (offline)
+
+Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist
+**nicht in Context7** verfügbar. `install-tooling-user.sh` checked den Hugo-Markdown-Source beim
+`setup.install` (als User 1000) offline nach `~/docs/repsy-docs/` aus — Shallow-Clone ohne
+Theme-Submodule, idempotent (`git pull --ff-only` bei erneutem Install, z. B. `sbx kit add`):
+
+```bash
+git clone --depth 1 --single-branch https://github.com/repsyio/repsy-docs.git ~/docs/repsy-docs
+```
+
+Der Agent liest bei Bedarf **direkt den Markdown-Source** (`~/docs/repsy-docs/content/`,
+~60 `.md`-Dateien) — token-effizienter als HTML-Parsing der gerenderten Site — und aktualisiert
+per `git -C ~/docs/repsy-docs pull --ff-only`. `github.com` ist bereits in der
+Network-Allowlist, daher keine spec.yaml-Änderung.
+Nutzungsregeln in `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`.
 
 ## Skills
 

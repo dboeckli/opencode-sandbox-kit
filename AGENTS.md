@@ -244,6 +244,40 @@ Nutzungsregeln (siehe `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAU
 - **Vor jedem API-Call** fragt die KI den Benutzer explizit um Erlaubnis.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 
+## Cloudsmith Authentication
+
+Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku ist via
+Context7 verfügbar (`npx ctx7 docs /websites/cloudsmith <query>` bzw.
+`/cloudsmith-io/cloudsmith-api` für die API-Bindings). Den API-Key anlegen unter
+https://cloudsmith.io/user/settings/api-keys/. Das Kit deklariert den Service `cloudsmith`
+(`credentials[].apiKey` mit `name: CLOUDSMITH_API_KEY`, `proxyManaged: true`). Den Key als
+Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set cloudsmith
+```
+
+In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
+`api.cloudsmith.io`. `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
+
+## Offline Dokumentation (Repsy)
+
+Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist
+**nicht in Context7** verfügbar. Das Kit checked den Hugo-Markdown-Source beim `setup.install`
+(als User 1000) offline nach `~/docs/repsy-docs/` aus — Shallow-Clone (ohne Theme-Submodule,
+nur `content/`), idempotent (`git pull --ff-only` bei erneutem Install):
+
+```bash
+git clone --depth 1 --single-branch https://github.com/repsyio/repsy-docs.git ~/docs/repsy-docs
+```
+
+Der Agent liest bei Bedarf **direkt den Markdown-Source** (token-effizienter als HTML-Parsing
+der gerenderten Site) und kann per `git -C ~/docs/repsy-docs pull --ff-only` aktualisieren. Der
+Clone läuft über `files/home/.local/bin/install-tooling-user.sh` (beide Kit-Kopien, Drift-Check
+greift automatisch) — `github.com` ist bereits in der Network-Allowlist, keine spec.yaml-Änderung
+nötig.
+
 ## Layout
 
 - `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
@@ -275,6 +309,13 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 
 ## Tools installed by the kit
 
+> Die Tooling-Installation ist in beiden Kit-Specs dedupliziert: `setup.install` führt nur noch
+> `bash /home/agent/.local/bin/install-tooling*.sh` aus. Die Skripte liegen als identische Kopien in
+> den `files/home/.local/bin/`-Bundles beider Kits (kein separates Kanonik-Verzeichnis). **Versionsänderungen**
+> (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie machen, dann die zweite identisch halten
+> (`mammouth-agent/files/home/.local/bin/`) → der Validate-only-Lauf (`local-test-kits-validate-only`)
+> schlägt bei Drift fehl.
+
 | Tool | Source |
 |------|--------|
 | Liberica JDK 25.0.4 | GitHub Releases (bell-sw) |
@@ -289,9 +330,9 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 | renovate | npm |
 
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
-> `npm_config_bin_links=true` (`spec.yaml:117-120`), damit die globalen CLIs als Symlinks nach
+> `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach
 > `/usr/local/share/npm-global/bin` landen. Zur Laufzeit setzt das Kit dagegen
-> `environment.variables.npm_config_bin_links: "false"` (`spec.yaml:239`), damit npm-Aufrufe des Agents keine
+> `environment.variables.npm_config_bin_links: "false"` (`spec.yaml`), damit npm-Aufrufe des Agents keine
 > bin-link-Seiteneffekte erzeugen. Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
 > **Warum Helm v3 und nicht v4?** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher pinnt das Kit Helm auf 3.21.3. Ohne Pin würde das Plugin selbst das "latest" Release ziehen (aktuell v4) — bei `useLocalHelmBinary=true` greift die Sandbox-Helm-Version.

@@ -15,6 +15,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
+- **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
 - **MongoDB**: `repo.mongodb.org` (apt im Helm-Test-Pod)
 - **Skills CLI**: `add-skill.vercel.sh`

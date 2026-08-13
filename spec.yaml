@@ -66,6 +66,8 @@ permissions:
     - jitpack.io
     - artifacts.cibseven.org
     - packages.scm-manager.org
+    # Cloudsmith (Artifact-Hosting API)
+    - api.cloudsmith.io
     # Liberica JDK (Renovate Versions-API)
     - api.bell-sw.com
     # Ubuntu apt
@@ -111,66 +113,23 @@ credentials:
         - domain: api.stackexchange.com
           header: Authorization
           format: "Bearer %s"
+  - service: cloudsmith
+    description: "Cloudsmith API-Key (https://cloudsmith.io/user/settings/api-keys/)"
+    apiKey:
+      name: CLOUDSMITH_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.cloudsmith.io
+          header: X-Api-Key
+          format: "%s"
 
 setup:
   install:
-    - command: "npm_config_bin_links=true npm install -g ctx7"
-    - command: "npm_config_bin_links=true npm install -g skills"
-    - command: "npm_config_bin_links=true npm install -g prettier"
-    - command: "npm_config_bin_links=true npm install -g renovate"
-    - command: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y jq python3-yaml"
-    - command: |
-        SHFMT_VER="3.13.0" && \
-        curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_amd64" -o /usr/local/bin/shfmt && \
-        chmod +x /usr/local/bin/shfmt && \
-        shfmt --version
-    - command: "sh -c 'export PATH=/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH; /usr/local/share/npm-global/bin/skills add -g -y --all https://github.com/dboeckli/ai-agent-skills.git'"
+    - command: "bash /home/agent/.local/bin/install-tooling.sh"
+      description: Install shared tooling as root (npm/apt/shfmt/JDK/Maven/Docker/Compose/kubectl/Helm) — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling-user.sh"
       user: "1000"
-    - command: |
-        git clone --depth 1 https://github.com/dboeckli/ai-agent-skills.git /tmp/ai-agent-skills && \
-        mkdir -p ~/.claude && \
-        cp /tmp/ai-agent-skills/scripts/statusline.sh ~/.claude/statusline.sh && \
-        chmod +x ~/.claude/statusline.sh && \
-        rm -rf /tmp/ai-agent-skills
-      user: "1000"
-    - command: |
-        LIBERICA_VER="25.0.4+9" && \
-        curl -fsSL "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-amd64.tar.gz" -o /tmp/jdk.tar.gz && \
-        mkdir -p /usr/local/java && \
-        tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1 && \
-        ln -sf /usr/local/java/bin/java /usr/local/bin/java && \
-        rm -f /tmp/jdk.tar.gz
-    - command: |
-        MAVEN_VER="3.9.16" && \
-        curl -fsSL "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" -o /tmp/maven.tar.gz && \
-        mkdir -p /opt/maven && \
-        tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1 && \
-        rm -f /tmp/maven.tar.gz && \
-        ln -sf /opt/maven/bin/mvn /usr/local/bin/mvn
-    - command: |
-        DOCKER_VER="27.5.1" && \
-        curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VER}.tgz" -o /tmp/docker.tgz && \
-        tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker && \
-        rm -f /tmp/docker.tgz
-    - command: |
-        COMPOSE_VER="5.4.0" && \
-        mkdir -p /usr/local/lib/docker/cli-plugins && \
-        curl -fsSL "https://github.com/docker/compose/releases/download/v${COMPOSE_VER}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose && \
-        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
-        docker compose version
-    - command: |
-        KUBE_VER=$(curl -fsSL https://dl.k8s.io/release/stable.txt) && \
-        curl -fsSL "https://dl.k8s.io/release/$KUBE_VER/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl && \
-        chmod +x /usr/local/bin/kubectl
-    - command: |
-        HELM_VER="3.21.3" && \
-        curl -fsSL "https://get.helm.sh/helm-v${HELM_VER}-linux-amd64.tar.gz" -o /tmp/helm.tar.gz && \
-        mkdir -p /tmp/helm-extract && \
-        tar -xzf /tmp/helm.tar.gz -C /tmp/helm-extract && \
-        HELM_BIN=$(find /tmp/helm-extract -name helm -type f | head -1) && \
-        mv "$HELM_BIN" /usr/local/bin/helm && \
-        rm -rf /tmp/helm.tar.gz /tmp/helm-extract && \
-        helm version
+      description: Install agent-user tooling (skills + Claude statusline) — source files/home/.local/bin/install-tooling-user.sh
     - command: |
         mkdir -p /etc/claude-code && \
         cat > /etc/claude-code/managed-settings.json <<'EOF'
