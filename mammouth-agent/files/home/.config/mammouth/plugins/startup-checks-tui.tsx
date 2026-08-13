@@ -1,10 +1,21 @@
 /** @jsxImportSource @opentui/solid */
 import { createSignal } from "solid-js"
 import { readFileSync, readdirSync } from "node:fs"
+import { exec } from "node:child_process"
 import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui"
 
 const REPORT_FILE = `${process.env.HOME}/.config/sandbox-kit/startup-checks.report`
 const SKILLS_DIR = `${process.env.HOME}/.agents/skills`
+const INFRA_SCRIPT = `${process.env.HOME}/.config/sandbox-kit/check-infra.sh`
+
+const runInfra = (): Promise<string> =>
+  new Promise((resolve) => {
+    exec(`bash ${INFRA_SCRIPT}`, { timeout: 15000 }, (err, stdout) => {
+      const line = (stdout || "").trim()
+      if (err || !line) resolve("docker:FAIL kubernetes:FAIL")
+      else resolve(line)
+    })
+  })
 
 const fallback = {
   panel: "#1d1d1d",
@@ -112,6 +123,64 @@ const tui: TuiPlugin = async (api) => {
             <text fg={skills().length ? skin.text : skin.muted}>
               {skills().length ? skills().join("\n") : "none installed"}
             </text>
+          </box>
+        )
+      },
+    },
+  })
+
+  api.slots.register({
+    order: 160,
+    slots: {
+      sidebar_content(ctx, props) {
+        const skin = look(ctx.theme.current)
+        const [infra, setInfra] = createSignal("running…")
+
+        let disposed = false
+        let timer
+        const refresh = async () => {
+          const line = await runInfra()
+          if (disposed) return
+          setInfra(line)
+          timer = setTimeout(refresh, 10000)
+        }
+        timer = setTimeout(refresh, 0)
+
+        api.lifecycle.onDispose(() => {
+          disposed = true
+          if (timer) clearTimeout(timer)
+        })
+
+        return (
+          <box
+            border
+            borderColor={skin.border}
+            backgroundColor={skin.panel}
+            paddingTop={1}
+            paddingBottom={1}
+            paddingLeft={2}
+            paddingRight={2}
+            flexDirection="column"
+            gap={1}
+          >
+            <text fg={skin.accent}>
+              <b>Docker / Kubernetes</b>
+            </text>
+            {infra() === "running…" ? (
+              <text fg={skin.muted}>running…</text>
+            ) : (
+              <box flexDirection="row" flexWrap="wrap">
+                {infra()
+                  .trim()
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .map((t) => {
+                    const status = t.split(":")[1]
+                    const fg = status === "OK" ? "#5faf5f" : status === "FAIL" ? "#ff5f5f" : skin.muted
+                    return <text fg={fg}>{t} </text>
+                  })}
+              </box>
+            )}
           </box>
         )
       },
