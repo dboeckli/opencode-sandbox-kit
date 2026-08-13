@@ -51,6 +51,16 @@ https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
 Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
 nicht ausgeführt.
 
+## Cloudsmith
+
+Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku via
+Context7 (`npx ctx7 docs /websites/cloudsmith <query>`, API-Bindings:
+`/cloudsmith-io/cloudsmith-api`). API-Key unter https://cloudsmith.io/user/settings/api-keys/,
+als Secret registrieren (`sbx secret set cloudsmith`). In der Sandbox ist
+`CLOUDSMITH_API_KEY=proxy-managed` gesetzt; der Agent sendet `X-Api-Key: proxy-managed`, der
+Proxy ersetzt den Platzhalter transparent bei Requests an `api.cloudsmith.io` – der Key liegt
+nie im Sandbox-Filesystem.
+
 ## Offline documentation (Repsy)
 
 Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist **nicht in

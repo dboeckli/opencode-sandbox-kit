@@ -147,6 +147,7 @@ jobs:
           printf '%s' 'openrouter-fake-ci-key' | sbx secret set openrouter -f
           printf '%s' 'google-fake-ci-key' | sbx secret set google -f
           printf '%s' 'stackoverflow-fake-ci-key' | sbx secret set stackoverflow -f
+          printf '%s' 'cloudsmith-fake-ci-key' | sbx secret set cloudsmith -f
 
       - name: Pre-create credential bindings (third-party v2 kit)
         # Third-party schemaVersion:"2" kits require an approved credential
@@ -166,6 +167,9 @@ jobs:
             mammouth:
               apiKey:
                 domains: [api.mammouth.ai]
+            cloudsmith:
+              apiKey:
+                domains: [api.cloudsmith.io]
           EOF
 
       - name: Initialize global network policy (balanced)

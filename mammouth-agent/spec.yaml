@@ -76,6 +76,8 @@ permissions:
       - "jitpack.io:443"
       - "artifacts.cibseven.org:443"
       - "packages.scm-manager.org:443"
+      # Cloudsmith (Artifact-Hosting API)
+      - "api.cloudsmith.io:443"
       # Liberica JDK (Renovate Versions-API)
       - "api.bell-sw.com:443"
       # Ubuntu apt (http, Port 80)
@@ -121,6 +123,15 @@ credentials:
         - domain: api.stackexchange.com
           header: Authorization
           format: "Bearer %s"
+  - service: cloudsmith
+    description: "Cloudsmith API-Key (https://cloudsmith.io/user/settings/api-keys/)"
+    apiKey:
+      name: CLOUDSMITH_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.cloudsmith.io
+          header: X-Api-Key
+          format: "%s"
 
 setup:
   install:

@@ -11,8 +11,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter, google und stackoverflow
-    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter, google, stackoverflow und cloudsmith
+    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
 
 Verwendung:
   python local-test-kits.py                 # alle 3 Kits testen (default: all)
@@ -255,7 +255,7 @@ def main():
     _, secret_out = run_sbx(["secret", "ls"])
     for line in secret_out.splitlines():
         print("      " + line)
-    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google", "stackoverflow"):
+    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"):
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
         pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
 
@@ -431,6 +431,14 @@ def main():
             pass_("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)")
         else:
             fail("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)", out)
+
+        # Kit-deklarierter cloudsmith-Service (beide Kits) → Platzhalter in allen 3 Szenarien
+        cloudsmith_env_cmd = 'echo "CLOUDSMITH_API_KEY=${CLOUDSMITH_API_KEY:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], cloudsmith_env_cmd)
+        if c2 == 0 and "CLOUDSMITH_API_KEY=proxy-managed" in out:
+            pass_("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)")
+        else:
+            fail("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)", out)
 
 
         if s.get("run_checks"):

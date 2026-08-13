@@ -244,6 +244,23 @@ Nutzungsregeln (siehe `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAU
 - **Vor jedem API-Call** fragt die KI den Benutzer explizit um Erlaubnis.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 
+## Cloudsmith Authentication
+
+Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku ist via
+Context7 verfügbar (`npx ctx7 docs /websites/cloudsmith <query>` bzw.
+`/cloudsmith-io/cloudsmith-api` für die API-Bindings). Den API-Key anlegen unter
+https://cloudsmith.io/user/settings/api-keys/. Das Kit deklariert den Service `cloudsmith`
+(`credentials[].apiKey` mit `name: CLOUDSMITH_API_KEY`, `proxyManaged: true`). Den Key als
+Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set cloudsmith
+```
+
+In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
+`api.cloudsmith.io`. `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
+
 ## Offline Dokumentation (Repsy)
 
 Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist

@@ -318,6 +318,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
 | Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
+| Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
@@ -334,6 +335,7 @@ Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-V
 | GitHub | https://github.com/settings/tokens | — |
 | Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
 | Stack Overflow | https://stackapps.com/applications | — |
+| Cloudsmith | https://cloudsmith.io/user/settings/api-keys/ | https://cloudsmith.io/user/settings/billing/ |
 
 > **Hinweis:** OpenCode Zen und Direkt-Provider (Google, Anthropic, ...) sind **getrennte Abrechnung**.
 > Die Kosten-Anzeige in OpenCode (`$ x.xx spent`) ist eine **lokale Schätzung** aus
@@ -623,6 +625,23 @@ Nutzungsregeln (SO-1…SO-4):
 - Die KI fragt den Benutzer **vor jedem API-Call explizit um Erlaubnis**.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
 - Calls ohne registriertes Secret oder ohne Zustimmung werden nicht ausgeführt (Netzwerk-Policy blockt).
+
+### Cloudsmith Authentication
+
+Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku ist via
+Context7 verfügbar (`npx ctx7 docs /websites/cloudsmith <query>` bzw.
+`/cloudsmith-io/cloudsmith-api` für die API-Bindings). Den API-Key anlegen unter
+https://cloudsmith.io/user/settings/api-keys/. Das Kit deklariert den Service `cloudsmith`
+(`credentials[].apiKey` mit `name: CLOUDSMITH_API_KEY`, `proxyManaged: true`). Den Key als
+Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set cloudsmith
+```
+
+In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
+`api.cloudsmith.io`. `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
 
 ### Repsy Doku (offline)
 
