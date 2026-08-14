@@ -90,7 +90,7 @@ Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
 
 ## Helm
 
-`helm` 3.21.3 (v3) at `/usr/local/bin/helm`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v4 ist bewusst nicht verwendet — kokuwaio/helm-maven-plugin (6.17.0) ist nicht v4-kompatibel.
+`helm` 3.21.3 (v3) at `/usr/local/bin/helm`, `helm4` 4.2.4 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH (kokuwaio/helm-maven-plugin 6.17.0 ist nicht v4-kompatibel); v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
 Docs: `npx ctx7 docs /helm/helm-www <query>` (Kubernetes package manager, charts).
 
 ## Runtime tools / CLIs (docs via ctx7)

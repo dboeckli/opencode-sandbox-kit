@@ -63,8 +63,8 @@ else
   report="$report kubectl:FAIL"
 fi
 
-# 7. helm
-if helm version >/dev/null 2>&1; then
+# 7. helm (v3 Default + v4 als helm4)
+if helm version >/dev/null 2>&1 && helm4 version >/dev/null 2>&1; then
   report="$report helm:OK"
 else
   report="$report helm:FAIL"
