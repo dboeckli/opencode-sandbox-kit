@@ -6,10 +6,18 @@
   },
   "packageRules": [
     {
-      "description": "Helm: nur v3 (v4 ist nicht kompatibel mit kokuwaio/helm-maven-plugin 6.17.0, Issue #427)",
+      "description": "Helm v3 (Default `helm`): nur v3 (v4 nicht kompatibel mit kokuwaio/helm-maven-plugin 6.17.0, Issue #427)",
       "matchDatasources": ["github-releases"],
       "matchPackageNames": ["helm/helm"],
+      "matchCurrentValue": "/^3\\./",
       "allowedVersions": "/^3\\./"
+    },
+    {
+      "description": "Helm v4 (`helm4`): v4-Linie des parallelen Binaries",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["helm/helm"],
+      "matchCurrentValue": "/^4\\./",
+      "allowedVersions": "/^4\\./"
     },
     {
       "description": "Liberica JDK: nur LTS-Releases (8/11/17/21/25), analog workarounds:javaLTSVersions",
@@ -56,9 +64,18 @@
     },
     {
       "customType": "regex",
-      "description": "Helm version (install-tooling.sh, beide Kit-Kopien) — nur v3, siehe packageRules",
+      "description": "Helm v3 version (install-tooling.sh, beide Kit-Kopien) — Default `helm`, siehe packageRules",
       "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "helm/helm",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Helm v4 version (install-tooling.sh, beide Kit-Kopien) — paralleles Binary `helm4`, siehe packageRules",
+      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "matchStrings": ["HELM4_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"

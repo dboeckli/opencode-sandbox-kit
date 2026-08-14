@@ -64,12 +64,23 @@ KUBE_VER="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
 curl -fsSL "https://dl.k8s.io/release/${KUBE_VER}/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl
 chmod +x /usr/local/bin/kubectl
 
-# --- Helm (v3, pinned: v4 breaks kokuwaio/helm-maven-plugin, see #427) ---
+# --- Helm v3 (default `helm`, pinned: v4 breaks kokuwaio/helm-maven-plugin, see #427) ---
+# --- Helm v4 (as `helm4`): beide Versionen koexistieren, v3 bleibt der Default auf dem PATH ---
+install_helm() {
+	local ver="$1" dest="$2"
+	curl -fsSL "https://get.helm.sh/helm-v${ver}-linux-amd64.tar.gz" -o /tmp/helm.tar.gz
+	mkdir -p /tmp/helm-extract
+	tar -xzf /tmp/helm.tar.gz -C /tmp/helm-extract
+	local bin
+	bin="$(find /tmp/helm-extract -name helm -type f | head -1)"
+	mv "${bin}" "${dest}"
+	rm -rf /tmp/helm.tar.gz /tmp/helm-extract
+}
+
 HELM_VER="3.21.3"
-curl -fsSL "https://get.helm.sh/helm-v${HELM_VER}-linux-amd64.tar.gz" -o /tmp/helm.tar.gz
-mkdir -p /tmp/helm-extract
-tar -xzf /tmp/helm.tar.gz -C /tmp/helm-extract
-HELM_BIN="$(find /tmp/helm-extract -name helm -type f | head -1)"
-mv "${HELM_BIN}" /usr/local/bin/helm
-rm -rf /tmp/helm.tar.gz /tmp/helm-extract
+install_helm "${HELM_VER}" /usr/local/bin/helm
 helm version
+
+HELM4_VER="4.2.4"
+install_helm "${HELM4_VER}" /usr/local/bin/helm4
+helm4 version
