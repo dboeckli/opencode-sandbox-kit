@@ -102,6 +102,10 @@ Docs for other installed runtime tools:
 - **jq** — `/jqlang/jq` (JSON processor)
 - **Renovate** — `/renovatebot/renovate` (dependency updates; inkl. `renovate-config-validator` — Config validieren: `renovate-config-validator .github/renovate.json`)
 
+> **`npm_config_bin_links` ist bereits global gesetzt** (`spec.yaml` → `environment.variables`, Wert `false`).
+> Kein `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig — die Variable steht schon in der
+> Umgebung; ein erneutes Exportieren ist redundant.
+
 ## Related tooling docs (not installed, docs via ctx7)
 
 These tools are not installed in the sandbox, but their documentation is available via Context7:
