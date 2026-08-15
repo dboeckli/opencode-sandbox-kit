@@ -77,7 +77,7 @@ install_helm() {
 	rm -rf /tmp/helm.tar.gz /tmp/helm-extract
 }
 
-HELM_VER="3.21.3"
+HELM_VER="3.21.4"
 install_helm "${HELM_VER}" /usr/local/bin/helm
 helm version
 
