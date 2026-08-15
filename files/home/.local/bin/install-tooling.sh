@@ -25,7 +25,7 @@ apt-get update
 apt-get install -y jq python3 python3-pip python3-yaml
 
 # --- shfmt ---
-SHFMT_VER="3.13.0"
+SHFMT_VER="3.13.1"
 curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_amd64" -o /usr/local/bin/shfmt
 chmod +x /usr/local/bin/shfmt
 shfmt --version
