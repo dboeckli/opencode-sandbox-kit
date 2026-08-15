@@ -142,6 +142,10 @@ Helm 3.21.3 (v3) at `/usr/local/bin/helm`, Helm 4.2.4 (v4) at `/usr/local/bin/he
 
 Installed runtime CLIs — Node.js, npm, Git, jq, Go, pip, curl, GNU Make — see `context7-tools.md`.
 
+> **`npm_config_bin_links` ist bereits global gesetzt** (`spec.yaml` → `environment.variables`, Wert `false`).
+> Kein `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig — die Variable steht schon in der
+> Umgebung; ein erneutes Exportieren ist redundant.
+
 ## Renovate
 
 Renovate (inkl. `renovate-config-validator`) via npm global installiert. Config validieren: `renovate-config-validator .github/renovate.json`.
