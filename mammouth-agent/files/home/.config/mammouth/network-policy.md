@@ -17,7 +17,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
 - **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
-- **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`
+- **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)
 - **MongoDB apt (Helm-Test-Pod)**: `repo.mongodb.org`
 - **Python / PyPI**: `pypi.org`, `files.pythonhosted.org`
 - **Skills CLI**: `add-skill.vercel.sh`
