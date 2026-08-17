@@ -686,7 +686,7 @@ Für `gh` CLI in der Sandbox ein persönliches GitHub-Token (Name: `opencode-san
 Scopes `read:org`, `read:packages`, `read:project`, `read:user` erstellen und als Secret speichern:
 
 ```powershell
-sbx secret set github -t "<github-token>"
+sbx secret set github
 ```
 
 Das Token wird via Proxy automatisch injiziert – `gh auth status` funktioniert ohne weitere Konfiguration.

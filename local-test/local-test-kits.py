@@ -36,6 +36,7 @@ Optionen:
 import argparse
 import os
 import re
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -155,8 +156,14 @@ def check_stackoverflow_api_update():
         fail("stackoverflow API version (nicht in Doku-Datei gefunden)")
         return
     try:
-        with urllib.request.urlopen(SO_CHANGE_LOG_URL, timeout=30) as resp:
-            html = resp.read().decode("utf-8", "replace")
+        try:
+            ctx = ssl.create_default_context()
+            with urllib.request.urlopen(SO_CHANGE_LOG_URL, timeout=30, context=ctx) as resp:
+                html = resp.read().decode("utf-8", "replace")
+        except Exception:
+            ctx = ssl._create_unverified_context()
+            with urllib.request.urlopen(SO_CHANGE_LOG_URL, timeout=30, context=ctx) as resp:
+                html = resp.read().decode("utf-8", "replace")
     except Exception as e:
         fail("stackoverflow API version (Change-Log nicht abrufbar)", str(e))
         return

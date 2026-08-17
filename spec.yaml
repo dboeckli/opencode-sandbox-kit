@@ -74,9 +74,10 @@ permissions:
     - api.cloudsmith.io
     # Liberica JDK (Renovate Versions-API)
     - api.bell-sw.com
-    # Ubuntu apt
+    # Ubuntu apt (archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)
     - archive.ubuntu.com
     - security.ubuntu.com
+    - ports.ubuntu.com
     # MongoDB apt (Helm-Test-Pod)
     - repo.mongodb.org
     # Python / PyPI
