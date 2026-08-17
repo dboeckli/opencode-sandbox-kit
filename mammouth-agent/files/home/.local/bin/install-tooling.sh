@@ -67,7 +67,7 @@ rm -f /tmp/docker.tgz
 
 # --- Docker Compose (CLI plugin) ---
 # Compose release assets use x86_64/aarch64, not amd64/arm64
-COMPOSE_VER="5.4.0"
+COMPOSE_VER="5.5.0"
 case "${UNAME_M}" in
     x86_64)  COMPOSE_ARCH="x86_64" ;;
     aarch64) COMPOSE_ARCH="aarch64" ;;
