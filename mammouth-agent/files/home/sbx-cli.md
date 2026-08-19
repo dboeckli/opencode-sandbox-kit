@@ -1,7 +1,7 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.38.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.39.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
 (nur teilweise abgedeckt — die CLI selbst ist NICHT in Context7). Kit-Grammatik v2:
@@ -14,8 +14,7 @@ Docker Sandboxes creates isolated sandbox environments for AI agents, powered by
 Run without a command to launch interactive mode, or pass a command for CLI usage.
 
 Usage:
-  sbx
-  sbx [command]
+  sbx COMMAND
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
@@ -23,6 +22,7 @@ Available Commands:
   create      Create a sandbox for an agent
   daemon      Manage sandboxd daemon
   diagnose    Diagnose common issues with your sbx installation
+  env         (Experimental) Manage sandboxes declaratively from a .sbxenv.yaml file
   exec        Execute a command inside a sandbox
   help        Help about any command
   kit         (Experimental) Manage kit artifacts
@@ -32,6 +32,7 @@ Available Commands:
   mcp         Manage MCP servers
   policy      Manage sandbox policies
   ports       Manage sandbox port publishing
+  prune       Remove all stopped sandboxes
   reset       Reset all sandboxes and clean up state
   rm          Remove one or more sandboxes
   run         Run an agent in a sandbox
@@ -47,7 +48,7 @@ Flags:
   -D, --debug   Enable debug logging
   -h, --help    help for sbx
 
-Use "sbx [command] --help" for more information about a command.
+Use "sbx COMMAND --help" for more information about a command.
 ```
 
 ## sbx completion --help
@@ -56,7 +57,7 @@ Generate the autocompletion script for sbx for the specified shell.
 See each sub-command's help for details on how to use the generated script.
 
 Usage:
-  sbx completion [command]
+  sbx completion COMMAND
 
 Available Commands:
   bash        Generate the autocompletion script for bash
@@ -70,7 +71,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx completion [command] --help" for more information about a command.
+Use "sbx completion COMMAND --help" for more information about a command.
 ```
 
 ## sbx cp --help
@@ -111,7 +112,7 @@ Use "sbx run --name SANDBOX" to attach to the agent after creation.
 
 Usage:
   sbx create [flags] AGENT PATH [PATH...]
-  sbx create [command]
+  sbx create COMMAND
 
 Examples:
   # Create a sandbox for Claude in the current directory
@@ -142,10 +143,12 @@ Flags:
       --clone                               Run the agent on a private in-container clone of the host Git repository (mounted read-only) instead of bind-mounting the workspace; the agent's commits are accessible via the sandbox-<name> git remote on the host
       --cpus int                            Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs)
       --deny-network sbx policy ls <NAME>   Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the new sandbox and can be listed or removed later with sbx policy ls <NAME> / `sbx policy rm network --sandbox <NAME> --resource <HOST>`. Safe under centralized governance because a local deny can only narrow, never widen, egress.
+  -e, --env stringArray                     Set an environment variable in the sandbox (can be repeated): KEY=VALUE, or a bare KEY to take the value from the current environment
+      --env-file stringArray                Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an earlier one
   -h, --help                                help for create
       --kit strings                         (Experimental) Kit reference (directory, ZIP, or OCI). Can be specified multiple times
   -m, --memory string                       Memory limit in binary units (e.g., 1024m, 8g). Default: 50% of host memory, max 32 GiB
-      --name string                         Name for the sandbox (default: <agent>-<workdir>, letters, numbers, hyphens, periods, plus signs and minus signs only)
+      --name string                         Name for the sandbox (defaults to <agent>-<workdir>; at least two characters, starting with a letter or number, containing only letters, numbers, hyphens and periods; 'default' is reserved)
       --profile string                      Governance profile to assign to the sandbox
   -p, --publish stringArray                 Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]
   -q, --quiet                               Suppress verbose output
@@ -155,7 +158,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx create [command] --help" for more information about a command.
+Use "sbx create COMMAND --help" for more information about a command.
 ```
 
 ## sbx daemon --help
@@ -163,7 +166,7 @@ Use "sbx create [command] --help" for more information about a command.
 Manage sandboxd daemon
 
 Usage:
-  sbx daemon [command]
+  sbx daemon COMMAND
 
 Available Commands:
   log-level   Inspect or change sandboxd's per-category log levels
@@ -178,7 +181,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx daemon [command] --help" for more information about a command.
+Use "sbx daemon COMMAND --help" for more information about a command.
 ```
 
 ## sbx diagnose --help
@@ -195,6 +198,35 @@ Flags:
 
 Global Flags:
   -D, --debug   Enable debug logging
+```
+
+## sbx env --help
+```
+EXPERIMENTAL: this command may change or be removed in future releases.
+
+Manage a sandbox environment declared in a .sbxenv.yaml file.
+
+The file describes the agent, optional mixin kits, workspace mounts,
+environment variables, secrets to provision, and per-service credential
+bindings. Secrets are provisioned at the environment's sandbox scope so
+`sbx env rm` can remove everything it created.
+
+Usage:
+  sbx env COMMAND
+
+Available Commands:
+  create      Create a sandbox environment from .sbxenv.yaml
+  exec        Execute a command inside a sandbox environment
+  rm          Remove a sandbox environment and its scoped resources
+  run         Create (if needed) and attach to a sandbox environment
+
+Flags:
+  -h, --help   help for env
+
+Global Flags:
+  -D, --debug   Enable debug logging
+
+Use "sbx env COMMAND --help" for more information about a command.
 ```
 
 ## sbx exec --help
@@ -238,7 +270,7 @@ Help provides help for any command in the application.
 Simply type sbx help [path to command] for full details.
 
 Usage:
-  sbx help [command] [flags]
+  sbx help [COMMAND]
 
 Flags:
   -h, --help   help for help
@@ -258,15 +290,17 @@ credentials, network policies, environment variables, startup commands, and file
 
 Usage:
   sbx kit COMMAND
-  sbx kit [command]
 
 Available Commands:
   add         Add a kit to a sandbox
   inspect     Display details about a kit artifact
   pack        Package a directory as a kit artifact
+  provenance  Show the SLSA provenance attached to a kit
   pull        Pull a kit artifact from an OCI registry
   push        Push a kit artifact to an OCI registry
+  sign        Sign a kit artifact
   validate    Validate a kit artifact
+  verify      Verify a kit artifact's signature
 
 Flags:
   -h, --help   help for kit
@@ -274,7 +308,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx kit [command] --help" for more information about a command.
+Use "sbx kit COMMAND --help" for more information about a command.
 ```
 
 ## sbx login --help
@@ -332,14 +366,14 @@ Global Flags:
 Register and manage MCP servers for use with sandbox sessions.
 
 Usage:
-  sbx mcp [command]
+  sbx mcp COMMAND
 
 Available Commands:
   add         Register an MCP server
   auth        Authorize MCP servers
   inspect     Show MCP server details
   load        Load an already-registered MCP server into a running sandbox
-  ls          List registered MCP servers
+  ls          List MCP servers, grouped by the gateway that serves them
   rm          Remove a registered MCP server
 
 Flags:
@@ -348,7 +382,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx mcp [command] --help" for more information about a command.
+Use "sbx mcp COMMAND --help" for more information about a command.
 ```
 
 ## sbx policy --help
@@ -361,7 +395,6 @@ subcommands to allow, deny, list, or remove rules.
 
 Usage:
   sbx policy COMMAND
-  sbx policy [command]
 
 Available Commands:
   allow       Add an allow rule for sandboxes
@@ -381,7 +414,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx policy [command] --help" for more information about a command.
+Use "sbx policy COMMAND --help" for more information about a command.
 ```
 
 ## sbx ports --help
@@ -425,6 +458,41 @@ Global Flags:
   -D, --debug   Enable debug logging
 ```
 
+## sbx prune --help
+```
+Remove all stopped sandboxes and their associated resources.
+
+Only stopped sandboxes are candidates — a running sandbox is never removed,
+which makes this safe to run habitually. Stop a sandbox first with
+"sbx stop" if you want it pruned. To remove a specific sandbox regardless of
+state, use "sbx rm SANDBOX".
+
+Use --filter since=DURATION to narrow the set to sandboxes that have been
+stopped for longer than DURATION (e.g. since=168h to keep anything stopped
+within the last week). A sandbox whose stop time the daemon cannot report is
+left alone, since how long it has been stopped cannot be established.
+
+Use --dry-run to list what would be removed without removing anything.
+
+Pruning requires confirmation; use --force to skip the confirmation prompt
+(for non-interactive scripts) and to remove a sandbox that is in use (e.g. an
+open SSH connection). This action cannot be undone.
+
+Local-only: cloud sandboxes expire via their TTL.
+
+Usage:
+  sbx prune [flags]
+
+Flags:
+      --dry-run              List the sandboxes that would be removed without removing them
+      --filter stringArray   Filter candidates (supported: since=DURATION — stopped for longer than DURATION)
+  -f, --force                Skip confirmation prompts and remove even if in use (e.g. an open SSH connection)
+  -h, --help                 help for prune
+
+Global Flags:
+  -D, --debug   Enable debug logging
+```
+
 ## sbx reset --help
 ```
 Reset Docker Sandboxes to a freshly-installed state.
@@ -435,6 +503,7 @@ This command will:
 - Clear all internal registries
 - Delete all sandbox state
 - Remove all policies
+- Remove the managed SSH configuration
 - Clear the Gordon assistant's sessions and history
 - Delete all stored secrets
 - Sign out of Docker Sandboxes
@@ -528,6 +597,8 @@ Flags:
       --clone                               Run the agent on a private in-container clone of the host Git repository; must be set at sandbox creation time (no-op when re-attaching to an existing clone-mode sandbox)
       --cpus int                            Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs)
       --deny-network sbx policy ls <NAME>   Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the new sandbox and can be listed or removed later with sbx policy ls <NAME> / `sbx policy rm network --sandbox <NAME> --resource <HOST>`. Safe under centralized governance because a local deny can only narrow, never widen, egress.
+  -e, --env stringArray                     Set an environment variable in the sandbox (can be repeated): KEY=VALUE, or a bare KEY to take the value from the current environment. Applies to the agent session, so it takes effect on a re-attach too; also baked into the sandbox when this run creates it
+      --env-file stringArray                Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an earlier one. Applies to the agent session, so it takes effect on a re-attach too; also baked into the sandbox when this run creates it
   -h, --help                                help for run
       --kit strings                         (Experimental) Kit reference (directory, ZIP, or OCI). Can be specified multiple times
   -m, --memory string                       Memory limit in binary units (e.g., 1024m, 8g). Default: 50% of host memory, max 32 GiB
@@ -558,7 +629,7 @@ REGISTRY SECRETS (e.g. "ghcr.io", "myregistry.azurecr.io")
   Use "sbx secret set --registry <host> --password-stdin" to store them.
 
 Usage:
-  sbx secret [command]
+  sbx secret COMMAND
 
 Available Commands:
   import      Import secrets detected in host environment variables
@@ -573,7 +644,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx secret [command] --help" for more information about a command.
+Use "sbx secret COMMAND --help" for more information about a command.
 ```
 
 ## sbx setup --help
@@ -587,8 +658,7 @@ env vars set on this host, and accepted secrets are imported into the global
 secrets store (the same store as "sbx secret set").
 
 Usage:
-  sbx setup
-  sbx setup [command]
+  sbx setup [COMMAND]
 
 Available Commands:
   ssh         Set up SSH client config for the sandbox endpoint
@@ -599,7 +669,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx setup [command] --help" for more information about a command.
+Use "sbx setup COMMAND --help" for more information about a command.
 ```
 
 ## sbx skills --help
@@ -615,10 +685,11 @@ Sandboxes with skills sharing enabled mount the store read-write. Use
 --no-share-skills when creating a sandbox to opt out.
 
 Usage:
-  sbx skills [command]
+  sbx skills COMMAND
 
 Available Commands:
   import      Import skills from supported agent directories
+  ls          List imported skills
 
 Flags:
   -h, --help   help for skills
@@ -626,7 +697,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx skills [command] --help" for more information about a command.
+Use "sbx skills COMMAND --help" for more information about a command.
 ```
 
 ## sbx stop --help
@@ -654,7 +725,6 @@ sandboxes with: sbx run -t TAG AGENT [WORKSPACE]
 
 Usage:
   sbx template COMMAND
-  sbx template [command]
 
 Available Commands:
   load        Load an image from a tar file into the sandbox runtime
@@ -668,7 +738,7 @@ Flags:
 Global Flags:
   -D, --debug   Enable debug logging
 
-Use "sbx template [command] --help" for more information about a command.
+Use "sbx template COMMAND --help" for more information about a command.
 ```
 
 ## sbx tui --help
