@@ -57,6 +57,7 @@ IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.p
 | `local-test-kits-validate-only` | `--validate-only` | Nur `sbx kit validate` (alle drei Kits), keine Sandbox |
 | `local-test-kits-opencode` | `opencode` | Nur OpenCode-Szenario (Sandbox) |
 | `local-test-kits-claude` | `claude` | Nur Claude-Szenarien Home **+** Zurich (Sandbox) |
+| `local-test-kits-claude-zurich` | `claude-zurich` | Nur Zurich-Szenario (Sandbox) |
 | `local-test-kits-mammouth` | `mammouth` | Nur Mammouth-Szenario (Sandbox) |
 
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
@@ -70,6 +71,7 @@ funktioniert trotzdem).
 python local-test\local-test-kits.py --validate-only   # nur Validierung
 python local-test\local-test-kits.py opencode          # nur OpenCode-Sandbox
 python local-test\local-test-kits.py claude            # nur Claude-Sandboxes (Home + Zurich)
+python local-test\local-test-kits.py claude-zurich     # nur Zurich-Sandbox
 python local-test\local-test-kits.py mammouth          # nur Mammouth-Sandbox
 python local-test\local-test-kits.py                   # alle Szenarien
 ```

@@ -19,12 +19,13 @@ Verwendung:
   python local-test-kits.py                 # alle 4 Kits testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
   python local-test-kits.py claude          # nur Claude testen (Home + Zurich-Szenario)
+  python local-test-kits.py claude-zurich   # nur das Zurich-Szenario testen
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,claude,mammouth}  Zu testendes Kit (default: all)
+  {all,opencode,claude,claude-zurich,mammouth}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -277,7 +278,7 @@ def check_install_scripts_sync():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "claude-zurich", "mammouth"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -361,6 +362,7 @@ def main():
         {
             "name": "kit-test-claude-zurich",
             "agent": "claude",
+            "tags": ["claude", "claude-zurich"],
             "kit": os.path.join(ROOT, "claude-zurich-agent"),
             "model": "eu.anthropic.claude-sonnet-4-6",
             "config": 'grep -q "eu.anthropic.claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}" && echo "ANTHROPIC_MODEL=${ANTHROPIC_MODEL}" && [ "${ANTHROPIC_BASE_URL}" = "https://genai-lounge-nx-litellm-uat-emea.zurich.com" ] && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; echo "BASE_URL=${ANTHROPIC_BASE_URL:-<unset>}"; exit 1; }',
@@ -376,7 +378,7 @@ def main():
     ]
 
     if agent != "all":
-        scenarios = [s for s in scenarios if s["agent"] == agent]
+        scenarios = [s for s in scenarios if s["agent"] == agent or agent in s.get("tags", [])]
         if not scenarios:
             parser.error(f"Unbekanntes Kit: {agent}")
 
