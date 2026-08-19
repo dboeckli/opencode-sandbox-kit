@@ -28,8 +28,8 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 
 ## Sandbox (wird vom Kit via `setup.install` installiert)
 
-Quelle der Wahrheit: `files/home/.local/bin/install-tooling.sh` + `install-tooling-user.sh`
-(identische Kopien in beiden Kits; Drift-Check via `local-test-kits.py --validate-only`).
+Quelle der Wahrheit: `opencode-agent/files/home/.local/bin/install-tooling.sh` + `install-tooling-user.sh`
+(identische Kopien in allen drei Kits; Drift-Check via `local-test-kits.py --validate-only`).
 Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Tool-Tabelle.
 
 ### Root-Tooling (`install-tooling.sh`, Setup-Install)
@@ -68,8 +68,8 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 
-Nur Hosts aus `permissions.network.allow` (`spec.yaml`/`mammouth-agent/spec.yaml`) sind erreichbar.
-Doku: `files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth-Kopie). Enforced durch den
+Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mammouth-agent/spec.yaml`/`claude-zurich-agent/spec.yaml`) sind erreichbar.
+Doku: `opencode-agent/files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth-Kopie). Enforced durch den
 Sandbox-Proxy (`mcp-gateway`), der auch die `proxy-managed`-Credential-Injection übernimmt.
 
 ## Verifikation

@@ -120,7 +120,7 @@ ist genau dieser Proxy: kein Fehler und kein Kit-Bestandteil, sondern Template-I
 dokumentiert (`~/.config/opencode/network-policy.md`, `~/.claude/network-policy.md`, im Agent-Kit
 `~/.config/mammouth/network-policy.md`), damit der Agent geblockte Calls von vornherein vermeidet (Token-Kosten) — erzwingen
 tut sie nichts. Das Enforcement passiert ausschließlich am Sandbox-Proxy. Beim Anpassen der Liste in
-`spec.yaml` muss diese Dokumentation synchron gehalten werden.
+`opencode-agent/spec.yaml` muss diese Dokumentation synchron gehalten werden.
 
 ## Dual Agent Support
 
@@ -129,8 +129,8 @@ sondern vom Template beim `sbx run`:
 
 | Agent | Template | Start-Command |
 |-------|----------|---------------|
-| OpenCode | `opencode-docker` | `sbx run opencode --name my-sandbox --kit .` |
-| Claude Code | `claude-code-docker` | `sbx run claude --name my-sandbox --kit .` |
+| OpenCode | `opencode-docker` | `sbx run opencode --name my-sandbox --kit ./opencode-agent/` |
+| Claude Code | `claude-code-docker` | `sbx run claude --name my-sandbox --kit ./opencode-agent/` |
 | Mammouth Code | `opencode-docker` (eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` |
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
@@ -346,10 +346,10 @@ Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-V
 > über dessen Key/Guthaben.
 
 > Die GitHub-Actions-Pipelines (`validate.yml`, `e2e.yml`) installieren eine **gepinnte `sbx`-Version**
-> (`SBX_VERSION`-Env, aktuell `v0.38.0`) statt `latest`. Updates übernimmt
+> (`SBX_VERSION`-Env, aktuell `v0.39.0`) statt `latest`. Updates übernimmt
 > Renovate (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
 >
-> Die Offline-Referenz `files/home/sbx-cli.md` (→ `~/sbx-cli.md` in der Sandbox) wird per
+> Die Offline-Referenz `opencode-agent/files/home/sbx-cli.md` (→ `~/sbx-cli.md` in der Sandbox) wird per
 > `python local-test/regenerate-sbx-doc.py [<version>]` aus der Release-Binary neu erzeugt
 > (Default: `SBX_VERSION` aus `validate.yml`). `local-test-kits.py --validate-only` vergleicht die
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
@@ -368,33 +368,41 @@ Detaillierte Anleitungen:
 
 ```powershell
 # Lokales Kit (Entwicklung)
-sbx run opencode --name opencode-sandbox --kit .          # OpenCode
-sbx run claude   --name claude-sandbox   --kit .          # Claude Code
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/   # OpenCode
+sbx run claude   --name claude-sandbox   --kit ./opencode-agent/   # Claude Code (Home)
 sbx run claude   --name claude-zurich    --kit ./claude-zurich-agent/   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro)
 sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit)
 
 # Kit direkt aus GitHub (ohne Clone)
 sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"
-sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
-sbx run claude   --name claude-sandbox   --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+sbx run opencode --name opencode-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+sbx run claude   --name claude-sandbox   --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+sbx run claude   --name claude-zurich    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent"
 sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 
 # Kit mit anderem Projekt verwenden
-sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
-sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"
-sbx run mammouth --name mammouth-sandbox --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "C:\development\projects\spring-6-reactive"
+sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" "C:\development\projects\spring-6-reactive"
+sbx run mammouth --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "C:\development\projects\spring-6-reactive"
 
 # Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
-sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "/mnt/c/development/projects/spring-6-reactive"
-sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "/mnt/c/development/projects/spring-6-reactive"
+sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "/mnt/c/development/projects/spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "/mnt/c/development/projects/spring-6-reactive"
+sbx run claude   --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" "/mnt/c/development/projects/spring-6-reactive"
+sbx run mammouth --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" "/mnt/c/development/projects/spring-6-reactive"
 
 # Kubernetes-Support: kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
-sbx run opencode --name opencode-sandbox --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
-sbx run claude   --name claude-sandbox   --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run claude   --name claude-sandbox   --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run claude   --name claude-zurich    --kit ./claude-zurich-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
 sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
 
 # Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
-sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"
+sbx kit add opencode-sandbox "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+sbx kit add claude-sandbox   "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+sbx kit add claude-zurich    "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent"
+sbx kit add mammouth-sandbox "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 ```
 
 The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker.internal:64342`.
@@ -465,16 +473,17 @@ Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
 
 ### Install-Skripte (Single Source of Truth)
 
-Der komplette `setup.install`-Tooling-Block ist in beide Kit-Specs (`spec.yaml`, `mammouth-agent/spec.yaml`)
+Der komplette `setup.install`-Tooling-Block ist in alle drei Kit-Specs (`opencode-agent/spec.yaml`,
+`mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`)
 dedupliziert. Die Install-Befehle sind in **zwei gemeinsamen Skripten** gebündelt, die als identische Kopien
-in den `files/home/.local/bin/`-Bundles beider Kits liegen (kein separates Kanonik-Verzeichnis):
+in den `files/home/.local/bin/`-Bundles der drei Kits liegen (kein separates Kanonik-Verzeichnis):
 
-| Skript (files/home/.local/bin/) | Nutzer | Inhalt |
+| Skript (opencode-agent/files/home/.local/bin/) | Nutzer | Inhalt |
 |--------|--------|--------|
 | `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm |
 | `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`), Claude statusline, Repsy-Doku-Checkout (`~/docs/repsy-docs`) |
 
-Beide Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
+Alle drei Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
 `setup.install` im Sandbox-Home (siehe [Docker Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)),
 Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
 
@@ -486,16 +495,17 @@ Das Script loggt pro Tool `phase=… start/done` + eine Zeile mit Wall-Clock-Tim
 `/var/log/sbx-kit-install.log` (siehe [docs/debugging-analysis-logging.md](docs/debugging-analysis-logging.md)).
 
 **Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie vornehmen, dann die
-zweite identisch halten (`mammouth-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
+übrigen identisch halten (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`,
+`claude-zurich-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
 (`local-test/local-test-kits.py`, IntelliJ-Config `local-test-kits-validate-only`) schlägt fehl, wenn die
-beiden Kit-Kopien abweichen. Renovate trackt die Versionen via `customManager` gegen **beide** Kopien.
+drei Kit-Kopien abweichen. Renovate trackt die Versionen via `customManager` gegen **alle** Kopien.
 
 ### npm bin-links: Install vs. Laufzeit
 
 Die global installierten npm-CLIs (ctx7, skills, prettier, renovate) werden mit explizitem Prefix
 `npm_config_bin_links=true` installiert (`install-tooling.sh`) — dadurch legt npm die Bin-Links an und
 die CLIs landen als Symlinks in `/usr/local/share/npm-global/bin` (auf dem PATH). Zur Laufzeit setzt das Kit
-dagegen `environment.variables.npm_config_bin_links: "false"` (`spec.yaml`), damit spätere npm-Aufrufe
+dagegen `environment.variables.npm_config_bin_links: "false"` (`opencode-agent/spec.yaml`), damit spätere npm-Aufrufe
 durch den Agent keine bin-link-Seiteneffekte erzeugen. Der Unterschied ist Absicht, kein Fehler; an beiden
 Stellen nichts ändern.
 
@@ -542,11 +552,11 @@ sbx exec opencode-sandbox bash -c 'npx ctx7 docs /vercel/next.js "app router"'
 
 OpenRouter bietet Zugriff auf viele Modelle (Anthropic, OpenAI, Google, DeepSeek, ...) über einen
 einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider konfiguriert
-(`files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
+(`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
 Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
 
 `openrouter` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
-— das Kit deklariert ihn **bewusst nicht** in `spec.yaml` (eine zweite Deklaration führt zu
+— das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (eine zweite Deklaration führt zu
 `credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
 Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
 und der Proxy injiziert den echten Key bei Requests an `openrouter.ai` — der Key liegt nie im
@@ -577,11 +587,11 @@ Modellwechsel in OpenCode via `/models` (z. B. `openrouter/~anthropic/claude-son
 ### Google AI Studio API-Key (optional)
 
 Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günstigen Pro-Tier — in OpenCode als
-zusätzlicher Provider konfiguriert (`files/home/.config/opencode/opencode.jsonc` → `provider.google`,
+zusätzlicher Provider konfiguriert (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.google`,
 DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
 
 `google` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
-— das Kit deklariert ihn **bewusst nicht** in `spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
+— das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
 Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
 `GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
 Proxy injiziert den echten Key bei Requests an
@@ -633,7 +643,7 @@ sbx secret set stackoverflow
 > transparent bei Outbound-Requests an `api.stackexchange.com`. Das ist gewollt, kein Fehler.
 > `echo $STACKOVERFLOW_API_KEY` zeigt `proxy-managed` (nie den echten Key).
 
-Die API-Doku liegt **offline im Kit**: `files/home/stackexchange-api.md` → `~/stackexchange-api.md`
+Die API-Doku liegt **offline im Kit**: `opencode-agent/files/home/stackexchange-api.md` → `~/stackexchange-api.md`
 (kompakte Endpoint-Tabelle, generische Parameter, API-Version `api_revision`); Detail-Doku mit allen
 Parametern je Methode in `~/stackexchange-api-detail.md` (nur bei Bedarf lesen). Das spart Kontext —
 die Website https://api.stackexchange.com/docs wird nur noch bei Unklarheiten abgerufen. Die
@@ -642,7 +652,8 @@ Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py -
 IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
 Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
 **schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
-Beide Kits führen identische Kopien (`mammouth-agent/files/home/`), weil jeder Agent sein eigenes
+Alle Kits führen identische Kopien (`opencode-agent/files/home/`, `mammouth-agent/files/home/`,
+`claude-zurich-agent/files/home/`), weil jeder Agent sein eigenes
 `files/home/`-Mapping hat.
 
 Nutzungsregeln (SO-1…SO-4):
@@ -683,7 +694,7 @@ Der Agent liest bei Bedarf **direkt den Markdown-Source** (`~/docs/repsy-docs/co
 ~60 `.md`-Dateien) — token-effizienter als HTML-Parsing der gerenderten Site — und aktualisiert
 per `git -C ~/docs/repsy-docs pull --ff-only`. `github.com` ist bereits in der
 Network-Allowlist, daher keine spec.yaml-Änderung.
-Nutzungsregeln in `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`.
+Nutzungsregeln in `opencode-agent/files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`.
 
 ## Skills
 
@@ -734,7 +745,7 @@ In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls ü
 
 ## Zurich LiteLLM (separates Kit `claude-zurich-agent/`)
 
-Der Root-Kit ist der **Home-Standard** (Claude Code gegen `api.anthropic.com`, Modell `claude-sonnet-4-6`).
+Das `opencode-agent/`-Kit ist der **Home-Standard** (Claude Code gegen `api.anthropic.com`, Modell `claude-sonnet-4-6`).
 Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-emea.zurich.com`, nur im
 Firmennetz erreichbar) das separate Kit `claude-zurich-agent/` verwenden:
 
@@ -810,15 +821,16 @@ Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
 
 ### Kit-Spec v2 und die sbx-Version
 
-Beide Kits (Mixin und `mammouth-agent/`) sind auf die **v2-Kit-Grammatik** migriert:
+Alle drei Kits (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`) sind auf die
+**v2-Kit-Grammatik** migriert:
 `schemaVersion: "2"`, `permissions.network.allow`, `credentials[].apiKey` (`apiKey.name` + `inject`),
 `setup.install` und `setup.startup`, Top-Level `environment.variables`, `agentInstructions` sowie flacher
 `sandbox.entrypoint`. Die Migration verlangt **sbx v0.38+** (strikte v2-Grammatik mit hartem
 Decode-Fehler für v1-Felder in einer `"2"`-Spec). Validierung:
 
 ```bash
-sbx kit validate .                 # und: sbx kit validate ./mammouth-agent
-sbx kit inspect . --output json | jq '.warnings'   # erwartet: [] bzw. null
+sbx kit validate ./opencode-agent          # und: sbx kit validate ./mammouth-agent
+sbx kit inspect ./opencode-agent --output json | jq '.warnings'   # erwartet: [] bzw. null
 ```
 
 Migration auf das offizielle Skript aus `docker/sbx-kits-contrib`:
@@ -835,9 +847,9 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
 `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) betrieben, das Mammouth automatisch
-beim Build installiert (`curl -fsSL https://code.mammouth.ai/install.sh | bash` + Symlink). Das Mixin-Kit
-(`sbx run opencode/claude --kit .`) ist bewusst auf OpenCode und Claude Code fokussiert und enthält keine
-Mammouth-Konfiguration.
+beim Build installiert (`curl -fsSL https://code.mammouth.ai/install.sh | bash` + Symlink). Das
+`opencode-agent/`-Kit (`sbx run opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
+Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
 
 ### Pre-installed Tools im Base Image
 
@@ -859,7 +871,7 @@ beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run
 ## References
 
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
-- [sbx CLI Offline-Referenz](files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.38.0 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.39.0 — generiert aus der Release-Binary)
 - [GitHub Repo](https://github.com/dboeckli/opencode-sandbox-kit)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)

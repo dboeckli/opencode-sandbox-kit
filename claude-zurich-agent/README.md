@@ -2,10 +2,10 @@
 
 Separates Kit (kind: mixin) für Claude Code über den Zurich-LiteLLM-Proxy
 `genai-lounge-nx-litellm-uat-emea.zurich.com` (nur im Firmennetz/Wikom-VPN erreichbar).
-Der Root-Kit (`opencode-sandbox-kit`) bleibt der **Home-Standard** — Claude Code gegen
+Das `opencode-agent/`-Kit bleibt der **Home-Standard** — Claude Code gegen
 `api.anthropic.com`.
 
-## Unterschiede zum Root-Kit
+## Unterschiede zum Home-Kit `opencode-agent/`
 
 - `ANTHROPIC_BASE_URL` → `https://genai-lounge-nx-litellm-uat-emea.zurich.com`
 - Model-Aliasse mit `eu.`-Präfix (LiteLLM-Aliasse des Zurich-Proxys, sonst 403
@@ -39,8 +39,8 @@ Auth läuft über den `apiKeyHelper` (`echo proxy-managed`) — funktioniert mit
 
 ## Dateien
 
-- `spec.yaml` — Kit-Definition (env, network allow, credentials, setup wie Root-Kit)
+- `spec.yaml` — Kit-Definition (env, network allow, credentials, setup wie `opencode-agent/`)
 - `files/home/.claude/` — Claude-Settings (Modell `eu.anthropic.claude-sonnet-4-6`, IntelliJ-MCP-Whitelist),
   `CLAUDE.md`, `network-policy.md`, Statusline
 - `files/home/.config/sandbox-kit/`, `files/home/.local/bin/`, `files/home/stackexchange-api*.md` —
-  identische Kopien des Root-Kits (Drift-Check in `local-test/local-test-kits.py --validate-only`)
+  identische Kopien des Home-Kits (Drift-Check in `local-test/local-test-kits.py --validate-only`)

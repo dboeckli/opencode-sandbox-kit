@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Shared tooling installation (root). Single source of truth for the `setup.install`
 # tooling steps that all kit specs reference:
-#   - spec.yaml (mixin, OpenCode/Claude)
+#   - opencode-agent/spec.yaml (mixin, OpenCode/Claude Home)
 #   - mammouth-agent/spec.yaml (Mammouth Code)
 #   - claude-zurich-agent/spec.yaml (Claude Code Zurich)
 #

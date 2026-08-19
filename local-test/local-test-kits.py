@@ -5,8 +5,8 @@ Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
 
 Szenarien:
-  1. OpenCode + Mixin-Kit         (sbx create opencode --kit .)
-  2. Claude   + Mixin-Kit         (sbx create claude --kit .)                     — Home (api.anthropic.com)
+  1. OpenCode + opencode-agent    (sbx create opencode --kit ./opencode-agent/)
+  2. Claude   + opencode-agent    (sbx create claude --kit ./opencode-agent/)      — Home (api.anthropic.com)
   3. Claude   + claude-zurich-agent (sbx create claude --kit ./claude-zurich-agent/) — Zurich LiteLLM-Proxy
   4. Mammouth + mammouth-agent    (sbx create mammouth --kit ./mammouth-agent/)
 
@@ -55,15 +55,15 @@ failed = []
 # Version steht in den offline-Doku-Dateien des Kits (Basis-URL api.stackexchange.com/<v>).
 SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
-SO_DOC_FILES = ("files/home/stackexchange-api.md",
+SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
                 "mammouth-agent/files/home/stackexchange-api.md",
                 "claude-zurich-agent/files/home/stackexchange-api.md")
 
-# sbx CLI: die Offline-Referenz (files/home/sbx-cli.md) wird aus der Release-Binary
-# generiert (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im
-# Header der Datei; Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus
+# sbx CLI: die Offline-Referenz (opencode-agent/files/home/sbx-cli.md) wird aus der
+# Release-Binary generiert (local-test/regenerate-sbx-doc.py). Die dokumentierte Version
+# steht im Header der Datei; Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus
 # .github/workflows/validate.yml (Source of Truth, Renovate managed).
-SBX_DOC_FILE = "files/home/sbx-cli.md"
+SBX_DOC_FILE = "opencode-agent/files/home/sbx-cli.md"
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
@@ -71,13 +71,13 @@ SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 # Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
 # Renovate aktualisiert alle gemeinsam).
 INSTALL_SCRIPT_PAIRS = (
-    ("files/home/.local/bin/install-tooling.sh",
+    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
      "mammouth-agent/files/home/.local/bin/install-tooling.sh",
      "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"),
-    ("files/home/.local/bin/install-tooling-user.sh",
+    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
      "mammouth-agent/files/home/.local/bin/install-tooling-user.sh",
      "claude-zurich-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("files/home/.local/bin/regenerate-kubeconfig.py",
+    ("opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "claude-zurich-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
 )
@@ -106,6 +106,12 @@ def fail(msg, detail=""):
     print("  " + _color("31", "[FAIL] " + msg))
     if detail:
         print("         " + _color("31", detail))
+
+
+def warn(msg, detail=""):
+    print("  " + _color("33", "[WARN] " + msg))
+    if detail:
+        print("         " + _color("33", detail))
 
 
 def run_sbx(args, stream=False):
@@ -214,11 +220,15 @@ def _sbx_doc_version():
     return (m.group(1), path) if m else (None, path)
 
 
-def check_sbx_doc_update():
+def check_sbx_doc_update(installed_ver=""):
     """Vergleicht die im Kit dokumentierte sbx-CLI-Version (sbx-cli.md-Header) mit dem
     gepinnten SBX_VERSION (validate.yml). Schlaegt fehl bei Abweichung — die Doku muss
     den Pin spiegeln und wird per regenerate-sbx-doc.py neu erzeugt (Default liest
-    denselben Pin). Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin."""
+    denselben Pin). Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin.
+
+    Zusaetzlich wird die installierte CLI-Version (sofern ermittelbar) gegen den Pin
+    geprueft — eine aeltere installierte sbx erzeugt nur eine Warnung (kein FAIL), da
+    dieser Check offline ist und den Host-Stand nicht erzwingen soll."""
     documented, doc_path = _sbx_doc_version()
     if not documented:
         fail("sbx CLI version (nicht in sbx-cli.md gefunden)")
@@ -234,6 +244,13 @@ def check_sbx_doc_update():
         )
     else:
         pass_(f"sbx CLI version up-to-date (v{documented}, Pin v{pin_version})")
+
+    inst = re.search(r"v?(\d+)\.(\d+)\.(\d+)", installed_ver or "")
+    if inst and tuple(int(x) for x in inst.groups()) < tuple(int(x) for x in pin_version.split(".")):
+        warn(
+            f"sbx CLI outdated (installiert v{'.'.join(inst.groups())}, Pin v{pin_version})",
+            "Updaten: winget upgrade -h Docker.sbx",
+        )
 
 
 def _sbx_pin_version():
@@ -297,10 +314,10 @@ def main():
 
     print()
     info("==> Kit-Validierung")
-    info(f"  --> validate: {ROOT}")
-    code, _ = run_sbx(["kit", "validate", ROOT], stream=True)
-    pass_("sbx kit validate (mixin)") if code == 0 else fail("sbx kit validate (mixin)")
-    info(f"  --> validate: {os.path.join(ROOT, 'mammouth-agent')}")
+    info("  --> validate: " + os.path.join(ROOT, "opencode-agent"))
+    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "opencode-agent")], stream=True)
+    pass_("sbx kit validate (opencode-agent)") if code == 0 else fail("sbx kit validate (opencode-agent)")
+    info("  --> validate: " + os.path.join(ROOT, "mammouth-agent"))
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mammouth-agent")], stream=True)
     pass_("sbx kit validate (mammouth-agent)") if code == 0 else fail("sbx kit validate (mammouth-agent)")
     info(f"  --> validate: {os.path.join(ROOT, 'claude-zurich-agent')}")
@@ -313,7 +330,8 @@ def main():
         check_stackoverflow_api_update()
         print()
         info("==> sbx CLI Update-Check (Offline-Referenz)")
-        check_sbx_doc_update()
+        info(f"  installierte sbx-CLI: {sbx_ver or 'UNBEKANNT'}")
+        check_sbx_doc_update(sbx_ver)
         print()
         info("==> Install-Skripte (Single Source of Truth) sync check")
         check_install_scripts_sync()
@@ -348,14 +366,14 @@ def main():
         {
             "name": "kit-test-opencode",
             "agent": "opencode",
-            "kit": ROOT,
+            "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "opencode/deepseek-v4-flash-free",
             "config": 'grep -q "opencode/deepseek-v4-flash-free" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
         },
         {
             "name": "kit-test-claude",
             "agent": "claude",
-            "kit": ROOT,
+            "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "claude-sonnet-4-6",
             "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
         },
@@ -386,6 +404,9 @@ def main():
         print()
         info(f"=== {s['name']}  (agent={s['agent']}, kit={s['kit']})")
 
+        def sfail(msg, detail=""):
+            fail(f"[{s['name']}] {msg}", detail)
+
         failed_before = len(failed)
 
         run_sbx(["rm", s["name"], "-f"])
@@ -394,7 +415,7 @@ def main():
         info("  Sandbox erzeugen ...")
         code, _ = run_sbx(["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]], stream=True)
         if code != 0:
-            fail("sandbox create")
+            sfail("sandbox create")
             blocked_requests(s["name"])
             run_sbx(["rm", s["name"], "-f"])
             continue
@@ -406,7 +427,7 @@ def main():
                 ready = True
                 break
             time.sleep(10)
-        pass_("sandbox ready") if ready else fail("sandbox ready")
+        pass_("sandbox ready") if ready else sfail("sandbox ready")
         if not ready:
             blocked_requests(s["name"])
             run_sbx(["rm", s["name"], "-f"])
@@ -418,7 +439,7 @@ def main():
             if t in ok_tools:
                 pass_(f"tool: {t}")
             else:
-                fail(f"tool: {t}", out)
+                sfail(f"tool: {t}", out)
 
         c2, out = exec_sandbox(s["name"], "gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1 && echo GHAPI-OK")
         if c2 == 0 and "GHAPI-OK" in out:
@@ -427,14 +448,14 @@ def main():
             print("  " + _color("33", "[SKIP] gh api (authenticated call) — expected: fake token in CI, "
                                      "kein authentifizierter gh-API-Call"))
         else:
-            fail("gh api (authenticated call)", out)
+            sfail("gh api (authenticated call)", out)
 
         if s["config"]:
             c2, out = exec_sandbox(s["name"], s["config"])
             if c2 == 0 and "CONFIG-OK" in out:
                 pass_(f"default model in config ({s['model']})")
             else:
-                fail(f"default model in config ({s['model']})", out)
+                sfail(f"default model in config ({s['model']})", out)
 
         mcp_cmd = (
             'code=""; '
@@ -450,7 +471,7 @@ def main():
             print("  " + _color("33", "[SKIP] intellij-mcp connection (via sbx exec) — expected: "
                                      "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
         else:
-            fail("intellij-mcp connection (via sbx exec)",
+            sfail("intellij-mcp connection (via sbx exec)",
                  "IntelliJ MCP muss auf dem Host laufen (127.0.0.1/localhost/host.docker.internal:64342)")
 
         skills_cmd = (
@@ -461,14 +482,14 @@ def main():
         if c2 == 0 and "MISSING" not in out:
             pass_("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)")
         else:
-            fail("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)", out)
+            sfail("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)", out)
 
         ctx7_env_cmd = 'echo "CONTEXT7_API_KEY=${CONTEXT7_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], ctx7_env_cmd)
         if c2 == 0 and "CONTEXT7_API_KEY=proxy-managed" in out:
             pass_("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)")
         else:
-            fail("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)", out)
+            sfail("context7 proxy env wiring (CONTEXT7_API_KEY=proxy-managed)", out)
 
         openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
@@ -476,12 +497,12 @@ def main():
             if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
                 pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
             else:
-                fail("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)", out)
+                sfail("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)", out)
         else:
             if c2 == 0 and "OPENROUTER_API_KEY=<unset>" in out:
                 pass_("openrouter not wired (only opencode template declares openrouter)")
             else:
-                fail("openrouter not wired (only opencode template declares openrouter)", out)
+                sfail("openrouter not wired (only opencode template declares openrouter)", out)
 
         # Built-in google service: the opencode template injects the placeholder
         # under GOOGLE_GENERATIVE_AI_API_KEY (the env name the AI SDK's google
@@ -493,12 +514,12 @@ def main():
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
                 pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
             else:
-                fail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
+                sfail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
         else:
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
                 pass_("google not wired (only opencode template declares google)")
             else:
-                fail("google not wired (only opencode template declares google)", out)
+                sfail("google not wired (only opencode template declares google)", out)
 
         # Kit-deklarierter stackoverflow-Service (beide Kits) → Platzhalter in allen 3 Szenarien
         stackoverflow_env_cmd = 'echo "STACKOVERFLOW_API_KEY=${STACKOVERFLOW_API_KEY:-<unset>}"'
@@ -506,7 +527,7 @@ def main():
         if c2 == 0 and "STACKOVERFLOW_API_KEY=proxy-managed" in out:
             pass_("stackoverflow proxy env wiring (STACKOVERFLOW_API_KEY=proxy-managed)")
         else:
-            fail("stackoverflow proxy env wiring (STACKOVERFLOW_API_KEY=proxy-managed)", out)
+            sfail("stackoverflow proxy env wiring (STACKOVERFLOW_API_KEY=proxy-managed)", out)
 
         # Offline API-Doku aus files/home/ → ~/stackexchange-api.md + -detail.md
         stackoverflow_doc_cmd = 'test -f ~/stackexchange-api.md -a -f ~/stackexchange-api-detail.md && echo "stackexchange api docs present"'
@@ -514,7 +535,7 @@ def main():
         if c2 == 0 and "stackexchange api docs present" in out:
             pass_("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)")
         else:
-            fail("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)", out)
+            sfail("stackoverflow offline docs (~/stackexchange-api.md + -detail.md)", out)
 
         # Kit-deklarierter cloudsmith-Service (beide Kits) → Platzhalter in allen 3 Szenarien
         cloudsmith_env_cmd = 'echo "CLOUDSMITH_API_KEY=${CLOUDSMITH_API_KEY:-<unset>}"'
@@ -522,7 +543,7 @@ def main():
         if c2 == 0 and "CLOUDSMITH_API_KEY=proxy-managed" in out:
             pass_("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)")
         else:
-            fail("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)", out)
+            sfail("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)", out)
 
 
         if s.get("run_checks"):
@@ -531,7 +552,7 @@ def main():
             if m.get("mammouth") == "OK":
                 pass_("startup check: mammouth")
             else:
-                fail("startup check: mammouth", f"status={m.get('mammouth')}")
+                sfail("startup check: mammouth", f"status={m.get('mammouth')}")
 
             if ci:
                 env_cmd = 'echo "MAMMOUTH_API_KEY=${MAMMOUTH_API_KEY:-<unset>}"'
@@ -539,14 +560,14 @@ def main():
                 if c2 == 0 and "MAMMOUTH_API_KEY=proxy-managed" in out:
                     pass_("mammouth proxy env wiring (fake-key CI)")
                 else:
-                    fail("mammouth proxy env wiring (fake-key CI)", out)
+                    sfail("mammouth proxy env wiring (fake-key CI)", out)
             else:
                 net_cmd = 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head -c 120'
                 c2, out = exec_sandbox(s["name"], net_cmd)
                 if c2 == 0 and ('"object":"list"' in out or '"id"' in out):
                     pass_("api.mammouth.ai e2e (Proxy-Key)")
                 else:
-                    fail("api.mammouth.ai e2e (Proxy-Key)", out)
+                    sfail("api.mammouth.ai e2e (Proxy-Key)", out)
 
         if not args.keep:
             if len(failed) > failed_before:
