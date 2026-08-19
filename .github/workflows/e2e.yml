@@ -41,7 +41,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases in .github/renovate.json).
         env:
-          SBX_VERSION: v0.38.0
+          SBX_VERSION: v0.39.0
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
