@@ -140,8 +140,32 @@ credentials:
 
 setup:
   install:
-    - command: "bash /home/agent/.local/bin/install-tooling.sh"
-      description: Install shared tooling as root (npm/apt/shfmt/JDK/Maven/Docker/Compose/kubectl/Helm) — source files/home/.local/bin/install-tooling.sh
+    - command: "npm_config_bin_links=true npm install -g ctx7"
+      description: Install ctx7 (docs-as-a-service CLI)
+    - command: "npm_config_bin_links=true npm install -g skills"
+      description: Install skills (vercel-labs CLI)
+    - command: "npm_config_bin_links=true npm install -g prettier"
+      description: Install prettier
+    - command: "npm_config_bin_links=true npm install -g renovate"
+      description: Install renovate
+    - command: "apt-get update && apt-get install -y jq python3 python3-pip python3-yaml"
+      description: Install apt packages (jq, python3, pip, python3-yaml)
+    - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"
+      description: Install shfmt — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh jdk"
+      description: Install Liberica JDK — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh maven"
+      description: Install Apache Maven — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh docker"
+      description: Install Docker CLI — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh compose"
+      description: Install Docker Compose plugin — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh kubectl"
+      description: Install kubectl — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh helm"
+      description: Install Helm v3 — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh helm4"
+      description: Install Helm v4 (as helm4) — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling-user.sh"
       user: "1000"
       description: Install agent-user tooling (skills + Claude statusline) — source files/home/.local/bin/install-tooling-user.sh

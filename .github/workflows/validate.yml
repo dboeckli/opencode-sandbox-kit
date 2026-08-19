@@ -43,12 +43,16 @@ jobs:
       - name: Validate Mammouth agent kit spec
         run: sbx kit validate ./mammouth-agent/
 
+      - name: Validate Claude Zurich agent kit spec
+        run: sbx kit validate ./claude-zurich-agent/
+
       - name: Check install-script copies are in sync
-        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (beide Kits);
-        # beide Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
-        # andere per cp synchronisieren; Renovate aktualisiert beide gemeinsam).
+        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (alle drei Kits);
+        # alle Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
+        # anderen per cp synchronisieren; Renovate aktualisiert alle gemeinsam).
         run: |
           set -euo pipefail
-          for f in install-tooling.sh install-tooling-user.sh; do
+          for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py; do
             cmp "files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+            cmp "files/home/.local/bin/$f" "claude-zurich-agent/files/home/.local/bin/$f"
           done
