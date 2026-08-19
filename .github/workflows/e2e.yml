@@ -168,6 +168,9 @@ jobs:
             mammouth:
               apiKey:
                 domains: [api.mammouth.ai]
+            stackoverflow:
+              apiKey:
+                domains: [api.stackexchange.com]
             cloudsmith:
               apiKey:
                 domains: [api.cloudsmith.io]
