@@ -2,8 +2,8 @@ name: Kit e2e
 
 # End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
 # non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
-# register fake API-key secrets for github/anthropic/mammouth/context7/openrouter/google, and run the 3 agent scenarios
-# (OpenCode / Claude / Mammouth) from local-test/local-test-kits.py with
+# register fake API-key secrets for github/anthropic/mammouth/context7/openrouter/google/zurich, and run the 4 agent scenarios
+# (OpenCode / Claude / Claude-Zurich / Mammouth) from local-test/local-test-kits.py with
 # `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
 #
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
@@ -128,11 +128,11 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, anthropic/mammouth/context7/openrouter/google fake)
-        # local-test/local-test-kits.py asserts these six global services
-        # exist (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
+      - name: Register sandbox secrets (github real, anthropic/mammouth/context7/openrouter/google/zurich fake)
+        # local-test/local-test-kits.py asserts these global services exist
+        # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
         # `gh auth status` passes inside the sandbox; anthropic, mammouth,
-        # context7, openrouter and google get fake keys — enough to prove the
+        # context7, openrouter, google and zurich get fake keys — enough to prove the
         # kit's proxy env wiring.
         # `-g` was removed in sbx v0.38 (secrets are global by default);
         # `-f` overwrites an existing entry.
@@ -148,6 +148,7 @@ jobs:
           printf '%s' 'google-fake-ci-key' | sbx secret set google -f
           printf '%s' 'stackoverflow-fake-ci-key' | sbx secret set stackoverflow -f
           printf '%s' 'cloudsmith-fake-ci-key' | sbx secret set cloudsmith -f
+          printf '%s' 'zurich-fake-ci-key' | sbx secret set zurich -f
 
       - name: Pre-create credential bindings (third-party v2 kit)
         # Third-party schemaVersion:"2" kits require an approved credential
@@ -170,6 +171,9 @@ jobs:
             cloudsmith:
               apiKey:
                 domains: [api.cloudsmith.io]
+            zurich:
+              apiKey:
+                domains: [genai-lounge-nx-litellm-uat-emea.zurich.com]
           EOF
 
       - name: Initialize global network policy (balanced)
@@ -182,7 +186,7 @@ jobs:
         # list.
         run: sbx policy init balanced
 
-      - name: Run e2e tests (all 3 agent scenarios)
+      - name: Run e2e tests (all 4 agent scenarios)
         run: python3 local-test/local-test-kits.py --ci
 
       - name: Sign out of Docker Hub

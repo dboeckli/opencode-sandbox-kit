@@ -313,7 +313,8 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Service | Secret | Befehl | Benötigt für |
 |---------|--------|--------|--------------|
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set github -t "<token>"` | `gh` CLI |
-| Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code |
+| Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
+| Zurich | Zurich LiteLLM API-Key | `sbx secret set zurich` | Claude Code (Zurich-Proxy, `claude-zurich-agent/`) |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode (optional, Modell `deepseek/…`) |
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
@@ -347,10 +348,17 @@ Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-V
 > Die GitHub-Actions-Pipelines (`validate.yml`, `e2e.yml`) installieren eine **gepinnte `sbx`-Version**
 > (`SBX_VERSION`-Env, aktuell `v0.38.0`) statt `latest`. Updates übernimmt
 > Renovate (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
+>
+> Die Offline-Referenz `files/home/sbx-cli.md` (→ `~/sbx-cli.md` in der Sandbox) wird per
+> `python local-test/regenerate-sbx-doc.py [<version>]` aus der Release-Binary neu erzeugt
+> (Default: `SBX_VERSION` aus `validate.yml`). `local-test-kits.py --validate-only` vergleicht die
+> dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
+> (inkl. Hinweis aufs Regen-Skript).
 
 Detaillierte Anleitungen:
 - [GitHub Authentication](#github-authentication)
 - [Anthropic Authentication](#anthropic-authentication)
+- [Zurich LiteLLM (separates Kit `claude-zurich-agent/`)](#zurich-litellm-separates-kit-claude-zurich-agent)
 - [Mammouth Code Agent-Kit](#mammouth-code-agent-kit)
 - [OpenRouter API-Key (optional)](#openrouter-api-key-optional)
 - [Google AI Studio API-Key (optional)](#google-ai-studio-api-key-optional)
@@ -362,6 +370,7 @@ Detaillierte Anleitungen:
 # Lokales Kit (Entwicklung)
 sbx run opencode --name opencode-sandbox --kit .          # OpenCode
 sbx run claude   --name claude-sandbox   --kit .          # Claude Code
+sbx run claude   --name claude-zurich    --kit ./claude-zurich-agent/   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro)
 sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit)
 
 # Kit direkt aus GitHub (ohne Clone)
@@ -392,8 +401,8 @@ The sandbox runs inside Docker Desktop. IntelliJ MCP is reached via `host.docker
 
 ## Automatisierter Kit-Test
 
-Die 3 Agent-Szenarien (OpenCode, Claude, Mammouth) lassen sich lokal automatisiert testen —
-`local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle drei Kits, prüft die
+Die 4 Agent-Szenarien (OpenCode, Claude Home, Claude Zurich, Mammouth) lassen sich lokal automatisiert testen —
+`local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
 
 ```bash
@@ -411,7 +420,7 @@ python .\local-test\local-test-kits.py --validate-only   # nur Kit-Validierung, 
 ```
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
-globale Secrets gesetzt (`github`, `anthropic`, `mammouth`, `context7`).
+globale Secrets gesetzt (`github`, `anthropic`, `zurich`, `mammouth`, `context7`).
 
 ## Startup Checks
 
@@ -468,6 +477,13 @@ in den `files/home/.local/bin/`-Bundles beider Kits liegen (kein separates Kanon
 Beide Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
 `setup.install` im Sandbox-Home (siehe [Docker Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)),
 Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
+
+**Granularer Install im TUI:** Die npm/apt-Pakete stehen als eigene `setup.install`-Commands direkt in
+der Spec (`npm_config_bin_links=true npm install -g ctx7`, `apt-get update && apt-get install …`),
+die restlichen Tools rufen `install-tooling.sh <tool>` pro Tool (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4`,
+Default `all`). Dadurch zeigt die `sbx run`-Konsole **jedes Tool einzeln** als Zeile (Spinner → ✓ mit Dauer).
+Das Script loggt pro Tool `phase=… start/done` + eine Zeile mit Wall-Clock-Timestamp nach
+`/var/log/sbx-kit-install.log` (siehe [docs/debugging-analysis-logging.md](docs/debugging-analysis-logging.md)).
 
 **Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie vornehmen, dann die
 zweite identisch halten (`mammouth-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
@@ -686,7 +702,7 @@ Für `gh` CLI in der Sandbox ein persönliches GitHub-Token (Name: `opencode-san
 Scopes `read:org`, `read:packages`, `read:project`, `read:user` erstellen und als Secret speichern:
 
 ```powershell
-sbx secret set github
+sbx secret set github -t "<github-token>"
 ```
 
 Das Token wird via Proxy automatisch injiziert – `gh auth status` funktioniert ohne weitere Konfiguration.
@@ -716,7 +732,27 @@ sbx secret ls   # sollte "anthropic (stored)" zeigen
 
 In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls über den Proxy trotzdem funktionieren.
 
+## Zurich LiteLLM (separates Kit `claude-zurich-agent/`)
+
+Der Root-Kit ist der **Home-Standard** (Claude Code gegen `api.anthropic.com`, Modell `claude-sonnet-4-6`).
+Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-emea.zurich.com`, nur im
+Firmennetz erreichbar) das separate Kit `claude-zurich-agent/` verwenden:
+
+```powershell
+sbx run claude --name claude-zurich --kit ./claude-zurich-agent/
+sbx secret set zurich
+```
+
+Es setzt `ANTHROPIC_BASE_URL`, die `eu.anthropic.*`-Modell-Aliasse (`ANTHROPIC_MODEL`/`ANTHROPIC_DEFAULT_SONNET_MODEL`
+= `eu.anthropic.claude-sonnet-4-6`, `ANTHROPIC_DEFAULT_OPUS_MODEL` = `eu.anthropic.claude-opus-4-8`,
+`ANTHROPIC_DEFAULT_HAIKU_MODEL`/`CLAUDE_CODE_SUBAGENT_MODEL` = `eu.anthropic.claude-haiku-4-5-20251001-v1:0`,
+sonst 403 `key not allowed to access model`) und den Service `zurich` (`proxyManaged: true`, Header
+`Authorization: Bearer` + `x-api-key`). Details: `claude-zurich-agent/README.md`.
+
 ## Troubleshooting
+
+> **Debugging, Analyzing & Logging** (Log-Dateien, `sbx exec`-Viewing, Kit-Validierung, Drift-Check,
+> Blocked requests, IntelliJ MCP-Debug): [`docs/debugging-analysis-logging.md`](docs/debugging-analysis-logging.md)
 
 ### KVM Permission Denied (WSL2)
 
@@ -822,6 +858,8 @@ beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run
 
 ## References
 
+- [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
+- [sbx CLI Offline-Referenz](files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.38.0 — generiert aus der Release-Binary)
 - [GitHub Repo](https://github.com/dboeckli/opencode-sandbox-kit)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)

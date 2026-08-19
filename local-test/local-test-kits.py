@@ -1,29 +1,31 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 3 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 4 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
 
 Szenarien:
-  1. OpenCode + Mixin-Kit      (sbx create opencode --kit .)
-  2. Claude   + Mixin-Kit      (sbx create claude --kit .)
-  3. Mammouth + mammouth-agent (sbx create mammouth --kit ./mammouth-agent/)
+  1. OpenCode + Mixin-Kit         (sbx create opencode --kit .)
+  2. Claude   + Mixin-Kit         (sbx create claude --kit .)                     — Home (api.anthropic.com)
+  3. Claude   + claude-zurich-agent (sbx create claude --kit ./claude-zurich-agent/) — Zurich LiteLLM-Proxy
+  4. Mammouth + mammouth-agent    (sbx create mammouth --kit ./mammouth-agent/)
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter, google, stackoverflow und cloudsmith
-    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter, google, stackoverflow, cloudsmith und zurich
+    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set zurich — seit v0.38 ohne `-g`)
 
 Verwendung:
-  python local-test-kits.py                 # alle 3 Kits testen (default: all)
+  python local-test-kits.py                 # alle 4 Kits testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
-  python local-test-kits.py claude          # nur Claude testen
+  python local-test-kits.py claude          # nur Claude testen (Home + Zurich-Szenario)
+  python local-test-kits.py claude-zurich   # nur das Zurich-Szenario testen
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,claude,mammouth}  Zu testendes Kit (default: all)
+  {all,opencode,claude,claude-zurich,mammouth}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -53,16 +55,31 @@ failed = []
 # Version steht in den offline-Doku-Dateien des Kits (Basis-URL api.stackexchange.com/<v>).
 SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
-SO_DOC_FILES = ("files/home/stackexchange-api.md", "mammouth-agent/files/home/stackexchange-api.md")
+SO_DOC_FILES = ("files/home/stackexchange-api.md",
+                "mammouth-agent/files/home/stackexchange-api.md",
+                "claude-zurich-agent/files/home/stackexchange-api.md")
+
+# sbx CLI: die Offline-Referenz (files/home/sbx-cli.md) wird aus der Release-Binary
+# generiert (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im
+# Header der Datei; Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus
+# .github/workflows/validate.yml (Source of Truth, Renovate managed).
+SBX_DOC_FILE = "files/home/sbx-cli.md"
+SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
-# Bundles beider Kits. `setup.install` konsumiert sie aus dem Sandbox-Home. Beide
+# Bundles aller drei Kits. `setup.install` konsumiert sie aus dem Sandbox-Home. Alle
 # Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
-# Renovate aktualisiert beide gemeinsam).
+# Renovate aktualisiert alle gemeinsam).
 INSTALL_SCRIPT_PAIRS = (
-    ("files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"),
-    ("files/home/.local/bin/install-tooling-user.sh", "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("files/home/.local/bin/regenerate-kubeconfig.py", "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
+    ("files/home/.local/bin/install-tooling.sh",
+     "mammouth-agent/files/home/.local/bin/install-tooling.sh",
+     "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"),
+    ("files/home/.local/bin/install-tooling-user.sh",
+     "mammouth-agent/files/home/.local/bin/install-tooling-user.sh",
+     "claude-zurich-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("files/home/.local/bin/regenerate-kubeconfig.py",
+     "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py",
+     "claude-zurich-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
 )
 
 
@@ -185,38 +202,83 @@ def check_stackoverflow_api_update():
         pass_(f"stackoverflow API version up-to-date (v{documented})")
 
 
+def _sbx_doc_version():
+    path = os.path.join(ROOT, SBX_DOC_FILE)
+    if not os.path.isfile(path):
+        return None, None
+    with open(path, encoding="utf-8") as f:
+        head = f.read(600)
+    m = re.search(r"v(\d+\.\d+\.\d+)-Release-Binary", head)
+    if not m:
+        m = re.search(r"\*\*v(\d+\.\d+\.\d+)\*\*", head)
+    return (m.group(1), path) if m else (None, path)
+
+
+def check_sbx_doc_update():
+    """Vergleicht die im Kit dokumentierte sbx-CLI-Version (sbx-cli.md-Header) mit dem
+    gepinnten SBX_VERSION (validate.yml). Schlaegt fehl bei Abweichung — die Doku muss
+    den Pin spiegeln und wird per regenerate-sbx-doc.py neu erzeugt (Default liest
+    denselben Pin). Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin."""
+    documented, doc_path = _sbx_doc_version()
+    if not documented:
+        fail("sbx CLI version (nicht in sbx-cli.md gefunden)")
+        return
+    pin_version = _sbx_pin_version()
+    if not pin_version:
+        fail("sbx CLI version (SBX_VERSION nicht in validate.yml gefunden)")
+        return
+    if documented != pin_version:
+        fail(
+            f"sbx CLI version mismatch (Doku v{documented}, Pin v{pin_version})",
+            f"Neuerzeugen: python local-test/regenerate-sbx-doc.py v{pin_version}",
+        )
+    else:
+        pass_(f"sbx CLI version up-to-date (v{documented}, Pin v{pin_version})")
+
+
+def _sbx_pin_version():
+    path = os.path.join(ROOT, SBX_VALIDATE_YML)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+    m = re.search(r"SBX_VERSION:\s*v(\d+\.\d+\.\d+)", content)
+    return m.group(1) if m else None
+
+
 def check_install_scripts_sync():
     """Dokumentierte Reihenfolge: files/home/ wird VOR setup.install in die Sandbox
-    kopiert → die Install-Skripte werden aus den files/home-Kopien ausgefuerht.
-    Diese Pruefung stellt sicher, dass die Kopien in beiden Kits identisch sind (die
+    kopiert → die Install-Skripte werden aus den files/home-Kopien ausgefuehrt.
+    Diese Pruefung stellt sicher, dass die Kopien in allen Kits identisch sind (die
     Dateien sind das Editiertarget, kein separates Kanonik-Verzeichnis)."""
-    for file_a, file_b in INSTALL_SCRIPT_PAIRS:
+    for file_a, file_b, *rest in INSTALL_SCRIPT_PAIRS:
         src = os.path.join(ROOT, file_a)
-        dst = os.path.join(ROOT, file_b)
-        if not os.path.isfile(src):
-            fail(f"install script missing: {file_a}")
-            continue
-        if not os.path.isfile(dst):
-            fail(f"install script copy missing: {file_b}",
-                 f"Kopiere die Datei nach {file_b}")
-            continue
-        with open(src, encoding="utf-8") as f:
-            a = f.read()
-        with open(dst, encoding="utf-8") as f:
-            b = f.read()
-        if a != b:
-            fail(
-                f"install script drift: {file_b} != {file_a}",
-                "Edit both files identically (or copy one to the other)",
-            )
-        else:
-            pass_(f"install script synced ({file_a})")
+        for rel in (file_b, *rest):
+            dst = os.path.join(ROOT, rel)
+            if not os.path.isfile(src):
+                fail(f"install script missing: {file_a}")
+                continue
+            if not os.path.isfile(dst):
+                fail(f"install script copy missing: {rel}",
+                     f"Kopiere die Datei nach {rel}")
+                continue
+            with open(src, encoding="utf-8") as f:
+                a = f.read()
+            with open(dst, encoding="utf-8") as f:
+                b = f.read()
+            if a != b:
+                fail(
+                    f"install script drift: {rel} != {file_a}",
+                    "Edit all files identically (or copy one to the other)",
+                )
+            else:
+                pass_(f"install script synced ({file_a})")
 
 
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "claude-zurich", "mammouth"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -241,11 +303,17 @@ def main():
     info(f"  --> validate: {os.path.join(ROOT, 'mammouth-agent')}")
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mammouth-agent")], stream=True)
     pass_("sbx kit validate (mammouth-agent)") if code == 0 else fail("sbx kit validate (mammouth-agent)")
+    info(f"  --> validate: {os.path.join(ROOT, 'claude-zurich-agent')}")
+    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "claude-zurich-agent")], stream=True)
+    pass_("sbx kit validate (claude-zurich-agent)") if code == 0 else fail("sbx kit validate (claude-zurich-agent)")
 
     if args.validate_only:
         print()
         info("==> Stack Exchange API Update-Check")
         check_stackoverflow_api_update()
+        print()
+        info("==> sbx CLI Update-Check (Offline-Referenz)")
+        check_sbx_doc_update()
         print()
         info("==> Install-Skripte (Single Source of Truth) sync check")
         check_install_scripts_sync()
@@ -263,7 +331,7 @@ def main():
     _, secret_out = run_sbx(["secret", "ls"])
     for line in secret_out.splitlines():
         print("      " + line)
-    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"):
+    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google", "stackoverflow", "cloudsmith", "zurich"):
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
         pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
 
@@ -292,6 +360,14 @@ def main():
             "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
         },
         {
+            "name": "kit-test-claude-zurich",
+            "agent": "claude",
+            "tags": ["claude", "claude-zurich"],
+            "kit": os.path.join(ROOT, "claude-zurich-agent"),
+            "model": "eu.anthropic.claude-sonnet-4-6",
+            "config": 'grep -q "eu.anthropic.claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}" && echo "ANTHROPIC_MODEL=${ANTHROPIC_MODEL}" && [ "${ANTHROPIC_BASE_URL}" = "https://genai-lounge-nx-litellm-uat-emea.zurich.com" ] && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; echo "BASE_URL=${ANTHROPIC_BASE_URL:-<unset>}"; exit 1; }',
+        },
+        {
             "name": "kit-test-mammouth",
             "agent": "mammouth",
             "kit": os.path.join(ROOT, "mammouth-agent"),
@@ -302,7 +378,7 @@ def main():
     ]
 
     if agent != "all":
-        scenarios = [s for s in scenarios if s["agent"] == agent]
+        scenarios = [s for s in scenarios if s["agent"] == agent or agent in s.get("tags", [])]
         if not scenarios:
             parser.error(f"Unbekanntes Kit: {agent}")
 

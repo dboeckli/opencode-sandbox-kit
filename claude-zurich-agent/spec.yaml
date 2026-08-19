@@ -1,8 +1,8 @@
 schemaVersion: "2"
 kind: mixin
-name: opencode-sandbox-kit
-displayName: "OpenCode-Konfiguration"
-description: "OpenCode, Context7 und IntelliJ MCP"
+name: claude-zurich-agent
+displayName: "Claude Code Zurich (LiteLLM)"
+description: "Claude Code gegen den Zurich-LiteLLM-Proxy (ANTHROPIC_BASE_URL, eu.*-Model-Aliase, Service zurich)"
 
 permissions:
   network:
@@ -24,6 +24,9 @@ permissions:
     - api.anthropic.com
     - "*.anthropic.com"
     - platform.claude.com
+    # Zurich LiteLLM (Claude Code via ANTHROPIC_BASE_URL)
+    - genai-lounge-nx-litellm-uat-emea.zurich.com
+    - "*.zurich.com"
     - github.com
     - api.github.com
     - "*.github.com"
@@ -127,6 +130,18 @@ credentials:
         - domain: api.cloudsmith.io
           header: X-Api-Key
           format: "%s"
+  - service: zurich
+    description: "Zurich LiteLLM API-Key (ANTHROPIC_BASE_URL = https://genai-lounge-nx-litellm-uat-emea.zurich.com)"
+    apiKey:
+      name: ZURICH_LITELLM_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: genai-lounge-nx-litellm-uat-emea.zurich.com
+          header: Authorization
+          format: "Bearer %s"
+        - domain: genai-lounge-nx-litellm-uat-emea.zurich.com
+          header: x-api-key
+          format: "%s"
 
 setup:
   install:
@@ -227,6 +242,10 @@ setup:
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"
-    ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet-4-6"
-    ANTHROPIC_MODEL: "claude-sonnet-4-6"
+    ANTHROPIC_BASE_URL: "https://genai-lounge-nx-litellm-uat-emea.zurich.com"
+    ANTHROPIC_MODEL: "eu.anthropic.claude-sonnet-4-6"
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "eu.anthropic.claude-opus-4-8"
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "eu.anthropic.claude-sonnet-4-6"
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+    CLAUDE_CODE_SUBAGENT_MODEL: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
     npm_config_bin_links: "false"
