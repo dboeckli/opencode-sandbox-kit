@@ -62,22 +62,22 @@ sbx exec opencode-sandbox -- tail -f /var/log/sbx-kit-install.log
 ### Log-Format erweitern / ändern
 
 Die Timestamp-Logik steckt in `log_step()`, `log_phase_start()`, `log_phase_done()` und im
-Phasen-Dispatch (`npm|apt|tools|all`) von `files/home/.local/bin/install-tooling.sh`. Die
-Phasen-Commands referenzieren die drei Specs (`spec.yaml`, `mammouth-agent/`, `claude-zurich-agent/`).
-**Alle drei Kit-Kopien identisch halten** (Root, `mammouth-agent/`, `claude-zurich-agent/`) — der
+Phasen-Dispatch (`npm|apt|tools|all`) von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
+Phasen-Commands referenzieren die drei Specs (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`).
+**Alle drei Kit-Kopien identisch halten** (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`) — der
 Drift-Check schlägt sonst fehl:
 
 ```powershell
-cp files\home\.local\bin\install-tooling.sh mammouth-agent\files\home\.local\bin\install-tooling.sh
-cp files\home\.local\bin\install-tooling.sh claude-zurich-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-agent\files\home\.local\bin\install-tooling.sh mammouth-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-agent\files\home\.local\bin\install-tooling.sh claude-zurich-agent\files\home\.local\bin\install-tooling.sh
 ```
 
 ## Analyzing
 
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
-Alle `--help`-Outputs der v0.38.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
-`files/home/sbx-cli.md`, identisch in den drei Kit-Kopien) — die sbx CLI selbst ist **nicht** in
+Alle `--help`-Outputs der v0.39.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
+`opencode-agent/files/home/sbx-cli.md`, identisch in den drei Kit-Kopien) — die sbx CLI selbst ist **nicht** in
 Context7. Detaillierte Hintergrunddoku (Kits, Policy, Proxy): `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus
@@ -91,9 +91,9 @@ vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schläg
 Läuft auf dem Host (Docker Desktop) — `sbx` ist **nicht** im Sandbox-Image installiert:
 
 ```powershell
-sbx kit validate .                            # Mixin-Kit (OpenCode/Claude)
+sbx kit validate ./opencode-agent                 # Mixin-Kit (OpenCode/Claude Home)
 sbx kit validate ./mammouth-agent             # Mammouth Agent-Kit
-sbx kit inspect . --output json | jq '.warnings'   # erwartet: []
+sbx kit inspect ./opencode-agent --output json | jq '.warnings'   # erwartet: []
 ```
 
 Automatisiert via `local-test-kits.py` bzw. IntelliJ-Config `local-test-kits-validate-only`:
@@ -107,9 +107,9 @@ python local-test\local-test-kits.py --validate-only
 `local-test-kits.py` prüft, dass die Install-Skripte in allen drei Kit-Kopien identisch sind
 (`check_install_scripts_sync`). Nur diese Kopien anfassen und synchron halten:
 
-- `files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `claude-zurich-agent/…`
-- `files/home/.local/bin/install-tooling-user.sh` → dito
-- `files/home/.local/bin/regenerate-kubeconfig.py` → dito
+- `opencode-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `claude-zurich-agent/…`
+- `opencode-agent/files/home/.local/bin/install-tooling-user.sh` → dito
+- `opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py` → dito
 
 ### Startup-Checks
 
@@ -138,8 +138,8 @@ sbx policy log opencode-sandbox
 
 `local-test-kits.py --validate-only` vergleicht die in `~/stackexchange-api.md` dokumentierte
 API-Version mit dem offiziellen Change-Log — schlägt fehl, wenn eine neuere Version existiert
-(Doku-Dateien + `api_revision` aktualisieren). Beide Kit-Kopien
-(`files/home/`, `mammouth-agent/files/home/`) identisch halten.
+(Doku-Dateien + `api_revision` aktualisieren). Alle Kit-Kopien
+(`opencode-agent/files/home/`, `mammouth-agent/files/home/`, `claude-zurich-agent/files/home/`) identisch halten.
 
 ### IntelliJ: Probleme statisch analysieren
 
@@ -207,13 +207,13 @@ schreibt der **Dispatcher des Base-Templates** — Timestamps pro Zeile kann das
 | `002-startup-opencode-sandbox-kit/001-cmd.sh` | Kit `setup.startup` (agent) | `regenerate-kubeconfig.py` → `~/.kube/config` aus dem read-only Host-Kubeconfig-Mount regenerieren (idempotent, No-op ohne Mount) |
 
 Das `002-…-sandbox-kit`-Verzeichnis wird vom Template aus dem `setup.startup`-Abschnitt der Kit-Spec
-generiert (`spec.yaml`, `mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`); die
+generiert (`opencode-agent/spec.yaml`, `mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`); die
 Hook-Skripte landen als `000-cmd.sh`, `001-cmd.sh`, … in Namensreihenfolge.
 
 ### Kit-Spec v2 / sbx-Version
 
 v2-Grammatik verlangt **sbx v0.38+** — ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler.
-Diagnose: `sbx kit validate .` + `sbx kit inspect . --output json | jq '.warnings'` (erwartet `[]`).
+Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --output json | jq '.warnings'` (erwartet `[]`).
 
 ## Zusammenfassung der Kommandos
 
@@ -222,7 +222,7 @@ Diagnose: `sbx kit validate .` + `sbx kit inspect . --output json | jq '.warning
 | Install-Log ansehen | `sbx exec <sandbox> cat /var/log/sbx-kit-install.log` |
 | Install-Log live folgen | `sbx exec <sandbox> -- tail -f /var/log/sbx-kit-install.log` |
 | Startup-Hooks prüfen | `sbx exec <sandbox> cat /var/log/sbx-kit-startup.log` |
-| Kit validieren | `sbx kit validate .` + `sbx kit inspect . --output json \| jq '.warnings'` |
+| Kit validieren | `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --output json \| jq '.warnings'` |
 | Drift + SO-API-Check | `python local-test\local-test-kits.py --validate-only` |
 | Blocked requests | `sbx policy log <sandbox>` |
 | Startup-Checks (in Sandbox) | `bash ~/.config/sandbox-kit/run-checks.sh` |

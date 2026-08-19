@@ -11,9 +11,9 @@ Runs from setup.startup (both kits) as user 1000. Never fails the session:
 without the mount or on error the script exits 0, so a sandbox without the
 .kube workspace starts normally.
 
-The script lives as identical copies in both kits (files/home/.local/bin/ of
-spec.yaml and mammouth-agent/spec.yaml) — edit one copy, sync the other; the
-validate-only check fails on drift.
+The script lives as identical copies in all three kits (files/home/.local/bin/ of
+opencode-agent/spec.yaml, mammouth-agent/spec.yaml and claude-zurich-agent/spec.yaml) —
+edit one copy, sync the others; the validate-only check fails on drift.
 """
 
 import glob

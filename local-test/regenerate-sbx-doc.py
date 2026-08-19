@@ -4,8 +4,8 @@
 Die sbx CLI ist NICHT in Context7 (nur /docker/docs mit Teil-Abdeckung). Die einzige
 vollstaendige, versionstreue Quelle sind die `--help`-Outputs der Binary selbst. Dieses
 Skript laedt die Release-Binary aus `docker/sbx-releases`, sammelt `sbx --help` + die
-`--help` aller Subcommands, erzeugt `files/home/sbx-cli.md` und syncet die Kopien in
-alle drei Kit-Bundles (mammouth-agent/, claude-zurich-agent/).
+`--help` aller Subcommands, erzeugt `opencode-agent/files/home/sbx-cli.md` und syncet die
+Kopien in alle drei Kit-Bundles (opencode-agent/, mammouth-agent/, claude-zurich-agent/).
 
 Nach einem sbx-Version-Bump (Renovate/Validate-Check meldet Drift) einmal ausfuehren:
 
@@ -27,7 +27,7 @@ from shutil import which
 
 REPO = "docker/sbx-releases"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SBX_DOC_RELS = ("files/home/sbx-cli.md",
+SBX_DOC_RELS = ("opencode-agent/files/home/sbx-cli.md",
                 "mammouth-agent/files/home/sbx-cli.md",
                 "claude-zurich-agent/files/home/sbx-cli.md")
 

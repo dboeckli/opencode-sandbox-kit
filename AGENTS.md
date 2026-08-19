@@ -21,24 +21,24 @@ ob ein Commit erstellt werden soll.
 
 ## Commands
 
-- `sbx kit validate .` — validate the kit; run it after every change and report the output as evidence before committing
-- `sbx run opencode --name opencode-sandbox --kit .` — test the kit with an OpenCode sandbox (via PowerShell on Windows)
-- `sbx run claude --name claude-sandbox --kit .` — test the kit with a Claude Code sandbox (via PowerShell on Windows)
-- `sbx run claude --name claude-zurich --kit ./claude-zurich-agent/` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; Root-Kit ist der Home-Standard gegen `api.anthropic.com`)
+- `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
+- `sbx run opencode --name opencode-sandbox --kit ./opencode-agent/` — test the kit with an OpenCode sandbox (via PowerShell on Windows)
+- `sbx run claude --name claude-sandbox --kit ./opencode-agent/` — test the kit with a Claude Code sandbox (via PowerShell on Windows)
+- `sbx run claude --name claude-zurich --kit ./claude-zurich-agent/` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`)
 - `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`)
-- `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — run from remote Git repo
-- `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git" "C:\development\projects\spring-6-reactive"` — use kit with another project
-- `sbx run opencode --name opencode-sandbox --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support: Host-kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
-- `sbx run claude --name claude-sandbox --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Claude Code)
+- `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — run from remote Git repo
+- `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"` — use kit with another project
+- `sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support: Host-kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
+- `sbx run claude --name claude-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Claude Code)
 - `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Mammouth Code)
-- `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
+- `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
-- ctx7 installiert das Kit via `npm install -g ctx7` (spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
+- ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`; die CLI selbst ist NICHT in Context7 — Offline-Referenz: `~/sbx-cli.md`)
 - `python local-test/local-test-kits.py` — automate the 4 scenarios (OpenCode/Claude/Claude-Zurich/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (all three kits), no secrets check and no sandbox start (default is starting the sandboxes); includes the Stack Exchange + sbx CLI offline-doc update checks and the install-script sync check
-- `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync the 3 kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
+- `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `opencode-agent/files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync the 3 kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
 - GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.38.0`, mantained via Renovate customManager `docker/sbx-releases`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`
 
 ## Testing (lokale Verifikation per IntelliJ Run-Configs)
@@ -83,18 +83,18 @@ Mammouth Code (Agent-Kit)** per **Whitelist** eingeschränkt — Deny-by-Default
 erlaubt. Die Config liegt je Agent-Location vor:
 
 - **OpenCode / Mammouth** (OpenCode-Fork, nutzt dieselben `permission`-Regeln und Plugin-Hooks):
-  `permission`-Block in `files/home/.config/opencode/opencode.jsonc` und
+  `permission`-Block in `opencode-agent/files/home/.config/opencode/opencode.jsonc` und
   `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`: breites `"idea_*": "deny"` zuerst, danach
   gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
   deshalb Deny vor Allows.
-- **Claude Code**: `permissions`-Block in `files/home/.claude/settings.json`. Kein Deny-by-Default wie bei
+- **Claude Code**: `permissions`-Block in `opencode-agent/files/home/.claude/settings.json`. Kein Deny-by-Default wie bei
   OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__idea__<tool>`), eine
   `deny`-Blocklist für die schreibenden/ausführenden Tools. Nicht gelistete Tools fallen auf den
   Standard-Prompt zurück. Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
   Hooks + statusLine liegen **nicht** in der user-`settings.json`, sondern in der `managed-settings.json`
   unter `/etc/claude-code/` (via `setup.install`): höchste Precedence, wird vom Template nicht überschrieben —
   umgeht die Race Condition, bei der das Template die user-`settings.json` beim Start überschreibt (siehe
-  `session-start-hook-fix.md`). Doppeltes Feuern wird vermieden, weil `files/home/.claude/settings.json` und
+  `session-start-hook-fix.md`). Doppeltes Feuern wird vermieden, weil `opencode-agent/files/home/.claude/settings.json` und
   `settings.kit.json` bewusst **keine** `hooks`/`statusLine` mehr enthalten.
 - **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
   `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
@@ -111,11 +111,11 @@ erlaubt. Die Config liegt je Agent-Location vor:
 
 **Run-Config-Guard**: Das Permission-System sieht bei
 MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationName` nur im Hook sichtbar.
-- OpenCode/Mammouth (`files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
+- OpenCode/Mammouth (`opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
   `mammouth-agent/files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Plugin-Hook
   `tool.execute.before`. Erlaubt dort ausschließlich die Run-Config `local-test-kits-validate-only` und blockt
   alle anderen mit einem Fehler.
-- Claude Code (`files/home/.config/sandbox-kit/intellij-run-config-guard.sh`): PreToolUse-Hook gematcht auf
+- Claude Code (`opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh`): PreToolUse-Hook gematcht auf
   `mcp__idea__execute_run_configuration`. Liest `tool_input.configurationName` aus dem Hook-Payload; erlaubt
   `local-test-kits-validate-only` (exit 0 = pass), blockt alles andere (`permissionDecision: deny`, exit 2).
   Andere MCP-Tools passieren den Hook unverändert.
@@ -158,7 +158,7 @@ In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls ü
 
 ## Zurich LiteLLM Authentication (separates Kit)
 
-Der Root-Kit ist der **Home-Standard** (Claude Code gegen `api.anthropic.com`, Model `claude-sonnet-4-6`).
+Das `opencode-agent/`-Kit ist der **Home-Standard** (Claude Code gegen `api.anthropic.com`, Model `claude-sonnet-4-6`).
 Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-emea.zurich.com`,
 nur im Firmennetz erreichbar) das **separate Kit `claude-zurich-agent/`** verwenden — es setzt
 `ANTHROPIC_BASE_URL`, die `eu.anthropic.*`-Modell-Aliasse und den Service `zurich`
@@ -169,8 +169,8 @@ sbx run claude --name claude-zurich --kit ./claude-zurich-agent/
 sbx secret set zurich
 ```
 
-Dokumentation und Details: `claude-zurich-agent/README.md`. `spec.yaml`, `settings.json` und
-`network-policy.md` des Root-Kits sind davon **nicht** betroffen (Home-Standard bleibt unverändert).
+Dokumentation und Details: `claude-zurich-agent/README.md`. `opencode-agent/spec.yaml`, `settings.json` und
+`network-policy.md` des Home-Kits sind davon **nicht** betroffen (Home-Standard bleibt unverändert).
 
 ## Context7 Authentication
 
@@ -189,8 +189,8 @@ an `context7.com`. `echo $CONTEXT7_API_KEY` zeigt nie den echten Key.
 ## OpenRouter Authentication
 
 OpenRouter ist als zusätzlicher Provider im OpenCode-Setup konfiguriert (`provider.openrouter` in
-`files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `openrouter` ist ein
-**Built-in-Service des `opencode`-Templates** — das Kit deklariert ihn **bewusst nicht** in `spec.yaml`
+`opencode-agent/files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `openrouter` ist ein
+**Built-in-Service des `opencode`-Templates** — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml`
 (Doppel-Deklaration → `credential ... defined in both "opencode" and ...`). Den Key als Secret
 registrieren; das Template setzt `OPENROUTER_API_KEY=proxy-managed`, der Proxy injiziert den echten
 Key bei Requests an `openrouter.ai` – der Key liegt nie im Sandbox-Filesystem:
@@ -206,9 +206,9 @@ an `openrouter.ai`. `echo $OPENROUTER_API_KEY` zeigt nie den echten Key.
 ## Google Authentication
 
 Google Gemini ist als zusätzlicher Provider im OpenCode-Setup konfiguriert (`provider.google` in
-`files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `google` ist ein
+`opencode-agent/files/home/.config/opencode/opencode.jsonc`, DeepSeek bleibt Default-Modell). `google` ist ein
 **Built-in-Service des `opencode`-Templates** (wie `openrouter`) — das Kit deklariert ihn **bewusst nicht**
-in `spec.yaml` (Doppel-Deklaration → `credential ... defined in both "opencode" and ...`). Den Key als
+in `opencode-agent/spec.yaml` (Doppel-Deklaration → `credential ... defined in both "opencode" and ...`). Den Key als
 Secret registrieren; das Template setzt den Platzhalter `GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed`,
 der Proxy injiziert den echten Key bei Requests an `generativelanguage.googleapis.com` – der Key liegt nie im Sandbox-Filesystem:
 
@@ -250,7 +250,7 @@ In der Sandbox ist `STACKOVERFLOW_API_KEY=proxy-managed` gesetzt (Platzhalter); 
 `Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
 an `api.stackexchange.com`. `echo $STACKOVERFLOW_API_KEY` zeigt nie den echten Key.
 
-Die API-Doku liegt **offline im Kit**: `files/home/stackexchange-api.md` → `~/stackexchange-api.md`
+Die API-Doku liegt **offline im Kit**: `opencode-agent/files/home/stackexchange-api.md` → `~/stackexchange-api.md`
 (kompakte Endpoint-Tabelle, generische Parameter, API-Version `api_revision`); Detail-Doku mit allen
 Parametern je Methode in `~/stackexchange-api-detail.md` (nur bei Bedarf lesen). Das spart Kontext —
 die Website https://api.stackexchange.com/docs wird nur noch bei Unklarheiten abgerufen. Die
@@ -259,10 +259,11 @@ Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py -
 IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
 Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
 **schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
-Beide Kits führen identische Kopien (`mammouth-agent/files/home/`), weil jeder Agent sein eigenes
+Alle Kits führen identische Kopien (`opencode-agent/files/home/`, `mammouth-agent/files/home/`,
+`claude-zurich-agent/files/home/`), weil jeder Agent sein eigenes
 `files/home/`-Mapping hat.
 
-Nutzungsregeln (siehe `files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`):
+Nutzungsregeln (siehe `opencode-agent/files/home/.config/opencode/AGENTS.md` bzw. `.claude/CLAUDE.md`):
 - **Letzte Quelle** in der Abfragehierarchie (nach Context7/anderen Quellen, nur bei leeren Ergebnissen).
 - **Vor jedem API-Call** fragt die KI den Benutzer explizit um Erlaubnis.
 - **Nie** über `websearch`/`webfetch`, nur als direkter API-Call gegen `api.stackexchange.com`.
@@ -297,23 +298,23 @@ git clone --depth 1 --single-branch https://github.com/repsyio/repsy-docs.git ~/
 
 Der Agent liest bei Bedarf **direkt den Markdown-Source** (token-effizienter als HTML-Parsing
 der gerenderten Site) und kann per `git -C ~/docs/repsy-docs pull --ff-only` aktualisieren. Der
-Clone läuft über `files/home/.local/bin/install-tooling-user.sh` (alle drei Kit-Kopien, Drift-Check
+Clone läuft über `opencode-agent/files/home/.local/bin/install-tooling-user.sh` (alle drei Kit-Kopien, Drift-Check
 greift automatisch) — `github.com` ist bereits in der Network-Allowlist, keine spec.yaml-Änderung
 nötig.
 
 ## Layout
 
-- `spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
-- `files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
-- `files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
-- `files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
-- `files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
-- `files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
-- `files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
+- `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
+- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
+- `opencode-agent/files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
+- `opencode-agent/files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
+- `opencode-agent/files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
 - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
 - `claude-zurich-agent/spec.yaml` — Claude Code Zurich kit (kind: mixin): `ANTHROPIC_BASE_URL`, `eu.anthropic.*`-Model-Aliasse, Service `zurich`
-- `claude-zurich-agent/files/home/.claude/` — Claude config für den Zurich-Proxy (Home-Standard bleibt der Root-Kit)
+- `claude-zurich-agent/files/home/.claude/` — Claude config für den Zurich-Proxy (Home-Standard bleibt das `opencode-agent/`-Kit)
 - `docs/prerequisites.md` — kompakte Übersicht aller Voraussetzungen (Host + Sandbox + Secrets + Netzwerk)
 
 ## Dual agent support
@@ -321,15 +322,15 @@ nötig.
 Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`:
 
 ```powershell
-sbx run opencode --name my-sandbox --kit .          # OpenCode (opencode-docker Template)
-sbx run claude   --name my-sandbox --kit .          # Claude Code (claude-code-docker Template, Home)
+sbx run opencode --name my-sandbox --kit ./opencode-agent/   # OpenCode (opencode-docker Template)
+sbx run claude   --name my-sandbox --kit ./opencode-agent/   # Claude Code (claude-code-docker Template, Home)
 sbx run claude   --name claude-zurich --kit ./claude-zurich-agent/   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro)
 sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth)
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
-- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
+- Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `opencode-agent/files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `opencode-agent/files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `opencode-agent/files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 
 > **Mammouth Code**: Installiert das Agent-Kit automatisch beim Build (`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
@@ -344,7 +345,7 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 > liegen als identische Kopien in den `files/home/.local/bin/`-Bundles aller drei Kits (kein separates
 > Kanonik-Verzeichnis). **Versionsänderungen**
 > (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie machen, dann die anderen identisch halten
-> (`mammouth-agent/files/home/.local/bin/`, `claude-zurich-agent/files/home/.local/bin/`) → der Validate-only-Lauf
+> (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`, `claude-zurich-agent/files/home/.local/bin/`) → der Validate-only-Lauf
 > (`local-test-kits-validate-only`) schlägt bei Drift fehl.
 
 | Tool | Source |
@@ -363,7 +364,7 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
 > `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach
 > `/usr/local/share/npm-global/bin` landen. Zur Laufzeit setzt das Kit dagegen
-> `environment.variables.npm_config_bin_links: "false"` (`spec.yaml`), damit npm-Aufrufe des Agents keine
+> `environment.variables.npm_config_bin_links: "false"` (`opencode-agent/spec.yaml`), damit npm-Aufrufe des Agents keine
 > bin-link-Seiteneffekte erzeugen. **Die Variable ist damit bereits global gesetzt — kein
 > `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig (redundant).**
 > Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
@@ -397,7 +398,7 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 
 ## Netzwerk-Policy (Deny-by-Default)
 
-- **Quelle**: `permissions.network.allow` in `spec.yaml` (bzw. `mammouth-agent/spec.yaml`). Nur gelistete
+- **Quelle**: `permissions.network.allow` in `opencode-agent/spec.yaml` (bzw. `mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`). Nur gelistete
   Domains sind erreichbar, alles andere → HTTP 403.
 - **Enforcement**: Nicht das Kit, sondern die Sandbox selbst erzwingt die Liste — über den **Sandbox-Proxy**
   (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; die Template
@@ -413,7 +414,7 @@ sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H 
 Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 
 - **`~/sbx-cli.md`** — **Offline-Referenz der sbx CLI** (alle `--help`-Outputs, generiert aus der
-  v0.38.0-Release-Binary; identische Kopien in allen drei Kit-Bundles)
+  v0.39.0-Release-Binary; identische Kopien in allen drei Kit-Bundles)
 - [Templates](https://docs.docker.com/ai/sandboxes/customize/templates/) — Custom Template-Images bauen (Base-Images, Dockerfile, `sbx template save`/`load`)
 - [Kits](https://docs.docker.com/ai/sandboxes/customize/kits/) — Kit-Übersicht (`kind: mixin` vs. `kind: sandbox`)
 - [Kit Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/) — spec.yaml-Felder (`sandbox`, `network`, `credentials`, `commands`, `agentContext`)
@@ -425,5 +426,5 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 - **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig.
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
-- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das Mixin-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run mammouth`).
-- **Kit-spec v2**: Beide Kits (Mixin `spec.yaml` und `mammouth-agent/spec.yaml`) nutzen die **stabilen** v2-Felder `schemaVersion: "2"` + `permissions.network.allow` + `setup` + `agentInstructions` (flacher `entrypoint`) — benötigt **sbx v0.38+** (strikte v2-Grammatik; ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler). Validieren mit `sbx kit validate .` (bzw. `./mammouth-agent`) und `sbx kit inspect ... --output json | jq '.warnings'` (erwartet `[]`). Migration aufs offizielle Skript: `git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git && go run scripts/migrate-v1-to-v2.go <kit-dir>`. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.
+- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run mammouth`).
+- **Kit-spec v2**: Alle Kits (`opencode-agent/spec.yaml` (Mixin), `mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`) nutzen die **stabilen** v2-Felder `schemaVersion: "2"` + `permissions.network.allow` + `setup` + `agentInstructions` (flacher `entrypoint`) — benötigt **sbx v0.38+** (strikte v2-Grammatik; ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler). Validieren mit `sbx kit validate ./opencode-agent` (bzw. `./mammouth-agent`, `./claude-zurich-agent`) und `sbx kit inspect ... --output json | jq '.warnings'` (erwartet `[]`). Migration aufs offizielle Skript: `git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git && go run scripts/migrate-v1-to-v2.go <kit-dir>`. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.

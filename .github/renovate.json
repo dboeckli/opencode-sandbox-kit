@@ -29,8 +29,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Liberica JDK version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Liberica JDK version (install-tooling.sh, alle drei Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["LIBERICA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+)\""],
       "depNameTemplate": "bell-sw/Liberica",
       "datasourceTemplate": "github-releases",
@@ -38,16 +38,16 @@
     },
     {
       "customType": "regex",
-      "description": "Apache Maven version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Apache Maven version (install-tooling.sh, alle drei Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["MAVEN_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "org.apache.maven:apache-maven",
       "datasourceTemplate": "maven"
     },
     {
       "customType": "regex",
-      "description": "Docker CLI version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Docker CLI version (install-tooling.sh, alle drei Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/cli",
       "datasourceTemplate": "github-releases",
@@ -55,8 +55,8 @@
     },
     {
       "customType": "regex",
-      "description": "Docker Compose plugin version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Docker Compose plugin version (install-tooling.sh, alle drei Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["COMPOSE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/compose",
       "datasourceTemplate": "github-releases",
@@ -64,8 +64,8 @@
     },
     {
       "customType": "regex",
-      "description": "Helm v3 version (install-tooling.sh, beide Kit-Kopien) — Default `helm`, siehe packageRules",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Helm v3 version (install-tooling.sh, alle drei Kit-Kopien) — Default `helm`, siehe packageRules",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
@@ -73,8 +73,8 @@
     },
     {
       "customType": "regex",
-      "description": "Helm v4 version (install-tooling.sh, beide Kit-Kopien) — paralleles Binary `helm4`, siehe packageRules",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Helm v4 version (install-tooling.sh, alle drei Kit-Kopien) — paralleles Binary `helm4`, siehe packageRules",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM4_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
@@ -82,8 +82,8 @@
     },
     {
       "customType": "regex",
-      "description": "shfmt version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "shfmt version (install-tooling.sh, alle drei Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["SHFMT_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "mvdan/sh",
       "datasourceTemplate": "github-releases",

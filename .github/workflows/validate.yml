@@ -37,8 +37,8 @@ jobs:
       - name: Verify sbx installation
         run: sbx version
 
-      - name: Validate kit spec
-        run: sbx kit validate .
+      - name: Validate OpenCode agent kit spec
+        run: sbx kit validate ./opencode-agent/
 
       - name: Validate Mammouth agent kit spec
         run: sbx kit validate ./mammouth-agent/
@@ -53,6 +53,6 @@ jobs:
         run: |
           set -euo pipefail
           for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py; do
-            cmp "files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
-            cmp "files/home/.local/bin/$f" "claude-zurich-agent/files/home/.local/bin/$f"
+            cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+            cmp "opencode-agent/files/home/.local/bin/$f" "claude-zurich-agent/files/home/.local/bin/$f"
           done

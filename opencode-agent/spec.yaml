@@ -1,6 +1,6 @@
 schemaVersion: "2"
 kind: mixin
-name: opencode-sandbox-kit
+name: opencode-agent
 displayName: "OpenCode-Konfiguration"
 description: "OpenCode, Context7 und IntelliJ MCP"
 

@@ -32,7 +32,7 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 > kubectl hat lediglich keinen konfigurierten Cluster. Einfacher Start ohne Mount:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --kit .
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/
 ```
 
 > Mit Kubernetes-Zugriff (Mounts werden nur bei Sandbox-Erstellung gesetzt — beendet die
@@ -41,7 +41,7 @@ sbx run opencode --name opencode-sandbox --kit .
 ```powershell
 # Recreate:
 sbx rm opencode-sandbox --force
-sbx run opencode --name opencode-sandbox --kit . "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
 ```
 
 | Aspekt | Detail |
@@ -59,9 +59,10 @@ sbx run opencode --name opencode-sandbox --kit . "C:\development\projects\openco
 ## Transformation: Gemountete Host-kubeconfig → Sandbox-kubeconfig
 
 > **Automatisch seit 13.08.2026:** Die Transformation läuft bei jedem Sandbox-Start
-> automatisch — `setup.startup` in beiden Kits (spec.yaml + mammouth-agent/spec.yaml)
+> automatisch — `setup.startup` in allen Kits (opencode-agent/spec.yaml, mammouth-agent/spec.yaml,
+> claude-zurich-agent/spec.yaml)
 > führt `python3 /home/agent/.local/bin/regenerate-kubeconfig.py` als User 1000 aus.
-> Das Skript liegt als identische Kopie in `files/home/.local/bin/` beider Kits
+> Das Skript liegt als identische Kopie in `files/home/.local/bin/` aller Kits
 > (Drift-Check in `local-test-kits.py --validate-only`). Es ist idempotent (schreibt
 > nur bei geändertem Inhalt) und greift nur, wenn der `.kube`-Mount vorhanden ist —
 > ohne Mount bleibt `~/.kube/config` unangetastet, der Session-Start schlägt nie fehl.
@@ -140,5 +141,5 @@ kubectl get namespaces
 ```
 
 > **Hinweis:** Die Allowlist und die Workspace-Mounts werden nur bei Session-/Sandbox-Start
-> geladen — nach einem Edit von `spec.yaml` bzw. zum Hinzufügen eines Mounts muss die Sandbox
+> geladen — nach einem Edit von `opencode-agent/spec.yaml` bzw. zum Hinzufügen eines Mounts muss die Sandbox
 > neu erstellt werden. Siehe `docs/TODO-38-kubernetes-integration.md` für den konkreten Stand.
