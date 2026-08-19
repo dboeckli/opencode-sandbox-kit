@@ -46,10 +46,26 @@ case "${UNAME_M}" in
     *) echo "Unsupported architecture: ${UNAME_M}"; exit 1 ;;
 esac
 
+# --- Download with retries (transient TLS/network errors must not abort install) ---
+download() {
+	local url="$1" out="$2"
+	local attempt rc=1
+	for attempt in 1 2 3 4 5; do
+		curl -fsSL --connect-timeout 15 --max-time 300 "$url" -o "$out"
+		rc=$?
+		if [ "${rc}" -eq 0 ]; then
+			return 0
+		fi
+		echo "install-tooling: download attempt ${attempt}/5 failed (curl exit ${rc}): ${url}" >&2
+		sleep "$(( attempt * 2 ))"
+	done
+	return "${rc}"
+}
+
 # --- shfmt ---
 run_shfmt() {
 	SHFMT_VER="3.13.1"
-	curl -fsSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_${DEB_ARCH}" -o /usr/local/bin/shfmt
+	download "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_${DEB_ARCH}" /usr/local/bin/shfmt
 	chmod +x /usr/local/bin/shfmt
 	shfmt --version
 	log_step shfmt
@@ -58,7 +74,7 @@ run_shfmt() {
 # --- Liberica JDK (LTS) ---
 run_jdk() {
 	LIBERICA_VER="25.0.4+9"
-	curl -fsSL "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-${JDK_ARCH}.tar.gz" -o /tmp/jdk.tar.gz
+	download "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-${JDK_ARCH}.tar.gz" /tmp/jdk.tar.gz
 	mkdir -p /usr/local/java
 	tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1
 	ln -sf /usr/local/java/bin/java /usr/local/bin/java
@@ -69,7 +85,7 @@ run_jdk() {
 # --- Apache Maven ---
 run_maven() {
 	MAVEN_VER="3.9.16"
-	curl -fsSL "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" -o /tmp/maven.tar.gz
+	download "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" /tmp/maven.tar.gz
 	mkdir -p /opt/maven
 	tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1
 	rm -f /tmp/maven.tar.gz
@@ -85,7 +101,7 @@ run_docker() {
 	    x86_64)  DOCKER_ARCH="x86_64" ;;
 	    aarch64) DOCKER_ARCH="aarch64" ;;
 	esac
-	curl -fsSL "https://download.docker.com/linux/static/stable/${DOCKER_ARCH}/docker-${DOCKER_VER}.tgz" -o /tmp/docker.tgz
+	download "https://download.docker.com/linux/static/stable/${DOCKER_ARCH}/docker-${DOCKER_VER}.tgz" /tmp/docker.tgz
 	tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker
 	rm -f /tmp/docker.tgz
 	log_step docker
@@ -100,7 +116,7 @@ run_compose() {
 	    aarch64) COMPOSE_ARCH="aarch64" ;;
 	esac
 	mkdir -p /usr/local/lib/docker/cli-plugins
-	curl -fsSL "https://github.com/docker/compose/releases/download/v${COMPOSE_VER}/docker-compose-linux-${COMPOSE_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-compose
+	download "https://github.com/docker/compose/releases/download/v${COMPOSE_VER}/docker-compose-linux-${COMPOSE_ARCH}" /usr/local/lib/docker/cli-plugins/docker-compose
 	chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 	docker compose version
 	log_step compose
@@ -108,8 +124,15 @@ run_compose() {
 
 # --- kubectl (latest stable) ---
 run_kubectl() {
-	KUBE_VER="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
-	curl -fsSL "https://dl.k8s.io/release/${KUBE_VER}/bin/linux/${DEB_ARCH}/kubectl" -o /usr/local/bin/kubectl
+	KUBE_VER=""
+	local attempt
+	for attempt in 1 2 3 4 5; do
+		KUBE_VER="$(curl -fsSL --connect-timeout 15 --max-time 60 https://dl.k8s.io/release/stable.txt 2>/dev/null)" && break
+		echo "install-tooling: kubectl version fetch attempt ${attempt}/5 failed" >&2
+		sleep "$(( attempt * 2 ))"
+	done
+	[ -n "${KUBE_VER}" ] || { echo "install-tooling: failed to fetch kubectl stable version" >&2; return 1; }
+	download "https://dl.k8s.io/release/${KUBE_VER}/bin/linux/${DEB_ARCH}/kubectl" /usr/local/bin/kubectl
 	chmod +x /usr/local/bin/kubectl
 	log_step kubectl
 }
@@ -117,7 +140,7 @@ run_kubectl() {
 # --- Helm (v3 as `helm`, v4 as `helm4`: v3 bleibt der Default, v4 bricht kokuwaio/helm-maven-plugin, see #427) ---
 install_helm() {
 	local ver="$1" dest="$2"
-	curl -fsSL "https://get.helm.sh/helm-v${ver}-linux-${DEB_ARCH}.tar.gz" -o /tmp/helm.tar.gz
+	download "https://get.helm.sh/helm-v${ver}-linux-${DEB_ARCH}.tar.gz" /tmp/helm.tar.gz
 	mkdir -p /tmp/helm-extract
 	tar -xzf /tmp/helm.tar.gz -C /tmp/helm-extract
 	local bin
