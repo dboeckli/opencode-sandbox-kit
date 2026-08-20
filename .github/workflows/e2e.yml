@@ -193,12 +193,15 @@ jobs:
         run: python3 local-test/local-test-kits.py opencode --ci
 
       - name: Run e2e tests (Claude)
+        if: success() || failure()
         run: python3 local-test/local-test-kits.py claude --ci
 
       - name: Run e2e tests (Claude Zurich)
+        if: success() || failure()
         run: python3 local-test/local-test-kits.py claude-zurich --ci
 
       - name: Run e2e tests (Mammouth)
+        if: success() || failure()
         run: python3 local-test/local-test-kits.py mammouth --ci
 
       - name: Sign out of Docker Hub
