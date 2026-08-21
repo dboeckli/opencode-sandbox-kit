@@ -33,6 +33,9 @@ permissions:
       - "*.mammouth.ai:443"
       - "code.mammouth.ai:443"
       - "model-explorer.mammouth.ai:443"
+      # DeepSeek (Default-Modell mit eigenem API-Key)
+      - "api.deepseek.com:443"
+      - "*.deepseek.com:443"
       # GitHub
       - "api.github.com:443"
       - "github.com:443"
@@ -108,6 +111,15 @@ credentials:
       proxyManaged: true
       inject:
         - domain: api.mammouth.ai
+          header: Authorization
+          format: "Bearer %s"
+  - service: deepseek
+    description: "DeepSeek API-Key (https://platform.deepseek.com/api_keys)"
+    apiKey:
+      name: DEEPSEEK_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.deepseek.com
           header: Authorization
           format: "Bearer %s"
   - service: context7

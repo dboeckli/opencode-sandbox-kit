@@ -136,7 +136,7 @@ sondern vom Template beim `sbx run`:
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
 `host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
@@ -155,7 +155,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
-- **Modell**: `opencode/deepseek-v4-flash-free` (DeepSeek V4 Flash Free) als Default
+- **Modell**: `deepseek/deepseek-v4-flash` (DeepSeek V4 Flash) als Default
 - **IntelliJ MCP**: SSE-Endpoint `http://host.docker.internal:64342/sse`
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
@@ -316,7 +316,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
 | Zurich | Zurich LiteLLM API-Key | `sbx secret set zurich` | Claude Code (Zurich-Proxy, `claude-zurich-agent/`) |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
-| DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode (optional, Modell `deepseek/…`) |
+| DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode + Mammouth (Default-Modell `deepseek/…`) |
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
 | Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |

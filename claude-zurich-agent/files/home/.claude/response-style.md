@@ -1,7 +1,7 @@
 # Response style (token-efficient)
 
 Rules for token-efficient, low-prose responses — tuned for models with limited
-context (e.g. the free DeepSeek tier), but safe for any model. Complements the
+context (e.g. budget/free model tiers), but safe for any model. Complements the
 platform's concise-response rules and the "Verification" principle in the
 agent rules file.
 
