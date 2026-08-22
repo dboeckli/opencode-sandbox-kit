@@ -329,7 +329,7 @@ sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Co
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
-- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `opencode/deepseek-v4-flash-free`
+- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `opencode-agent/files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `opencode-agent/files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `opencode-agent/files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 

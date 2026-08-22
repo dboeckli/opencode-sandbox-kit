@@ -367,8 +367,8 @@ def main():
             "name": "kit-test-opencode",
             "agent": "opencode",
             "kit": os.path.join(ROOT, "opencode-agent"),
-            "model": "opencode/deepseek-v4-flash-free",
-            "config": 'grep -q "opencode/deepseek-v4-flash-free" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
+            "model": "deepseek/deepseek-v4-flash",
+            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
         },
         {
             "name": "kit-test-claude",
@@ -389,8 +389,8 @@ def main():
             "name": "kit-test-mammouth",
             "agent": "mammouth",
             "kit": os.path.join(ROOT, "mammouth-agent"),
-            "model": "opencode/deepseek-v4-flash-free",
-            "config": 'grep -q "opencode/deepseek-v4-flash-free" ~/.config/mammouth/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
+            "model": "deepseek/deepseek-v4-flash",
+            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/mammouth/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
             "run_checks": True,
         },
     ]
