@@ -86,6 +86,8 @@ permissions:
       - "packages.scm-manager.org:443"
       # Cloudsmith (Artifact-Hosting API)
       - "api.cloudsmith.io:443"
+      # Cloudflare R2 (Object Storage)
+      - "*.r2.cloudflarestorage.com:443"
       # Liberica JDK (Renovate Versions-API)
       - "api.bell-sw.com:443"
       # Ubuntu apt (http, Port 80; archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)
