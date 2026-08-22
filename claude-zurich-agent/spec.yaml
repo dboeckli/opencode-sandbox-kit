@@ -76,6 +76,8 @@ permissions:
     - packages.scm-manager.org
     # Cloudsmith (Artifact-Hosting API)
     - api.cloudsmith.io
+    # Cloudflare R2 (Object Storage)
+    - "*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)
     - api.bell-sw.com
     # Ubuntu apt (archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)

@@ -17,6 +17,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
 - **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API)
+- **Cloudflare R2**: `*.r2.cloudflarestorage.com` (Object Storage)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
 - **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)
 - **MongoDB**: `repo.mongodb.org` (apt im Helm-Test-Pod)
