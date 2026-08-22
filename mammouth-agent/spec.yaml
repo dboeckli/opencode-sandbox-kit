@@ -76,6 +76,7 @@ permissions:
       - "get.helm.sh:443"
       # Zusätzliche Container-Registries (Observability / GitHub Packages)
       - "docker.elastic.co:443"
+      - "docker-auth.elastic.co:443"
       - "cr.jaegertracing.io:443"
       - "ghcr.io:443"
       # Private Maven- & Helm-Repositories

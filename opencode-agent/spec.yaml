@@ -63,6 +63,7 @@ permissions:
     - get.helm.sh
     # Zusätzliche Container-Registries (Observability / GitHub Packages)
     - docker.elastic.co
+    - docker-auth.elastic.co
     - cr.jaegertracing.io
     - ghcr.io
     # Private Maven- & Helm-Repositories
