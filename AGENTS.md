@@ -287,6 +287,12 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 `api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload).
 `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
 
+> **Helm-OCI-Pull aus Cloudsmith:** `docker.cloudsmith.io` ist in der Netzwerk-Allowlist
+> (`permissions.network.allow`) enthalten — Helm-Pull von `oci://docker.cloudsmith.io/…`
+> (z. B. rest-mvc-Subcharts) funktioniert in der Sandbox. Ein `helm registry login`
+> für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection
+> nur für die API-Domains); für lokale Helm-Pull-Tests den `CLOUDSMITH_API_KEY` direkt verwenden.
+
 ## Offline Dokumentation (Repsy)
 
 Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist

@@ -74,9 +74,10 @@ permissions:
     - jitpack.io
     - artifacts.cibseven.org
     - packages.scm-manager.org
-    # Cloudsmith (Artifact-Hosting API + Package-Upload)
+    # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry)
     - api.cloudsmith.io
     - upload.cloudsmith.io
+    - docker.cloudsmith.io
     # Cloudflare R2 (Object Storage)
     - "*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)
