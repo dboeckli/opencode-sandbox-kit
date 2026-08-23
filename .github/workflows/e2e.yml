@@ -173,7 +173,7 @@ jobs:
                 domains: [api.stackexchange.com]
             cloudsmith:
               apiKey:
-                domains: [api.cloudsmith.io]
+                domains: [api.cloudsmith.io, upload.cloudsmith.io]
             zurich:
               apiKey:
                 domains: [genai-lounge-nx-litellm-uat-emea.zurich.com]
