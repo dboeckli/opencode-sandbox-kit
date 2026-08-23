@@ -84,9 +84,11 @@ permissions:
       - "jitpack.io:443"
       - "artifacts.cibseven.org:443"
       - "packages.scm-manager.org:443"
-      # Cloudsmith (Artifact-Hosting API + Package-Upload)
+      # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry)
       - "api.cloudsmith.io:443"
       - "upload.cloudsmith.io:443"
+      - "docker.cloudsmith.io:443"
+      - "dl.cloudsmith.io:443"
       # Cloudflare R2 (Object Storage)
       - "*.r2.cloudflarestorage.com:443"
       # Liberica JDK (Renovate Versions-API)
