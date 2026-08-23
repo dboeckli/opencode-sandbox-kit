@@ -75,6 +75,7 @@ permissions:
     - api.cloudsmith.io
     - upload.cloudsmith.io
     - docker.cloudsmith.io
+    - dl.cloudsmith.io
     # Cloudflare R2 (Object Storage)
     - "*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)
