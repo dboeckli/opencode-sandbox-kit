@@ -19,6 +19,13 @@ Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellun
 nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen,
 ob ein Commit erstellt werden soll.
 
+## Feature Branches (Pflicht)
+
+Bei **jeder Änderung** an diesem Repository immer **zuerst einen Feature Branch anlegen** (falls noch nicht
+vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). Direktes Committen auf `master`
+ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
+werden soll.
+
 ## Commands
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing

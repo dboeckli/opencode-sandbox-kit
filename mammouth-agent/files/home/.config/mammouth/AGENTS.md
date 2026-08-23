@@ -18,6 +18,13 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 
 Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen, ob ein Commit erstellt werden soll.
 
+## Feature Branches (Pflicht)
+
+Bei **jeder Änderung** in einem Git-Repository immer **zuerst einen Feature Branch anlegen** (falls noch nicht
+vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). Direktes Committen auf `master`/`main`
+ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
+werden soll.
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the mammouth-agent kit. The following tools are installed and available:
 
