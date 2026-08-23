@@ -74,8 +74,9 @@ permissions:
     - jitpack.io
     - artifacts.cibseven.org
     - packages.scm-manager.org
-    # Cloudsmith (Artifact-Hosting API)
+    # Cloudsmith (Artifact-Hosting API + Package-Upload)
     - api.cloudsmith.io
+    - upload.cloudsmith.io
     # Cloudflare R2 (Object Storage)
     - "*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)
@@ -131,6 +132,9 @@ credentials:
       proxyManaged: true
       inject:
         - domain: api.cloudsmith.io
+          header: X-Api-Key
+          format: "%s"
+        - domain: upload.cloudsmith.io
           header: X-Api-Key
           format: "%s"
   - service: zurich

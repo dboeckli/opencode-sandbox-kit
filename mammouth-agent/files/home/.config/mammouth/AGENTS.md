@@ -165,10 +165,11 @@ nicht ausgeführt.
 
 Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku via
 Context7 (`npx ctx7 docs /websites/cloudsmith <query>`, API-Bindings:
-`/cloudsmith-io/cloudsmith-api`). API-Key unter https://cloudsmith.io/user/settings/api-keys/,
-als Secret registrieren (`sbx secret set cloudsmith`). In der Sandbox ist
-`CLOUDSMITH_API_KEY=proxy-managed` gesetzt; der Agent sendet `X-Api-Key: proxy-managed`, der
-Proxy ersetzt den Platzhalter transparent bei Requests an `api.cloudsmith.io` – der Key liegt
+`/cloudsmith-io/cloudsmith-api`, z. B. Uploads über FilesApi). API-Key unter
+https://cloudsmith.io/user/settings/api-keys/, als Secret registrieren (`sbx secret set cloudsmith`).
+In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt; der Agent sendet
+`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
+`api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload) – der Key liegt
 nie im Sandbox-Filesystem.
 
 ## Offline documentation (Repsy)

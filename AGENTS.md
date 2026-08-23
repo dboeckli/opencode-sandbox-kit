@@ -272,7 +272,8 @@ Nutzungsregeln (siehe `opencode-agent/files/home/.config/opencode/AGENTS.md` bzw
 
 Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku ist via
 Context7 verfügbar (`npx ctx7 docs /websites/cloudsmith <query>` bzw.
-`/cloudsmith-io/cloudsmith-api` für die API-Bindings). Den API-Key anlegen unter
+`/cloudsmith-io/cloudsmith-api` für die API-Bindings, z. B. Uploads über FilesApi).
+Den API-Key anlegen unter
 https://cloudsmith.io/user/settings/api-keys/. Das Kit deklariert den Service `cloudsmith`
 (`credentials[].apiKey` mit `name: CLOUDSMITH_API_KEY`, `proxyManaged: true`). Den Key als
 Secret registrieren – der Key liegt nie im Sandbox-Filesystem:
@@ -283,7 +284,8 @@ sbx secret set cloudsmith
 
 In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der Agent sendet
 `X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
-`api.cloudsmith.io`. `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
+`api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload).
+`echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
 
 ## Offline Dokumentation (Repsy)
 
