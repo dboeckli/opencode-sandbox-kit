@@ -25,6 +25,18 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+### Feature Branch mit GitHub-Issue (Zusatzregel)
+
+Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
+
+- **Namenskonvention:** `feature/<issue-nummer>-<kurzer-text>` — Issue-Nummer direkt nach `feature/`, danach ein
+  Dash, danach ein kurzer Text mit **maximal 4 Wörtern** (z. B. `feature/66-github-packages-maven`).
+- **Verdrahtung:** Der Branch wird im Issue verlinkt (Feld „Development"/Linked Branches). Am saubersten legt man
+  den Branch **direkt über die GitHub-GraphQL-Mutation `createLinkedBranch`** an (`issueId` + `oid` = Base-SHA +
+  `name`) — sie erstellt und verlinkt den Branch in einem Schritt. Alternativ `gh issue develop <nummer> --name <branch>`.
+  **Nicht** vorher per REST/Git anlegen: `createLinkedBranch` verknüpft nur frisch angelegte Branches, sonst
+  schlägt die Verknüpfung fehl (`linkedBranch: null`).
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the mammouth-agent kit. The following tools are installed and available:
 
