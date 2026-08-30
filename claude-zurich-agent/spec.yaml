@@ -48,6 +48,8 @@ permissions:
     - "127.0.0.1:6443"
     - "host.docker.internal:6443"
     # Docker Desktop Docker Engine (Daemon-API via TCP, Host via Docker Desktop DNS; DOCKER_HOST=tcp://host.docker.internal:2375)
+    - "localhost:2375"
+    - "127.0.0.1:2375"
     - "host.docker.internal:2375"
     # Maven Central
     - maven.org
