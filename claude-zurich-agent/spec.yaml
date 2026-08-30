@@ -51,6 +51,23 @@ permissions:
     - "localhost:2375"
     - "127.0.0.1:2375"
     - "host.docker.internal:2375"
+    # Elastic REST-APIs (ELK-Stack im Host-Docker via Docker Compose, Zugriff via host.docker.internal)
+    - "localhost:9200"
+    - "127.0.0.1:9200"
+    - "host.docker.internal:9200"
+    - "localhost:5601"
+    - "127.0.0.1:5601"
+    - "host.docker.internal:5601"
+    - "localhost:8200"
+    - "127.0.0.1:8200"
+    - "host.docker.internal:8200"
+    # Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)
+    - "localhost:30920"
+    - "127.0.0.1:30920"
+    - "localhost:30561"
+    - "127.0.0.1:30561"
+    - "localhost:30820"
+    - "127.0.0.1:30820"
     # Maven Central
     - maven.org
     - repo1.maven.org
