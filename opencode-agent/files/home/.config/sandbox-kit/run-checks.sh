@@ -56,6 +56,13 @@ else
   report="$report docker:FAIL"
 fi
 
+# 5b. Docker Desktop host daemon (optional; DOCKER_HOST=tcp://host.docker.internal:2375)
+if docker -H tcp://host.docker.internal:2375 version >/dev/null 2>&1; then
+  report="$report docker-host:OK"
+else
+  report="$report docker-host:FAIL"
+fi
+
 # 6. kubectl
 if kubectl version --client >/dev/null 2>&1; then
   report="$report kubectl:OK"

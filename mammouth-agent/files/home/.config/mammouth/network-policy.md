@@ -16,7 +16,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
 - **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API), `upload.cloudsmith.io` (Package-Upload), `docker.cloudsmith.io` (Helm-OCI-Registry), `dl.cloudsmith.io` (Helm-OCI-Blob-Download/CDN); API-Doku via Context7 (`npx ctx7 docs /cloudsmith-io/cloudsmith-api <query>`, z. B. FilesApi/Upload)
-- **Cloudflare R2**: `*.r2.cloudflarestorage.com` (Object Storage)
+- **Cloudflare R2**: `**/*.r2.cloudflarestorage.com` (Object Storage; Multi-Level-Wildcard — Blob-Host ist z. B. `docker-registry-production.<hash>.r2.cloudflarestorage.com`)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
 - **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)
 - **MongoDB apt (Helm-Test-Pod)**: `repo.mongodb.org`
@@ -26,5 +26,6 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
 - **Docker Desktop Kubernetes (Windows host)**: `localhost:6443`, `127.0.0.1:6443`, `host.docker.internal:6443` (kube-apiserver)
+- **Docker Desktop Docker Engine (Windows host)**: `localhost:2375`, `127.0.0.1:2375`, `host.docker.internal:2375` (Daemon-API via TCP; `export DOCKER_HOST=tcp://host.docker.internal:2375`)
 
 Not reachable (blocked): Anthropic, telemetry, and any other host not on this list.

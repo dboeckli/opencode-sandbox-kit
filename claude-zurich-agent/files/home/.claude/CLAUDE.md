@@ -108,6 +108,18 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+### Feature Branch mit GitHub-Issue (Zusatzregel)
+
+Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
+
+- **Namenskonvention:** `feature/<issue-nummer>-<kurzer-text>` — Issue-Nummer direkt nach `feature/`, danach ein
+  Dash, danach ein kurzer Text mit **maximal 4 Wörtern** (z. B. `feature/66-github-packages-maven`).
+- **Verdrahtung:** Der Branch wird im Issue verlinkt (Feld „Development"/Linked Branches). Am saubersten legt man
+  den Branch **direkt über die GitHub-GraphQL-Mutation `createLinkedBranch`** an (`issueId` + `oid` = Base-SHA +
+  `name`) — sie erstellt und verlinkt den Branch in einem Schritt. Alternativ `gh issue develop <nummer> --name <branch>`.
+  **Nicht** vorher per REST/Git anlegen: `createLinkedBranch` verknüpft nur frisch angelegte Branches, sonst
+  schlägt die Verknüpfung fehl (`linkedBranch: null`).
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the opencode-sandbox-kit. The following tools are installed and available:
 
@@ -141,6 +153,11 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 ## Docker CLI
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
+
+> **Host-Daemon-Zugriff (optional):** Um Container auf dem Windows-Host zu sehen/steuern, in Docker Desktop
+> Settings → General → **"Expose daemon on tcp://localhost:2375 without TLS"** aktivieren und in der Sandbox
+> `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen (`host.docker.internal:2375` ist in der
+> Network-Allowlist).
 
 Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 
