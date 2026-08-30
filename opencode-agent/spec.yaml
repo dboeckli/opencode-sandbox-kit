@@ -44,6 +44,8 @@ permissions:
     - "localhost:6443"
     - "127.0.0.1:6443"
     - "host.docker.internal:6443"
+    # Docker Desktop Docker Engine (Daemon-API via TCP, Host via Docker Desktop DNS; DOCKER_HOST=tcp://host.docker.internal:2375)
+    - "host.docker.internal:2375"
     # Maven Central
     - maven.org
     - repo1.maven.org
@@ -76,8 +78,8 @@ permissions:
     - upload.cloudsmith.io
     - docker.cloudsmith.io
     - dl.cloudsmith.io
-    # Cloudflare R2 (Object Storage)
-    - "*.r2.cloudflarestorage.com"
+    # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
+    - "**/*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)
     - api.bell-sw.com
     # Ubuntu apt (archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)

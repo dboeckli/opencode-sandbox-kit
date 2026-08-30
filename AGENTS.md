@@ -439,7 +439,7 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 
 ## Caveats
 
-- **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig.
+- **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig. Optional Zugriff auf den **Windows-Host-Daemon** (Container des Hosts sehen/steuern): Docker Desktop → Settings → General → **"Expose daemon on tcp://localhost:2375 without TLS"** aktivieren und in der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen (`host.docker.internal:2375` ist in der Network-Allowlist, siehe `permissions.network.allow`).
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
 - **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run mammouth`).
