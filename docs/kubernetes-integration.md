@@ -140,6 +140,11 @@ kubectl get nodes -o wide          # → docker-desktop Ready v1.34.x
 kubectl get namespaces
 ```
 
+> **Self-healing (Sidebar-Check):** Der **Docker / Kubernetes**-Block (`check-infra.sh`) regeneriert
+> `~/.kube/config` on-the-fly, falls sie fehlt (z. B. Race zwischen `setup.startup` und dem
+> `.kube`-Mount beim Sandbox-Start) — statt die ganze Session `kubernetes:FAIL` zu zeigen.
+
+
 > **Hinweis:** Die Allowlist und die Workspace-Mounts werden nur bei Session-/Sandbox-Start
 > geladen — nach einem Edit von `opencode-agent/spec.yaml` bzw. zum Hinzufügen eines Mounts muss die Sandbox
 > neu erstellt werden. Siehe `docs/TODO-38-kubernetes-integration.md` für den konkreten Stand.
