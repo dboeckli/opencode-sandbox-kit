@@ -31,6 +31,15 @@ angegeben.
 | Apache Tomcat | `/apache/tomcat` | https://github.com/apache/tomcat |
 | Apache POI | `/apache/poi` | https://github.com/apache/poi |
 
+## Elastic (ELK-Stack)
+
+| Tool | ctx7 Library-ID | GitHub / URL |
+|---|---|---|
+| Elasticsearch (REST-API, v9.0.3) | `/elastic/elasticsearch` | https://github.com/elastic/elasticsearch |
+| Kibana API | `/websites/elastic_co_api_doc_kibana` | https://www.elastic.co/docs/api/doc/kibana |
+| Kibana | `/elastic/kibana` | https://github.com/elastic/kibana |
+| Elastic API-Doku (Cloud/ES/Kibana/Logstash) | `/websites/elastic_co_api_doc` | https://www.elastic.co/docs/api |
+
 ## Docker & Kubernetes
 
 | Tool | ctx7 Library-ID | GitHub / URL |

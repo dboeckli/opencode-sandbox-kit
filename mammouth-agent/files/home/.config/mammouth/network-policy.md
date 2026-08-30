@@ -27,5 +27,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342`
 - **Docker Desktop Kubernetes (Windows host)**: `localhost:6443`, `127.0.0.1:6443`, `host.docker.internal:6443` (kube-apiserver)
 - **Docker Desktop Docker Engine (Windows host)**: `localhost:2375`, `127.0.0.1:2375`, `host.docker.internal:2375` (Daemon-API via TCP; `export DOCKER_HOST=tcp://host.docker.internal:2375`)
+- **Elastic REST-APIs (ELK-Stack, Docker Compose im Host-Docker)**: `localhost:9200`, `127.0.0.1:9200`, `host.docker.internal:9200` (Elasticsearch REST-API), `localhost:5601`, `127.0.0.1:5601`, `host.docker.internal:5601` (Kibana UI + REST-API), `localhost:8200`, `127.0.0.1:8200`, `host.docker.internal:8200` (APM Server OTLP-HTTP-Intake)
+- **Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)**: `localhost:30920`, `127.0.0.1:30920` (Elasticsearch), `localhost:30561`, `127.0.0.1:30561` (Kibana), `localhost:30820`, `127.0.0.1:30820` (APM Server)
 
 Not reachable (blocked): Anthropic, telemetry, and any other host not on this list.
