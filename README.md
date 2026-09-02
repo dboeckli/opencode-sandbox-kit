@@ -48,12 +48,15 @@ sbx run mammouth --name spring-6-reactive `
 > - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.5.0`
 > - **Claude (Home *und* Zurich)**: `docker/sandbox-templates:claude-code-docker-0.5.0`
 >
-> Die Version ist für das Mammouth-Agent-Kit (`kind: sandbox`) im `sandbox.image` von
-> `mammouth-agent/spec.yaml` gepinnt. Die Mixin-Kits (`opencode-agent/`, `claude-zurich-agent/`)
-> pinnen das Template per `-t docker/sandbox-templates:<template>-0.5.0` im Start-Command — alle
-> drei Kits nutzen dieselbe Version. `python local-test/local-test-kits.py --validate-only` prüft
-> die Pin gegen die Docker-Hub-Tags und **warnt** (gelb), sobald ein neuerer Tag existiert
-> (`opencode-docker` ODER `claude-code-docker`).
+> Die **zentrale Version** (Source of Truth, gilt für alle drei Kits) steht als `TEMPLATE_VERSION`
+> in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed, wie `SBX_VERSION`). Die Mixin-Kits
+> (`opencode-agent/`, `claude-zurich-agent/`) pinnen das Template per
+> `-t docker/sandbox-templates:<template>-<version>` im Start-Command; das Mammouth-Agent-Kit
+> (`kind: sandbox`) spiegelt dieselbe Version im `sandbox.image` von `mammouth-agent/spec.yaml`
+> (Drift-Check im Validate). `python local-test/local-test-kits.py --validate-only` prüft die Pin
+> gegen die Docker-Hub-Tags und **warnt** (gelb), sobald ein neuerer Tag existiert
+> (`opencode-docker` ODER `claude-code-docker`). Die Test-Sandboxes der Mixin-Szenarien werden
+> ebenfalls mit der gepinnten Version erstellt (`-t ...`).
 
 ```bash
 # Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
@@ -346,8 +349,9 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 > (inkl. Hinweis aufs Regen-Skript).
 >
-> `--validate-only` prüft zusätzlich die **Template-Pin** gegen die Docker-Hub-Tags
-> (`docker/sandbox-templates`, Pin in `mammouth-agent/spec.yaml`) und die **Mammouth-CLI-Pin**
+> `--validate-only` prüft zusätzlich die **Template-Pin** (zentrale `TEMPLATE_VERSION` aus
+> `.github/workflows/validate.yml`/`e2e.yml`, Drift-Check gegen das Mammouth-spec-Image)
+> gegen die Docker-Hub-Tags (`docker/sandbox-templates`) und die **Mammouth-CLI-Pin**
 > (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`) — beide
 > **warnen** (gelb), sobald ein neuerer Tag/Release existiert (Renovate-Tracking, s. o.).
 

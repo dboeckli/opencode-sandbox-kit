@@ -28,6 +28,11 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      # Sandbox-Template-Version (gepinnt, alle drei Kits) — Muss mit validate.yml identisch sein;
+      # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (-t docker/sandbox-templates:<name>-<pin>).
+      # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
+      TEMPLATE_VERSION: 0.5.0
     steps:
       - uses: actions/checkout@v7
 
