@@ -36,6 +36,7 @@ Optionen:
 """
 
 import argparse
+import json
 import os
 import re
 import ssl
@@ -81,6 +82,22 @@ INSTALL_SCRIPT_PAIRS = (
      "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "claude-zurich-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
 )
+
+# Sandbox-Template-Versionen (Source of Truth: mammouth-agent/spec.yaml):
+#   - `sandbox.image` = docker/sandbox-templates:opencode-docker-<ver>  (Mammouth, kind:sandbox)
+#   - Dieselbe <ver> gilt fuer claude-code-docker (Claude Home + Zurich, Mixin-Kits, Pin via
+#     `-t docker/sandbox-templates:claude-code-docker-<ver>` im Start-Command, siehe README).
+# Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag.
+MAMMOUTH_SPEC_FILE = "mammouth-agent/spec.yaml"
+TEMPLATE_IMAGE_RE = re.compile(r"docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+TEMPLATE_TAG_RE = re.compile(r"^(?P<fam>opencode-docker|claude-code-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$")
+DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
+
+# Mammouth-CLI: Pin via `VERSION=<ver>` vor `bash` im install.sh-Command der spec (Source of Truth).
+# Update-Check gegen die latest GitHub-Release-Version (mammouth-ai/code, Release-Tag v<ver>);
+# warnt (gelb) bei neuerem Release.
+MAMMOUTH_INSTALL_RE = re.compile(r"install\.sh\s*\|\s*VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)\s+bash")
+MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
 
 def enable_ansi():
@@ -292,6 +309,146 @@ def check_install_scripts_sync():
                 pass_(f"install script synced ({file_a})")
 
 
+def _http_get(url):
+    """Text eines HTTP-GET mit TLS-Fallback abrufen (kein API-Key noetig)."""
+    try:
+        try:
+            ctx = ssl.create_default_context()
+            with urllib.request.urlopen(url, timeout=30, context=ctx) as resp:
+                return resp.read().decode("utf-8", "replace")
+        except Exception:
+            ctx = ssl._create_unverified_context()
+            with urllib.request.urlopen(url, timeout=30, context=ctx) as resp:
+                return resp.read().decode("utf-8", "replace")
+    except Exception as e:
+        raise RuntimeError(str(e))
+
+
+def _version_key(v):
+    return tuple(int(x) for x in v.split("."))
+
+
+def _version_newer(a, b):
+    """True, wenn a > b (semver-artig, Teilkomponenten-Vergleich bis max Tiefe)."""
+    ka, kb = _version_key(a), _version_key(b)
+    for x, y in zip(ka, kb):
+        if x != y:
+            return x > y
+    return len(ka) > len(kb)
+
+
+def _spec_version(regex):
+    """Version aus mammouth-agent/spec.yaml extrahieren (Source of Truth der Pins)."""
+    path = os.path.join(ROOT, MAMMOUTH_SPEC_FILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+    m = regex.search(content)
+    return m.group("v") if m else None
+
+
+def _template_pin_version():
+    return _spec_version(TEMPLATE_IMAGE_RE)
+
+
+def _mammouth_cli_pin_version():
+    return _spec_version(MAMMOUTH_INSTALL_RE)
+
+
+def _template_latest_per_family():
+    """Neueste Versions-Tags pro Familie (opencode-docker / claude-code-docker)
+    von der Docker-Hub-API, inkl. Pagination."""
+    tags = []
+    url = DOCKER_HUB_TEMPLATES_URL
+    for _ in range(10):
+        body = _http_get(url)
+        data = json.loads(body)
+        tags.extend(data.get("results", []))
+        nxt = data.get("next")
+        if not nxt:
+            break
+        url = nxt
+    latest = {}
+    for t in tags:
+        m = TEMPLATE_TAG_RE.match(t.get("name", ""))
+        if not m:
+            continue
+        fam, v = m.group("fam"), m.group("v")
+        if fam not in latest or _version_newer(v, latest[fam]):
+            latest[fam] = v
+    return latest
+
+
+def check_template_update():
+    """Vergleicht die gepinnte Template-Version (mammouth-agent/spec.yaml image) mit
+    den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer
+    Versions-Tag (opencode-docker ODER claude-code-docker) existiert als der Pin — der
+    Check soll bei einem Update nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei
+    echten Fehlern: Pin nicht gefunden, Tags nicht abrufbar, oder ein Pin-Tag ist nicht
+    auf Docker Hub publiziert (claude-code-docker-Familie muss dieselbe Version haben
+    wie opencode-docker)."""
+    pin = _template_pin_version()
+    if not pin:
+        fail("template version (Pin nicht in mammouth-agent/spec.yaml image gefunden)")
+        return
+    try:
+        latest = _template_latest_per_family()
+    except Exception as e:
+        fail("template version (Docker-Hub-Tags nicht abrufbar)", str(e))
+        return
+    updates = []
+    problems = []
+    for fam in ("opencode-docker", "claude-code-docker"):
+        latest_ver = latest.get(fam)
+        if not latest_ver:
+            problems.append(f"{fam}: kein Versions-Tag auf Docker Hub")
+        elif _version_newer(latest_ver, pin):
+            updates.append(f"{fam}: neuerer Tag v{latest_ver} > Pin v{pin}")
+        elif latest_ver != pin:
+            problems.append(f"{fam}: Pin-Tag {fam}-{pin} nicht publiziert (letzter Tag v{latest_ver})")
+    if updates:
+        warn(
+            f"template version update available (Pin v{pin}, Docker Hub: {'; '.join(updates)})",
+            f"Optional: Pin in {MAMMOUTH_SPEC_FILE} (image) + Start-Commands/README/AGENTS erhoehen"
+            f" und als -t docker/sandbox-templates:opencode-docker/claude-code-docker-<version> dokumentieren",
+        )
+    for p in problems:
+        fail(f"template version (Pin v{pin}, Docker Hub: {p})")
+    if not updates and not problems:
+        pass_(f"template version up-to-date (Pin v{pin}: opencode-docker + claude-code-docker)")
+
+
+def check_mammouth_cli_update():
+    """Vergleicht die gepinnte Mammouth-CLI-Version (VERSION= im install.sh-Command der
+    spec — die Sandbox installiert exakt diese Version) mit der latest GitHub-Release-
+    Version (mammouth-ai/code). Warnt (gelb), wenn ein neueres Release existiert — der
+    Check soll bei einem Update nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei
+    echten Fehlern (Pin nicht gefunden, Release nicht abrufbar)."""
+    pin = _mammouth_cli_pin_version()
+    if not pin:
+        fail("mammouth CLI version (Pin nicht im install.sh-Command von mammouth-agent/spec.yaml gefunden)")
+        return
+    try:
+        body = _http_get(MAMMOUTH_LATEST_URL)
+        data = json.loads(body)
+        latest = str(data.get("tag_name", "")).lstrip("v")
+    except Exception as e:
+        fail("mammouth CLI version (GitHub latest Release nicht abrufbar)", str(e))
+        return
+    if not latest:
+        fail("mammouth CLI version (kein tag_name im GitHub latest Release)")
+        return
+    if _version_newer(latest, pin):
+        warn(
+            f"mammouth CLI update available (Pin v{pin}, latest v{latest})",
+            f"Optional: VERSION={latest} im install.sh-Command von {MAMMOUTH_SPEC_FILE} setzen "
+            f"(installierte Version in der Sandbox = Pin)",
+        )
+    else:
+        pass_(f"mammouth CLI version up-to-date (Pin v{pin}, latest v{latest})")
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -335,6 +492,12 @@ def main():
         print()
         info("==> Install-Skripte (Single Source of Truth) sync check")
         check_install_scripts_sync()
+        print()
+        info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
+        check_template_update()
+        print()
+        info("==> Mammouth-CLI Version Update-Check (GitHub Release)")
+        check_mammouth_cli_update()
         print()
         if not failed:
             print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))
@@ -553,6 +716,24 @@ def main():
                 pass_("startup check: mammouth")
             else:
                 sfail("startup check: mammouth", f"status={m.get('mammouth')}")
+
+            # Installierte Mammouth-CLI-Version gegen den Pin aus der spec (VERSION=)
+            # pruefen — die Sandbox installiert exakt diese Version, der Pin ist die
+            # einzige erwartete installierte Version.
+            mammouth_ver_cmd = "mammouth --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
+            c2, out = exec_sandbox(s["name"], mammouth_ver_cmd)
+            installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
+            pin = _mammouth_cli_pin_version()
+            if installed and pin and installed == pin:
+                pass_(f"mammouth CLI version installed (v{installed} == Pin v{pin})")
+            elif installed and pin and _version_newer(installed, pin):
+                sfail(f"mammouth CLI version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
+                      f"install.sh-Command in {MAMMOUTH_SPEC_FILE} pruefen (VERSION={pin}); ggf. Sandbox neu bauen")
+            elif installed and pin:
+                sfail(f"mammouth CLI version installed (v{installed} != Pin v{pin})",
+                      f"Pin in {MAMMOUTH_SPEC_FILE} erhoehen oder Sandbox neu bauen")
+            else:
+                sfail("mammouth CLI version installed (nicht ermittelbar)", f"out={out!r}")
 
             if ci:
                 env_cmd = 'echo "MAMMOUTH_API_KEY=${MAMMOUTH_API_KEY:-<unset>}"'

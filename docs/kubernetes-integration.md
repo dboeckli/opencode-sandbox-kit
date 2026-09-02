@@ -32,7 +32,7 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 > kubectl hat lediglich keinen konfigurierten Cluster. Einfacher Start ohne Mount:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
 ```
 
 > Mit Kubernetes-Zugriff (Mounts werden nur bei Sandbox-Erstellung gesetzt — beendet die
@@ -41,7 +41,7 @@ sbx run opencode --name opencode-sandbox --kit ./opencode-agent/
 ```powershell
 # Recreate:
 sbx rm opencode-sandbox --force
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
 ```
 
 | Aspekt | Detail |

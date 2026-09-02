@@ -5,7 +5,10 @@ displayName: "Mammouth Code (OpenCode-Fork)"
 description: "Mammouth Code Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
 
 sandbox:
-  image: "docker/sandbox-templates:opencode-docker"
+  # Template-Version gepinnt (opencode-docker-0.5.0, 2026-08-26). Bump via Renovate
+  # (docker/sandbox-templates); `local-test-kits.py --validate-only` warnt (gelb) bei
+  # neuerem Tag auf Docker Hub. Gleiche Version fuer claude-code-docker (Claude).
+  image: "docker/sandbox-templates:opencode-docker-0.5.0"
   entrypoint: [mammouth]
 
 agentInstructions:
@@ -215,9 +218,9 @@ setup:
       user: "1000"
       description: Install agent-user tooling (skills + Claude statusline) — source files/home/.local/bin/install-tooling-user.sh
     - command: |
-        curl -fsSL https://code.mammouth.ai/install.sh | bash
+        curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.17.11.2 bash
       user: "1000"
-      description: Install Mammouth Code (binaries land in ~/.mammouth)
+      description: Install Mammouth Code (gepinnt auf v1.17.11.2, install.sh via VERSION; Binaries landen in ~/.mammouth)
     - command: "ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth"
       description: Symlink mammouth into PATH for entrypoint
   startup:
