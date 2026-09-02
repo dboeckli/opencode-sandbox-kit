@@ -84,12 +84,12 @@ INSTALL_SCRIPT_PAIRS = (
 )
 
 # Sandbox-Template-Version (alle drei Kits, eine Version fuer beide Template-Familien):
-#   Source of Truth = `TEMPLATE_VERSION` in .github/workflows/validate.yml + e2e.yml (wie SBX_VERSION,
-#   Renovate-managed). Abgeleitet davon:
-#   - opencode-docker (OpenCode + Mammouth)  → -t docker/sandbox-templates:opencode-docker-<ver>
-#   - claude-code-docker (Claude Home + Zurich, Mixin-Kits) → -t docker/sandbox-templates:claude-code-docker-<ver>
-#   Das Mammouth-spec-Image (mammouth-agent/spec.yaml) spiegelt dieselbe Version (Drift-Check im Validate).
+#   - Expliziter Pin der lokalen Tests (dieses Script): TEMPLATE_VERSION-Konstante, Renovate-managed.
+#   - Muss identisch sein mit `TEMPLATE_VERSION` in .github/workflows/validate.yml + e2e.yml und dem
+#     Mammouth-spec-Image (mammouth-agent/spec.yaml) — Drift-Check in check_template_update().
+#   - opencode-docker (OpenCode + Mammouth) / claude-code-docker (Claude Home + Zurich, Mixin-Kits).
 # Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag.
+TEMPLATE_VERSION = "0.5.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 TEMPLATE_VERSION_RE = re.compile(r"TEMPLATE_VERSION:\s*([0-9]+\.[0-9]+\.[0-9]+)")
 MAMMOUTH_SPEC_FILE = "mammouth-agent/spec.yaml"
@@ -354,9 +354,9 @@ def _spec_version(regex):
     return m.group("v") if m else None
 
 
-def _template_pin_version():
-    """Zentrale Sandbox-Template-Version (Source of Truth): TEMPLATE_VERSION aus validate.yml/e2e.yml
-    (wie SBX_VERSION; Renovate-managed). Gilt fuer alle drei Kits (opencode-docker + claude-code-docker)."""
+def _template_workflow_version():
+    """`TEMPLATE_VERSION` aus validate.yml/e2e.yml (Renovate-managed) — muss mit der
+    TEMPLATE_VERSION-Konstante dieses Scripts uebereinstimmen (Drift-Check)."""
     for rel in TEMPLATE_CFG_FILES:
         path = os.path.join(ROOT, rel)
         if not os.path.isfile(path):
@@ -370,18 +370,17 @@ def _template_pin_version():
 
 
 def _template_spec_image_version():
-    """Template-Version im Mammouth-spec-Image (Mirror der zentralen TEMPLATE_VERSION)."""
+    """Template-Version im Mammouth-spec-Image (Mirror der TEMPLATE_VERSION-Konstante)."""
     return _spec_version(TEMPLATE_IMAGE_RE)
 
 
 def _template_image(agent):
-    """docker/sandbox-templates:-Image fuer einen Agent (Familie + zentrale Version).
+    """docker/sandbox-templates:-Image fuer einen Agent (Familie + TEMPLATE_VERSION-Konstante).
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None
-    ver = _template_pin_version()
-    return f"docker/sandbox-templates:{fam}-{ver}" if ver else None
+    return f"docker/sandbox-templates:{fam}-{TEMPLATE_VERSION}"
 
 
 def _mammouth_cli_pin_version():
@@ -413,16 +412,25 @@ def _template_latest_per_family():
 
 
 def check_template_update():
-    """Vergleicht die zentrale Template-Version (TEMPLATE_VERSION in validate.yml/e2e.yml — gilt fuer
-    alle drei Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker fuer Claude Home+Zurich)
-    mit den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
+    """Vergleicht den expliziten Template-Pin der lokalen Tests (TEMPLATE_VERSION-Konstante dieses
+    Scripts — gilt fuer alle drei Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker
+    fuer Claude Home+Zurich) mit .github/workflows/validate.yml/e2e.yml, dem Mammouth-spec-Image und
+    den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
     (opencode-docker ODER claude-code-docker) existiert als der Pin — der Check soll bei einem Update
     nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei echten Fehlern: Pin nicht gefunden, Tags
-    nicht abrufbar, Mammouth-spec-Image weicht vom zentralen Pin ab (Drift), oder ein Pin-Tag ist
-    nicht auf Docker Hub publiziert."""
-    pin = _template_pin_version()
-    if not pin:
+    nicht abrufbar, Drift (Konstante != validate.yml/e2e.yml bzw. Mammouth-spec-Image), oder ein
+    Pin-Tag ist nicht auf Docker Hub publiziert."""
+    pin = TEMPLATE_VERSION
+    wf_ver = _template_workflow_version()
+    if wf_ver is None:
         fail("template version (TEMPLATE_VERSION nicht in validate.yml/e2e.yml gefunden)")
+        return
+    if wf_ver != pin:
+        fail(
+            f"template version (TEMPLATE_VERSION-Konstante v{pin} != validate.yml/e2e.yml v{wf_ver})",
+            f"TEMPLATE_VERSION in .github/workflows/validate.yml + e2e.yml auf v{pin} setzen"
+            f" (Pin der lokalen Tests ist die Konstante in {os.path.relpath(__file__, ROOT)})",
+        )
         return
     spec_ver = _template_spec_image_version()
     if not spec_ver:
@@ -431,9 +439,9 @@ def check_template_update():
         return
     if spec_ver != pin:
         fail(
-            f"template version (Mammouth-spec-Image v{spec_ver} != zentraler Pin v{pin})",
+            f"template version (Mammouth-spec-Image v{spec_ver} != Pin v{pin})",
             f"image in {MAMMOUTH_SPEC_FILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
-            f" (zentrale TEMPLATE_VERSION in .github/workflows/validate.yml + e2e.yml ist der Pin)",
+            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
         )
         return
     try:
@@ -454,7 +462,7 @@ def check_template_update():
     if updates:
         warn(
             f"template version update available (Pin v{pin}, Docker Hub: {'; '.join(updates)})",
-            f"Optional: TEMPLATE_VERSION in .github/workflows/validate.yml + e2e.yml erhoehen"
+            f"Optional: TEMPLATE_VERSION-Konstante in local-test-kits.py + .github/workflows/*.yml erhoehen"
             f" (Renovate), Mammouth-spec-Image + Start-Commands/README/AGENTS -t-Pins synchronisieren",
         )
     for p in problems:
@@ -621,12 +629,12 @@ def main():
         ws = tempfile.mkdtemp(prefix="sbx-kit-test-")
         info("  Sandbox erzeugen ...")
         # Mixin-Kits (OpenCode/Claude): Template gepinnt via `-t docker/sandbox-templates:<family>-<pin>`
-        # (zentrale TEMPLATE_VERSION aus validate.yml/e2e.yml) — so testet das Szenario die gepinnte
+        # (TEMPLATE_VERSION-Konstante dieses Scripts) — so testet das Szenario die gepinnte
         # Template-Version. Mammouth (kind:sandbox) braucht kein -t: Pin im spec-Image.
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
         if template_fam and not template_image:
-            sfail("template pin (TEMPLATE_VERSION nicht in validate.yml/e2e.yml gefunden)")
+            sfail("template pin (TEMPLATE_VERSION-Konstante fehlt)")
             continue
         create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
         if template_image:
