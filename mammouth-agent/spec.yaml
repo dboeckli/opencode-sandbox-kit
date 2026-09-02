@@ -5,9 +5,11 @@ displayName: "Mammouth Code (OpenCode-Fork)"
 description: "Mammouth Code Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
 
 sandbox:
-  # Template-Version gepinnt (opencode-docker-0.5.0, 2026-08-26). Bump via Renovate
-  # (docker/sandbox-templates); `local-test-kits.py --validate-only` warnt (gelb) bei
-  # neuerem Tag auf Docker Hub. Gleiche Version fuer claude-code-docker (Claude).
+  # Template-Version gepinnt (opencode-docker-0.5.0, 2026-08-26) — Mirror der zentralen
+  # TEMPLATE_VERSION aus .github/workflows/validate.yml + e2e.yml (Renovate-managed, beide
+  # Template-Familien). `local-test-kits.py --validate-only` warnt (gelb) bei neuerem Tag auf
+  # Docker Hub und schlaegt bei Drift zu dieser Version fehl. Gleiche Version fuer
+  # claude-code-docker (Claude).
   image: "docker/sandbox-templates:opencode-docker-0.5.0"
   entrypoint: [mammouth]
 

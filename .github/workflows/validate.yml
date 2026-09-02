@@ -10,6 +10,12 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      # Sandbox-Template-Version (gepinnt, alle drei Kits): gilt fuer opencode-docker (OpenCode +
+      # Mammouth) und claude-code-docker (Claude Home + Zurich), die in Lockstep gleiche Versionsnummern
+      # tragen. Source of Truth fuer die -t-Pins der Mixin-Kits und das Mammouth-spec-Image;
+      # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
+      TEMPLATE_VERSION: 0.5.0
     steps:
       - uses: actions/checkout@v7
 

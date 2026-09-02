@@ -100,12 +100,12 @@
     },
     {
       "customType": "regex",
-      "description": "Sandbox-Template-Version (mammouth-agent/spec.yaml `sandbox.image`, Pin in Start-Commands/README)",
-      "managerFilePatterns": ["mammouth-agent/spec.yaml"],
-      "matchStrings": ["docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "description": "Sandbox-Template-Version (.github/workflows/e2e.yml, validate.yml; TEMPLATE_VERSION gilt fuer opencode-docker + claude-code-docker, -t-Pins in Start-Commands/README + Mammouth-spec-Image)",
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
+      "matchStrings": ["TEMPLATE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
+      "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker)-(?<version>.*)$",
       "versioningTemplate": "semver"
     },
     {
