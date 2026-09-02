@@ -24,8 +24,8 @@ Das `opencode-agent/`-Kit bleibt der **Home-Standard** — Claude Code gegen
 # einmalig: Zurich-LiteLLM-Key registrieren
 sbx secret set zurich
 
-# Sandbox starten (z. Bsp. claude-zurich)
-sbx run claude --name claude-zurich --kit ./claude-zurich-agent/
+# Sandbox starten (z. Bsp. claude-zurich) — Template-Pin 0.5.0 (gleiche Version wie opencode-agent/Home)
+sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 ```
 
 In der Sandbox ist `ZURICH_LITELLM_API_KEY=proxy-managed` gesetzt (Platzhalter); Claude Code sendet

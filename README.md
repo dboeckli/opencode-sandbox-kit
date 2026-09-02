@@ -10,13 +10,16 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7,
 ## Quickstart
 
 ```powershell
-# Lokales Kit (Entwicklung)
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/   # OpenCode
-sbx run claude   --name claude-sandbox   --kit ./opencode-agent/   # Claude Code (Home)
-sbx run claude   --name claude-zurich    --kit ./claude-zurich-agent/   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro)
+# Lokales Kit (Entwicklung) — Template-Version gepinnt (0.5.0), siehe Hinweis unten.
+# Mammouth (kind:sandbox) braucht kein -t: die Template-Version steckt im spec-Image (mammouth-agent/spec.yaml).
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode
+sbx run claude   --name claude-sandbox   --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (Home)
+sbx run claude   --name claude-zurich    --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro)
 sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit)
 
-# Kit direkt aus GitHub (ohne Clone) — einmalig kit.allowedSources setzen (siehe INSTALL.md)
+# Kit direkt aus GitHub (ohne Clone) — einmalig kit.allowedSources setzen (siehe INSTALL.md).
+# Zum Pinnen hier ebenfalls `-t docker/sandbox-templates:opencode-docker-0.5.0` (OpenCode/Mammouth)
+# bzw. `-t docker/sandbox-templates:claude-code-docker-0.5.0` (Claude) ergänzen.
 sbx run opencode --name opencode-sandbox `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
 sbx run claude --name claude-sandbox `
@@ -41,6 +44,17 @@ sbx run mammouth --name spring-6-reactive `
     "C:\development\projects\spring-6-reactive"
 ```
 
+> **Template-Version (gepinnt):** Alle Kits nutzen Template-Tag **`0.5.0`** (2026-08-26).
+> - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.5.0`
+> - **Claude (Home *und* Zurich)**: `docker/sandbox-templates:claude-code-docker-0.5.0`
+>
+> Die Version ist für das Mammouth-Agent-Kit (`kind: sandbox`) im `sandbox.image` von
+> `mammouth-agent/spec.yaml` gepinnt. Die Mixin-Kits (`opencode-agent/`, `claude-zurich-agent/`)
+> pinnen das Template per `-t docker/sandbox-templates:<template>-0.5.0` im Start-Command — alle
+> drei Kits nutzen dieselbe Version. `python local-test/local-test-kits.py --validate-only` prüft
+> die Pin gegen die Docker-Hub-Tags und **warnt** (gelb), sobald ein neuerer Tag existiert
+> (`opencode-docker` ODER `claude-code-docker`).
+
 ```bash
 # Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
 sbx run opencode --name spring-6-reactive \
@@ -61,14 +75,17 @@ sbx run mammouth --name spring-6-reactive \
 # Kubernetes-Support: kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
 sbx run opencode --name opencode-sandbox `
     --kit ./opencode-agent/ `
+    -t docker/sandbox-templates:opencode-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
 sbx run claude --name claude-sandbox `
     --kit ./opencode-agent/ `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
 sbx run claude --name claude-zurich `
     --kit ./claude-zurich-agent/ `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
 sbx run mammouth --name mammouth-sandbox `
@@ -216,9 +233,9 @@ sondern vom Template beim `sbx run`:
 
 | Agent | Template | Start-Command |
 |-------|----------|---------------|
-| OpenCode | `opencode-docker` | `sbx run opencode --name my-sandbox --kit ./opencode-agent/` |
-| Claude Code | `claude-code-docker` | `sbx run claude --name my-sandbox --kit ./opencode-agent/` |
-| Mammouth Code | `opencode-docker` (eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` |
+| OpenCode | `opencode-docker` (Pin `0.5.0`) | `sbx run opencode --name my-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` |
+| Claude Code | `claude-code-docker` (Pin `0.5.0`) | `sbx run claude --name my-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` |
+| Mammouth Code | `opencode-docker` (Pin `0.5.0`, eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` (Pin im spec-Image) |
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
 `host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
@@ -233,7 +250,8 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 Da `sbx` keinen eingebauten `mammouth`-Agenten kennt, liegt unter `mammouth-agent/` ein **eigenes
 Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus der Docker-Doku:
 
-- **Base-Image**: `docker/sandbox-templates:opencode-docker` (Mammouth ist ein OpenCode-Fork)
+- **Base-Image**: `docker/sandbox-templates:opencode-docker-0.5.0` (Mammouth ist ein OpenCode-Fork;
+  Version gepinnt im `sandbox.image` der spec, siehe Abschnitt "Template-Version (gepinnt)")
 - **Entrypoint**: `mammouth` (direkt, ohne Template-Umweg)
 - **Auth**: `credentials[].apiKey` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
   `inject` als `Authorization: Bearer`) — kit-spec v2
@@ -247,13 +265,14 @@ Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
 
-**Installation** — das Agent-Kit installiert Mammouth automatisch beim Sandbox-Build
-(`curl -fsSL https://code.mammouth.ai/install.sh | bash` als User 1000) und legt einen Symlink
-`/usr/local/bin/mammouth` an, damit der Entrypoint den Agenten findet. Manuell nur nötig, wenn die
-Sandbox bereits läuft:
+**Installation** — das Agent-Kit installiert Mammouth automatisch beim Sandbox-Build, gepinnt auf
+**v1.17.11.2** (`curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.17.11.2 bash` als User 1000,
+Pin via Renovate `mammouth-ai/code`; `local-test-kits.py --validate-only` warnt bei neuerem
+GitHub-Release) und legt einen Symlink `/usr/local/bin/mammouth` an, damit der Entrypoint den
+Agenten findet. Manuell nur nötig, wenn die Sandbox bereits läuft:
 
 ```bash
-curl -fsSL https://code.mammouth.ai/install.sh | bash
+curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.17.11.2 bash
 ```
 
 **Update/Uninstall:** `mammouth upgrade` bzw. `mammouth uninstall`.
@@ -326,6 +345,11 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > (Default: `SBX_VERSION` aus `validate.yml`). `local-test-kits.py --validate-only` vergleicht die
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 > (inkl. Hinweis aufs Regen-Skript).
+>
+> `--validate-only` prüft zusätzlich die **Template-Pin** gegen die Docker-Hub-Tags
+> (`docker/sandbox-templates`, Pin in `mammouth-agent/spec.yaml`) und die **Mammouth-CLI-Pin**
+> (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`) — beide
+> **warnen** (gelb), sobald ein neuerer Tag/Release existiert (Renovate-Tracking, s. o.).
 
 ## Startup Checks
 
@@ -529,13 +553,14 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
 `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) betrieben, das Mammouth automatisch
-beim Build installiert (`curl -fsSL https://code.mammouth.ai/install.sh | bash` + Symlink). Das
+beim Build installiert (gepinnt auf **v1.17.11.2**: `curl -fsSL https://code.mammouth.ai/install.sh |
+VERSION=1.17.11.2 bash` + Symlink). Das
 `opencode-agent/`-Kit (`sbx run opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
 Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
 
 ### Pre-installed Tools im Base Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker`) enthält eine eigene OpenCode CLI
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.5.0`, Version gepinnt) enthält eine eigene OpenCode CLI
 (aktuell `1.17.11` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
 bei `1.18.11` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
 vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:

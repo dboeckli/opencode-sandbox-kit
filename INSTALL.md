@@ -191,7 +191,7 @@ Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-em
 Firmennetz erreichbar) das separate Kit `claude-zurich-agent/` verwenden:
 
 ```powershell
-sbx run claude --name claude-zurich --kit ./claude-zurich-agent/
+sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 sbx secret set zurich
 ```
 
@@ -409,23 +409,25 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 ## 6. Sandbox starten
 
 ```powershell
+# Template-Version gepinnt auf 0.5.0 (alle drei Kits, gleiche Version; Mammouth via spec-Image, kein -t nötig)
+
 # OpenCode (Home-Standard)
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
 
 # Claude Code (Home, gegen api.anthropic.com)
-sbx run claude --name claude-sandbox --kit ./opencode-agent/
+sbx run claude --name claude-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 
 # Claude Code gegen den Zurich-LiteLLM-Proxy (Büro)
-sbx run claude --name claude-zurich --kit ./claude-zurich-agent/
+sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 
-# Mammouth Code (eigenes Agent-Kit)
+# Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
 sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/
 ```
 
 Projekt einbinden + Kubernetes-Support:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro"
 ```
 
 Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md`](AGENTS.md#commands) und
