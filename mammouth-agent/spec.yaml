@@ -49,6 +49,9 @@ permissions:
       # Apache Camel (Doku, Dependencies)
       - "camel.apache.org:443"
       - "*.camel.apache.org:443"
+      # JetBrains Help-Doku (IntelliJ HTTP-Client Feature-Seiten, z. B. www.jetbrains.com/help/idea/)
+      - "jetbrains.com:443"
+      - "www.jetbrains.com:443"
       # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
       - "localhost:64342"
       - "127.0.0.1:64342"
