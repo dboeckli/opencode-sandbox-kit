@@ -6,6 +6,8 @@ name: Kit e2e
 # (OpenCode / Claude / Claude-Zurich / Mammouth) from local-test/local-test-kits.py with
 # `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
 #
+# The 4 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
+# each on its own runner with the full setup (sbx, secrets, Docker Hub login).
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
 
@@ -20,7 +22,7 @@ permissions:
   contents: read
 
 jobs:
-  test-kit-e2e:
+  e2e-scenario:
     # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -28,6 +30,13 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    name: e2e (${{ matrix.scenario }})
+    strategy:
+      # Jedes Szenario ist unabhaengig: ein Fehlschlag bricht die uebrigen
+      # parallelen Jobs nicht ab (ersetzt das fruehere `success() || failure()`).
+      fail-fast: false
+      matrix:
+        scenario: [opencode, claude, claude-zurich, mammouth]
     env:
       # Sandbox-Template-Version (gepinnt, alle drei Kits) — Muss mit validate.yml identisch sein;
       # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (-t docker/sandbox-templates:<name>-<pin>).
@@ -194,20 +203,8 @@ jobs:
         # list.
         run: sbx policy init balanced
 
-      - name: Run e2e tests (OpenCode)
-        run: python3 local-test/local-test-kits.py opencode --ci
-
-      - name: Run e2e tests (Claude)
-        if: success() || failure()
-        run: python3 local-test/local-test-kits.py claude --ci
-
-      - name: Run e2e tests (Claude Zurich)
-        if: success() || failure()
-        run: python3 local-test/local-test-kits.py claude-zurich --ci
-
-      - name: Run e2e tests (Mammouth)
-        if: success() || failure()
-        run: python3 local-test/local-test-kits.py mammouth --ci
+      - name: Run e2e tests (${{ matrix.scenario }})
+        run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub
         if: always()
