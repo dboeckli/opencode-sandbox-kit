@@ -110,6 +110,16 @@
     },
     {
       "customType": "regex",
+      "description": "Sandbox-Template-Version (local-test-kits.py, expliziter Pin der lokalen Tests; muss mit validate.yml/e2e.yml + Mammouth-spec-Image uebereinstimmen)",
+      "managerFilePatterns": ["local-test/local-test-kits.py"],
+      "matchStrings": ["TEMPLATE_VERSION = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker)-(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "description": "Mammouth CLI version (mammouth-agent/spec.yaml install.sh-VERSION, `VERSION=<v> bash`)",
       "managerFilePatterns": ["mammouth-agent/spec.yaml"],
       "matchStrings": ["install\\.sh \\| VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+) bash"],
