@@ -27,6 +27,11 @@ sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n"
 
 Erwartet: `HTTP 200`. Das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s; nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal.
 
+> **Hinweis (Issue #57):** Der Check prüft nur, dass der IntelliJ-Server auf dem Host läuft (Voraussetzung für den
+> sbx MCP Gateway). Die eigentliche MCP-Verbindung läuft über den Gateway: Host-Registrierung
+> `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` + Sandbox mit `--static-mcp idea`
+> (bzw. `sbx mcp load idea --sandbox`).
+
 ## Checks
 
 | # | Check | Command |

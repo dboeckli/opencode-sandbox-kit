@@ -31,7 +31,7 @@ Hooks + `statusLine` gehören in die **`managed-settings.json`** unter `/etc/cla
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__idea__execute_run_configuration",
+        "matcher": "mcp__mcp-gateway__execute_run_configuration",
         "hooks": [
           {
             "type": "command",
@@ -62,7 +62,7 @@ Hooks + `statusLine` gehören in die **`managed-settings.json`** unter `/etc/cla
 - **SessionStart-Hook**: `~/.config/sandbox-kit/run-checks-hook.sh` — führt die
   Sandbox-Checks aus und übergibt den Report als System-Message.
 - **PreToolUse-Guard**: `~/.config/sandbox-kit/intellij-run-config-guard.sh` — erlaubt
-  `idea_execute_run_configuration` nur für `local-test-kits-validate-only`.
+  `mcp__mcp-gateway__execute_run_configuration` nur für `local-test-kits-validate-only`.
 - **statusLine**: `bash ~/.claude/statusline.sh` — zeigt Modell, Kontext-Tokens, Kosten,
   geänderte Zeilen und Session-Dauer.
 

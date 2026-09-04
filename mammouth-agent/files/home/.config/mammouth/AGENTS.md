@@ -50,16 +50,23 @@ Mammouth Code is not in Context7 (no `/mammouth-ai/code` library). Use the offic
 
 ## IntelliJ IDEA MCP
 
-The IntelliJ MCP server is connected via `host.docker.internal:64342/sse`. Tools are prefixed with `idea_` and
-exposed via a **permission-whitelist** in `~/.config/mammouth/opencode.jsonc` (Deny-by-Default, nur lesende
-Operationen erlaubt): `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
-`idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
-`idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
-`idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
-`idea_validate_inspection_kts`. Schreibende/ausführende Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
-`idea_execute_tool`, `idea_build_project`, `idea_execute_sql_query`, Debugger-Steuerung, ...) sind versteckt
-und nicht aufrufbar. `idea_execute_run_configuration` ist nur mit Bestätigung und nur für die im
-Run-Config-Guard (`~/.config/mammouth/plugins/intellij-run-config-guard.js`) erlaubte Config
+The IntelliJ MCP server runs on the Windows host and is exposed through the sbx MCP gateway (`mcp-gateway`, host
+registration: `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`; loaded via `--static-mcp idea`
+or `sbx mcp load idea --sandbox`). Tools arrive through the gateway and are prefixed `mcp-gateway_` (e.g.
+`mcp-gateway_analyze_calls`, `mcp-gateway_execute_run_configuration`) — the direct `idea_` prefix no longer exists.
+Exposed via a **permission-whitelist** in `~/.config/mammouth/opencode.jsonc` (Deny-by-Default, nur lesende
+Operationen erlaubt): `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_search_*`, `mcp-gateway_read*`,
+`mcp-gateway_generate_*`, `mcp-gateway_xdebug_get_*`, `mcp-gateway_xdebug_list_*` sowie einzeln
+`mcp-gateway_analyze_calls`, `mcp-gateway_git_status`, `mcp-gateway_lint_files`,
+`mcp-gateway_fetch_query_result`, `mcp-gateway_preview_table_data`,
+`mcp-gateway_test_database_connection`, `mcp-gateway_introspect_schema`, `mcp-gateway_run_inspection_kts`,
+`mcp-gateway_validate_inspection_kts`, `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ — bewusst
+erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor — bewusst erlaubt, ohne ask).
+Schreibende/ausführende Tools (`mcp-gateway_apply_patch`,
+`mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
+`mcp-gateway_execute_sql_query`, Debugger-Steuerung, Gateway-Builtins wie `mcp-gateway_code-mode`/`mcp-gateway_mcp-exec`,
+...) sind versteckt und nicht aufrufbar. `mcp-gateway_execute_run_configuration` ist nur mit Bestätigung und nur für
+die im Run-Config-Guard (`~/.config/mammouth/plugins/intellij-run-config-guard.js`) erlaubte Config
 (`local-test-kits-validate-only`) möglich. Use them to interact with the IntelliJ IDE on the Windows host:
 navigate code, run inspections, and query the database. These tools require IntelliJ IDEA to be running on the
 host with the MCP server plugin enabled.

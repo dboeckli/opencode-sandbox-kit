@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Claude Code PreToolUse guard for the IntelliJ MCP tool `idea_execute_run_configuration`.
-# permits only the whitelisted run configuration. Everything else is denied.
+# Claude Code PreToolUse guard for the IntelliJ MCP tool `execute_run_configuration`
+# (delivered through the sbx MCP gateway as `mcp__mcp-gateway__execute_run_configuration`).
+# Permits only the whitelisted run configuration. Everything else is denied.
 #
 # The `permissions` allow/deny arrays cannot express per-argument constraints for
 # MCP tools (they always match the whole tool), so the configurationName is only
@@ -10,7 +11,7 @@ set -uo pipefail
 input=$(cat 2>/dev/null || true)
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 
-if [ "$tool_name" != "mcp__idea__execute_run_configuration" ]; then
+if [ "$tool_name" != "mcp__mcp-gateway__execute_run_configuration" ]; then
   # Not the guarded tool: let the normal permission flow decide (exit code 0 = pass).
   exit 0
 fi

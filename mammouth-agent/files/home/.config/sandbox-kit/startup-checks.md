@@ -18,6 +18,11 @@ bash ~/.config/sandbox-kit/check-infra.sh
 bash ~/.config/sandbox-kit/run-checks.sh
 ```
 
+> **Hinweis (Issue #57):** Der IntelliJ-MCP-Check prüft nur, dass der IntelliJ-Server auf dem Host läuft
+> (Voraussetzung für den sbx MCP Gateway). Die eigentliche MCP-Verbindung läuft über den Gateway:
+> Host-Registrierung `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` + Sandbox mit
+> `--static-mcp idea` (bzw. `sbx mcp load idea --sandbox`).
+
 ## Checks
 
 | # | Check | Command |

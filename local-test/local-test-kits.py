@@ -583,14 +583,14 @@ def main():
             "agent": "opencode",
             "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "deepseek/deepseek-v4-flash",
-            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
+            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/opencode/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc && ! grep -q "host.docker.internal:64342" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "DIRECT=$(grep -c host.docker.internal:64342 ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; exit 1; }',
         },
         {
             "name": "kit-test-claude",
             "agent": "claude",
             "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "claude-sonnet-4-6",
-            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
+            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
         },
         {
             "name": "kit-test-claude-zurich",
@@ -598,14 +598,14 @@ def main():
             "tags": ["claude", "claude-zurich"],
             "kit": os.path.join(ROOT, "claude-zurich-agent"),
             "model": "eu.anthropic.claude-sonnet-4-6",
-            "config": 'grep -q "eu.anthropic.claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__idea__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}" && echo "ANTHROPIC_MODEL=${ANTHROPIC_MODEL}" && [ "${ANTHROPIC_BASE_URL}" = "https://genai-lounge-nx-litellm-uat-emea.zurich.com" ] && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; echo "BASE_URL=${ANTHROPIC_BASE_URL:-<unset>}"; exit 1; }',
+            "config": 'grep -q "eu.anthropic.claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}" && echo "ANTHROPIC_MODEL=${ANTHROPIC_MODEL}" && [ "${ANTHROPIC_BASE_URL}" = "https://genai-lounge-nx-litellm-uat-emea.zurich.com" ] && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; echo "BASE_URL=${ANTHROPIC_BASE_URL:-<unset>}"; exit 1; }',
         },
         {
             "name": "kit-test-mammouth",
             "agent": "mammouth",
             "kit": os.path.join(ROOT, "mammouth-agent"),
             "model": "deepseek/deepseek-v4-flash",
-            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/mammouth/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; exit 1; }',
+            "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/mammouth/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/mammouth/opencode.jsonc && ! grep -q "host.docker.internal:64342" ~/.config/mammouth/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo 0)"; echo "DIRECT=$(grep -c host.docker.internal:64342 ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo 0)"; exit 1; }',
             "run_checks": True,
         },
     ]
@@ -640,6 +640,17 @@ def main():
         if template_image:
             create_cmd += ["-t", template_image]
             info(f"  Template gepinnt: {template_image}")
+        # IntelliJ MCP via sbx MCP Gateway (Issue #57): `--static-mcp idea` nur setzen, wenn der Server auf dem
+        # Host registriert ist — sonst schlägt `sbx create` fehl (jeder static-mcp-Name muss registriert sein).
+        # CI hat kein `idea` registriert → Sandbox ohne static-mcp; der Config-Check prüft dann nur die Whitelist,
+        # der Gateway-Weg wird lokal mit registriertem `idea` getestet.
+        c_mcp, out_mcp = run_sbx(["mcp", "ls"])
+        if c_mcp == 0 and re.search(r"^\s*idea\s+", out_mcp, re.M):
+            create_cmd += ["--static-mcp", "idea"]
+            info("  IntelliJ MCP: idea registriert → --static-mcp idea")
+        else:
+            print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
+                                      "(sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check)"))
         code, _ = run_sbx(create_cmd, stream=True)
         if code != 0:
             sfail("sandbox create")
