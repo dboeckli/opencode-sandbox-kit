@@ -41,7 +41,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` (isolierter Daemon in der Sandbox-VM) |
 | Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
-| Helm v3 | 3.21.3 (Default) | `/usr/local/bin/helm` — Default wegen kokuwaio/helm-maven-plugin (nicht v4-kompatibel, Issue #427) |
+| Helm v3 | 3.21.3 (Default) | `/usr/local/bin/helm` |
 | Helm v4 | 4.2.4 | `/usr/local/bin/helm4` — paralleles Binary, explizit aufrufbar |
 | shfmt | 3.13.0 | `/usr/local/bin/shfmt` |
 | ctx7 | latest | npm global (`/usr/local/share/npm-global/bin`) |

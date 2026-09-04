@@ -487,7 +487,7 @@ Stellen nichts ändern.
 
 Verifikation in einer laufenden Sandbox: `npm config get bin-links` → `false` (das `npm_config_bin_links`-Env überschreibt den Default).
 
-> **Helm v3 vs. v4 — beide installiert:** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher ist **v3 der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3) — das Plugin läuft über `useLocalHelmBinary=true` mit der Sandbox-Helm-Version. **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit für alles andere aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
 
 ### Repsy Doku (offline)
 

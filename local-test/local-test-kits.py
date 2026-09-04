@@ -673,11 +673,21 @@ def main():
 
         c2, out = exec_sandbox(s["name"], tools_cmd)
         ok_tools = set(re.findall(r"TOOL-OK:(\w+)", out))
+        missing_tools = []
         for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm"):
             if t in ok_tools:
                 pass_(f"tool: {t}")
             else:
+                missing_tools.append(t)
                 sfail(f"tool: {t}", out)
+        if missing_tools:
+            # Fail-open (install-tooling.sh): die Sandbox startet trotz Tool-Fehler —
+            # Ursache steht im Install-Log (=== <tool> FAILED (exit N) === + Tool-Output).
+            c3, logtail = exec_sandbox(s["name"], "tail -n 60 /var/log/sbx-kit-install.log 2>/dev/null")
+            if c3 == 0 and logtail:
+                print("         " + _color("31", "--- install log tail (fehlende Tools) ---"))
+                for line in logtail.splitlines():
+                    print("         " + _color("33", line))
 
         c2, out = exec_sandbox(s["name"], "gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1 && echo GHAPI-OK")
         if c2 == 0 and "GHAPI-OK" in out:

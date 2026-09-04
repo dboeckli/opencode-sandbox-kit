@@ -17,6 +17,12 @@ set -euo pipefail
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
 # at once (previous behavior). npm/apt are inlined directly into the spec.yaml commands.
+#
+# Fail-open: every tool runs via `run_step` in a subshell. A failing tool does NOT abort
+# the sandbox start — the tool output + a `warn` line (tool + exit code) are appended to
+# `$INSTALL_LOG` and the script continues with the next tool. The sandbox still starts,
+# so failures stay diagnosable via `sbx exec <sandbox> cat /var/log/sbx-kit-install.log`
+# and the startup checks (`[startup-checks] java/maven/...:FAIL`).
 
 export PATH="/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
 export DEBIAN_FRONTEND=noninteractive
@@ -36,6 +42,35 @@ log_phase_start() {
 }
 log_phase_done() {
 	printf '[install-tooling] %s phase=%s done total=%ds\n' "$(date +%Y-%m-%dT%H:%M:%S%:z)" "$1" "$(( $(date +%s) - LOG_START ))" | tee -a "${INSTALL_LOG}"
+}
+
+# --- Fail-open step runner ---
+# Führt ein Tool in einer Subshell aus (set -euo pipefail: erster Fehler bricht die
+# Subshell mit dessen Exit-Code ab) und fängt den Fehler ab, statt den gesamten
+# Sandbox-Start scheitern zu lassen. Bei Fehlschlag wird der Tool-Output + eine
+# WARN-Zeile in den Install-Log geschrieben; der Aufrufer erhält trotzdem 0, damit
+# `setup.install` weiterläuft und die Sandbox startet (Diagnose dann via sbx exec).
+run_step() {
+	local name="$1"
+	shift
+	local rc=0 tmp
+	log_phase_start "${name}"
+	tmp="$(mktemp)"
+	# if-Bedingung: set -e (Parent) greift hier nicht — Subshell-RC wird sauber abgefangen
+	if ( set -euo pipefail; "$@" ) >"${tmp}" 2>&1; then
+		rc=0
+	else
+		rc=$?
+	fi
+	if [ "${rc}" -eq 0 ]; then
+		log_phase_done "${name}"
+	else
+		printf '\n=== %s FAILED (exit %d) ===\n' "${name}" "${rc}" >>"${INSTALL_LOG}"
+		cat "${tmp}" >>"${INSTALL_LOG}"
+		printf '[install-tooling] %s phase=%s warn rc=%d — tool failed, setup continues (fail-open); diagnose via sbx exec: cat %s\n' "$(date +%Y-%m-%dT%H:%M:%S%:z)" "${name}" "${rc}" "${INSTALL_LOG}" | tee -a "${INSTALL_LOG}"
+	fi
+	rm -f "${tmp}"
+	return 0
 }
 
 # --- Architecture detection ---
@@ -137,7 +172,7 @@ run_kubectl() {
 	log_step kubectl
 }
 
-# --- Helm (v3 as `helm`, v4 as `helm4`: v3 bleibt der Default, v4 bricht kokuwaio/helm-maven-plugin, see #427) ---
+# --- Helm (v3 as `helm`, v4 as `helm4`: v3 bleibt der Default, v4 liegt als helm4 parallel) ---
 install_helm() {
 	local ver="$1" dest="$2"
 	download "https://get.helm.sh/helm-v${ver}-linux-${DEB_ARCH}.tar.gz" /tmp/helm.tar.gz
@@ -168,55 +203,39 @@ PHASE="${1:-all}"
 case "${PHASE}" in
 	all)
 		log_phase_start all
-		run_shfmt
-		run_jdk
-		run_maven
-		run_docker
-		run_compose
-		run_kubectl
-		run_helm
-		run_helm4
+		run_step shfmt run_shfmt
+		run_step jdk run_jdk
+		run_step maven run_maven
+		run_step docker run_docker
+		run_step compose run_compose
+		run_step kubectl run_kubectl
+		run_step helm run_helm
+		run_step helm4 run_helm4
 		log_phase_done all
 		;;
 	shfmt)
-		log_phase_start shfmt
-		run_shfmt
-		log_phase_done shfmt
+		run_step shfmt run_shfmt
 		;;
 	jdk)
-		log_phase_start jdk
-		run_jdk
-		log_phase_done jdk
+		run_step jdk run_jdk
 		;;
 	maven)
-		log_phase_start maven
-		run_maven
-		log_phase_done maven
+		run_step maven run_maven
 		;;
 	docker)
-		log_phase_start docker
-		run_docker
-		log_phase_done docker
+		run_step docker run_docker
 		;;
 	compose)
-		log_phase_start compose
-		run_compose
-		log_phase_done compose
+		run_step compose run_compose
 		;;
 	kubectl)
-		log_phase_start kubectl
-		run_kubectl
-		log_phase_done kubectl
+		run_step kubectl run_kubectl
 		;;
 	helm)
-		log_phase_start helm
-		run_helm
-		log_phase_done helm
+		run_step helm run_helm
 		;;
 	helm4)
-		log_phase_start helm4
-		run_helm4
-		log_phase_done helm4
+		run_step helm4 run_helm4
 		;;
 	*)
 		echo "Unknown tool: ${PHASE} (expected: shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|all)" >&2

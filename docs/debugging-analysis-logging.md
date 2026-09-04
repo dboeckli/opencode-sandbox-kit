@@ -42,8 +42,13 @@ loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
   stdout — pro Tool siehst du also Start (Spinner-Zeile) und Abschluss (✓ mit Dauer). Die Detailzeilen
   (`step=…`) landen im Log-File. Setup-Output wird von `sbx` **nicht** aufbewahrt — für frische Logs
   die Sandbox neu erstellen (`sbx rm <name>` + `sbx run …`).
-- **Fehlschlag-Diagnose**: Das erste Tool ohne `phase=… done` ist fehlgeschlagen — das Script bricht
-  bei `set -euo pipefail` sofort ab.
+- **Fehlschlag-Diagnose (fail-open)**: `install-tooling.sh` läuft seit Issue #57 fail-open — jedes Tool wird
+  über `run_step` in einer Subshell ausgeführt. Schlägt ein Tool fehl, bricht **nicht** der Sandbox-Start ab:
+  Der Tool-Output + eine `warn`-Zeile mit Exit-Code werden ins Install-Log geschrieben
+  (`=== <tool> FAILED (exit N) ===`, gefolgt vom Tool-Output), und der nächste Schritt läuft weiter.
+  Die Sandbox startet trotzdem — Diagnose dann über die laufende Sandbox (`sbx exec … cat
+  /var/log/sbx-kit-install.log`) und die Startup-Checks (`[startup-checks] java/maven/…:FAIL` zeigen,
+  welches Tool fehlt).
 
 ### Logs von außen anzeigen (`sbx exec`)
 
@@ -62,7 +67,7 @@ sbx exec opencode-sandbox -- tail -f /var/log/sbx-kit-install.log
 ### Log-Format erweitern / ändern
 
 Die Timestamp-Logik steckt in `log_step()`, `log_phase_start()`, `log_phase_done()` und im
-Phasen-Dispatch (`npm|apt|tools|all`) von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
+Fail-open-Wrapper `run_step()` von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
 Phasen-Commands referenzieren die drei Specs (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`).
 **Alle drei Kit-Kopien identisch halten** (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`) — der
 Drift-Check schlägt sonst fehl:
