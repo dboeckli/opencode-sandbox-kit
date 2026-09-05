@@ -105,6 +105,26 @@ AGENT_TEMPLATES = {"opencode": "opencode-docker", "claude": "claude-code-docker"
 MAMMOUTH_INSTALL_RE = re.compile(r"install\.sh\s*\|\s*VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)\s+bash")
 MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
+# Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige `sbx create <agent> --kit <dir>`-
+# Szenario in der Sandbox benötigt (Kit-deklarierte Services aus den Specs credentials[].service +
+# Template-Built-ins wie github/anthropic). Nur das Zurich-Szenario braucht das zurich-Secret;
+# openrouter/google verdrahtet nur das opencode-Template. Fehlermeldungen nennen das betroffene Kit.
+SCENARIO_KIT = {
+    "opencode": "opencode-agent",
+    "claude": "opencode-agent",  # Claude-Home-Szenario (claude-code-docker-Template + opencode-agent-Kit)
+    "claude-zurich": "claude-zurich-agent",
+    "mammouth": "mammouth-agent",
+}
+SCENARIO_SECRETS = {
+    "opencode": ("github", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
+    "claude": ("github", "anthropic", "context7", "stackoverflow", "cloudsmith"),
+    "claude-zurich": ("github", "anthropic", "context7", "stackoverflow", "cloudsmith", "zurich"),
+    "mammouth": ("github", "mammouth", "context7", "stackoverflow", "cloudsmith"),
+}
+# Reihenfolge der Checks (Ausgabe stabil halten)
+SECRET_ORDER = ("github", "anthropic", "mammouth", "context7", "openrouter", "google",
+                "stackoverflow", "cloudsmith", "zurich")
+
 
 def enable_ansi():
     if os.name == "nt":
@@ -564,9 +584,25 @@ def main():
     _, secret_out = run_sbx(["secret", "ls"])
     for line in secret_out.splitlines():
         print("      " + line)
-    for sname in ("github", "anthropic", "mammouth", "context7", "openrouter", "google", "stackoverflow", "cloudsmith", "zurich"):
+
+    # Nur Secrets prüfen, die ein ausgewähltes Szenario (Kit) tatsächlich benötigt —
+    # Fehlermeldungen nennen das betroffene Kit/Szenario.
+    if agent == "all":
+        selected = set(SCENARIO_SECRETS)
+    elif agent == "claude":
+        selected = {"claude", "claude-zurich"}
+    else:
+        selected = {agent}
+    for sname in SECRET_ORDER:
+        if not any(sname in SCENARIO_SECRETS[sc] for sc in selected):
+            continue
         ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
-        pass_(f"secret: {sname}") if ok else fail(f"secret: {sname}")
+        if ok:
+            pass_(f"secret: {sname}")
+        else:
+            needers = sorted(sc for sc in selected if sname in SCENARIO_SECRETS[sc])
+            kits = " / ".join(f"{sc} (Kit: {SCENARIO_KIT[sc]})" for sc in needers)
+            fail(f"secret: {sname} — fehlt, benötigt von {kits}")
 
     tools_cmd = (
         'for t in "ctx7:ctx7 --version" "gh:gh auth status" "java:java -version" '
