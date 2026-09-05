@@ -99,7 +99,7 @@ download() {
 
 # --- shfmt ---
 run_shfmt() {
-	SHFMT_VER="3.13.1"
+	SHFMT_VER="3.14.0"
 	download "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_${DEB_ARCH}" /usr/local/bin/shfmt
 	chmod +x /usr/local/bin/shfmt
 	shfmt --version
