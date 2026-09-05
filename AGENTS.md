@@ -48,9 +48,9 @@ Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
 - `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `-t` nötig)
 - `sbx run opencode --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — run from remote Git repo
 - `sbx run opencode --name spring-6-reactive --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"` — use kit with another project
-- `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support: Host-kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
-- `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Claude Code)
-- `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Mammouth Code)
+- `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support + Maven-Host-Cache: Host-kubeconfig und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87)
+- `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Claude Code)
+- `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Mammouth Code)
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
@@ -205,6 +205,21 @@ In der Sandbox wirkt das Kit so (Startup-Hooks, `opencode-agent/spec.yaml`):
 
 > **Wichtig:** Nur echte Maven-Builds (`./mvnw validate` etc.) sind repräsentativ — `mvn dependency:get` ignoriert
 > settings-`<proxies>` und läuft an der Injection vorbei (401 ist dort ein Fehlalarm).
+
+
+### Maven Host-Cache wiederverwenden (optional)
+
+Jede Sandbox lädt Dependencies neu. Um den **lokal gefüllten** Maven-Cache des Hosts zu nutzen, den Host
+`~/.m2/repository` **read-only** mounten (keine Credentials, nur Artefakte):
+
+```powershell
+sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "C:\development\maven-repo:ro"
+```
+
+Der settings.xml-Startup-Hook erkennt den Mount (`/c/Users/<user>/.m2/repository`, `/c/*/maven-repo` oder `/c/*/m2-repository`) und ergänzt ein aktives Profil mit
+`<repository id="host-cache" url="file://…">` (snapshots disabled). Maven prüft dann: Sandbox-lokal → Host-Cache
+(`file://`, kopiert lokal statt Netz) → echte Remotes (Central/GitHub Packages). Ohne Mount bleibt settings.xml
+unverändert. Neu geladene Artefakte landen nur im Sandbox-lokalen Repo; der Host-Cache bleibt read-only.
 
 ## Anthropic Authentication
 

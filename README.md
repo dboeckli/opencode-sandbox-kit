@@ -117,30 +117,35 @@ sbx run mammouth --name spring-6-reactive \
 ```
 
 ```powershell
-# Kubernetes-Support: kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
+# Kubernetes-Support + Maven-Host-Cache: kubeconfig (read-only) mounten (kubectl/helm im Sandbox-Cluster),
+# Host-Maven-Repo (read-only) mounten, damit Maven den lokal gefuellten Cache nutzt (Issue #87)
 sbx run opencode --name opencode-sandbox `
     --static-mcp idea `
     --kit ./opencode-agent/ `
     -t docker/sandbox-templates:opencode-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
-    "$env:USERPROFILE\.kube:ro"
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 sbx run claude --name claude-sandbox `
     --static-mcp idea `
     --kit ./opencode-agent/ `
     -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
-    "$env:USERPROFILE\.kube:ro"
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 sbx run claude --name claude-zurich `
     --static-mcp idea `
     --kit ./claude-zurich-agent/ `
     -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
-    "$env:USERPROFILE\.kube:ro"
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 sbx run mammouth --name mammouth-sandbox `
     --static-mcp idea `
     --kit ./mammouth-agent/ `
     "C:\development\projects\opencode-sandbox-kit" `
-    "$env:USERPROFILE\.kube:ro"
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 
 # Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
 sbx kit add opencode-sandbox `

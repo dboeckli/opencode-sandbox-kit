@@ -41,7 +41,7 @@ sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agen
 ```powershell
 # Recreate:
 sbx rm opencode-sandbox --force
-sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"
 ```
 
 | Aspekt | Detail |
