@@ -145,7 +145,7 @@ run_docker() {
 # --- Docker Compose (CLI plugin) ---
 run_compose() {
 	# Compose release assets use x86_64/aarch64, not amd64/arm64
-	COMPOSE_VER="5.5.0"
+	COMPOSE_VER="5.5.1"
 	case "${UNAME_M}" in
 	    x86_64)  COMPOSE_ARCH="x86_64" ;;
 	    aarch64) COMPOSE_ARCH="aarch64" ;;
