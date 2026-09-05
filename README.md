@@ -374,7 +374,7 @@ python .\local-test\local-test-kits.py --validate-only   # nur Kit-Validierung, 
 ```
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
-globale Secrets gesetzt (`github`, `anthropic`, `zurich`, `mammouth`, `context7`).
+globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `zurich`, `mammouth`, `context7`).
 
 ### GitHub Actions (CI)
 

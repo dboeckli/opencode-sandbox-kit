@@ -27,6 +27,8 @@ permissions:
     - github.com
     - api.github.com
     - "*.github.com"
+    # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
+    - maven.pkg.github.com
     - githubusercontent.com
     - objects.githubusercontent.com
     - "*.githubusercontent.com"
@@ -161,6 +163,15 @@ credentials:
         - domain: upload.cloudsmith.io
           header: X-Api-Key
           format: "%s"
+  - service: github-maven
+    description: "GitHub Packages Maven — klassisches PAT (nur read:packages, https://github.com/settings/tokens)"
+    apiKey:
+      name: GITHUB_MAVEN_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: maven.pkg.github.com
+          header: Authorization
+          format: "Bearer %s"
 
 setup:
   install:
@@ -229,6 +240,54 @@ setup:
         EOF
       description: Write managed-settings.json to /etc/claude-code — highest precedence, not overwritten by the template (statusLine + PreToolUse/SessionStart hooks always configured at session start)
   startup:
+    - command:
+        - bash
+        - -c
+        - |
+          CA=/usr/local/share/ca-certificates/proxy-ca.crt
+          KS="${JAVA_HOME:-/usr/local/java}/lib/security/cacerts"
+          if [ -f "$CA" ] && [ -f "$KS" ] && command -v keytool >/dev/null 2>&1; then
+            keytool -delete -alias proxy-ca -keystore "$KS" -storepass changeit >/dev/null 2>&1 || true
+            if keytool -importcert -noprompt -alias proxy-ca -file "$CA" -keystore "$KS" -storepass changeit >/dev/null 2>&1; then
+              echo "proxy-ca in JDK cacerts importiert"
+            else
+              echo "FEHLER: proxy-ca Import in JDK cacerts fehlgeschlagen"
+            fi
+          else
+            echo "proxy-ca Import uebersprungen (CA/keystore/keytool nicht vorhanden)"
+          fi
+      description: Import proxy CA into the JDK cacerts so Java/Maven trust the sandbox proxy TLS interception (required for Bearer credential injection into Maven builds)
+    - command:
+        - python3
+        - -c
+        - |
+          import os
+          path = os.path.expanduser('~/.m2/settings.xml')
+          os.makedirs(os.path.dirname(path), exist_ok=True)
+          content = '''<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+            <proxies>
+              <proxy>
+                <id>sbx-proxy</id>
+                <active>true</active>
+                <protocol>http</protocol>
+                <host>gateway.docker.internal</host>
+                <port>3128</port>
+                <nonProxyHosts>localhost|127.0.0.1|::1</nonProxyHosts>
+              </proxy>
+            </proxies>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>dboeckli</username>
+                <password>${env.GITHUB_MAVEN_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          '''
+          with open(path, 'w') as f:
+              f.write(content)
+      user: "1000"
+      description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com
     - command:
         - python3
         - -c

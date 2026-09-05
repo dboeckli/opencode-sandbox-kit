@@ -18,6 +18,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | Service | Agent | Key-Quelle |
 |---------|-------|-----------|
 | `github` | alle | GitHub-PAT (Name `opencode-sandbox-kit-github-token`), Scopes `read:org`, `read:packages`, `read:project`, `read:user` |
+| `github-maven` | alle | Klassisches PAT (nur Scope `read:packages`) für GitHub Packages Maven — `https://github.com/settings/tokens` |
 | `anthropic` | Claude | https://console.anthropic.com — interaktiv, `-f` zum Überschreiben |
 | `mammouth` | Mammouth | https://mammouth.ai/app/account/settings/api |
 | `context7` | alle | https://context7.com/dashboard |

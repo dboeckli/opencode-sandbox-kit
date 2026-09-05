@@ -2,7 +2,7 @@ name: Kit e2e
 
 # End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
 # non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
-# register fake API-key secrets for github/anthropic/mammouth/context7/openrouter/google/zurich, and run the 4 agent scenarios
+# register fake API-key secrets for github/github-maven/anthropic/mammouth/context7/openrouter/google/zurich, and run the 4 agent scenarios
 # (OpenCode / Claude / Claude-Zurich / Mammouth) from local-test/local-test-kits.py with
 # `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
 #
@@ -142,11 +142,11 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, anthropic/mammouth/context7/openrouter/google/zurich fake)
+      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/context7/openrouter/google/zurich fake)
         # local-test/local-test-kits.py asserts these global services exist
         # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
-        # `gh auth status` passes inside the sandbox; anthropic, mammouth,
-        # context7, openrouter, google and zurich get fake keys — enough to prove the
+        # `gh auth status` passes inside the sandbox; github-maven, anthropic,
+        # mammouth, context7, openrouter, google and zurich get fake keys — enough to prove the
         # kit's proxy env wiring.
         # `-g` was removed in sbx v0.38 (secrets are global by default);
         # `-f` overwrites an existing entry.
@@ -155,6 +155,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$GITHUB_TOKEN" | sbx secret set github
+          printf '%s' 'ghp-fake-ci-key' | sbx secret set github-maven -f
           printf '%s' 'sk-ant-fake-ci-key' | sbx secret set anthropic -f
           printf '%s' 'mammouth-fake-ci-key' | sbx secret set mammouth -f
           printf '%s' 'ctx7op-fake-ci-key' | sbx secret set context7 -f
@@ -188,6 +189,9 @@ jobs:
             cloudsmith:
               apiKey:
                 domains: [api.cloudsmith.io, upload.cloudsmith.io]
+            github-maven:
+              apiKey:
+                domains: [maven.pkg.github.com]
             zurich:
               apiKey:
                 domains: [genai-lounge-nx-litellm-uat-emea.zurich.com]

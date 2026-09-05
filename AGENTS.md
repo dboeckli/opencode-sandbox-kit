@@ -169,7 +169,7 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 > **`sbx secret` (v0.38+):** Seit v0.38 ist das `-g`-Flag bei `sbx secret set` entfernt — Service-Secrets sind
 > standardmäßig **global**, der Service ist ein Positionsargument (`sbx secret set github` statt
 > `sbx secret set -g github`). Mit `--sandbox <name>` wird ein Secret auf eine Sandbox gescoped.
-> Kit-deklarierte Services (context7, deepseek, openrouter, mammouth) funktionieren identisch zu den Built-ins.
+> Kit-deklarierte Services (context7, deepseek, openrouter, mammouth, github-maven) funktionieren identisch zu den Built-ins.
 > **Neu:** Third-Party-v2-Kits benötigen pro Service ein **Credential-Binding** (`credentials.yaml`,
 > Windows: `%APPDATA%\sbx\credentials.yaml`) — beim ersten Lauf interaktiv abgefragt, in CI vorab anlegen.
 
@@ -180,6 +180,31 @@ sbx secret set github -t "<github-token>"
 ```
 
 Das Token wird via Proxy automatisch injiziert – `gh auth status` sollte in der Sandbox funktionieren.
+
+### GitHub Packages Maven (`github-maven`)
+
+Maven-Builds, die ein Artifact aus **GitHub Packages** (`maven.pkg.github.com`) auflösen, brauchen ein
+**separates** klassisches PAT (nur Scope `read:packages`) — GitHub Packages akzeptiert kein OAuth-Token
+(`gho_…`) und das `github`-Secret bleibt unverändert für `gh`/`git push`:
+
+```powershell
+# 1. Klassisches PAT mit Scope read:packages anlegen: https://github.com/settings/tokens
+# 2. Secret registrieren
+sbx secret set github-maven -t "<classic-pat-read-packages>"
+```
+
+In der Sandbox wirkt das Kit so (Startup-Hooks, `opencode-agent/spec.yaml`):
+- `~/.m2/settings.xml` wird geschrieben mit einem `<proxies>`-Block (`gateway.docker.internal:3128` — Maven muss
+  **durch den Sandbox-Proxy routen**, damit die Credential-Injection greifen kann) und dem Server `github`
+  (`<password>${env.GITHUB_MAVEN_TOKEN}</password>`).
+- Die Proxy-CA wird in die JDK-`cacerts` importiert (Java/Maven müssen das TLS-Intercept des Proxys vertrauen).
+- Der Proxy injiziert den echten `ghp_…`-Token als `Authorization: Bearer <pat>` bei Requests an
+  `maven.pkg.github.com` (GitHub Packages akzeptiert den klassischen PAT als Bearer; die `scheme: basic`-Injection
+  des Proxys funktioniert nicht und wird nicht verwendet). Der Token liegt nie im Sandbox-Filesystem.
+`gh auth status` zeigt weiterhin den vollen OAuth-Token des `github`-Secrets.
+
+> **Wichtig:** Nur echte Maven-Builds (`./mvnw validate` etc.) sind repräsentativ — `mvn dependency:get` ignoriert
+> settings-`<proxies>` und läuft an der Injection vorbei (401 ist dort ein Fehlalarm).
 
 ## Anthropic Authentication
 
