@@ -37,6 +37,19 @@ sbx run mammouth --name mammouth-sandbox `
     --static-mcp idea `
     --kit ./mammouth-agent/
 
+
+```powershell
+# Mit Projekt + read-only Host-Mounts (kubeconfig + Maven-Cache) — typischer Entwicklungs-Stack
+# (Maven nutzt den lokal gefuellten Host-Cache statt Neu-Download, siehe unten; Issue #87)
+sbx run opencode --name opencode-sandbox `
+    --static-mcp idea `
+    --kit ./opencode-agent/ `
+    -t docker/sandbox-templates:opencode-docker-0.5.0 `
+    "C:\development\projects\opencode-sandbox-kit" `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
+```
+
 # Kit direkt aus GitHub (ohne Clone) — einmalig kit.allowedSources setzen (siehe INSTALL.md).
 # Template gepinnt via `-t docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 sbx run opencode --name opencode-sandbox `
