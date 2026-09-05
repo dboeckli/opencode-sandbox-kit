@@ -81,6 +81,11 @@ INSTALL_SCRIPT_PAIRS = (
     ("opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "claude-zurich-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
+    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+     "mammouth-agent/files/home/.local/bin/install-apt-packages.sh",
+     "claude-zurich-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-agent/files/home/.local/bin/write-managed-settings.sh",
+     "claude-zurich-agent/files/home/.local/bin/write-managed-settings.sh"),
 )
 
 # Sandbox-Template-Version (alle drei Kits, eine Version fuer beide Template-Familien):

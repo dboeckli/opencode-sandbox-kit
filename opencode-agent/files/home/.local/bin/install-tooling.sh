@@ -16,8 +16,8 @@ set -euo pipefail
 # Tools: `install-tooling.sh [shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|all]`.
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
-# at once (previous behavior). npm/apt are inlined directly into the spec.yaml commands.
-#
+# at once (previous behavior). npm is inlined directly into the spec.yaml commands; apt
+# packages live in install-apt-packages.sh.
 # Fail-open: every tool runs via `run_step` in a subshell. A failing tool does NOT abort
 # the sandbox start — the tool output + a `warn` line (tool + exit code) are appended to
 # `$INSTALL_LOG` and the script continues with the next tool. The sandbox still starts,

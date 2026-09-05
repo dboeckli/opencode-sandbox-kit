@@ -211,17 +211,8 @@ setup:
       description: Install prettier
     - command: "npm_config_bin_links=true npm install -g renovate"
       description: Install renovate
-    - command: |
-        for i in $(seq 1 24); do
-          if apt-get update && apt-get install -y jq python3 python3-pip python3-yaml; then
-            exit 0
-          fi
-          echo "apt-get fehlgeschlagen (Versuch $i/24) - Lock/Netzwerk? warte 10s ..." >&2
-          sleep 10
-        done
-        echo "FEHLER: apt-Installation nach 24 Versuchen fehlgeschlagen" >&2
-        exit 1
-      description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock
+    - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
+      description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"
       description: Install shfmt — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh jdk"
