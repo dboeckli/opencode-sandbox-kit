@@ -42,8 +42,13 @@ loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
   stdout — pro Tool siehst du also Start (Spinner-Zeile) und Abschluss (✓ mit Dauer). Die Detailzeilen
   (`step=…`) landen im Log-File. Setup-Output wird von `sbx` **nicht** aufbewahrt — für frische Logs
   die Sandbox neu erstellen (`sbx rm <name>` + `sbx run …`).
-- **Fehlschlag-Diagnose**: Das erste Tool ohne `phase=… done` ist fehlgeschlagen — das Script bricht
-  bei `set -euo pipefail` sofort ab.
+- **Fehlschlag-Diagnose (fail-open)**: `install-tooling.sh` läuft seit Issue #57 fail-open — jedes Tool wird
+  über `run_step` in einer Subshell ausgeführt. Schlägt ein Tool fehl, bricht **nicht** der Sandbox-Start ab:
+  Der Tool-Output + eine `warn`-Zeile mit Exit-Code werden ins Install-Log geschrieben
+  (`=== <tool> FAILED (exit N) ===`, gefolgt vom Tool-Output), und der nächste Schritt läuft weiter.
+  Die Sandbox startet trotzdem — Diagnose dann über die laufende Sandbox (`sbx exec … cat
+  /var/log/sbx-kit-install.log`) und die Startup-Checks (`[startup-checks] java/maven/…:FAIL` zeigen,
+  welches Tool fehlt).
 
 ### Logs von außen anzeigen (`sbx exec`)
 
@@ -62,7 +67,7 @@ sbx exec opencode-sandbox -- tail -f /var/log/sbx-kit-install.log
 ### Log-Format erweitern / ändern
 
 Die Timestamp-Logik steckt in `log_step()`, `log_phase_start()`, `log_phase_done()` und im
-Phasen-Dispatch (`npm|apt|tools|all`) von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
+Fail-open-Wrapper `run_step()` von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
 Phasen-Commands referenzieren die drei Specs (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`).
 **Alle drei Kit-Kopien identisch halten** (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`) — der
 Drift-Check schlägt sonst fehl:
@@ -143,45 +148,48 @@ API-Version mit dem offiziellen Change-Log — schlägt fehl, wenn eine neuere V
 
 ### IntelliJ: Probleme statisch analysieren
 
-Über den IntelliJ MCP direkt inspizieren (nur lesende Tools, Whitelist):
+Über den IntelliJ MCP direkt inspizieren (nur lesende Tools, Whitelist; Tools kommen über den sbx MCP Gateway,
+Präfix `mcp-gateway_` in OpenCode/Mammouth bzw. `mcp__mcp-gateway__` in Claude Code):
 
-- `idea_get_file_problems` — Inspection-Errors/Warnings einer Datei
-- `idea_search_in_files_by_regex` / `idea_search_symbol` — schnelle Suche im Projekt
-- `idea_generate_psi_tree`, `idea_run_inspection_kts` — Inspections entwickeln/testen
+- `mcp-gateway_get_file_problems` — Inspection-Errors/Warnings einer Datei
+- `mcp-gateway_search_symbol` / `mcp-gateway_search_text` — schnelle Suche im Projekt
+- `mcp-gateway_generate_psi_tree`, `mcp-gateway_run_inspection_kts` — Inspections entwickeln/testen
 
 ## Debugging
 
 ### IntelliJ MCP-Verbindung testen
 
-Der IntelliJ MCP-Forwarder läuft auf Windows unter `127.0.0.1:64342`. Aus der Sandbox über
-`host.docker.internal:64342` (darf **nicht** auf `127.0.0.1` geändert werden — das wäre der
-Container-Loopback):
+Der IntelliJ-MCP-Server läuft auf Windows unter `127.0.0.1:64342`. Das Kit liefert ihn seit Issue #57 über den
+**sbx MCP Gateway** (Registration `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`,
+Sandbox mit `--static-mcp idea`). Der Health-Check aus der Sandbox prüft weiterhin die Erreichbarkeit des
+Host-Servers:
 
 ```bash
 sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
 ```
 
-Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten: README → Troubleshooting.
+Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten + Gateway-Verifikation: README → Troubleshooting.
 
 ### IntelliJ MCP über die Permission-Whitelist
 
-OpenCode/Mammouth: `"idea_*": "deny"` zuerst, danach gezielte `allow`-Regeln (Reihenfolge zählt —
+OpenCode/Mammouth: `"mcp-gateway_*": "deny"` zuerst, danach gezielte `allow`-Regeln (Reihenfolge zählt —
 `findLast`-Semantik). Claude Code: explizite `allow`-Whitelist in `settings.json`. Schreibende/
-ausführende Tools sind gar nicht sichtbar.
+ausführende Tools und die Gateway-Meta-Tools (`code-mode`, `mcp-exec`, …) sind gar nicht sichtbar.
 
-### Run-Config-Guard & `idea_execute_run_configuration`
+### Run-Config-Guard & `mcp-gateway_execute_run_configuration`
 
-`idea_execute_run_configuration` braucht Bestätigung und ist per Guard auf die Run-Config
+`mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) braucht
+Bestätigung und ist per Guard auf die Run-Config
 `local-test-kits-validate-only` begrenzt (OpenCode-Plugin bzw. Claude PreToolUse-Hook). Andere
 Run-Configs werden mit einem Fehler geblockt.
 
-> **Timeout-Verhalten**: `idea_execute_run_configuration` mit `waitForExit=true` timeout't nach
+> **Timeout-Verhalten**: `mcp-gateway_execute_run_configuration` mit `waitForExit=true` timeout't nach
 > **15 min**, obwohl der Test (~8 min) evtl. noch läuft — dann den Prozessstatus via
-> `idea_execute_terminal_command` + `Get-Process python` prüfen (bzw. `waitForExit=false` nutzen).
+> `mcp-gateway_execute_terminal_command` + `Get-Process python` prüfen (bzw. `waitForExit=false` nutzen).
 >
 > **Project-Path beachten**: IntelliJ läuft auf dem Windows-Host — der `projectPath` muss ein
 > Host-Pfad sein (z. B. `C:\development\projects\opencode-sandbox-kit`), nicht der Sandbox-Pfad
-> (`/Users/...`). Sonst liefert `idea_get_run_configurations` eine leere Liste.
+> (`/Users/...`). Sonst liefert `mcp-gateway_get_run_configurations` eine leere Liste.
 
 ### Sandbox-Startup-Hooks debuggen
 

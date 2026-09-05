@@ -6,7 +6,7 @@
   },
   "packageRules": [
     {
-      "description": "Helm v3 (Default `helm`): nur v3 (v4 nicht kompatibel mit kokuwaio/helm-maven-plugin 6.17.0, Issue #427)",
+      "description": "Helm v3 (Default `helm`): nur v3-Linie",
       "matchDatasources": ["github-releases"],
       "matchPackageNames": ["helm/helm"],
       "matchCurrentValue": "/^3\\./",

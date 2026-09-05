@@ -42,7 +42,8 @@ permissions:
     # JetBrains Help-Doku (IntelliJ HTTP-Client Feature-Seiten, z. B. www.jetbrains.com/help/idea/)
     - jetbrains.com
     - www.jetbrains.com
-    # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
+    # IntelliJ IDEA MCP Server (Windows Host; MCP-Verbindung via sbx MCP Gateway → localhost:64342/stream,
+    # Allow-Eintrag nur für den Startup-Health-Check, der die Host-Erreichbarkeit aus der Sandbox prüft)
     - "localhost:64342"
     - "127.0.0.1:64342"
     - "host.docker.internal:64342"
@@ -218,7 +219,7 @@ setup:
           "hooks": {
             "PreToolUse": [
               {
-                "matcher": "mcp__idea__execute_run_configuration",
+                "matcher": "mcp__mcp-gateway__execute_run_configuration",
                 "hooks": [
                   {
                     "type": "command",

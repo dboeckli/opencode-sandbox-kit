@@ -10,7 +10,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **Docker Desktop** (Windows) | Laufender Docker Daemon — nativ **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 26.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
-| **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` + Firewall-Freigabe Port 64342 | IntelliJ MCP (optional) |
+| **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64342` + Firewall-Freigabe Port 64342; einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` (Gateway-Weg, Issue #57) | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
 ### Secrets registrieren (`sbx secret set <service>`)
@@ -41,7 +41,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` (isolierter Daemon in der Sandbox-VM) |
 | Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
-| Helm v3 | 3.21.3 (Default) | `/usr/local/bin/helm` — Default wegen kokuwaio/helm-maven-plugin (nicht v4-kompatibel, Issue #427) |
+| Helm v3 | 3.21.3 (Default) | `/usr/local/bin/helm` |
 | Helm v4 | 4.2.4 | `/usr/local/bin/helm4` — paralleles Binary, explizit aufrufbar |
 | shfmt | 3.13.0 | `/usr/local/bin/shfmt` |
 | ctx7 | latest | npm global (`/usr/local/share/npm-global/bin`) |

@@ -41,15 +41,16 @@ Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
 ## Commands
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
-- `sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` — test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`
-- `sbx run claude --name claude-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`)
-- `sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`); **gleiche** Template-Pin `0.5.0`
-- `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `-t` nötig)
-- `sbx run opencode --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — run from remote Git repo
-- `sbx run opencode --name spring-6-reactive --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"` — use kit with another project
-- `sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support: Host-kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
-- `sbx run claude --name claude-sandbox --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Claude Code)
-- `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Mammouth Code)
+- `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
+- `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` — test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`
+- `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`)
+- `sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`); **gleiche** Template-Pin `0.5.0`
+- `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `-t` nötig)
+- `sbx run opencode --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — run from remote Git repo
+- `sbx run opencode --name spring-6-reactive --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"` — use kit with another project
+- `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support: Host-kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
+- `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Claude Code)
+- `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"` — Kubernetes-Support (Mammouth Code)
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
@@ -64,8 +65,10 @@ Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
 
 > **Wichtig:** In der Sandbox-Laufzeit ist `sbx` **nicht** verfügbar (nicht im Sandbox-Image installiert — unabhängig
 > von WSL). Validierung und Sandbox-Tests laufen daher auf dem Windows-Host via PowerShell (Docker Desktop nativ) —
-> der Agent erreicht sie über den IntelliJ MCP (`idea_execute_run_configuration`) mit den Run-Configs in `.run/`.
-> `idea_execute_run_configuration` mit der Config **ohne** `waitForExit=false` timeout't nach 15 min, obwohl der Test
+> der Agent erreicht sie über den IntelliJ MCP (`mcp-gateway_execute_run_configuration` bzw.
+> `mcp__mcp-gateway__execute_run_configuration`) mit den Run-Configs in `.run/`.
+> `idea_execute_run_configuration` (Legacy-Name der Direkt-Config) ist dabei nicht mehr relevant.
+> Der Aufruf mit der Config **ohne** `waitForExit=false` timeout't nach 15 min, obwohl der Test
 > (~8 min) evtl. noch läuft — dann Prozessstatus via `idea_execute_terminal_command` + `Get-Process python` prüfen.
 
 IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.py` auf):
@@ -97,17 +100,26 @@ python local-test\local-test-kits.py                   # alle Szenarien
 
 ## IntelliJ MCP: Permission-Whitelist + Run-Config-Guard
 
-Der Zugriff auf die IntelliJ-MCP-Tools (`idea_*`) ist für **OpenCode (Mixin-Kit), Claude Code und
+Der IntelliJ-MCP-Server läuft auf dem Windows-Host und wird über den **sbx MCP Gateway** in die Sandbox geliefert
+(dokumentierter Weg, Issue #57): einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`
+registrieren (SSRF-Guard blockt Loopback; `/stream` = Streamable HTTP, nicht `/sse`), dann beim Erzeugen
+`--static-mcp idea` setzen (oder `sbx mcp load idea --sandbox` in laufende Sandbox). Die Agent-Configs enthalten
+**keine** direkte `mcp.idea`-Konfiguration mehr — die Gateway-Verbindung legt das Template automatisch als
+`mcp-gateway` (OpenCode/Mammouth) bzw. in `~/.claude.json` unter `mcp-gateway` (Claude Code) an. Tool-Präfixe:
+`mcp-gateway_<tool>` (OpenCode/Mammouth) bzw. `mcp__mcp-gateway__<tool>` (Claude Code) — der frühere direkte
+`idea_`/`mcp__idea__`-Prefix existiert nicht mehr.
+
+Der Zugriff auf die IntelliJ-MCP-Tools ist für **OpenCode (Mixin-Kit), Claude Code und
 Mammouth Code (Agent-Kit)** per **Whitelist** eingeschränkt — Deny-by-Default, nur lesende Operationen sind
 erlaubt. Die Config liegt je Agent-Location vor:
 
 - **OpenCode / Mammouth** (OpenCode-Fork, nutzt dieselben `permission`-Regeln und Plugin-Hooks):
   `permission`-Block in `opencode-agent/files/home/.config/opencode/opencode.jsonc` und
-  `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`: breites `"idea_*": "deny"` zuerst, danach
+  `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`: breites `"mcp-gateway_*": "deny"` zuerst, danach
   gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
   deshalb Deny vor Allows.
 - **Claude Code**: `permissions`-Block in `opencode-agent/files/home/.claude/settings.json`. Kein Deny-by-Default wie bei
-  OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__idea__<tool>`), eine
+  OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__mcp-gateway__<tool>`), eine
   `deny`-Blocklist für die schreibenden/ausführenden Tools. Nicht gelistete Tools fallen auf den
   Standard-Prompt zurück. Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
   Hooks + statusLine liegen **nicht** in der user-`settings.json`, sondern in der `managed-settings.json`
@@ -115,29 +127,39 @@ erlaubt. Die Config liegt je Agent-Location vor:
   umgeht die Race Condition, bei der das Template die user-`settings.json` beim Start überschreibt (siehe
   `session-start-hook-fix.md`). Doppeltes Feuern wird vermieden, weil `opencode-agent/files/home/.claude/settings.json` und
   `settings.kit.json` bewusst **keine** `hooks`/`statusLine` mehr enthalten.
-- **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
-  `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
-  `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
-  `idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
-  `idea_validate_inspection_kts` (39 Tools).
-- **`ask`**: `idea_execute_run_configuration` — braucht Bestätigung und wird zusätzlich durch den
-  Run-Config-Guard auf `local-test-kits-validate-only` begrenzt.
-- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
-  `idea_execute_tool`, `idea_open_file_in_editor`, `idea_reformat_file`, `idea_rename_refactoring`,
-  `idea_build_project`, `idea_notebookEdit`, `idea_xdebug_set_*`, `idea_xdebug_run_to_line`,
-  `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — via
-  `visibleTools()` nicht einmal sichtbar.
+- **Erlaubt (nur lesend, OpenCode/Mammouth-Pattern)**: `mcp-gateway_get_*`, `mcp-gateway_list_*`,
+  `mcp-gateway_search_*`, `mcp-gateway_read*`, `mcp-gateway_generate_*`, `mcp-gateway_xdebug_get_*`,
+  `mcp-gateway_xdebug_list_*` sowie einzeln `mcp-gateway_analyze_calls`, `mcp-gateway_git_status`,
+  `mcp-gateway_lint_files`, `mcp-gateway_fetch_query_result`, `mcp-gateway_preview_table_data`,
+  `mcp-gateway_test_database_connection`, `mcp-gateway_introspect_schema`, `mcp-gateway_run_inspection_kts`,
+  `mcp-gateway_validate_inspection_kts`, `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ —
+  bewusst erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor —
+  bewusst erlaubt, ohne ask). Claude listet die erlaubten Tools einzeln als
+  `mcp__mcp-gateway__<tool>` in `permissions.allow`.
+- **`ask`**: `mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) —
+  braucht Bestätigung und wird zusätzlich durch den Run-Config-Guard auf `local-test-kits-validate-only` begrenzt.
+- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`apply_patch`, `execute_terminal_command`,
+  `execute_tool`, `reformat_file`, `rename_refactoring`,
+  Notebook-Schreibzugriffe, `xdebug_set_*`, `xdebug_run_to_line`,
+  `xdebug_control_session`, `xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) sowie die
+  Gateway-Meta-Tools (`code-mode`, `mcp-exec`, `mcp-find`, `mcp-add`, `mcp-config-set`) — via `visibleTools()`
+  nicht einmal sichtbar (OpenCode) bzw. in `permissions.deny` (Claude).
 
 **Run-Config-Guard**: Das Permission-System sieht bei
 MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationName` nur im Hook sichtbar.
 - OpenCode/Mammouth (`opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` und
   `mammouth-agent/files/home/.config/mammouth/plugins/intellij-run-config-guard.js`): Plugin-Hook
-  `tool.execute.before`. Erlaubt dort ausschließlich die Run-Config `local-test-kits-validate-only` und blockt
-  alle anderen mit einem Fehler.
+  `tool.execute.before` auf Tool `mcp-gateway_execute_run_configuration`. Erlaubt dort ausschließlich die
+  Run-Config `local-test-kits-validate-only` und blockt alle anderen mit einem Fehler.
 - Claude Code (`opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh`): PreToolUse-Hook gematcht auf
-  `mcp__idea__execute_run_configuration`. Liest `tool_input.configurationName` aus dem Hook-Payload; erlaubt
+  `mcp__mcp-gateway__execute_run_configuration`. Liest `tool_input.configurationName` aus dem Hook-Payload; erlaubt
   `local-test-kits-validate-only` (exit 0 = pass), blockt alles andere (`permissionDecision: deny`, exit 2).
   Andere MCP-Tools passieren den Hook unverändert.
+
+> **Voraussetzung (Option A, self-contained-Bruch):** Ohne Host-Registrierung (`sbx mcp add idea …`) und ohne
+> `--static-mcp idea`/`sbx mcp load` sind keine IntelliJ-MCP-Tools verfügbar. Das ist der dokumentierte
+> Docker-Sandboxes-Weg (zentrale MCP-Registry am Host) und der Grund, warum das Kit keine direkte `mcp.idea`-
+> Konfiguration mehr mitbringt. Details/Verifikation: Issue #57.
 
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
 > opencode/mammouth neu starten.
@@ -184,7 +206,7 @@ nur im Firmennetz erreichbar) das **separate Kit `claude-zurich-agent/`** verwen
 (`credentials[].apiKey` mit `name: ZURICH_LITELLM_API_KEY`, `proxyManaged: true`):
 
 ```powershell
-sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 sbx secret set zurich
 ```
 
@@ -333,11 +355,11 @@ nötig.
 ## Layout
 
 - `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
-- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
-- `opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
+- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config (Permission-Whitelist für IntelliJ-MCP-Tools via sbx MCP Gateway `mcp-gateway_*`; keine direkte `mcp.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `mcp-gateway_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
-- `opencode-agent/files/home/.claude/settings.json` — Claude Code config with IntelliJ MCP via `host.docker.internal:64342/sse` + IntelliJ-MCP-Permission-Whitelist (siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
-- `opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `idea_execute_run_configuration` nur für `local-test-kits-validate-only`
+- `opencode-agent/files/home/.claude/settings.json` — Claude Code config (Permission-Whitelist `mcp__mcp-gateway__*`; keine `mcpServers.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `mcp__mcp-gateway__execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
 - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
@@ -350,13 +372,17 @@ nötig.
 Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.5.0` (2026-08-26) für alle drei Kits: OpenCode/Mammouth `opencode-docker-0.5.0`, Claude (Home **und** Zurich) `claude-code-docker-0.5.0` — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `-t` im Command, das Mammouth-Agent-Kit (`kind: sandbox`) via spec-Image (Mirror). `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
 
 ```powershell
-sbx run opencode --name my-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode (opencode-docker Template, Pin 0.5.0)
-sbx run claude   --name my-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
-sbx run claude   --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro, gleiche Pin 0.5.0)
-sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
+sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check   # einmalig (IntelliJ MCP auf Host-Loopback, SSRF-Guard umgehen)
+
+sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode (opencode-docker Template, Pin 0.5.0)
+sbx run claude   --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
+sbx run claude   --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro, gleiche Pin 0.5.0)
+sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
 ```
 
-Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via `host.docker.internal:64342`. Die jeweilige Config wird automatisch gelesen:
+Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
+(Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`, Sandbox mit
+`--static-mcp idea` erzeugen oder `sbx mcp load idea --sandbox`). Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `opencode-agent/files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `opencode-agent/files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `opencode-agent/files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
@@ -399,7 +425,7 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 > `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig (redundant).**
 > Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
-> **Helm v3 vs. v4 — beide installiert:** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher ist **v3 der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3) — das Plugin läuft über `useLocalHelmBinary=true` mit der Sandbox-Helm-Version. **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit für alles andere aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
 
 ## Mammouth Authentication
 

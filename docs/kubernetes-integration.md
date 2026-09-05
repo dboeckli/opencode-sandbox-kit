@@ -15,9 +15,9 @@ Die Sandbox sieht nur den **Workspace** (`C:\development\projects\...`, Filesyst
 Die Host-kubeconfig (`%USERPROFILE%\.kube\config`) liegt **außerhalb** des Workspace und ist
 für den Agenten auf zwei Wegen blockiert:
 
-- **IntelliJ MCP** (`idea_read_file`): liest nur Dateien innerhalb des Projekts — außerhalb
+- **IntelliJ MCP** (`mcp-gateway_read_file`): liest nur Dateien innerhalb des Projekts — außerhalb
   liegt `File ... is outside project, library, and SDK roots`.
-- **Host-Terminal**: `idea_execute_terminal_command` ist durch die IntelliJ-MCP-Whitelist
+- **Host-Terminal**: `mcp-gateway_execute_terminal_command` ist durch die IntelliJ-MCP-Whitelist
   (Deny-by-Default, nur lesende Tools) nicht verfügbar.
 
 ### Lösung: `.kube` als zusätzlichen Read-only-Workspace mounten
@@ -32,7 +32,7 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 > kubectl hat lediglich keinen konfigurierten Cluster. Einfacher Start ohne Mount:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
+sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
 ```
 
 > Mit Kubernetes-Zugriff (Mounts werden nur bei Sandbox-Erstellung gesetzt — beendet die
@@ -41,7 +41,7 @@ sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandb
 ```powershell
 # Recreate:
 sbx rm opencode-sandbox --force
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro"
 ```
 
 | Aspekt | Detail |

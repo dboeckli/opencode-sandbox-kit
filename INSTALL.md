@@ -11,12 +11,12 @@ Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 | **Docker Desktop** (Windows) | Laufender Docker Daemon — nativ **oder** Ubuntu-WSL-Setup (Laufzeitumgebung: **Ubuntu 26.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
-| **IntelliJ IDEA** | MCP-Server-Plugin auf `127.0.0.1:64342/sse` + Firewall-Freigabe Port 64342 | IntelliJ MCP (optional) |
+| **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64342` + Firewall-Freigabe Port 64342 | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe Abschnitt 5) |
 
 > **WSL als Alternative:** Standard ist Windows PowerShell + Docker Desktop. Das Kit läuft aber auch aus einem
 > **Ubuntu-WSL-Setup** heraus (Laufzeitumgebung dort: **Ubuntu 26.04**). `sbx run` / `sbx exec`
-> und der IntelliJ-MCP-Zugriff über `host.docker.internal:64342` funktionieren dort genauso — inkl.
+> und die IntelliJ-MCP-Anbindung über den sbx MCP Gateway funktionieren dort genauso — inkl.
 > Secret-Injection (gh/ctx7) und Network-Allow-List.
 
 ## 2. Docker Desktop konfigurieren
@@ -34,64 +34,89 @@ Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 2. **Kubernetes** (optional): Docker Desktop → **Settings → Kubernetes → "Enable Kubernetes"** — für kubectl/helm
    mit dem integrierten Cluster. In der Sandbox per Host-kubeconfig (`"$env:USERPROFILE\.kube:ro"` mounten).
 
-## 3. IntelliJ MCP Server aktivieren
+## 3. IntelliJ MCP Server aktivieren + Gateway-Registrierung
 
-Damit der Agent die IntelliJ-MCP-Tools (`idea_*`) nutzen kann, muss auf dem Windows-Host die IDE als
+Damit der Agent die IntelliJ-MCP-Tools nutzen kann, muss auf dem Windows-Host die IDE als
 MCP-Server laufen:
 
-1. **IntelliJ IDEA 2025.2 oder neuer** installieren — seit 2025.2 ist ein MCP-Server in der IDE integriert.
+1. **IntelliJ IDEA 2025.2 oder neuer** installieren — seit 2025.2 ist ein MCP-Server in der IDE integriert
+   (Version 2026.2.1 bietet Streamable HTTP unter `/stream` und klassisches SSE unter `/sse`).
 2. **MCP Server Plugin aktivieren**: Das Plugin ist gebündelt und standardmäßig aktiviert. Falls
-   `idea_*`-Tools nicht verfügbar sind, den Plugin-Status unter **Settings → Plugins** prüfen
+   die IntelliJ-MCP-Tools nicht verfügbar sind, den Plugin-Status unter **Settings → Plugins** prüfen
    (`MCP Server` muss aktiviert sein).
-3. **IDE laufen lassen** und das Projekt öffnen — der MCP-Server lauscht auf `127.0.0.1:64342/sse`.
-4. **Port 64342 in der Windows-Firewall freigeben** (nötig für den Zugriff aus der Sandbox über
-   `host.docker.internal:64342`).
+3. **IDE laufen lassen** und das Projekt öffnen — der MCP-Server lauscht auf `127.0.0.1:64342`.
+4. **Port 64342 in der Windows-Firewall freigeben** (nötig für den Zugriff vom Host-Gateway aus).
+
+**Gateway-Registrierung (Issue #57, dokumentierter Weg):** Das Kit konfiguriert IntelliJ MCP **nicht** mehr
+direkt in den Agent-Configs. Stattdessen wird der Server einmalig auf dem Host registriert und über den
+**sbx MCP Gateway** in die Sandbox geliefert:
+
+```powershell
+# 1. Einmalig registrieren (Endpoint /stream = Streamable HTTP; --skip-ssrf-check, da Loopback-Host)
+sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check
+
+# 2. Verifikation
+sbx mcp ls          # erwartet: idea   remote   ✓ ready
+sbx mcp inspect idea # erwartet: URL http://localhost:64342/stream, Transport: streamable-http
+
+# 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
+sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
+```
+
+> **Warum nicht `/sse`?** Der sbx MCP Gateway spricht bei Remote-Servern Streamable HTTP (POST `initialize`).
+> `/sse` ist klassisches SSE → `Method Not Allowed` (405). Der IntelliJ-Server bietet beide Transporte;
+> für den Gateway ist `/stream` der richtige Endpoint.
 
 > Optional (z. B. für weitere MCP-Server im Kit): unter **Settings → Tools → MCP Server** die SSE-URL
-> `http://127.0.0.1:64342/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig — die
-> Konfiguration liegt bereits in `opencode.jsonc` / `settings.json`.
+> `http://127.0.0.1:64342/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig.
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
-Für **OpenCode (Mixin-Kit), Claude Code und Mammouth Code (Agent-Kit)** ist der Zugriff auf die `idea_*`-Tools
-per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen erlaubt). Die Config liegt je
-Agent-Location vor:
+Für **OpenCode (Mixin-Kit), Claude Code und Mammouth Code (Agent-Kit)** ist der Zugriff auf die über den
+Gateway gelieferten IntelliJ-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen
+erlaubt). Die Tools kommen durch den Gateway-Namespace: `mcp-gateway_<tool>` (OpenCode/Mammouth) bzw.
+`mcp__mcp-gateway__<tool>` (Claude Code). Die Config liegt je Agent-Location vor:
 
 **OpenCode / Mammouth** (Mammouth ist ein OpenCode-Fork und nutzt dieselben `permission`-Regeln und
 Plugin-Hooks) — unter `~/.config/opencode/opencode.jsonc` und `~/.config/mammouth/opencode.jsonc`
 (nur Agent-Kit):
 
-- `"idea_*": "deny"` zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt**: opencode wertet die letzte
+- `"mcp-gateway_*": "deny"` zuerst, danach gezielte `allow`-Regeln. **Reihenfolge zählt**: opencode wertet die letzte
   passende Rule aus (`findLast`), deshalb Deny vor Allows.
-- **Erlaubt (nur lesend)**: `idea_get_*`, `idea_list_*`, `idea_search_*`, `idea_read*`, `idea_generate_*`,
-  `idea_xdebug_get_*`, `idea_xdebug_list_*` sowie einzeln `idea_analyze_calls`, `idea_git_status`,
-  `idea_lint_files`, `idea_skill_search`, `idea_fetch_query_result`, `idea_preview_table_data`,
-  `idea_test_database_connection`, `idea_introspect_schema`, `idea_run_inspection_kts`,
-  `idea_validate_inspection_kts`.
-- **`ask`**: `idea_execute_run_configuration` — nur mit Bestätigung und nur für die im Run-Config-Guard
+- **Erlaubt (nur lesend)**: `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_search_*`, `mcp-gateway_read*`,
+  `mcp-gateway_generate_*`, `mcp-gateway_xdebug_get_*`, `mcp-gateway_xdebug_list_*` sowie einzeln
+  `mcp-gateway_analyze_calls`, `mcp-gateway_git_status`, `mcp-gateway_lint_files`,
+  `mcp-gateway_fetch_query_result`, `mcp-gateway_preview_table_data`, `mcp-gateway_test_database_connection`,
+  `mcp-gateway_introspect_schema`, `mcp-gateway_run_inspection_kts`, `mcp-gateway_validate_inspection_kts`,
+  `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ — bewusst erlaubt, ohne ask),
+  `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor — bewusst erlaubt, ohne ask).
+- **`ask`**: `mcp-gateway_execute_run_configuration` — nur mit Bestätigung und nur für die im Run-Config-Guard
   erlaubte Config.
-- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`idea_apply_patch`, `idea_execute_terminal_command`,
-  `idea_execute_tool`, `idea_open_file_in_editor`, `idea_reformat_file`, `idea_rename_refactoring`,
-  `idea_build_project`, `idea_notebookEdit`, `idea_xdebug_set_*`, `idea_xdebug_run_to_line`,
-  `idea_xdebug_control_session`, `idea_xdebug_start_debugger_session`, DB-Connection-Änderungen, ...) — sie
+- **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`mcp-gateway_apply_patch`,
+  `mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
+  `mcp-gateway_reformat_file`, `mcp-gateway_rename_refactoring`,
+  Notebook-Schreibzugriffe, `mcp-gateway_xdebug_set_*`, `mcp-gateway_xdebug_run_to_line`,
+  `mcp-gateway_xdebug_control_session`, `mcp-gateway_xdebug_start_debugger_session`,
+  DB-Connection-Änderungen, ...) sowie die Gateway-Meta-Tools (`mcp-gateway_code-mode`, `mcp-gateway_mcp-exec`,
+  `mcp-gateway_mcp-find`, `mcp-gateway_mcp-add`, `mcp-gateway_mcp-config-set`) — sie
   tauchen gar nicht erst in der Tool-Liste auf.
 
 **Claude Code** — `~/.claude/settings.json` (`permissions`-Block): kein Deny-by-Default-Wildcard wie bei
-OpenCode (Claude wertet `deny` vor `allow` aus, ein breites `mcp__idea__*`-Deny würde alle Allows
+OpenCode (Claude wertet `deny` vor `allow` aus, ein breites `mcp__mcp-gateway__*`-Deny würde alle Allows
 überdecken). Stattdessen eine explizite **`allow`-Whitelist** der nur-lesenden MCP-Tools als
-`mcp__idea__<tool>` (analog zur OpenCode-Allowlist), eine **`deny`-Blocklist** für die
+`mcp__mcp-gateway__<tool>` (analog zur OpenCode-Allowlist), eine **`deny`-Blocklist** für die
 schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Standard-Prompt zurück.
-`idea_execute_run_configuration` ist nicht in `allow` — der PreToolUse-Guard trifft die Entscheidung.
+`mcp__mcp-gateway__execute_run_configuration` ist nicht in `allow` — der PreToolUse-Guard trifft die Entscheidung.
 
 **Run-Config-Guard**: MCP-Tools reporten dem Permission-System immer
-`resource: "*"` (nie die Tool-Inputs), deshalb kann `idea_execute_run_configuration` nicht per reiner
+`resource: "*"` (nie die Tool-Inputs), deshalb kann `mcp-gateway_execute_run_configuration` nicht per reiner
 `permission`-Config auf einzelne Run-Configs begrenzt werden.
 - OpenCode/Mammouth (`~/.config/opencode/plugins/intellij-run-config-guard.js` und
   `~/.config/mammouth/plugins/intellij-run-config-guard.js` im Agent-Kit): Plugin-Hook `tool.execute.before`
-  liest `configurationName` und erlaubt ausschließlich `local-test-kits-validate-only` — jede andere Config
-  wirft einen Fehler.
+  auf Tool `mcp-gateway_execute_run_configuration` liest `configurationName` und erlaubt ausschließlich
+  `local-test-kits-validate-only` — jede andere Config wirft einen Fehler.
 - Claude Code (`~/.config/sandbox-kit/intellij-run-config-guard.sh`): PreToolUse-Hook gematcht auf
-  `mcp__idea__execute_run_configuration`. Liest `tool_input.configurationName`; erlaubt
+  `mcp__mcp-gateway__execute_run_configuration`. Liest `tool_input.configurationName`; erlaubt
   `local-test-kits-validate-only` (exit 0), blockt alles andere (`permissionDecision: deny`, exit 2). Andere
   MCP-Tools passieren den Hook unverändert.
 
@@ -191,7 +216,7 @@ Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-em
 Firmennetz erreichbar) das separate Kit `claude-zurich-agent/` verwenden:
 
 ```powershell
-sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 sbx secret set zurich
 ```
 
@@ -408,26 +433,30 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 
 ## 6. Sandbox starten
 
+> **IntelliJ MCP vorab registrieren** (einmalig, siehe Abschnitt 3): `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`
+> — dann `--static-mcp idea` in den `sbx run`-Kommandos verwenden (bzw. `sbx mcp load idea --sandbox <name>`
+> für bereits laufende Sandboxes).
+
 ```powershell
 # Template-Version gepinnt auf 0.5.0 (alle drei Kits, gleiche Version; Mammouth via spec-Image, kein -t nötig)
 
 # OpenCode (Home-Standard)
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
+sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
 
 # Claude Code (Home, gegen api.anthropic.com)
-sbx run claude --name claude-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 
 # Claude Code gegen den Zurich-LiteLLM-Proxy (Büro)
-sbx run claude --name claude-zurich --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 
 # Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
-sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/
+sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/
 ```
 
 Projekt einbinden + Kubernetes-Support:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro"
 ```
 
 Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md`](AGENTS.md#commands) und

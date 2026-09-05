@@ -22,7 +22,7 @@ The full inventory of tools documented via Context7 — with their ctx7 library 
 
 When you need current information about a library, framework, SDK, API, CLI tool, or cloud service, use this order:
 
-1. **IntelliJ MCP** — `idea_*` tools (`idea_get_symbol_info`, `idea_search_symbol`, `idea_analyze_calls`, `idea_read_file`) are the **primary source for the project itself**: navigate code, get quick documentation, browse external & decompiled dependencies loaded in the IDE. Use it first for project-internal questions. Requires IntelliJ IDEA running on the host.
+1. **IntelliJ MCP** — `mcp__mcp-gateway__*` tools (`mcp__mcp-gateway__get_symbol_info`, `mcp__mcp-gateway__search_symbol`, `mcp__mcp-gateway__analyze_calls`, `mcp__mcp-gateway__read_file`) are the **primary source for the project itself**: navigate code, get quick documentation, browse external & decompiled dependencies loaded in the IDE. Use it first for project-internal questions. Requires IntelliJ IDEA running on the host and the `idea` MCP server registered/loaded (see the IntelliJ IDEA MCP section below).
 2. **Context7** — `npx ctx7 docs <libraryId> <query>` (find unknown IDs via `npx ctx7 library "<name>" "<topic>"`) is the **primary source for external library, framework, SDK, API, and CLI documentation**.
 3. **GitHub / `gh`** — `gh api` / `gh release` for anything hosted on GitHub and for version/release info (e.g. `gh api repos/anomalyco/opencode/releases/latest`)
 4. **Web search** — `websearch` / `webfetch` only as last resort, and only against the allow-listed hosts in the network policy below.
@@ -125,7 +125,7 @@ This sandbox is provisioned by the opencode-sandbox-kit. The following tools are
 
 ## IntelliJ IDEA MCP
 
-Connected via `host.docker.internal:64342/sse`; tools prefixed with `idea_` (symbol search, read file, build, inspect problems, SQL, debugger) and listed each session. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority). Access is restricted to a read-only whitelist configured in `~/.claude/settings.json` (`permissions`); `idea_execute_run_configuration` is further limited to `local-test-kits-validate-only` by the PreToolUse hook `~/.config/sandbox-kit/intellij-run-config-guard.sh`.
+Connected via the sbx MCP gateway (`mcp-gateway`, key in `~/.claude.json`); the IntelliJ MCP server runs on the Windows host (registered once with `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`, loaded via `--static-mcp idea` or `sbx mcp load idea --sandbox`). Tools arrive through the gateway and are named `mcp__mcp-gateway__<tool>` (e.g. `mcp__mcp-gateway__get_symbol_info`, `mcp__mcp-gateway__execute_run_configuration`) — the direct `idea`/`mcp__idea__` prefix no longer exists. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority). Access is restricted to a read-only whitelist configured in `~/.claude/settings.json` (`permissions`); `mcp__mcp-gateway__execute_run_configuration` is further limited to `local-test-kits-validate-only` by the PreToolUse hook `~/.config/sandbox-kit/intellij-run-config-guard.sh`.
 
 ## Context7
 
@@ -169,7 +169,7 @@ Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-p
 
 ## Helm
 
-Helm 3.21.3 (v3) at `/usr/local/bin/helm`, Helm 4.2.4 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH (kokuwaio/helm-maven-plugin 6.17.0 ist nicht v4-kompatibel); v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
+Helm 3.21.3 (v3) at `/usr/local/bin/helm`, Helm 4.2.4 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
 
 ## Runtime tools / CLIs
 

@@ -22,7 +22,8 @@ agentInstructions:
     absolute host path. `sudo` is passwordless; use it for package installs.
     Docker is available inside the sandbox; containers you start are isolated
     in the microVM. The IntelliJ MCP server runs on the Windows host and is
-    reached via `host.docker.internal:64342`.
+    delivered via the sbx MCP Gateway (registration `sbx mcp add idea --url
+    http://localhost:64342/stream`, sandbox with `--static-mcp idea`).
 
 permissions:
   network:
@@ -57,7 +58,8 @@ permissions:
       # JetBrains Help-Doku (IntelliJ HTTP-Client Feature-Seiten, z. B. www.jetbrains.com/help/idea/)
       - "jetbrains.com:443"
       - "www.jetbrains.com:443"
-      # IntelliJ IDEA MCP Server (Windows Host via Docker Desktop DNS)
+      # IntelliJ IDEA MCP Server (Windows Host; MCP-Verbindung via sbx MCP Gateway → localhost:64342/stream,
+      # Allow-Eintrag nur für den Startup-Health-Check, der die Host-Erreichbarkeit aus der Sandbox prüft)
       - "localhost:64342"
       - "127.0.0.1:64342"
       - "host.docker.internal:64342"

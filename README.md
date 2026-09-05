@@ -9,37 +9,70 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7,
 
 ## Quickstart
 
+> **IntelliJ MCP (Voraussetzung, einmalig):** Der IntelliJ-MCP-Server läuft auf dem Windows-Host und wird über den
+> sbx MCP Gateway in die Sandbox geliefert. Einmalig registrieren und Sandboxes mit `--static-mcp idea` erzeugen
+> (bzw. `sbx mcp load idea --sandbox <name>` für laufende Sandboxes). Details + Troubleshooting:
+> [INSTALL.md → "IntelliJ MCP Server aktivieren"](INSTALL.md#3-intellij-mcp-server-aktivieren-gateway-registrierung)
+> bzw. README → "IntelliJ MCP connection failed".
+> ```powershell
+> sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check
+> ```
+
 ```powershell
 # Lokales Kit (Entwicklung) — Template-Version gepinnt (0.5.0), siehe Hinweis unten.
 # Mammouth (kind:sandbox) braucht kein -t: die Template-Version steckt im spec-Image (mammouth-agent/spec.yaml).
-sbx run opencode --name opencode-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode
-sbx run claude   --name claude-sandbox   --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (Home)
-sbx run claude   --name claude-zurich    --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro)
-sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit)
+sbx run opencode --name opencode-sandbox `
+    --static-mcp idea `
+    --kit ./opencode-agent/ `
+    -t docker/sandbox-templates:opencode-docker-0.5.0
+sbx run claude --name claude-sandbox `
+    --static-mcp idea `
+    --kit ./opencode-agent/ `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude --name claude-zurich `
+    --static-mcp idea `
+    --kit ./claude-zurich-agent/ `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run mammouth --name mammouth-sandbox `
+    --static-mcp idea `
+    --kit ./mammouth-agent/
 
 # Kit direkt aus GitHub (ohne Clone) — einmalig kit.allowedSources setzen (siehe INSTALL.md).
-# Zum Pinnen hier ebenfalls `-t docker/sandbox-templates:opencode-docker-0.5.0` (OpenCode/Mammouth)
-# bzw. `-t docker/sandbox-templates:claude-code-docker-0.5.0` (Claude) ergänzen.
+# Template gepinnt via `-t docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 sbx run opencode --name opencode-sandbox `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+    --static-mcp idea `
+    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+    -t docker/sandbox-templates:opencode-docker-0.5.0
 sbx run claude --name claude-sandbox `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+    --static-mcp idea `
+    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0
 sbx run claude --name claude-zurich `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent"
+    --static-mcp idea `
+    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0
 sbx run mammouth --name mammouth-sandbox `
+    --static-mcp idea `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 
 # Kit mit anderem Projekt verwenden
 sbx run opencode --name spring-6-reactive `
+    --static-mcp idea `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+    -t docker/sandbox-templates:opencode-docker-0.5.0 `
     "C:\development\projects\spring-6-reactive"
 sbx run claude --name spring-6-reactive `
+    --static-mcp idea `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\spring-6-reactive"
 sbx run claude --name spring-6-reactive `
+    --static-mcp idea `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" `
+    -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\spring-6-reactive"
 sbx run mammouth --name spring-6-reactive `
+    --static-mcp idea `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     "C:\development\projects\spring-6-reactive"
 ```
@@ -61,16 +94,24 @@ sbx run mammouth --name spring-6-reactive `
 
 ```bash
 # Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
+# Template gepinnt via -t (Mammouth: Pin im spec-Image).
 sbx run opencode --name spring-6-reactive \
+    --static-mcp idea \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
+    -t docker/sandbox-templates:opencode-docker-0.5.0 \
     "/mnt/c/development/projects/spring-6-reactive"
 sbx run claude --name spring-6-reactive \
+    --static-mcp idea \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
+    -t docker/sandbox-templates:claude-code-docker-0.5.0 \
     "/mnt/c/development/projects/spring-6-reactive"
 sbx run claude --name spring-6-reactive \
+    --static-mcp idea \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" \
+    -t docker/sandbox-templates:claude-code-docker-0.5.0 \
     "/mnt/c/development/projects/spring-6-reactive"
 sbx run mammouth --name spring-6-reactive \
+    --static-mcp idea \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     "/mnt/c/development/projects/spring-6-reactive"
 ```
@@ -78,21 +119,25 @@ sbx run mammouth --name spring-6-reactive \
 ```powershell
 # Kubernetes-Support: kubeconfig (read-only) mounten, damit kubectl/helm im Sandbox-Cluster funktionieren
 sbx run opencode --name opencode-sandbox `
+    --static-mcp idea `
     --kit ./opencode-agent/ `
     -t docker/sandbox-templates:opencode-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
 sbx run claude --name claude-sandbox `
+    --static-mcp idea `
     --kit ./opencode-agent/ `
     -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
 sbx run claude --name claude-zurich `
+    --static-mcp idea `
     --kit ./claude-zurich-agent/ `
     -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
 sbx run mammouth --name mammouth-sandbox `
+    --static-mcp idea `
     --kit ./mammouth-agent/ `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro"
@@ -108,7 +153,7 @@ sbx kit add mammouth-sandbox `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 ```
 
-Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. IntelliJ MCP wird über `host.docker.internal:64342` erreicht.
+Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. Der IntelliJ-MCP-Server läuft auf dem Host (`localhost:64342`) und wird über den **sbx MCP Gateway** (`mcp-gateway.docker.internal`, host-seitig registriert via `sbx mcp add`) in die Sandbox geliefert.
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
@@ -117,7 +162,7 @@ Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über
 │  ┌────────────────────────────────────────────────────────────┐    │
 │  │                    IntelliJ IDEA                           │    │
 │  │                                                            │    │
-│  │  MCP Server läuft auf http://127.0.0.1:64342/sse           │    │
+│  │  MCP Server läuft auf http://127.0.0.1:64342/stream     │    │
 │  └──────────────────────┬─────────────────────────────────────┘    │
 │                         │ Port 64342                               │
 │                         ▼                                          │
@@ -138,8 +183,8 @@ Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über
 │  │  │  ┌────────────────────────────────────────────────┐  │  │    │
 │  │  │  │    opencode (CLI Agent)                        │  │  │    │
 │  │  │  │                                                │  │  │    │
-│  │  │  │  MCP Client ───► host.docker.internal:         │  │  │    │
-│  │  │  │                 64342/sse ──► Proxy ──► IDEA   │  │  │    │
+│  │  │  │MCP Client ───► sbx MCP Gateway                 │  │  │    │
+│  │  │  │(mcp-gateway.docker.internal ─► IDEA)           │  │  │    │
 │  │  │  │                                                │  │  │    │
 │  │  │  │  docker (CLI) ───► isolierter Docker Daemon    │  │  │    │
 │  │  │  │                   (im MicroVM, nicht Host)     │  │  │    │
@@ -181,7 +226,7 @@ flowchart TB
 
                 Agent -->|"docker CLI"| Dockerd
                 Agent -->|"liest / schreibt"| FS
-                Agent -->|"MCP Client\nvia host.docker.internal:64342"| Proxy
+                Agent -->|"MCP Client via sbx MCP Gateway\n(mcp-gateway.docker.internal)"| Proxy
             end
 
             Proxy -->|"forward"| IDE
@@ -237,12 +282,15 @@ sondern vom Template beim `sbx run`:
 
 | Agent | Template | Start-Command |
 |-------|----------|---------------|
-| OpenCode | `opencode-docker` (Pin `0.5.0`) | `sbx run opencode --name my-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` |
-| Claude Code | `claude-code-docker` (Pin `0.5.0`) | `sbx run claude --name my-sandbox --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` |
-| Mammouth Code | `opencode-docker` (Pin `0.5.0`, eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/` (Pin im spec-Image) |
+| OpenCode | `opencode-docker` (Pin `0.5.0`) | `sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` |
+| Claude Code | `claude-code-docker` (Pin `0.5.0`) | `sbx run claude --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` |
+| Mammouth Code | `opencode-docker` (Pin `0.5.0`, eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/` (Pin im spec-Image) |
 
-Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via
-`host.docker.internal:64342`. Die jeweilige Konfiguration wird automatisch gelesen:
+> **IntelliJ MCP via sbx MCP Gateway:** Einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`
+> (Host-Loopback, SSRF-Guard umgehen), dann `--static-mcp idea` beim Erzeugen oder `sbx mcp load idea --sandbox <name>`.
+> Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP über den Gateway
+> (`mcp-gateway_<tool>` in OpenCode/Mammouth, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
+> Konfiguration wird automatisch gelesen:
 
 - **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
@@ -265,7 +313,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
 - **Modell**: `deepseek/deepseek-v4-flash` (DeepSeek V4 Flash) als Default
-- **IntelliJ MCP**: SSE-Endpoint `http://host.docker.internal:64342/sse`
+- **IntelliJ MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`), keine direkte `mcp.idea`-Config
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
 
@@ -290,7 +338,7 @@ curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.17.11.2 bash
 - **Modell**: `claude-sonnet-4-6` als Default (`"model"`). Zusätzlich per Env-Variablen abgesichert
   (`ANTHROPIC_DEFAULT_SONNET_MODEL` + `ANTHROPIC_MODEL` via Kit-`environment.variables`), damit das Template
   die settings.json nicht mit einem Default-Modell (Opus 5) überschreiben kann.
-- **IntelliJ MCP**: SSE-Endpoint `http://host.docker.internal:64342/sse`
+- **IntelliJ MCP**: über den sbx MCP Gateway (`mcp__mcp-gateway__<tool>`), keine direkte `mcpServers.idea`-Config
 - **StatusLine**: `bash ~/.claude/statusline.sh` – zeigt Modell, Kontext-Tokens, Kosten, geänderte Zeilen und Session-Dauer
 - **SessionStart-Hook**: führt die Sandbox-Checks aus und übergibt den Report als System-Message
   (StatusLine + Hooks liegen in `managed-settings.json` unter `/etc/claude-code/` – höchste Precedence,
@@ -439,7 +487,7 @@ Stellen nichts ändern.
 
 Verifikation in einer laufenden Sandbox: `npm config get bin-links` → `false` (das `npm_config_bin_links`-Env überschreibt den Default).
 
-> **Helm v3 vs. v4 — beide installiert:** `kokuwaio/helm-maven-plugin` (io.kokuwa.maven, derzeit 6.17.0) ist **nicht mit Helm v4 kompatibel** (offenes Issue [#427](https://github.com/kokuwaio/helm-maven-plugin/issues/427)): Das `registry-login`-Goal übergibt die volle Registry-URL an `helm registry login` — v3 gab dafür nur eine Warnung, **v4 bricht mit `invalid reference: invalid registry` ab**. Das betrifft den `helm push`/Upload (z. B. im spring-6-reactive-Build). Ein Fix-Release existiert noch nicht (nur 6.17.1-SNAPSHOT auf master). Daher ist **v3 der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3) — das Plugin läuft über `useLocalHelmBinary=true` mit der Sandbox-Helm-Version. **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit für alles andere aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
 
 ### Repsy Doku (offline)
 
@@ -504,28 +552,47 @@ sbx rm opencode-sandbox --force
 
 ### IntelliJ MCP connection failed (WSL2 / Docker)
 
-Der IntelliJ MCP-Forwarder läuft auf Windows unter `127.0.0.1:64342`.
+Seit Issue #57 läuft der IntelliJ MCP über den **sbx MCP Gateway** (dokumentierter Weg). Der Gateway verbindet sich
+vom Windows-Host aus mit dem IntelliJ-MCP-Server (`127.0.0.1:64342`, Endpoint `/stream`). Voraussetzungen:
 
-**Via `host.docker.internal` (Standard, funktioniert mit Docker Desktop unter Windows):**  
-Im Sandbox-Kit ist die MCP-URL auf `host.docker.internal:64342` konfiguriert. Docker Desktop löst
-diese Adresse automatisch auf den Windows-Host auf (inkl. Loopback). Funktioniert auch ohne WSL
-`networkingMode=mirrored`.
+```powershell
+sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check   # einmalig registrieren
+sbx run opencode --name my-sandbox `
+    --static-mcp idea `
+    --kit ./opencode-agent/ `
+    -t docker/sandbox-templates:opencode-docker-0.5.0
+```
 
-> **Wichtig:** Aus dem Container heraus ist `127.0.0.1`/`localhost` der Loopback des Containers selbst,
-> nicht der Host. Die MCP-URL darf daher **nicht** auf `127.0.0.1` geändert werden — das funktioniert
-> nur, wenn der Agent direkt in WSL läuft (ohne Container).
+- **Registration nötig**: Ohne `sbx mcp add idea …` und ohne `--static-mcp idea` (oder `sbx mcp load idea --sandbox`)
+  sind keine IntelliJ-MCP-Tools verfügbar — der Gateway lädt nur registrierte Server.
+- **Endpoint `/stream`**: Der JetBrains-Server (2026.2.1) bietet Streamable HTTP unter `/stream`
+  (nicht `/sse`); `/sse` ist klassisches SSE und vom Gateway nicht nutzbar (POST `initialize` → 405).
+- **`--skip-ssrf-check`**: Die SSRF-Guard blockt Loopback-Hosts; `localhost` ist hier sicher (eigener IntelliJ).
+- **Registration lebt auf dem Host**: Der Gateway erreicht IntelliJ über `localhost` (Host-Seite), nicht über
+  `host.docker.internal` aus der Sandbox.
+
+> **Wichtig (Legacy, vor Issue #57):** Bei der alten Direkt-Config war die MCP-URL auf `host.docker.internal:64342/sse`
+> konfiguriert und die Sandbox verband sich direkt mit dem Host. Dieser Weg ist entfernt. Für Health-Checks
+> (`[startup-checks] intellij-mcp:OK`) wird die Erreichbarkeit weiterhin aus der Sandbox über
+> `host.docker.internal:64342/sse` geprüft — das bestätigt nur, dass IntelliJ auf dem Host läuft (Voraussetzung
+> für den Gateway), nicht dass der Gateway verbunden ist.
 
 **Manuelle Verifikation vom Host** (PowerShell oder WSL):
 
 ```bash
+# 1) IntelliJ-Server läuft? (Host-Seite; Health-Check-Pfad wie im Sandbox-Startup-Check)
 sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
+
+# 2) Registration + Gateway-Load?
+sbx mcp ls
+sbx mcp load idea --sandbox opencode-sandbox    # falls Sandbox ohne --static-mcp erzeugt wurde
 ```
 
-Erwartet: `HTTP 200` (das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s;
-nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal).
+Erwartet (1): `HTTP 200` (das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s;
+nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal). (2) `sbx mcp ls` zeigt `idea   remote   ✓ ready`.
 
-Falls `host.docker.internal` nicht verfügbar sein sollte (z. B. Docker Engine ohne Docker Desktop):
-den MCP-Server im IntelliJ-Plugin auf `0.0.0.0` binden lassen und die Windows-Host-IP verwenden.
+Falls die Gateway-Verbindung fehlschlägt (Log: `connect to idea: … Method Not Allowed`): prüfen, dass der Endpoint
+`/stream` (nicht `/sse`) registriert ist — `sbx mcp inspect idea` muss `URL: http://localhost:64342/stream` zeigen.
 Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
 
 ## Caveats
