@@ -212,6 +212,21 @@ für den Kit-Service `github-maven` wird beim ersten Lauf automatisch angelegt (
 > **Verifikation:** Nur echte Maven-Builds (`./mvnw validate` etc.) sind repräsentativ — `mvn dependency:get`
 > ignoriert settings-`<proxies>` und läuft an der Injection vorbei (401 dort ist ein Fehlalarm).
 
+
+### Maven Host-Cache wiederverwenden (optional)
+
+Um den lokal gefüllten Maven-Cache des Hosts zu nutzen (statt Neu-Download je Sandbox), den Host
+`~/.m2/repository` **read-only** mitmounten (keine Credentials, nur Artefakte):
+
+```powershell
+sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "C:\development\maven-repo:ro"
+```
+
+Der settings.xml-Startup-Hook erkennt den Mount (`/c/Users/<user>/.m2/repository`, `/c/*/maven-repo` oder `/c/*/m2-repository`) und ergänzt ein aktives Profil mit
+`<repository id="host-cache" url="file://…">` (snapshots disabled). Maven prüft dann: Sandbox-lokal → Host-Cache
+(`file://`, kopiert lokal statt Netz) → echte Remotes (Central/GitHub Packages). Ohne Mount bleibt settings.xml
+unverändert; neu geladene Artefakte landen nur im Sandbox-lokalen Repo (Host-Cache bleibt read-only).
+
 ### Anthropic Authentication
 
 Für Claude Code in der Sandbox wird der Anthropic API-Key als Secret gespeichert und vom Proxy verwaltet – der Key liegt nie im Sandbox-Filesystem:
@@ -481,7 +496,7 @@ sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agen
 Projekt einbinden + Kubernetes-Support:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro"
+sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"
 ```
 
 Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md`](AGENTS.md#commands) und

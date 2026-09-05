@@ -238,7 +238,7 @@ setup:
         - python3
         - -c
         - |
-          import os
+          import glob, os
           path = os.path.expanduser('~/.m2/settings.xml')
           os.makedirs(os.path.dirname(path), exist_ok=True)
           content = '''<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
@@ -261,10 +261,36 @@ setup:
             </servers>
           </settings>
           '''
+          host_repos = []
+          for _pat in ('/c/Users/*/.m2/repository', '/c/*/maven-repo', '/c/*/m2-repository'):
+              host_repos = [p for p in glob.glob(_pat) if os.path.isdir(p)]
+              if host_repos:
+                  break
+          if host_repos:
+              url = 'file://' + host_repos[0]
+              profiles = (
+                  '  <profiles>\n'
+                  '    <profile>\n'
+                  '      <id>host-m2-cache</id>\n'
+                  '      <repositories>\n'
+                  '        <repository>\n'
+                  '          <id>host-cache</id>\n'
+                  '          <url>' + url + '</url>\n'
+                  '          <releases><enabled>true</enabled></releases>\n'
+                  '          <snapshots><enabled>false</enabled></snapshots>\n'
+                  '        </repository>\n'
+                  '      </repositories>\n'
+                  '    </profile>\n'
+                  '  </profiles>\n'
+                  '  <activeProfiles>\n'
+                  '    <activeProfile>host-m2-cache</activeProfile>\n'
+                  '  </activeProfiles>'
+              )
+              content = content.replace('</settings>', profiles + '</settings>')
           with open(path, 'w') as f:
               f.write(content)
       user: "1000"
-      description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com
+      description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com. Wenn ein read-only Host-Maven-Cache gemountet ist (/c/Users/*/.m2/repository), wird zusaetzlich ein <repository> 'host-cache' (file://, snapshots disabled) in einem aktiven Profil ergaenzt — Maven nutzt den Host-Cache vor den echten Remotes
     - command:
         - python3
         - -c
