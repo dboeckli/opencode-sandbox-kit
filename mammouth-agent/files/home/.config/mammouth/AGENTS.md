@@ -155,6 +155,17 @@ Docs for the languages and file formats used in this sandbox:
 ## gh (GitHub CLI)
 
 `gh` is available and authenticated via a proxy-injected token. `gh auth status` should work. Run `gh --help` to see all commands (repo, pr, issue, release, api, auth, ...). Use it for GitHub operations (repos, PRs, issues).
+
+## GitHub Packages Maven
+
+Maven-Builds mit Artifacts aus GitHub Packages (`maven.pkg.github.com`) funktionieren ohne manuelle Auth:
+Das Kit schreibt beim Start `~/.m2/settings.xml` mit einem `<proxies>`-Block (`gateway.docker.internal:3128` —
+Maven muss **durch den Sandbox-Proxy routen**) und dem Server `github`
+(`<password>${env.GITHUB_MAVEN_TOKEN}</password>`), und importiert die Proxy-CA in die JDK-`cacerts`. Der Proxy
+injiziert den klassischen `github-maven`-PAT als `Authorization: Bearer` bei Requests an `maven.pkg.github.com`
+(`scheme: basic`-Injection wird vom Proxy nicht unterstützt). `gh` selbst nutzt weiterhin das separate
+`github`-OAuth-Token. Nur echte Maven-Builds sind repräsentativ — `mvn dependency:get` ignoriert
+settings-`<proxies>` (401 dort ist ein Fehlalarm).
 Docs: `npx ctx7 docs /cli/cli <query>` (GitHub CLI).
 
 ## OpenCode

@@ -46,6 +46,8 @@ permissions:
       - "api.github.com:443"
       - "github.com:443"
       - "*.github.com:443"
+      # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
+      - "maven.pkg.github.com:443"
       - "objects.githubusercontent.com:443"
       - "githubusercontent.com:443"
       - "*.githubusercontent.com:443"
@@ -189,6 +191,15 @@ credentials:
         - domain: upload.cloudsmith.io
           header: X-Api-Key
           format: "%s"
+  - service: github-maven
+    description: "GitHub Packages Maven — klassisches PAT (nur read:packages, https://github.com/settings/tokens)"
+    apiKey:
+      name: GITHUB_MAVEN_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: maven.pkg.github.com
+          header: Authorization
+          format: "Bearer %s"
 
 setup:
   install:
@@ -200,8 +211,8 @@ setup:
       description: Install prettier
     - command: "npm_config_bin_links=true npm install -g renovate"
       description: Install renovate
-    - command: "apt-get update && apt-get install -y jq python3 python3-pip python3-yaml"
-      description: Install apt packages (jq, python3, pip, python3-yaml)
+    - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
+      description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"
       description: Install shfmt — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh jdk"
@@ -228,6 +239,64 @@ setup:
     - command: "ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth"
       description: Symlink mammouth into PATH for entrypoint
   startup:
+    - command:
+        - bash
+        - -c
+        - |
+          if [ -n "$PROXY_CA_CERT_B64" ]; then
+            echo "$PROXY_CA_CERT_B64" | base64 -d > /tmp/proxy-ca.crt 2>/dev/null || true
+          fi
+          CA=/tmp/proxy-ca.crt
+          [ -s "$CA" ] || CA=/usr/local/share/ca-certificates/proxy-ca.crt
+          KS="${JAVA_HOME:-/usr/local/java}/lib/security/cacerts"
+          ok=0
+          for i in $(seq 1 300); do
+            if [ -f "$CA" ] && [ -f "$KS" ] && command -v keytool >/dev/null 2>&1; then
+              keytool -delete -alias proxy-ca -keystore "$KS" -storepass changeit >/dev/null 2>&1 || true
+              if keytool -importcert -noprompt -alias proxy-ca -file "$CA" -keystore "$KS" -storepass changeit >/dev/null 2>&1; then
+                echo "proxy-ca in JDK cacerts importiert (Quelle: $CA)"
+                ok=1
+              else
+                echo "FEHLER: proxy-ca Import in JDK cacerts fehlgeschlagen"
+              fi
+              break
+            fi
+            sleep 1
+          done
+          [ "$ok" = 1 ] || echo "proxy-ca Import nach 300s uebersprungen (KS=$([ -f "$KS" ] && echo da || echo fehlt), CA=$([ -f "$CA" ] && echo da || echo fehlt))"
+      user: "0"
+      description: Import proxy CA into the JDK cacerts so Java/Maven trust the sandbox proxy TLS interception (required for Bearer credential injection into Maven builds)
+    - command:
+        - python3
+        - -c
+        - |
+          import os
+          path = os.path.expanduser('~/.m2/settings.xml')
+          os.makedirs(os.path.dirname(path), exist_ok=True)
+          content = '''<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+            <proxies>
+              <proxy>
+                <id>sbx-proxy</id>
+                <active>true</active>
+                <protocol>http</protocol>
+                <host>gateway.docker.internal</host>
+                <port>3128</port>
+                <nonProxyHosts>localhost|127.0.0.1|::1</nonProxyHosts>
+              </proxy>
+            </proxies>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>dboeckli</username>
+                <password>${env.GITHUB_MAVEN_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          '''
+          with open(path, 'w') as f:
+              f.write(content)
+      user: "1000"
+      description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com
     - command:
         - python3
         - /home/agent/.local/bin/regenerate-kubeconfig.py

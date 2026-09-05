@@ -12,8 +12,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, anthropic, mammouth, context7, openrouter, google, stackoverflow, cloudsmith und zurich
-    (sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set zurich — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, context7, openrouter, google, stackoverflow, cloudsmith und zurich
+    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set zurich — seit v0.38 ohne `-g`)
 
 Verwendung:
   python local-test-kits.py                 # alle 4 Kits testen (default: all)
@@ -81,6 +81,11 @@ INSTALL_SCRIPT_PAIRS = (
     ("opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "claude-zurich-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
+    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+     "mammouth-agent/files/home/.local/bin/install-apt-packages.sh",
+     "claude-zurich-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-agent/files/home/.local/bin/write-managed-settings.sh",
+     "claude-zurich-agent/files/home/.local/bin/write-managed-settings.sh"),
 )
 
 # Sandbox-Template-Version (alle drei Kits, eine Version fuer beide Template-Familien):
@@ -116,13 +121,13 @@ SCENARIO_KIT = {
     "mammouth": "mammouth-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
-    "claude": ("github", "anthropic", "context7", "stackoverflow", "cloudsmith"),
-    "claude-zurich": ("github", "anthropic", "context7", "stackoverflow", "cloudsmith", "zurich"),
-    "mammouth": ("github", "mammouth", "context7", "stackoverflow", "cloudsmith"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
+    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith"),
+    "claude-zurich": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "zurich"),
+    "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
-SECRET_ORDER = ("github", "anthropic", "mammouth", "context7", "openrouter", "google",
+SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "context7", "openrouter", "google",
                 "stackoverflow", "cloudsmith", "zurich")
 
 
@@ -829,6 +834,23 @@ def main():
         else:
             sfail("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)", out)
 
+        # Kit-deklarierter github-maven-Service (alle 3 Kits) → settings.xml mit
+        # <proxies> (Routing durch gateway.docker.internal:3128) + github-Server mit
+        # ${env.GITHUB_MAVEN_TOKEN} + Sentinel-Env-Variable + Proxy-CA in JDK-cacerts.
+        # Der Proxy injiziert den PAT als 'Authorization: Bearer' (scheme:basic wird nicht unterstützt);
+        # Maven muss durch den Proxy routen (<proxies>), damit die Injection greift.
+        maven_cmd = (
+            'test -f ~/.m2/settings.xml && grep -q "<id>github</id>" ~/.m2/settings.xml '
+            '&& grep -q "gateway.docker.internal" ~/.m2/settings.xml '
+            '&& grep -q "\\${env.GITHUB_MAVEN_TOKEN}" ~/.m2/settings.xml '
+            '&& keytool -list -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit 2>/dev/null | grep -q proxy-ca '
+            '&& echo "GITHUB_MAVEN_TOKEN=${GITHUB_MAVEN_TOKEN:-<unset>}"'
+        )
+        c2, out = exec_sandbox(s["name"], maven_cmd)
+        if c2 == 0 and "GITHUB_MAVEN_TOKEN=proxy-managed" in out:
+            pass_("github-maven maven wiring (settings.xml proxies+server, proxy-ca in cacerts, GITHUB_MAVEN_TOKEN=proxy-managed)")
+        else:
+            sfail("github-maven maven wiring (settings.xml proxies+server, proxy-ca in cacerts, GITHUB_MAVEN_TOKEN=proxy-managed)", out)
 
         if s.get("run_checks"):
             c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")

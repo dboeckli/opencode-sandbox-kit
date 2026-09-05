@@ -135,12 +135,13 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 
 > **`sbx secret` (v0.38+):** Das `-g`-Flag bei `sbx secret set` ist entfernt — Service-Secrets sind standardmäßig
 > **global**, der Service ist ein Positionsargument (`sbx secret set github`). Mit `--sandbox <name>` scopen.
-> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth) funktionieren identisch. Third-Party-v2-Kits brauchen
+> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth/github-maven) funktionieren identisch. Third-Party-v2-Kits brauchen
 > zusätzlich pro Service ein **Credential-Binding** (`%APPDATA%\sbx\credentials.yaml`; beim ersten Lauf interaktiv).
 
 | Service | Secret | Befehl | Benötigt für |
 |---------|--------|--------|--------------|
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set github -t "<token>"` | `gh` CLI |
+| GitHub Packages Maven | klassisches PAT, Scope `read:packages` | `sbx secret set github-maven -t "<pat>"` | Maven-Builds mit GitHub-Packages-Dependency |
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
 | Zurich | Zurich LiteLLM API-Key | `sbx secret set zurich` | Claude Code (Zurich-Proxy, `claude-zurich-agent/`) |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
@@ -163,8 +164,7 @@ Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-V
 | Anthropic | https://console.anthropic.com/settings/keys | https://console.anthropic.com/settings/billing |
 | OpenRouter | https://openrouter.ai/settings/keys | https://openrouter.ai/settings/credits |
 | DeepSeek | https://platform.deepseek.com/api_keys | https://platform.deepseek.com/top_up |
-| GitHub | https://github.com/settings/tokens | — |
-| Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
+| GitHub | https://github.com/settings/tokens | — || Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
 | Stack Overflow | https://stackapps.com/applications | — |
 | Cloudsmith | https://cloudsmith.io/user/settings/api-keys/ | https://cloudsmith.io/user/settings/billing/ |
 
@@ -186,6 +186,31 @@ Das Token wird via Proxy automatisch injiziert – `gh auth status` funktioniert
 
 > **Hinweis:** Für Private-Repo-Zugriff, Push oder PR/Issue-Erstellung wird zusätzlich das `repo`-Scope
 > benötigt. Dies kann via `gh auth refresh -h github.com -s repo` nachgefordert werden.
+
+### GitHub Packages Maven (`github-maven`)
+
+Maven-Builds, die ein Artifact aus **GitHub Packages** (`maven.pkg.github.com`) auflösen, brauchen ein
+**separates** klassisches PAT (nur Scope `read:packages`) — GitHub Packages akzeptiert kein OAuth-Token
+(`gho_…`) und das `github`-Secret bleibt unverändert für `gh`/`git push`:
+
+```powershell
+# 1. Klassisches PAT mit Scope read:packages anlegen: https://github.com/settings/tokens
+# 2. Secret registrieren
+sbx secret set github-maven -t "<classic-pat-read-packages>"
+```
+
+Das Kit wirkt beim Sandbox-Start über Startup-Hooks:
+- `~/.m2/settings.xml` mit `<proxies>`-Block (`gateway.docker.internal:3128`) und Server `github`
+  (Passwort `${env.GITHUB_MAVEN_TOKEN}`) — Maven muss **durch den Sandbox-Proxy routen**, damit die Injection greift.
+- Proxy-CA-Import in die JDK-`cacerts` (Java muss das TLS-Intercept des Proxys vertrauen).
+
+Der Proxy injiziert den echten `ghp_…`-Token als `Authorization: Bearer <pat>` bei Requests an
+`maven.pkg.github.com` (GitHub Packages akzeptiert den klassischen PAT als Bearer; `scheme: basic`-Injection wird
+vom Proxy nicht unterstützt). Der Token liegt nie im Sandbox-Filesystem. Das `credentials.yaml`-Binding
+für den Kit-Service `github-maven` wird beim ersten Lauf automatisch angelegt (in CI manuell vorab hinterlegen).
+
+> **Verifikation:** Nur echte Maven-Builds (`./mvnw validate` etc.) sind repräsentativ — `mvn dependency:get`
+> ignoriert settings-`<proxies>` und läuft an der Injection vorbei (401 dort ist ein Fehlalarm).
 
 ### Anthropic Authentication
 
