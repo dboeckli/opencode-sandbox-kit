@@ -127,6 +127,14 @@ This sandbox is provisioned by the opencode-sandbox-kit. The following tools are
 
 Connected via the sbx MCP gateway (`mcp-gateway`, key in `~/.claude.json`); the IntelliJ MCP server runs on the Windows host (registered once with `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, loaded via `--static-mcp idea` or `sbx mcp load idea --sandbox`). Tools arrive through the gateway and are named `mcp__mcp-gateway__<tool>` (e.g. `mcp__mcp-gateway__get_symbol_info`, `mcp__mcp-gateway__execute_run_configuration`) — the direct `idea`/`mcp__idea__` prefix no longer exists. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority). Access is restricted to a read-only whitelist configured in `~/.claude/settings.json` (`permissions`); `mcp__mcp-gateway__execute_run_configuration` is further limited to `local-test-kits-validate-only` by the PreToolUse hook `~/.config/sandbox-kit/intellij-run-config-guard.sh`.
 
+**Verbindung testen (wenn der User die IntelliJ-MCP-Verbindung prüfen will) — Ablauf:**
+
+1. **Verfügbare Tools abfragen**: alle in dieser Session verfügbaren Tool-Namen auflisten (die bereitgestellten MCP-Tools).
+2. **IntelliJ-Operationen verifizieren und zeigen**: unter den verfügbaren Tools nach dem IntelliJ-MCP-Präfix `mcp__mcp-gateway__` filtern und die vorhandenen Operationen sichtbar auflisten (z. B. `mcp__mcp-gateway__get_*`, `mcp__mcp-gateway__list_*`, `mcp__mcp-gateway__search_*`, `mcp__mcp-gateway__read*`, `mcp__mcp-gateway__git_status`, `mcp__mcp-gateway__search_symbol`, `mcp__mcp-gateway__get_symbol_info`, …). Sind keine IntelliJ-Tools darunter → nicht verbunden: dem User melden (IntelliJ muss laufen und das Projekt geöffnet sein; Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Laden via `--static-mcp idea` bzw. `sbx mcp load idea --sandbox`).
+3. **Read-Operation via IntelliJ ausführen**: eine lesende Operation aufrufen und das Ergebnis zeigen, z. B. `mcp__mcp-gateway__git_status` auf dem Projekt (Branch + Änderungen) oder `mcp__mcp-gateway__search_symbol` mit einer bekannten Klasse (z. B. `CamelApplication`). Nur lesende Tools verwenden — schreibende/ausführende sind deny.
+
+> **Pfad-Quirk**: `projectPath`/Projektparameter IMMER im Windows-Format übergeben (`C:/development/projects/<projekt>`). Linux-Pfade (z. B. `/c/development/...`) werden vom IntelliJ MCP abgelehnt. `projectPath` immer mitgeben, sobald bekannt.
+
 ## Context7
 
 Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated via `CONTEXT7_API_KEY` (placeholder `proxy-managed`, replaced by the proxy on requests to `context7.com`) — never shows the real key.
