@@ -86,7 +86,7 @@ Alle `--help`-Outputs der v0.39.0-Binary liegen offline unter `~/sbx-cli.md` (Ki
 Context7. Detaillierte Hintergrunddoku (Kits, Policy, Proxy): `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus
-`.github/workflows/validate.yml`, ggf. `v0.39.0` übergeben — die Doku muss den Renovate-verwalteten
+`.github/workflows/validate.yml`, ggf. `v0.42.0` übergeben — die Doku muss den Renovate-verwalteten
 Pin spiegeln, nicht das neueste Release). Der Validate-only-Lauf (`local-test-kits.py --validate-only`)
 vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 (Hinweis aufs Regen-Skript).

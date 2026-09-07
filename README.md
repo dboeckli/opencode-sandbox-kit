@@ -399,7 +399,7 @@ globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `zurich`, `mammo
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.39.0`), validiert alle 3 Kits (`sbx kit validate ./opencode-agent/`,
+  (`SBX_VERSION`, aktuell `v0.42.0`), validiert alle 3 Kits (`sbx kit validate ./opencode-agent/`,
   `./mammouth-agent/`, `./claude-zurich-agent/`) und prüft, dass die Install-Skript-Kopien
   (`files/home/.local/bin/`) in allen Kits identisch sind.
 - **`e2e.yml`** — bei jedem Push/PR + nightly (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
