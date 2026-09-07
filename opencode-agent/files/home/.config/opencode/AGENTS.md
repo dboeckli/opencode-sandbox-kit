@@ -125,7 +125,7 @@ This sandbox is provisioned by the opencode-sandbox-kit. The following tools are
 
 ## IntelliJ IDEA MCP
 
-Connected via the sbx MCP gateway (`mcp-gateway`); the IntelliJ MCP server runs on the Windows host (registered once with `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`, loaded via `--static-mcp idea` or `sbx mcp load idea --sandbox`). Tools arrive through the gateway namespace and are prefixed `mcp-gateway_` (e.g. `mcp-gateway_get_symbol_info`, `mcp-gateway_execute_run_configuration`) — the bare `idea_` prefix no longer exists. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority).
+Connected via the sbx MCP gateway (`mcp-gateway`); the IntelliJ MCP server runs on the Windows host (registered once with `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, loaded via `--static-mcp idea` or `sbx mcp load idea --sandbox`). Tools arrive through the gateway namespace and are prefixed `mcp-gateway_` (e.g. `mcp-gateway_get_symbol_info`, `mcp-gateway_execute_run_configuration`) — the bare `idea_` prefix no longer exists. Interacts with the IDE on the Windows host (requires IntelliJ running). Primary documentation source for the project itself (see lookup priority).
 
 ## Context7
 

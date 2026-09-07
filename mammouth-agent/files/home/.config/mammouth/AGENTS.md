@@ -51,7 +51,7 @@ Mammouth Code is not in Context7 (no `/mammouth-ai/code` library). Use the offic
 ## IntelliJ IDEA MCP
 
 The IntelliJ MCP server runs on the Windows host and is exposed through the sbx MCP gateway (`mcp-gateway`, host
-registration: `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`; loaded via `--static-mcp idea`
+registration: `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`; loaded via `--static-mcp idea`
 or `sbx mcp load idea --sandbox`). Tools arrive through the gateway and are prefixed `mcp-gateway_` (e.g.
 `mcp-gateway_analyze_calls`, `mcp-gateway_execute_run_configuration`) — the direct `idea_` prefix no longer exists.
 Exposed via a **permission-whitelist** in `~/.config/mammouth/opencode.jsonc` (Deny-by-Default, nur lesende

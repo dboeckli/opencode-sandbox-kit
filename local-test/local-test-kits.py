@@ -691,7 +691,7 @@ def main():
             info("  IntelliJ MCP: idea registriert → --static-mcp idea")
         else:
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
-                                      "(sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check)"))
+                                      "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
         code, _ = run_sbx(create_cmd, stream=True)
         if code != 0:
             sfail("sandbox create")
@@ -748,9 +748,11 @@ def main():
 
         mcp_cmd = (
             'code=""; '
+            'for port in 64615 64342; do '
             'for host in host.docker.internal 127.0.0.1 localhost; do '
-            'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 "http://$host:64342/sse" 2>/dev/null); '
-            '[ "$code" = "200" ] || [ "$code" = "206" ] && break; code=""; done; '
+            'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 "http://$host:$port/sse" 2>/dev/null); '
+            '[ "$code" = "200" ] || [ "$code" = "206" ] && break 2; code=""; '
+            'done; done; '
             'if [ "$code" = "200" ] || [ "$code" = "206" ]; then echo MCP-OK; else echo MCP-FAIL; fi'
         )
         c2, out = exec_sandbox(s["name"], mcp_cmd)
@@ -761,7 +763,8 @@ def main():
                                      "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
         else:
             sfail("intellij-mcp connection (via sbx exec)",
-                 "IntelliJ MCP muss auf dem Host laufen (127.0.0.1/localhost/host.docker.internal:64342)")
+                 "IntelliJ MCP muss auf dem Host laufen (127.0.0.1/localhost/host.docker.internal:64615 "
+                 "(IDEA 2026.2.2) bzw. Legacy :64342)")
 
         skills_cmd = (
             "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "

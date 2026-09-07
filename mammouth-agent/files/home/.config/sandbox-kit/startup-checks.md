@@ -20,15 +20,15 @@ bash ~/.config/sandbox-kit/run-checks.sh
 
 > **Hinweis (Issue #57):** Der IntelliJ-MCP-Check prüft nur, dass der IntelliJ-Server auf dem Host läuft
 > (Voraussetzung für den sbx MCP Gateway). Die eigentliche MCP-Verbindung läuft über den Gateway:
-> Host-Registrierung `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` + Sandbox mit
-> `--static-mcp idea` (bzw. `sbx mcp load idea --sandbox`).
+> Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` + Sandbox mit
+> `--static-mcp idea` (bzw. `sbx mcp load idea --sandbox`). Port 64615 seit IDEA 2026.2.2, Legacy 64342.
 
 ## Checks
 
 | # | Check | Command |
 |---|-------|---------|
 | 1 | Context7 | `npx ctx7 --help` |
-| 2 | IntelliJ MCP | `curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:64342/sse` (expect 200/206) |
+| 2 | IntelliJ MCP | `curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:64615/sse` (Port 64615 seit IDEA 2026.2.2, Legacy 64342; expect 200/206) |
 | 3 | gh CLI | `gh auth status` |
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |

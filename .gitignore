@@ -2,6 +2,6 @@
 !.idea/runConfigurations/
 *.iml
 *.zip
-/target/camel-springboot-matrix.adoc
+/target/
 __pycache__/
 *.pyc

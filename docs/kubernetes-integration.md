@@ -74,7 +74,7 @@ weiterhin eine transformierte `~/.kube/config` nötig:
 
 | Feld | Host-kubeconfig | Sandbox-kubeconfig | Grund |
 |------|-----------------|--------------------|-------|
-| `clusters[].cluster.server` | `https://kubernetes.docker.internal:6443` | `https://host.docker.internal:6443` | `kubernetes.docker.internal` löst nur in der Docker-Desktop-VM auf; die Sandbox erreicht den Host nur über `host.docker.internal` (wie IntelliJ MCP auf 64342) |
+| `clusters[].cluster.server` | `https://kubernetes.docker.internal:6443` | `https://host.docker.internal:6443` | `kubernetes.docker.internal` löst nur in der Docker-Desktop-VM auf; die Sandbox erreicht den Host nur über `host.docker.internal` (wie IntelliJ MCP auf 64615) |
 | `clusters[].cluster.insecure-skip-tls-verify` | — | `true` | Das apiserver-Zertifikat ist nur für `kubernetes.docker.internal`/`127.0.0.1` signiert, nicht für `host.docker.internal`; SANs erweitern = Cluster-Neustart (nicht empfohlen) |
 | `users[].user.client-certificate-data` | übernehmen | übernehmen | Docker Desktop nutzt Client-Cert-Auth |
 | `users[].user.client-key-data` | übernehmen | übernehmen | dito |

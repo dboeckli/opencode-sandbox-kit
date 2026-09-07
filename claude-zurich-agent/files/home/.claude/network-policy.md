@@ -12,7 +12,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Zurich LiteLLM (Claude Code via `ANTHROPIC_BASE_URL`)**: `genai-lounge-nx-litellm-uat-emea.zurich.com`, `*.zurich.com`
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `maven.pkg.github.com` (GitHub Packages Maven), `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
-- **JetBrains Help**: `jetbrains.com`, `www.jetbrains.com` (IntelliJ HTTP-Client Feature-Doku, z. B. `www.jetbrains.com/help/idea/http-response-handler-examples.html`)
+- **JetBrains Help + Marketplace + YouTrack**: `jetbrains.com`, `www.jetbrains.com`, `plugins.jetbrains.com`, `youtrack.jetbrains.com` (IntelliJ HTTP-Client Feature-Doku, z. B. `www.jetbrains.com/help/idea/http-response-handler-examples.html`; Plugin-Changelogs, z. B. MCP Server 26071; Issue-Recherche, z. B. IJPL MCP-Server)
 - **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
@@ -25,7 +25,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Skills CLI**: `add-skill.vercel.sh`
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
-- **IntelliJ MCP (Windows host)**: `localhost:64342`, `127.0.0.1:64342`, `host.docker.internal:64342` — MCP-Verbindung via sbx MCP Gateway (Host-Registrierung `sbx mcp add idea --url http://localhost:64342/stream`); der Allow-Eintrag dient nur dem Startup-Health-Check der Host-Erreichbarkeit
+- **IntelliJ MCP (Windows host)**: `localhost:64615`, `127.0.0.1:64615`, `host.docker.internal:64615` (seit IDEA 2026.2.2; Legacy `64342` weiterhin erlaubt) — MCP-Verbindung via sbx MCP Gateway (Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream`); der Allow-Eintrag dient nur dem Startup-Health-Check der Host-Erreichbarkeit
 - **Docker Desktop Kubernetes (Windows host)**: `localhost:6443`, `127.0.0.1:6443`, `host.docker.internal:6443` (kube-apiserver)
 - **Docker Desktop Docker Engine (Windows host)**: `localhost:2375`, `127.0.0.1:2375`, `host.docker.internal:2375` (Daemon-API via TCP; `export DOCKER_HOST=tcp://host.docker.internal:2375`)
 - **Elastic REST-APIs (ELK-Stack, Docker Compose im Host-Docker)**: `localhost:9200`, `127.0.0.1:9200`, `host.docker.internal:9200` (Elasticsearch REST-API), `localhost:5601`, `127.0.0.1:5601`, `host.docker.internal:5601` (Kibana UI + REST-API), `localhost:8200`, `127.0.0.1:8200`, `host.docker.internal:8200` (APM Server OTLP-HTTP-Intake)

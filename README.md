@@ -15,7 +15,7 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7,
 > [INSTALL.md → "IntelliJ MCP Server aktivieren"](INSTALL.md#3-intellij-mcp-server-aktivieren-gateway-registrierung)
 > bzw. README → "IntelliJ MCP connection failed".
 > ```powershell
-> sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check
+> sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 > ```
 
 ```powershell
@@ -171,7 +171,7 @@ sbx kit add mammouth-sandbox `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 ```
 
-Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. Der IntelliJ-MCP-Server läuft auf dem Host (`localhost:64342`) und wird über den **sbx MCP Gateway** (`mcp-gateway.docker.internal`, host-seitig registriert via `sbx mcp add`) in die Sandbox geliefert.
+Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. Der IntelliJ-MCP-Server läuft auf dem Host (`localhost:64615`, Port 64615 seit IDEA 2026.2.2) und wird über den **sbx MCP Gateway** (`mcp-gateway.docker.internal`, host-seitig registriert via `sbx mcp add`) in die Sandbox geliefert.
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
@@ -180,9 +180,9 @@ Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über
 │  ┌────────────────────────────────────────────────────────────┐    │
 │  │                    IntelliJ IDEA                           │    │
 │  │                                                            │    │
-│  │  MCP Server läuft auf http://127.0.0.1:64342/stream     │    │
+│  │  MCP Server läuft auf http://127.0.0.1:64615/stream     │    │
 │  └──────────────────────┬─────────────────────────────────────┘    │
-│                         │ Port 64342                               │
+│                         │ Port 64615                               │
 │                         ▼                                          │
 │  ┌────────────────────────────────────────────────────────────┐    │
 │  │              Docker Desktop (WSL)                          │    │
@@ -229,7 +229,7 @@ flowchart TB
 
     subgraph Host["Windows Host"]
         SBX["sbx CLI"]
-        IDE["IntelliJ IDEA\nMCP Server :64342"]
+        IDE["IntelliJ IDEA\nMCP Server :64615"]
         WS["📁 Workspace\nC:\\development\\projects\\..."]
         Secrets["🔑 Secrets Store\n(OS Keychain)"]
 
@@ -304,7 +304,7 @@ sondern vom Template beim `sbx run`:
 | Claude Code | `claude-code-docker` (Pin `0.5.0`) | `sbx run claude --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` |
 | Mammouth Code | `opencode-docker` (Pin `0.5.0`, eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/` (Pin im spec-Image) |
 
-> **IntelliJ MCP via sbx MCP Gateway:** Einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`
+> **IntelliJ MCP via sbx MCP Gateway:** Einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 > (Host-Loopback, SSRF-Guard umgehen), dann `--static-mcp idea` beim Erzeugen oder `sbx mcp load idea --sandbox <name>`.
 > Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
@@ -571,10 +571,11 @@ sbx rm opencode-sandbox --force
 ### IntelliJ MCP connection failed (WSL2 / Docker)
 
 Seit Issue #57 läuft der IntelliJ MCP über den **sbx MCP Gateway** (dokumentierter Weg). Der Gateway verbindet sich
-vom Windows-Host aus mit dem IntelliJ-MCP-Server (`127.0.0.1:64342`, Endpoint `/stream`). Voraussetzungen:
+vom Windows-Host aus mit dem IntelliJ-MCP-Server (`127.0.0.1:64615`, Endpoint `/stream`; Port 64615 seit
+IDEA 2026.2.2, Legacy 64342). Voraussetzungen:
 
 ```powershell
-sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check   # einmalig registrieren
+sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check   # einmalig registrieren
 sbx run opencode --name my-sandbox `
     --static-mcp idea `
     --kit ./opencode-agent/ `
@@ -588,18 +589,29 @@ sbx run opencode --name my-sandbox `
 - **`--skip-ssrf-check`**: Die SSRF-Guard blockt Loopback-Hosts; `localhost` ist hier sicher (eigener IntelliJ).
 - **Registration lebt auf dem Host**: Der Gateway erreicht IntelliJ über `localhost` (Host-Seite), nicht über
   `host.docker.internal` aus der Sandbox.
+- **Port ändert sich nach IDE-Update (2026.2.2 → 64615)**: Der JetBrains-MCP-Server bindet nicht zwingend dauerhaft
+  denselben Port. Aktuellen Port in der IDE ablesen (**Settings → Tools → MCP Server** → Client-Config „Copy Config"),
+  die Registration anpassen (`sbx mcp rm idea`, dann `sbx mcp add idea --url http://localhost:<port>/stream
+  --skip-ssrf-check`) und die Sandbox mit aktualisierter Kit-Allowlist neu erzeugen (sonst blockt der Proxy den neuen
+  Port mit HTTP 403). Symptom bei Port-Drift: Health-Check meldet `intellij-mcp:FAIL`, Port ist auf dem Host aber
+  belegt (Listener vorhanden).
+- **Port ist dynamisch — Neustart von IDEA/Rechner verliert die Verbindung**: JetBrains bestätigt, dass der
+  MCP-Server seinen Port **dynamisch wählt** (YouTrack IJPL-248682). Ein Neustart kann also einen neuen Port
+  vergeben → nach jedem Neustart Port prüfen und Registration/Allowlist anpassen (s.o.). Dauerlösung steht aus:
+  **IJPL-207839** („Configurable MCP Server Port") ist ein offener Feature-Request — **beobachten**.
+  Vollständige Analyse + Issue-Referenzen: `docs/intellij-mcp-port.md`.
 
 > **Wichtig (Legacy, vor Issue #57):** Bei der alten Direkt-Config war die MCP-URL auf `host.docker.internal:64342/sse`
 > konfiguriert und die Sandbox verband sich direkt mit dem Host. Dieser Weg ist entfernt. Für Health-Checks
 > (`[startup-checks] intellij-mcp:OK`) wird die Erreichbarkeit weiterhin aus der Sandbox über
-> `host.docker.internal:64342/sse` geprüft — das bestätigt nur, dass IntelliJ auf dem Host läuft (Voraussetzung
-> für den Gateway), nicht dass der Gateway verbunden ist.
+> `host.docker.internal:64615/sse` geprüft (Port 64615 seit IDEA 2026.2.2, Legacy 64342) — das bestätigt nur,
+> dass IntelliJ auf dem Host läuft (Voraussetzung für den Gateway), nicht dass der Gateway verbunden ist.
 
 **Manuelle Verifikation vom Host** (PowerShell oder WSL):
 
 ```bash
 # 1) IntelliJ-Server läuft? (Host-Seite; Health-Check-Pfad wie im Sandbox-Startup-Check)
-sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
+sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
 
 # 2) Registration + Gateway-Load?
 sbx mcp ls
@@ -610,8 +622,8 @@ Erwartet (1): `HTTP 200` (das SSE-Endpoint hält die Verbindung offen — `-m 3`
 nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal). (2) `sbx mcp ls` zeigt `idea   remote   ✓ ready`.
 
 Falls die Gateway-Verbindung fehlschlägt (Log: `connect to idea: … Method Not Allowed`): prüfen, dass der Endpoint
-`/stream` (nicht `/sse`) registriert ist — `sbx mcp inspect idea` muss `URL: http://localhost:64342/stream` zeigen.
-Stelle zudem sicher, dass Port 64342 in der Windows-Firewall freigegeben ist.
+`/stream` (nicht `/sse`) registriert ist — `sbx mcp inspect idea` muss `URL: http://localhost:64615/stream` zeigen.
+Stelle zudem sicher, dass Port 64615 in der Windows-Firewall freigegeben ist.
 
 ## Caveats
 

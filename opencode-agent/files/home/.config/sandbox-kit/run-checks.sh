@@ -16,17 +16,20 @@ fi
 # IntelliJ MCP server may still be starting up, so a single probe fails spuriously.
 # host.docker.internal is primary (routes to the Windows host loopback);
 # 127.0.0.1/localhost only work in host-network mode (rare).
+# Port 64615 since IDEA 2026.2.2, legacy 64342 pre-2026.2.2 - probe both.
 code=""
-for host in host.docker.internal 127.0.0.1 localhost; do
-  attempt=1
-  while [ "$attempt" -le 3 ]; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' -m 4 "http://$host:64342/sse" 2>/dev/null)
-    if [ "$code" = "200" ] || [ "$code" = "206" ]; then
-      break 2
-    fi
-    code=""
-    attempt=$((attempt + 1))
-    [ "$attempt" -le 3 ] && sleep 1
+for port in 64615 64342; do
+  for host in host.docker.internal 127.0.0.1 localhost; do
+    attempt=1
+    while [ "$attempt" -le 3 ]; do
+      code=$(curl -s -o /dev/null -w '%{http_code}' -m 4 "http://$host:$port/sse" 2>/dev/null)
+      if [ "$code" = "200" ] || [ "$code" = "206" ]; then
+        break 3
+      fi
+      code=""
+      attempt=$((attempt + 1))
+      [ "$attempt" -le 3 ] && sleep 1
+    done
   done
 done
 if [ "$code" = "200" ] || [ "$code" = "206" ]; then
