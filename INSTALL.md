@@ -54,6 +54,14 @@ MCP-Server laufen:
    Erwartet: `64615` mit `OwningProcess` = PID der laufenden `idea64`. Kommt nach einem Neustart von
    IDEA/Rechner ein anderer Port, `<port>` unten entsprechend anpassen.
 4. **Port `<port>` (aktuell 64615) in der Windows-Firewall freigeben** (nötig für den Zugriff vom Host-Gateway aus).
+5. **Router-only Mode für nicht-ACP-Clients deaktivieren** (Issue #95): Der IntelliJ-MCP-Server kann Tools
+    unter **Settings → Tools → MCP Server** als *Router-only* markieren. Ist der **Router-only Mode** auf
+    **„All agents"** gestellt, versteckt der Server alle markierten Tools vor dem sbx MCP Gateway — der Agent
+    sieht dann **keine** `mcp-gateway_*`-Tools (nur die Gateway-Meta-Tools `code-mode`/`execute_tool`/`mcp-exec`).
+    Fix: Die Auswahl auf **„ACP agents only"** stellen (Router-only gilt dann nur für ACP-native Agenten, der
+    sbx-Gateway-Client erhält die Tools direkt). Nach der Umstellung die Sandbox **neu erzeugen**, damit der
+    Gateway eine frische Verbindung aufbaut (siehe Schritt 3 unten). Verifikation: `tools/list` in der Sandbox
+    enthält dann `git_status`, `search_symbol`, `get_symbol_info`, … direkt.
 
 **Gateway-Registrierung (Issue #57, dokumentierter Weg):** Das Kit konfiguriert IntelliJ MCP **nicht** mehr
 direkt in den Agent-Configs. Stattdessen wird der Server einmalig auf dem Host registriert und über den
@@ -527,3 +535,15 @@ python local-test\local-test-kits.py                   # Volltest (OpenCode/Clau
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).
+
+**IntelliJ-MCP-Tools prüfen** (nach Schritt 3.5 Router-only-Umstellung): Die Sandbox-Session muss die
+`mcp-gateway_*`-Tools exponiert haben. Schnelltest auf dem Host (frische Gateway-Session):
+
+```powershell
+sbx exec <sandbox> bash -c "curl -s -m 10 http://mcp-gateway.docker.internal/mcp -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer proxy-managed' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}' | grep -c git_status"
+# erwartet: 1 (Tool ist exponiert) — bei 0 ist der Router-only Mode noch auf "All agents"
+```
+
+Alternativ in der Agent-Session prüfen, ob Tools wie `mcp-gateway_git_status` / `mcp-gateway_search_symbol`
+verfügbar sind. Sind nur `code-mode`/`execute_tool`/`mcp-exec` sichtbar → Router-only Mode wiederholen
+(Settings → Tools → MCP Server → **„ACP agents only"**) und Sandbox neu erzeugen.
