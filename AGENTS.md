@@ -6,7 +6,7 @@ Repo: https://github.com/dboeckli/opencode-sandbox-kit
 ## Environment (wichtig!)
 
 Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **Windows-Setup** — der Host
-(IntelliJ MCP via `host.docker.internal:64342`) läuft immer auf Windows:
+(IntelliJ MCP via `host.docker.internal:64615`; Port 64615 seit IDEA 2026.2.2, Legacy 64342) läuft immer auf Windows:
 
 - **Agent-Sandbox** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, ...), Versions-Checks und Doku-Recherche. `sbx` ist hier **nicht** verfügbar (nicht im Sandbox-Image installiert).
 - **Windows/PowerShell** (User, **Standard**): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
@@ -41,7 +41,7 @@ Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
 ## Commands
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
-- `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
+- `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
 - `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` — test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`
 - `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`)
 - `sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`); **gleiche** Template-Pin `0.5.0`
@@ -101,7 +101,7 @@ python local-test\local-test-kits.py                   # alle Szenarien
 ## IntelliJ MCP: Permission-Whitelist + Run-Config-Guard
 
 Der IntelliJ-MCP-Server läuft auf dem Windows-Host und wird über den **sbx MCP Gateway** in die Sandbox geliefert
-(dokumentierter Weg, Issue #57): einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`
+(dokumentierter Weg, Issue #57): einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 registrieren (SSRF-Guard blockt Loopback; `/stream` = Streamable HTTP, nicht `/sse`), dann beim Erzeugen
 `--static-mcp idea` setzen (oder `sbx mcp load idea --sandbox` in laufende Sandbox). Die Agent-Configs enthalten
 **keine** direkte `mcp.idea`-Konfiguration mehr — die Gateway-Verbindung legt das Template automatisch als
@@ -412,7 +412,7 @@ nötig.
 Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.5.0` (2026-08-26) für alle drei Kits: OpenCode/Mammouth `opencode-docker-0.5.0`, Claude (Home **und** Zurich) `claude-code-docker-0.5.0` — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `-t` im Command, das Mammouth-Agent-Kit (`kind: sandbox`) via spec-Image (Mirror). `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
 
 ```powershell
-sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check   # einmalig (IntelliJ MCP auf Host-Loopback, SSRF-Guard umgehen)
+sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check   # einmalig (IntelliJ MCP auf Host-Loopback, SSRF-Guard umgehen)
 
 sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode (opencode-docker Template, Pin 0.5.0)
 sbx run claude   --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
@@ -421,7 +421,7 @@ sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agen
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
-(Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`, Sandbox mit
+(Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Sandbox mit
 `--static-mcp idea` erzeugen oder `sbx mcp load idea --sandbox`). Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `opencode-agent/files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `opencode-agent/files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `opencode-agent/files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).

@@ -159,13 +159,14 @@ Präfix `mcp-gateway_` in OpenCode/Mammouth bzw. `mcp__mcp-gateway__` in Claude 
 
 ### IntelliJ MCP-Verbindung testen
 
-Der IntelliJ-MCP-Server läuft auf Windows unter `127.0.0.1:64342`. Das Kit liefert ihn seit Issue #57 über den
-**sbx MCP Gateway** (Registration `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`,
+Der IntelliJ-MCP-Server läuft auf Windows unter `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342).
+Das Kit liefert ihn seit Issue #57 über den
+**sbx MCP Gateway** (Registration `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`,
 Sandbox mit `--static-mcp idea`). Der Health-Check aus der Sandbox prüft weiterhin die Erreichbarkeit des
 Host-Servers:
 
 ```bash
-sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
+sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
 ```
 
 Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten + Gateway-Verifikation: README → Troubleshooting.
@@ -234,4 +235,4 @@ Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agen
 | Drift + SO-API-Check | `python local-test\local-test-kits.py --validate-only` |
 | Blocked requests | `sbx policy log <sandbox>` |
 | Startup-Checks (in Sandbox) | `bash ~/.config/sandbox-kit/run-checks.sh` |
-| IntelliJ MCP testen | `sbx exec <sandbox> bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'` |
+| IntelliJ MCP testen | `sbx exec <sandbox> bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'` |

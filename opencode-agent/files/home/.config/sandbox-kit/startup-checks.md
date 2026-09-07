@@ -22,22 +22,23 @@ bash ~/.config/sandbox-kit/run-checks.sh
 **Manuelle Verifikation der IntelliJ-MCP-Erreichbarkeit vom Host** (PowerShell oder WSL):
 
 ```bash
-sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64342/sse'
+sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
 ```
 
 Erwartet: `HTTP 200`. Das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s; nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal.
 
 > **Hinweis (Issue #57):** Der Check prüft nur, dass der IntelliJ-Server auf dem Host läuft (Voraussetzung für den
 > sbx MCP Gateway). Die eigentliche MCP-Verbindung läuft über den Gateway: Host-Registrierung
-> `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check` + Sandbox mit `--static-mcp idea`
-> (bzw. `sbx mcp load idea --sandbox`).
+> `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` + Sandbox mit `--static-mcp idea`
+> (bzw. `sbx mcp load idea --sandbox`). Port 64615 seit IDEA 2026.2.2, Legacy 64342 — falls die IDE einen
+> abweichenden Port meldet (Settings → Tools → MCP Server), diesen übernehmen.
 
 ## Checks
 
 | # | Check | Command |
 |---|-------|---------|
 | 1 | Context7 | `npx ctx7 --help` |
-| 2 | IntelliJ MCP | `curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:64342/sse` (Fallback `127.0.0.1`/`localhost`, je 3 Versuche mit 1s Pause; erwartet 200/206) |
+| 2 | IntelliJ MCP | `curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:64615/sse` (Port 64615 seit IDEA 2026.2.2, Legacy 64342; Fallback `127.0.0.1`/`localhost`, je 3 Versuche mit 1s Pause; erwartet 200/206) |
 | 3 | gh CLI | `gh auth status` |
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |

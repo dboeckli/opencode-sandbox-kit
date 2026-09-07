@@ -11,7 +11,7 @@ Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 | **Docker Desktop** (Windows) | Laufender Docker Daemon — nativ **oder** Ubuntu-WSL-Setup (Laufzeitumgebung: **Ubuntu 26.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
-| **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64342` + Firewall-Freigabe Port 64342 | IntelliJ MCP (optional) |
+| **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342) + Firewall-Freigabe Port 64615 | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe Abschnitt 5) |
 
 > **WSL als Alternative:** Standard ist Windows PowerShell + Docker Desktop. Das Kit läuft aber auch aus einem
@@ -44,8 +44,10 @@ MCP-Server laufen:
 2. **MCP Server Plugin aktivieren**: Das Plugin ist gebündelt und standardmäßig aktiviert. Falls
    die IntelliJ-MCP-Tools nicht verfügbar sind, den Plugin-Status unter **Settings → Plugins** prüfen
    (`MCP Server` muss aktiviert sein).
-3. **IDE laufen lassen** und das Projekt öffnen — der MCP-Server lauscht auf `127.0.0.1:64342`.
-4. **Port 64342 in der Windows-Firewall freigeben** (nötig für den Zugriff vom Host-Gateway aus).
+3. **IDE laufen lassen** und das Projekt öffnen — der MCP-Server lauscht auf `127.0.0.1:64615`
+   (Port seit IDEA 2026.2.2; davor 64342). Den tatsächlichen Port zeigt **Settings → Tools → MCP Server**
+   (Client-Config „Copy Config") — falls er abweicht, in der Gateway-Registrierung unten übernehmen.
+4. **Port 64615 in der Windows-Firewall freigeben** (nötig für den Zugriff vom Host-Gateway aus).
 
 **Gateway-Registrierung (Issue #57, dokumentierter Weg):** Das Kit konfiguriert IntelliJ MCP **nicht** mehr
 direkt in den Agent-Configs. Stattdessen wird der Server einmalig auf dem Host registriert und über den
@@ -53,11 +55,11 @@ direkt in den Agent-Configs. Stattdessen wird der Server einmalig auf dem Host r
 
 ```powershell
 # 1. Einmalig registrieren (Endpoint /stream = Streamable HTTP; --skip-ssrf-check, da Loopback-Host)
-sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check
+sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 
 # 2. Verifikation
 sbx mcp ls          # erwartet: idea   remote   ✓ ready
-sbx mcp inspect idea # erwartet: URL http://localhost:64342/stream, Transport: streamable-http
+sbx mcp inspect idea # erwartet: URL http://localhost:64615/stream, Transport: streamable-http
 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
 sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
@@ -68,7 +70,7 @@ sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t 
 > für den Gateway ist `/stream` der richtige Endpoint.
 
 > Optional (z. B. für weitere MCP-Server im Kit): unter **Settings → Tools → MCP Server** die SSE-URL
-> `http://127.0.0.1:64342/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig.
+> `http://127.0.0.1:64615/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig.
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
@@ -473,7 +475,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 
 ## 6. Sandbox starten
 
-> **IntelliJ MCP vorab registrieren** (einmalig, siehe Abschnitt 3): `sbx mcp add idea --url http://localhost:64342/stream --skip-ssrf-check`
+> **IntelliJ MCP vorab registrieren** (einmalig, siehe Abschnitt 3): `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 > — dann `--static-mcp idea` in den `sbx run`-Kommandos verwenden (bzw. `sbx mcp load idea --sandbox <name>`
 > für bereits laufende Sandboxes).
 
