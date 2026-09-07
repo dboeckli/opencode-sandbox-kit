@@ -595,6 +595,11 @@ sbx run opencode --name my-sandbox `
   --skip-ssrf-check`) und die Sandbox mit aktualisierter Kit-Allowlist neu erzeugen (sonst blockt der Proxy den neuen
   Port mit HTTP 403). Symptom bei Port-Drift: Health-Check meldet `intellij-mcp:FAIL`, Port ist auf dem Host aber
   belegt (Listener vorhanden).
+- **Port ist dynamisch — Neustart von IDEA/Rechner verliert die Verbindung**: JetBrains bestätigt, dass der
+  MCP-Server seinen Port **dynamisch wählt** (YouTrack IJPL-248682). Ein Neustart kann also einen neuen Port
+  vergeben → nach jedem Neustart Port prüfen und Registration/Allowlist anpassen (s.o.). Dauerlösung steht aus:
+  **IJPL-207839** („Configurable MCP Server Port") ist ein offener Feature-Request — **beobachten**.
+  Vollständige Analyse + Issue-Referenzen: `docs/intellij-mcp-port.md`.
 
 > **Wichtig (Legacy, vor Issue #57):** Bei der alten Direkt-Config war die MCP-URL auf `host.docker.internal:64342/sse`
 > konfiguriert und die Sandbox verband sich direkt mit dem Host. Dieser Weg ist entfernt. Für Health-Checks

@@ -39,8 +39,12 @@ permissions:
     - camel.apache.org
     - "*.camel.apache.org"
     # JetBrains Help-Doku (IntelliJ HTTP-Client Feature-Seiten, z. B. www.jetbrains.com/help/idea/)
+    # + JetBrains Marketplace (plugins.jetbrains.com) fuer Plugin-Changelogs (z. B. MCP Server 26071)
+    # + YouTrack (youtrack.jetbrains.com) fuer Issue-Recherche (z. B. IJPL MCP-Server)
     - jetbrains.com
     - www.jetbrains.com
+    - plugins.jetbrains.com
+    - youtrack.jetbrains.com
     # IntelliJ IDEA MCP Server (Windows Host; MCP-Verbindung via sbx MCP Gateway → localhost:64615/stream,
     # Port 64615 seit IDEA 2026.2.2, Legacy 64342; Allow-Eintrag nur für den Startup-Health-Check,
     # der die Host-Erreichbarkeit aus der Sandbox prüft)

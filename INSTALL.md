@@ -72,6 +72,12 @@ sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t 
 > Optional (z. B. für weitere MCP-Server im Kit): unter **Settings → Tools → MCP Server** die SSE-URL
 > `http://127.0.0.1:64615/sse` als Server registrieren. Für die Kit-Nutzung ist das nicht nötig.
 
+> **Port ist dynamisch (IDEA 2026.2.x):** Der MCP-Server wählt seinen Port beim Start **dynamisch**
+> (JetBrains-Statement in YouTrack IJPL-248682). Nach einem Update oder Neustart von IDEA/Rechner kann der
+> Port also wechseln → dann Registration oben (`<port>`) und die Sandbox-Allowlist anpassen. Der Port steht in
+> **Settings → Tools → MCP Server** (Client-Config „Copy Config"). Dauerlösung = offener Feature-Request
+> **IJPL-207839** (konfigurierbarer Port) — beobachten. Details: `docs/intellij-mcp-port.md`.
+
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
 Für **OpenCode (Mixin-Kit), Claude Code und Mammouth Code (Agent-Kit)** ist der Zugriff auf die über den
