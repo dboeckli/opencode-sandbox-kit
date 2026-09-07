@@ -72,6 +72,14 @@ navigate code, run inspections, and query the database. These tools require Inte
 host with the MCP server plugin enabled.
 Docs: `npx ctx7 docs /websites/jetbrains_help <query>` (JetBrains product docs, general); `/jetbrains/intellij-sdk-docs` (plugin SDK), `/jetbrains/intellij-community` (platform/MCP).
 
+**Verbindung testen (wenn der User die IntelliJ-MCP-Verbindung prüfen will) — Ablauf:**
+
+1. **Verfügbare Tools abfragen**: alle in dieser Session verfügbaren Tool-Namen auflisten (die bereitgestellten MCP-Tools).
+2. **IntelliJ-Operationen verifizieren und zeigen**: unter den verfügbaren Tools nach dem IntelliJ-MCP-Präfix `mcp-gateway_` filtern und die vorhandenen Operationen sichtbar auflisten (z. B. `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_search_*`, `mcp-gateway_read*`, `mcp-gateway_git_status`, `mcp-gateway_search_symbol`, `mcp-gateway_get_symbol_info`, …). Sind keine IntelliJ-Tools darunter → nicht verbunden: dem User melden (IntelliJ muss laufen und das Projekt geöffnet sein; Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Laden via `--static-mcp idea` bzw. `sbx mcp load idea --sandbox`).
+3. **Read-Operation via IntelliJ ausführen**: eine lesende Operation aufrufen und das Ergebnis zeigen, z. B. `mcp-gateway_git_status` auf dem Projekt (Branch + Änderungen) oder `mcp-gateway_search_symbol` mit einer bekannten Klasse (z. B. `CamelApplication`). Nur lesende Tools verwenden — schreibende/ausführende sind deny.
+
+> **Pfad-Quirk**: `projectPath`/Projektparameter IMMER im Windows-Format übergeben (`C:/development/projects/<projekt>`). Linux-Pfade (z. B. `/c/development/...`) werden vom IntelliJ MCP abgelehnt. `projectPath` immer mitgeben, sobald bekannt.
+
 ## Context7
 
 Docs-as-a-service CLI for libraries/frameworks. See the `<!-- context7 -->` section above.
