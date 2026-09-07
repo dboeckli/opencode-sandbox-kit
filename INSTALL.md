@@ -9,7 +9,7 @@ Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 | Voraussetzung | Beschreibung | Benötigt für |
 |---------------|--------------|--------------|
 | **Docker Desktop** (Windows) | Laufender Docker Daemon — nativ **oder** Ubuntu-WSL-Setup (Laufzeitumgebung: **Ubuntu 26.04**) | Sandbox-Ausführung |
-| **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
+| **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH — Installation: <https://docs.docker.com/ai/sandboxes/install/> | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342) + Firewall-Freigabe Port 64615 | IntelliJ MCP (optional) |
 | **API-Keys / Secrets** | globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe Abschnitt 5) |
