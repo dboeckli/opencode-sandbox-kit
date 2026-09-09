@@ -214,9 +214,9 @@ Languages and file formats used in this sandbox (Python, Bash, YAML, JSON, JSONC
 ## GitHub Packages Maven
 
 Maven-Builds mit Artifacts aus GitHub Packages (`maven.pkg.github.com`) funktionieren ohne manuelle Auth:
-Das Kit schreibt beim Start `~/.m2/settings.xml` mit einem `<proxies>`-Block (`gateway.docker.internal:3128` —
+Das Kit liefert `~/.m2/settings.xml` als statische Datei aus (files/home/.m2/settings.xml) mit einem `<proxies>`-Block (`gateway.docker.internal:3128` —
 Maven muss **durch den Sandbox-Proxy routen**) und dem Server `github`
-(`<password>${env.GITHUB_MAVEN_TOKEN}</password>`), und importiert die Proxy-CA in die JDK-`cacerts`. Der Proxy
+(`<password>${env.GITHUB_MAVEN_TOKEN}</password>`); bei Host-Maven-Cache-Mount ergänzt der Startup-Hook das aktive Profil `host-m2-cache`. Zusätzlich importiert das Kit die Proxy-CA in die JDK-`cacerts`. Der Proxy
 injiziert den klassischen `github-maven`-PAT als `Authorization: Bearer` bei Requests an `maven.pkg.github.com`
 (`scheme: basic`-Injection wird vom Proxy nicht unterstützt). `gh` selbst nutzt weiterhin das separate
 `github`-OAuth-Token. Nur echte Maven-Builds sind repräsentativ — `mvn dependency:get` ignoriert

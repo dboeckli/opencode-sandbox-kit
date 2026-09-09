@@ -194,9 +194,9 @@ sbx secret set github-maven -t "<classic-pat-read-packages>"
 ```
 
 In der Sandbox wirkt das Kit so (Startup-Hooks, `opencode-agent/spec.yaml`):
-- `~/.m2/settings.xml` wird geschrieben mit einem `<proxies>`-Block (`gateway.docker.internal:3128` — Maven muss
-  **durch den Sandbox-Proxy routen**, damit die Credential-Injection greifen kann) und dem Server `github`
-  (`<password>${env.GITHUB_MAVEN_TOKEN}</password>`).
+- `~/.m2/settings.xml` wird als **statische Datei** aus `files/home/.m2/settings.xml` ausgeliefert (Startup-Hooks, `opencode-agent/spec.yaml`):
+  `<proxies>`-Block (`gateway.docker.internal:3128` — Maven muss **durch den Sandbox-Proxy routen**, damit die Credential-Injection greifen kann)
+  und Server `github` (`<password>${env.GITHUB_MAVEN_TOKEN}</password>`). Bei Host-Cache-Mount ergänzt der Startup-Hook das aktive Profil `host-m2-cache`.
 - Die Proxy-CA wird in die JDK-`cacerts` importiert (Java/Maven müssen das TLS-Intercept des Proxys vertrauen).
 - Der Proxy injiziert den echten `ghp_…`-Token als `Authorization: Bearer <pat>` bei Requests an
   `maven.pkg.github.com` (GitHub Packages akzeptiert den klassischen PAT als Bearer; die `scheme: basic`-Injection
