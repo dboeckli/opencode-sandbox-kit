@@ -37,6 +37,15 @@ Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
   **Nicht** vorher per REST/Git anlegen: `createLinkedBranch` verknüpft nur frisch angelegte Branches, sonst
   schlägt die Verknüpfung fehl (`linkedBranch: null`).
 
+## GitHub Actions: `action_required` — Build manuell freigeben (Pflicht)
+
+Endet ein CI-Lauf nach Push/PR mit **`action_required`** (typisch: kein Job gestartet, PR-Status
+„Expected — Waiting" bzw. `BLOCKED`), liegt das in der Regel an der **manuellen Freigabepflicht für
+geänderte Pipelines** (`.github/workflows/*.yml` wurde im Branch/PR geändert). Den **Entwickler
+darauf hinweisen, den Build im GitHub-UI manuell freizugeben** (Actions-Tab → Run → „Review" /
+Approve) und die Freigabe abwarten. **Keine Workarounds** zur Umgehung der Freigabe: kein
+Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
+
 <!-- sandbox-tools -->
 This sandbox is provisioned by the mammouth-agent kit. The following tools are installed and available:
 
