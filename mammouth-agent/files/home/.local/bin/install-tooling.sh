@@ -192,7 +192,7 @@ run_helm() {
 }
 
 run_helm4() {
-	HELM4_VER="4.2.4"
+	HELM4_VER="4.3.0"
 	install_helm "${HELM4_VER}" /usr/local/bin/helm4
 	helm4 version
 	log_step helm4
