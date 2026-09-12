@@ -185,7 +185,7 @@ install_helm() {
 }
 
 run_helm() {
-	HELM_VER="3.21.4"
+	HELM_VER="3.22.0"
 	install_helm "${HELM_VER}" /usr/local/bin/helm
 	helm version
 	log_step helm
