@@ -43,6 +43,9 @@ permissions:
       # DeepSeek (Default-Modell mit eigenem API-Key)
       - "api.deepseek.com:443"
       - "*.deepseek.com:443"
+      # OpenAI (OpenAI Platform/API, z. B. platform.openai.com)
+      - "openai.com:443"
+      - "*.openai.com:443"
       # GitHub
       - "api.github.com:443"
       - "github.com:443"
