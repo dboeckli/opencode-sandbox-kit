@@ -126,7 +126,7 @@
       "depNameTemplate": "mammouth-ai/code",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$",
-      "versioningTemplate": "semver-coerced"
+      "versioningTemplate": "maven"
     }
   ]
 }
