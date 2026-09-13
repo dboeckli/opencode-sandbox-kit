@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 4 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 3 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
@@ -7,25 +7,23 @@ Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus
 Szenarien:
   1. OpenCode + opencode-agent    (sbx create opencode --kit ./opencode-agent/)
   2. Claude   + opencode-agent    (sbx create claude --kit ./opencode-agent/)      — Home (api.anthropic.com)
-  3. Claude   + claude-zurich-agent (sbx create claude --kit ./claude-zurich-agent/) — Zurich LiteLLM-Proxy
-  4. Mammouth + mammouth-agent    (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
+  3. Mammouth + mammouth-agent    (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, context7, openrouter, google, stackoverflow, cloudsmith und zurich
-    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set zurich — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, context7, openrouter, google, stackoverflow, cloudsmith
+    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
 
 Verwendung:
-  python local-test-kits.py                 # alle 4 Kits testen (default: all)
+  python local-test-kits.py                 # alle 3 Szenarien testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
-  python local-test-kits.py claude          # nur Claude testen (Home + Zurich-Szenario)
-  python local-test-kits.py claude-zurich   # nur das Zurich-Szenario testen
+  python local-test-kits.py claude          # nur Claude testen (Home-Szenario)
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,claude,claude-zurich,mammouth}  Zu testendes Kit (default: all)
+  {all,opencode,claude,mammouth}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -57,8 +55,7 @@ failed = []
 SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
 SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
-                "mammouth-agent/files/home/stackexchange-api.md",
-                "claude-zurich-agent/files/home/stackexchange-api.md")
+                "mammouth-agent/files/home/stackexchange-api.md")
 
 # sbx CLI: die Offline-Referenz (opencode-agent/files/home/sbx-cli.md) wird aus der
 # Release-Binary generiert (local-test/regenerate-sbx-doc.py). Die dokumentierte Version
@@ -68,31 +65,25 @@ SBX_DOC_FILE = "opencode-agent/files/home/sbx-cli.md"
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
-# Bundles aller drei Kits. `setup.install` konsumiert sie aus dem Sandbox-Home. Alle
+# Bundles beider Kits. `setup.install` konsumiert sie aus dem Sandbox-Home. Alle
 # Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
-# Renovate aktualisiert alle gemeinsam).
+# Renovate aktualisiert beide gemeinsam).
 INSTALL_SCRIPT_PAIRS = (
     ("opencode-agent/files/home/.local/bin/install-tooling.sh",
-     "mammouth-agent/files/home/.local/bin/install-tooling.sh",
-     "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"),
+     "mammouth-agent/files/home/.local/bin/install-tooling.sh"),
     ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
-     "mammouth-agent/files/home/.local/bin/install-tooling-user.sh",
-     "claude-zurich-agent/files/home/.local/bin/install-tooling-user.sh"),
+     "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
     ("opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py",
-     "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py",
-     "claude-zurich-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
+     "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
     ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
-     "mammouth-agent/files/home/.local/bin/install-apt-packages.sh",
-     "claude-zurich-agent/files/home/.local/bin/install-apt-packages.sh"),
-    ("opencode-agent/files/home/.local/bin/write-managed-settings.sh",
-     "claude-zurich-agent/files/home/.local/bin/write-managed-settings.sh"),
+     "mammouth-agent/files/home/.local/bin/install-apt-packages.sh"),
 )
 
-# Sandbox-Template-Version (alle drei Kits, eine Version fuer beide Template-Familien):
+# Sandbox-Template-Version (beide Kits, eine Version fuer beide Template-Familien):
 #   - Expliziter Pin der lokalen Tests (dieses Script): TEMPLATE_VERSION-Konstante, Renovate-managed.
 #   - Muss identisch sein mit `TEMPLATE_VERSION` in .github/workflows/validate.yml + e2e.yml und dem
 #     Mammouth-spec-Image (mammouth-agent/spec.yaml) — Drift-Check in check_template_update().
-#   - opencode-docker (OpenCode + Mammouth) / claude-code-docker (Claude Home + Zurich, Mixin-Kits).
+#   - opencode-docker (OpenCode + Mammouth) / claude-code-docker (Claude Home, Mixin-Kit).
 # Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag.
 TEMPLATE_VERSION = "0.5.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
@@ -112,23 +103,21 @@ MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/la
 
 # Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
 # benötigt (Kit-deklarierte Services aus den Specs credentials[].service + Template-Built-ins
-# wie github/anthropic). Nur das Zurich-Szenario braucht das zurich-Secret;
-# openrouter/google verdrahtet nur das opencode-Template. Fehlermeldungen nennen das betroffene Kit.
+# wie github/anthropic). openrouter/google verdrahtet nur das opencode-Template.
+# Fehlermeldungen nennen das betroffene Kit.
 SCENARIO_KIT = {
     "opencode": "opencode-agent",
     "claude": "opencode-agent",  # Claude-Home-Szenario (claude-code-docker-Template + opencode-agent-Kit)
-    "claude-zurich": "claude-zurich-agent",
     "mammouth": "mammouth-agent",
 }
 SCENARIO_SECRETS = {
     "opencode": ("github", "github-maven", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
     "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith"),
-    "claude-zurich": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "zurich"),
     "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
 SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "context7", "openrouter", "google",
-                "stackoverflow", "cloudsmith", "zurich")
+                "stackoverflow", "cloudsmith")
 
 
 def enable_ansi():
@@ -453,8 +442,8 @@ def _template_latest_per_family():
 
 def check_template_update():
     """Vergleicht den expliziten Template-Pin der lokalen Tests (TEMPLATE_VERSION-Konstante dieses
-    Scripts — gilt fuer alle drei Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker
-    fuer Claude Home+Zurich) mit .github/workflows/validate.yml/e2e.yml, dem Mammouth-spec-Image und
+    Scripts — gilt fuer beide Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker
+    fuer Claude Home) mit .github/workflows/validate.yml/e2e.yml, dem Mammouth-spec-Image und
     den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
     (opencode-docker ODER claude-code-docker) existiert als der Pin — der Check soll bei einem Update
     nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei echten Fehlern: Pin nicht gefunden, Tags
@@ -544,7 +533,7 @@ def check_mammouth_cli_update():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "claude-zurich", "mammouth"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -569,9 +558,6 @@ def main():
     info("  --> validate: " + os.path.join(ROOT, "mammouth-agent"))
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mammouth-agent")], stream=True)
     pass_("sbx kit validate (mammouth-agent)") if code == 0 else fail("sbx kit validate (mammouth-agent)")
-    info(f"  --> validate: {os.path.join(ROOT, 'claude-zurich-agent')}")
-    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "claude-zurich-agent")], stream=True)
-    pass_("sbx kit validate (claude-zurich-agent)") if code == 0 else fail("sbx kit validate (claude-zurich-agent)")
 
     if args.validate_only:
         print()
@@ -610,7 +596,7 @@ def main():
     if agent == "all":
         selected = set(SCENARIO_SECRETS)
     elif agent == "claude":
-        selected = {"claude", "claude-zurich"}
+        selected = {"claude"}
     else:
         selected = {agent}
     for sname in SECRET_ORDER:
@@ -647,14 +633,6 @@ def main():
             "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "claude-sonnet-4-6",
             "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
-        },
-        {
-            "name": "kit-test-claude-zurich",
-            "agent": "claude",
-            "tags": ["claude", "claude-zurich"],
-            "kit": os.path.join(ROOT, "claude-zurich-agent"),
-            "model": "eu.anthropic.claude-sonnet-4-6",
-            "config": 'grep -q "eu.anthropic.claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}" && echo "ANTHROPIC_MODEL=${ANTHROPIC_MODEL}" && [ "${ANTHROPIC_BASE_URL}" = "https://genai-lounge-nx-litellm-uat-emea.zurich.com" ] && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; echo "BASE_URL=${ANTHROPIC_BASE_URL:-<unset>}"; exit 1; }',
         },
         {
             "name": "kit-test-mammouth",
@@ -861,7 +839,7 @@ def main():
         else:
             sfail("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)", out)
 
-        # Kit-deklarierter github-maven-Service (alle 3 Kits) → settings.xml mit
+        # Kit-deklarierter github-maven-Service (beide Kits) → settings.xml mit
         # <proxies> (Routing durch gateway.docker.internal:3128) + github-Server mit
         # ${env.GITHUB_MAVEN_TOKEN} + Sentinel-Env-Variable + Proxy-CA in JDK-cacerts.
         # Der Proxy injiziert den PAT als 'Authorization: Bearer' (scheme:basic wird nicht unterstützt);
