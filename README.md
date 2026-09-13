@@ -35,6 +35,7 @@ sbx run claude --name claude-zurich `
     -t docker/sandbox-templates:claude-code-docker-0.5.0
 sbx run ./mammouth-agent/ --name mammouth-sandbox `
     --static-mcp idea
+```
 
 
 ```powershell
@@ -49,6 +50,7 @@ sbx run opencode --name opencode-sandbox `
     "C:\development\maven-repo:ro"
 ```
 
+```powershell
 # Kit direkt aus GitHub (ohne Clone) — einmalig kit.allowedSources setzen (siehe INSTALL.md).
 # Template gepinnt via `-t docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 sbx run opencode --name opencode-sandbox `
