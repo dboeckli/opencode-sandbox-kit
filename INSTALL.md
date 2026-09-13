@@ -515,7 +515,7 @@ sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -
 sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
 
 # Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
-sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/
+sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea
 ```
 
 Projekt einbinden + Kubernetes-Support:

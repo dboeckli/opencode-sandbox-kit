@@ -50,6 +50,7 @@ angegeben.
 | sbx CLI / Sandbox-Kits | `/docker/docs` | https://github.com/docker/sbx-kits-contrib |
 | kubectl | `/kubernetes/kubectl` | https://github.com/kubernetes/kubectl |
 | Helm | `/helm/helm-www` | https://github.com/helm/helm |
+| Apache Kafka | `/apache/kafka` | https://github.com/apache/kafka |
 
 ## Runtime-Tools & CLIs
 

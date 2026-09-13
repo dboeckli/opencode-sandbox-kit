@@ -35,13 +35,14 @@ bash ~/.config/sandbox-kit/run-checks.sh
 | 5b | Docker host daemon | `docker -H tcp://host.docker.internal:2375 version` (optional Docker Desktop host daemon; FAIL = "Expose daemon" nicht aktiv oder Docker Desktop down) |
 | 6 | kubectl | `kubectl version --client` |
 | 7 | Helm | `helm version` |
+| 7b | Kafka CLI | `kafka-topics.sh --version` |
 | 8 | Skills | `skills ls -g` |
 | 9 | Mammouth Code | `command -v mammouth` |
 
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK skills:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK kafka:OK skills:OK mammouth:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).

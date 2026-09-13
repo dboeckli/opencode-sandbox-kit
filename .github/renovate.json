@@ -91,6 +91,14 @@
     },
     {
       "customType": "regex",
+      "description": "Apache Kafka distribution version (install-tooling.sh, alle drei Kit-Kopien; Version = Maven-Central-Artifact org.apache.kafka:kafka_2.13)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "claude-zurich-agent/files/home/.local/bin/install-tooling.sh"],
+      "matchStrings": ["KAFKA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "org.apache.kafka:kafka_2.13",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
       "description": "sbx CLI version (.github/workflows/e2e.yml, validate.yml)",
       "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
       "matchStrings": ["SBX_VERSION: v?(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],

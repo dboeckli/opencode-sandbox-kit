@@ -21,7 +21,7 @@ Sandbox.
 ### Install-Log-Format (`/var/log/sbx-kit-install.log`)
 
 Der `setup.install` ruft npm/apt als **Inline-Commands** und die restlichen Tools **einzeln pro Tool**
-(`install-tooling.sh shfmt|jdk|maven|docker|compose|kubectl|helm|helm4`) auf — so zeigt die
+(`install-tooling.sh shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`) auf — so zeigt die
 `sbx run`-Konsole jedes Tool als eigene Zeile (Spinner beim Start → ✓ beim Abschluss). Jeder Lauf
 loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
 
@@ -118,7 +118,7 @@ python local-test\local-test-kits.py --validate-only
 
 ### Startup-Checks
 
-Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Skills)
+Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills)
 wird beim Session-Start injiziert und nach `~/.config/sandbox-kit/startup-checks.report` geschrieben.
 Manuell neu ausführen:
 

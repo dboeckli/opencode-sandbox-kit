@@ -54,12 +54,12 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` — test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`
 - `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`)
 - `sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`); **gleiche** Template-Pin `0.5.0`
-- `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `-t` nötig)
+- `sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `-t` nötig)
 - `sbx run opencode --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — run from remote Git repo
 - `sbx run opencode --name spring-6-reactive --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"` — use kit with another project
 - `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support + Maven-Host-Cache: Host-kubeconfig und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87)
 - `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Claude Code)
-- `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Mammouth Code)
+- `sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Mammouth Code)
 - `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
@@ -426,10 +426,10 @@ sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check   # einma
 sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode (opencode-docker Template, Pin 0.5.0)
 sbx run claude   --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
 sbx run claude   --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro, gleiche Pin 0.5.0)
-sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/   # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
+sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea   # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
 ```
 
-Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
+Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
 (Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Sandbox mit
 `--static-mcp idea` erzeugen oder `sbx mcp load idea --sandbox`). Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
@@ -444,12 +444,12 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 
 > Die Tooling-Installation ist in allen drei Kit-Specs dedupliziert: `setup.install` nutzt für die
 > **schweren Tools** `bash /home/agent/.local/bin/install-tooling.sh <tool>` — **einen Command pro Tool**
-> (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4`, Default `all`), damit die `sbx run`-Konsole
+> (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`, Default `all`), damit die `sbx run`-Konsole
 > jedes Tool als eigene Zeile (Spinner → ✓) zeigt. npm/apt-Pakete sind als Inline-Commands direkt in
 > den Specs (`npm_config_bin_links=true npm install -g ctx7` usw., `apt-get update && …`). Die Skripte
 > liegen als identische Kopien in den `files/home/.local/bin/`-Bundles aller drei Kits (kein separates
 > Kanonik-Verzeichnis). **Versionsänderungen**
-> (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie machen, dann die anderen identisch halten
+> (JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie machen, dann die anderen identisch halten
 > (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`, `claude-zurich-agent/files/home/.local/bin/`) → der Validate-only-Lauf
 > (`local-test-kits-validate-only`) schlägt bei Drift fehl.
 
@@ -460,7 +460,8 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
 | Docker Compose 5.4.0 (Plugin) | GitHub Releases (docker/compose) |
 | kubectl (latest stable) | dl.k8s.io |
-| Helm 3.21.3 (v3, Default) + 4.2.4 (v4) | get.helm.sh |
+| Helm 3.22.0 (v3, Default) + 4.3.0 (v4) | get.helm.sh |
+| Apache Kafka CLI 4.3.1 (Scala 2.13) | dlcdn.apache.org (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |
 | ctx7 | npm |
 | skills | npm (vercel-labs) |
 | prettier | npm |
@@ -474,7 +475,12 @@ Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und de
 > `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig (redundant).**
 > Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
-> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.22.0); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.3.0) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+
+> **Apache Kafka CLI:** Die Kafka-Distribution liegt unter `/opt/kafka`; `install-tooling.sh` legt für jedes
+> `bin/*.sh` einen Wrapper in `/usr/local/bin` an, der das Skript per absolutem Pfad ausführt (die Skripte
+> lösen ihr `base_dir` über `$(dirname $0)/..` auf — ein Symlink würde das brechen). `dlcdn.apache.org`
+> ist in der Network-Allowlist. Renovate trackt `KAFKA_VER` gegen `org.apache.kafka:kafka_2.13` (Maven).
 
 ## Mammouth Authentication
 
@@ -531,5 +537,5 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 - **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig. Optional Zugriff auf den **Windows-Host-Daemon** (Container des Hosts sehen/steuern): Docker Desktop → Settings → General → **"Expose daemon on tcp://localhost:2375 without TLS"** aktivieren und in der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen (`host.docker.internal:2375` ist in der Network-Allowlist, siehe `permissions.network.allow`).
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
-- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run mammouth`).
+- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run ./mammouth-agent/`).
 - **Kit-spec v2**: Alle Kits (`opencode-agent/spec.yaml` (Mixin), `mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`) nutzen die **stabilen** v2-Felder `schemaVersion: "2"` + `permissions.network.allow` + `setup` + `agentInstructions` (flacher `entrypoint`) — benötigt **sbx v0.38+** (strikte v2-Grammatik; ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler). Validieren mit `sbx kit validate ./opencode-agent` (bzw. `./mammouth-agent`, `./claude-zurich-agent`) und `sbx kit inspect ... --output json | jq '.warnings'` (erwartet `[]`). Migration aufs offizielle Skript: `git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git && go run scripts/migrate-v1-to-v2.go <kit-dir>`. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.

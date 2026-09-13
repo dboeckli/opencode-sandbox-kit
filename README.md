@@ -3,7 +3,7 @@
 [![Validate Kit](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml)
 [![Kit e2e](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml)
 
-Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, and kubectl. Enthält zusätzlich ein dediziertes **Mammouth Code Agent-Kit** (`mammouth-agent/`, `kind: sandbox`, entrypoint `mammouth`).
+Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich ein dediziertes **Mammouth Code Agent-Kit** (`mammouth-agent/`, `kind: sandbox`, entrypoint `mammouth`).
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
 
@@ -33,9 +33,8 @@ sbx run claude --name claude-zurich `
     --static-mcp idea `
     --kit ./claude-zurich-agent/ `
     -t docker/sandbox-templates:claude-code-docker-0.5.0
-sbx run mammouth --name mammouth-sandbox `
-    --static-mcp idea `
-    --kit ./mammouth-agent/
+sbx run ./mammouth-agent/ --name mammouth-sandbox `
+    --static-mcp idea
 
 
 ```powershell
@@ -64,9 +63,8 @@ sbx run claude --name claude-zurich `
     --static-mcp idea `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" `
     -t docker/sandbox-templates:claude-code-docker-0.5.0
-sbx run mammouth --name mammouth-sandbox `
-    --static-mcp idea `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
+sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" --name mammouth-sandbox `
+    --static-mcp idea
 
 # Kit mit anderem Projekt verwenden
 sbx run opencode --name spring-6-reactive `
@@ -84,9 +82,8 @@ sbx run claude --name spring-6-reactive `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" `
     -t docker/sandbox-templates:claude-code-docker-0.5.0 `
     "C:\development\projects\spring-6-reactive"
-sbx run mammouth --name spring-6-reactive `
+sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" --name spring-6-reactive `
     --static-mcp idea `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     "C:\development\projects\spring-6-reactive"
 ```
 
@@ -123,9 +120,8 @@ sbx run claude --name spring-6-reactive \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" \
     -t docker/sandbox-templates:claude-code-docker-0.5.0 \
     "/mnt/c/development/projects/spring-6-reactive"
-sbx run mammouth --name spring-6-reactive \
+sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" --name spring-6-reactive \
     --static-mcp idea \
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     "/mnt/c/development/projects/spring-6-reactive"
 ```
 
@@ -153,9 +149,8 @@ sbx run claude --name claude-zurich `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
-sbx run mammouth --name mammouth-sandbox `
+sbx run ./mammouth-agent/ --name mammouth-sandbox `
     --static-mcp idea `
-    --kit ./mammouth-agent/ `
     "C:\development\projects\opencode-sandbox-kit" `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
@@ -302,11 +297,11 @@ sondern vom Template beim `sbx run`:
 |-------|----------|---------------|
 | OpenCode | `opencode-docker` (Pin `0.5.0`) | `sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` |
 | Claude Code | `claude-code-docker` (Pin `0.5.0`) | `sbx run claude --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` |
-| Mammouth Code | `opencode-docker` (Pin `0.5.0`, eigenes Agent-Kit `mammouth-agent/`) | `sbx run mammouth --name mammouth-sandbox --static-mcp idea --kit ./mammouth-agent/` (Pin im spec-Image) |
+| Mammouth Code | `opencode-docker` (Pin `0.5.0`, eigenes Agent-Kit `mammouth-agent/`) | `sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea` (Pin im spec-Image) |
 
 > **IntelliJ MCP via sbx MCP Gateway:** Einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 > (Host-Loopback, SSRF-Guard umgehen), dann `--static-mcp idea` beim Erzeugen oder `sbx mcp load idea --sandbox <name>`.
-> Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Skills, ctx7) und den IntelliJ MCP über den Gateway
+> Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
 
@@ -325,7 +320,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 - **Entrypoint**: `mammouth` (direkt, ohne Template-Umweg)
 - **Auth**: `credentials[].apiKey` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
   `inject` als `Authorization: Bearer`) — kit-spec v2
-- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, ctx7, Skills)
+- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, ctx7, Skills)
 - **Config**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
@@ -425,11 +420,11 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Skills) und zeigt den Report als
+(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills) und zeigt den Report als
 `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK skills:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK kafka:OK skills:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -456,7 +451,8 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
 | Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
-| Helm | 3.21.3 (v3) + 4.2.4 (v4) | `/usr/local/bin/helm`, `/usr/local/bin/helm4` |
+| Helm | 3.22.0 (v3) + 4.3.0 (v4) | `/usr/local/bin/helm`, `/usr/local/bin/helm4` |
+| Apache Kafka CLI | 4.3.1 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
@@ -474,7 +470,7 @@ in den `files/home/.local/bin/`-Bundles der drei Kits liegen (kein separates Kan
 
 | Skript (opencode-agent/files/home/.local/bin/) | Nutzer | Inhalt |
 |--------|--------|--------|
-| `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm |
+| `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm, Apache Kafka CLI |
 | `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`), Claude statusline, Repsy-Doku-Checkout (`~/docs/repsy-docs`) |
 
 Alle drei Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
@@ -483,12 +479,12 @@ Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
 
 **Granularer Install im TUI:** Die npm/apt-Pakete stehen als eigene `setup.install`-Commands direkt in
 der Spec (`npm_config_bin_links=true npm install -g ctx7`, `apt-get update && apt-get install …`),
-die restlichen Tools rufen `install-tooling.sh <tool>` pro Tool (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4`,
+die restlichen Tools rufen `install-tooling.sh <tool>` pro Tool (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`,
 Default `all`). Dadurch zeigt die `sbx run`-Konsole **jedes Tool einzeln** als Zeile (Spinner → ✓ mit Dauer).
 Das Script loggt pro Tool `phase=… start/done` + eine Zeile mit Wall-Clock-Timestamp nach
 `/var/log/sbx-kit-install.log` (siehe [docs/debugging-analysis-logging.md](docs/debugging-analysis-logging.md)).
 
-**Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, shfmt) in einer Kit-Kopie vornehmen, dann die
+**Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie vornehmen, dann die
 übrigen identisch halten (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`,
 `claude-zurich-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
 (`local-test/local-test-kits.py`, IntelliJ-Config `local-test-kits-validate-only`) schlägt fehl, wenn die
@@ -505,7 +501,14 @@ Stellen nichts ändern.
 
 Verifikation in einer laufenden Sandbox: `npm config get bin-links` → `false` (das `npm_config_bin_links`-Env überschreibt den Default).
 
-> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.21.3); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.2.4) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.22.0); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.3.0) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+
+> **Apache Kafka CLI:** Die komplette Kafka-Distribution liegt unter `/opt/kafka`; für die `bin/*.sh`-Skripte
+> (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`,
+> `kafka-configs.sh`, …) legt `install-tooling.sh` dünne Wrapper in `/usr/local/bin` an, die das jeweilige
+> Skript per absolutem Pfad ausführen (die Skripte lösen ihr `base_dir` über `$(dirname $0)/..` auf — ein
+> Symlink würde das brechen). Voraussetzung ist das installierte JDK. Renovate trackt `KAFKA_VER` gegen
+> `org.apache.kafka:kafka_2.13` (Maven Central).
 
 ### Repsy Doku (offline)
 
@@ -654,7 +657,7 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 ### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
-`sbx run mammouth --name mammouth-sandbox --kit ./mammouth-agent/`) betrieben, das Mammouth automatisch
+`sbx run ./mammouth-agent/ --name mammouth-sandbox`) betrieben, das Mammouth automatisch
 beim Build installiert (gepinnt auf **v1.17.11.2**: `curl -fsSL https://code.mammouth.ai/install.sh |
 VERSION=1.17.11.2 bash` + Symlink). Das
 `opencode-agent/`-Kit (`sbx run opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
