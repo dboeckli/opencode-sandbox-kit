@@ -172,7 +172,6 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set github -t "<token>"` | `gh` CLI |
 | GitHub Packages Maven | klassisches PAT, Scope `read:packages` | `sbx secret set github-maven -t "<pat>"` | Maven-Builds mit GitHub-Packages-Dependency |
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
-| Zurich | Zurich LiteLLM API-Key | `sbx secret set zurich` | Claude Code (Zurich-Proxy, `claude-zurich-agent/`) |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode + Mammouth (Default-Modell `deepseek/…`) |
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
@@ -282,27 +281,6 @@ sbx secret ls   # sollte "anthropic (stored)" zeigen
 ```
 
 In der Sandbox sollte `env | grep -i ANTHROPIC` leer sein, während API-Calls über den Proxy trotzdem funktionieren.
-
-### Zurich LiteLLM (separates Kit `claude-zurich-agent/`)
-
-Das `opencode-agent/`-Kit ist der **Home-Standard** (Claude Code gegen `api.anthropic.com`, Modell `claude-sonnet-4-6`).
-Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-emea.zurich.com`, nur im
-Firmennetz erreichbar) das separate Kit `claude-zurich-agent/` verwenden:
-
-```powershell
-sbx run claude `
-    --kit ./claude-zurich-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
-    --static-mcp idea
-sbx secret set zurich
-```
-
-Es setzt `ANTHROPIC_BASE_URL`, die `eu.anthropic.*`-Modell-Aliasse (`ANTHROPIC_MODEL`/`ANTHROPIC_DEFAULT_SONNET_MODEL`
-= `eu.anthropic.claude-sonnet-4-6`, `ANTHROPIC_DEFAULT_OPUS_MODEL` = `eu.anthropic.claude-opus-4-8`,
-`ANTHROPIC_DEFAULT_HAIKU_MODEL`/`CLAUDE_CODE_SUBAGENT_MODEL` = `eu.anthropic.claude-haiku-4-5-20251001-v1:0`,
-sonst 403 `key not allowed to access model`) und den Service `zurich` (`proxyManaged: true`, Header
-`Authorization: Bearer` + `x-api-key`). Details: `claude-zurich-agent/README.md`.
 
 ### Mammouth Authentication
 
@@ -473,8 +451,8 @@ Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py -
 IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
 Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
 **schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
-Alle Kits führen identische Kopien (`opencode-agent/files/home/`, `mammouth-agent/files/home/`,
-`claude-zurich-agent/files/home/`), weil jeder Agent sein eigenes
+Beide Kits führen identische Kopien (`opencode-agent/files/home/`, `mammouth-agent/files/home/`),
+weil jeder Agent sein eigenes
 `files/home/`-Mapping hat.
 
 Nutzungsregeln (SO-1…SO-4):
@@ -516,7 +494,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.5.0 (alle drei Kits, gleiche Version; Mammouth via spec-Image, kein --template nötig)
+# Template-Version gepinnt auf 0.5.0 (beide Kits, gleiche Version; Mammouth via spec-Image, kein --template nötig)
 
 # OpenCode (Home-Standard)
 sbx run opencode `
@@ -528,13 +506,6 @@ sbx run opencode `
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
-    --static-mcp idea
-
-# Claude Code gegen den Zurich-LiteLLM-Proxy (Büro)
-sbx run claude `
-    --kit ./claude-zurich-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
@@ -564,8 +535,8 @@ Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md
 ## 7. Verifikation
 
 ```powershell
-python local-test\local-test-kits.py --validate-only   # Kit-Validierung (3 Kits) + Drift-Checks
-python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Claude-Zurich/Mammouth)
+python local-test\local-test-kits.py --validate-only   # Kit-Validierung (beide Kits) + Drift-Checks
+python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Mammouth)
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).

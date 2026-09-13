@@ -2,11 +2,11 @@ name: Kit e2e
 
 # End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
 # non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
-# register fake API-key secrets for github/github-maven/anthropic/mammouth/context7/openrouter/google/zurich, and run the 4 agent scenarios
-# (OpenCode / Claude / Claude-Zurich / Mammouth) from local-test/local-test-kits.py with
+# register fake API-key secrets for github/github-maven/anthropic/mammouth/context7/openrouter/google, and run the 3 agent scenarios
+# (OpenCode / Claude / Mammouth) from local-test/local-test-kits.py with
 # `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
 #
-# The 4 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
+# The 3 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
 # each on its own runner with the full setup (sbx, secrets, Docker Hub login).
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
@@ -36,10 +36,10 @@ jobs:
       # parallelen Jobs nicht ab (ersetzt das fruehere `success() || failure()`).
       fail-fast: false
       matrix:
-        scenario: [opencode, claude, claude-zurich, mammouth]
+        scenario: [opencode, claude, mammouth]
     env:
-      # Sandbox-Template-Version (gepinnt, alle drei Kits) — Muss mit validate.yml identisch sein;
-      # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (-t docker/sandbox-templates:<name>-<pin>).
+      # Sandbox-Template-Version (gepinnt, beide Kits) — Muss mit validate.yml identisch sein;
+      # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (--template docker/sandbox-templates:<name>-<pin>).
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
       TEMPLATE_VERSION: 0.5.0
     steps:
@@ -142,11 +142,11 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/context7/openrouter/google/zurich fake)
+      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/context7/openrouter/google fake)
         # local-test/local-test-kits.py asserts these global services exist
         # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
         # `gh auth status` passes inside the sandbox; github-maven, anthropic,
-        # mammouth, context7, openrouter, google and zurich get fake keys — enough to prove the
+        # mammouth, context7, openrouter and google get fake keys — enough to prove the
         # kit's proxy env wiring.
         # `-g` was removed in sbx v0.38 (secrets are global by default);
         # `-f` overwrites an existing entry.
@@ -163,7 +163,6 @@ jobs:
           printf '%s' 'google-fake-ci-key' | sbx secret set google -f
           printf '%s' 'stackoverflow-fake-ci-key' | sbx secret set stackoverflow -f
           printf '%s' 'cloudsmith-fake-ci-key' | sbx secret set cloudsmith -f
-          printf '%s' 'zurich-fake-ci-key' | sbx secret set zurich -f
 
       - name: Pre-create credential bindings (third-party v2 kit)
         # Third-party schemaVersion:"2" kits require an approved credential
@@ -192,9 +191,6 @@ jobs:
             github-maven:
               apiKey:
                 domains: [maven.pkg.github.com]
-            zurich:
-              apiKey:
-                domains: [genai-lounge-nx-litellm-uat-emea.zurich.com]
           EOF
 
       - name: Initialize global network policy (balanced)

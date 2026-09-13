@@ -2,16 +2,14 @@
 set -euo pipefail
 
 # Shared tooling installation (root). Single source of truth for the `setup.install`
-# tooling steps that all kit specs reference:
+# tooling steps that both kit specs reference:
 #   - opencode-agent/spec.yaml (mixin, OpenCode/Claude Home)
 #   - mammouth-agent/spec.yaml (Mammouth Code)
-#   - claude-zurich-agent/spec.yaml (Claude Code Zurich)
 #
-# The script is bundled into the sandbox via files/home/.local/bin/ (all kits) and
-# executed by `setup.install` as root. It must stay identical in all kits — edit one
-# copy, then `cp` it to the others (`mammouth-agent/files/home/.local/bin/`,
-# `claude-zurich-agent/files/home/.local/bin/`). Renovate bumps tool versions in all
-# copies together (validate-check fails on drift).
+# The script is bundled into the sandbox via files/home/.local/bin/ (both kits) and
+# executed by `setup.install` as root. It must stay identical in both kits — edit one
+# copy, then `cp` it to the other (`mammouth-agent/files/home/.local/bin/`). Renovate
+# bumps tool versions in both copies together (validate-check fails on drift).
 #
 # Tools: `install-tooling.sh [shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all]`.
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`

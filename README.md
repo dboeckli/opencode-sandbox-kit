@@ -31,11 +31,6 @@ sbx run claude `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
-sbx run claude `
-    --kit ./claude-zurich-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
-    --static-mcp idea
 sbx run ./mammouth-agent/ `
     --no-share-skills `
     --static-mcp idea
@@ -75,11 +70,6 @@ sbx run claude `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
-sbx run claude `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
-    --static-mcp idea
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --no-share-skills `
     --static-mcp idea
@@ -97,12 +87,6 @@ sbx run claude `
     --no-share-skills `
     --static-mcp idea `
     "C:\development\projects\spring-6-reactive"
-sbx run claude `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
-    --static-mcp idea `
-    "C:\development\projects\spring-6-reactive"
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --no-share-skills `
     --static-mcp idea `
@@ -111,13 +95,13 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 
 > **Template-Version (gepinnt):** Alle Kits nutzen Template-Tag **`0.5.0`** (2026-08-26).
 > - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.5.0`
-> - **Claude (Home *und* Zurich)**: `docker/sandbox-templates:claude-code-docker-0.5.0`
+> - **Claude (Home)**: `docker/sandbox-templates:claude-code-docker-0.5.0`
 >
-> Die **Version** (gilt für alle drei Kits) ist mehrfach gepinnt und wird auf Konsistenz geprüft:
+> Die **Version** (gilt für beide Kits) ist mehrfach gepinnt und wird auf Konsistenz geprüft:
 > explizit als Konstante in `local-test/local-test-kits.py` (Pin der lokalen Tests, Renovate-managed),
 > als `TEMPLATE_VERSION` in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed, wie
-> `SBX_VERSION`) sowie als Mirror im `sandbox.image` von `mammouth-agent/spec.yaml`. Die Mixin-Kits
-> (`opencode-agent/`, `claude-zurich-agent/`) pinnen das Template per
+> `SBX_VERSION`) sowie als Mirror im `sandbox.image` von `mammouth-agent/spec.yaml`. Das Mixin-Kit
+> (`opencode-agent/`) pinnt das Template per
 > `--template docker/sandbox-templates:<template>-<version>` im Start-Command.
 > `python local-test/local-test-kits.py --validate-only` prüft die Pins gegen die Docker-Hub-Tags und
 > **warnt** (gelb), sobald ein neuerer Tag existiert (`opencode-docker` ODER `claude-code-docker`);
@@ -135,12 +119,6 @@ sbx run opencode \
     "/mnt/c/development/projects/spring-6-reactive"
 sbx run claude \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 \
-    --no-share-skills \
-    --static-mcp idea \
-    "/mnt/c/development/projects/spring-6-reactive"
-sbx run claude \
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent" \
     --template docker/sandbox-templates:claude-code-docker-0.5.0 \
     --no-share-skills \
     --static-mcp idea \
@@ -170,14 +148,6 @@ sbx run claude `
     . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
-sbx run claude `
-    --kit ./claude-zurich-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
-    --static-mcp idea `
-    . `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
 sbx run ./mammouth-agent/ `
     --no-share-skills `
     --static-mcp idea `
@@ -190,8 +160,6 @@ sbx kit add <sandbox-name> `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
 sbx kit add <sandbox-name> `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
-sbx kit add <sandbox-name> `
-    "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=claude-zurich-agent"
 sbx kit add <sandbox-name> `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 ```
@@ -400,7 +368,7 @@ Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 
 ## Automatisierter Kit-Test
 
-Die 4 Agent-Szenarien (OpenCode, Claude Home, Claude Zurich, Mammouth) lassen sich lokal automatisiert testen —
+Die 3 Agent-Szenarien (OpenCode, Claude Home, Mammouth) lassen sich lokal automatisiert testen —
 `local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
 
@@ -419,18 +387,18 @@ python .\local-test\local-test-kits.py --validate-only   # nur Kit-Validierung, 
 ```
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
-globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `zurich`, `mammouth`, `context7`).
+globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `mammouth`, `context7`).
 
 ### GitHub Actions (CI)
 
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.42.0`), validiert alle 3 Kits (`sbx kit validate ./opencode-agent/`,
-  `./mammouth-agent/`, `./claude-zurich-agent/`) und prüft, dass die Install-Skript-Kopien
-  (`files/home/.local/bin/`) in allen Kits identisch sind.
+  (`SBX_VERSION`, aktuell `v0.42.0`), validiert beide Kits (`sbx kit validate ./opencode-agent/`,
+  `./mammouth-agent/`) und prüft, dass die Install-Skript-Kopien
+  (`files/home/.local/bin/`) in beiden Kits identisch sind.
 - **`e2e.yml`** — bei jedem Push/PR + nightly (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
-  alle 4 Szenarien (`local-test-kits.py opencode|claude|claude-zurich|mammouth --ci`) mit KVM-Zugriff,
+  alle 3 Szenarien (`local-test-kits.py opencode|claude|mammouth --ci`) mit KVM-Zugriff,
   Docker-Hub-Login (`DOCKER_USERNAME`/`DOCKER_PAT`) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
 
@@ -495,17 +463,17 @@ Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
 
 ### Install-Skripte (Single Source of Truth)
 
-Der komplette `setup.install`-Tooling-Block ist in alle drei Kit-Specs (`opencode-agent/spec.yaml`,
-`mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`)
+Der komplette `setup.install`-Tooling-Block ist in beide Kit-Specs (`opencode-agent/spec.yaml`,
+`mammouth-agent/spec.yaml`)
 dedupliziert. Die Install-Befehle sind in **zwei gemeinsamen Skripten** gebündelt, die als identische Kopien
-in den `files/home/.local/bin/`-Bundles der drei Kits liegen (kein separates Kanonik-Verzeichnis):
+in den `files/home/.local/bin/`-Bundles der beiden Kits liegen (kein separates Kanonik-Verzeichnis):
 
 | Skript (opencode-agent/files/home/.local/bin/) | Nutzer | Inhalt |
 |--------|--------|--------|
 | `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm, Apache Kafka CLI |
 | `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`), Claude statusline, Repsy-Doku-Checkout (`~/docs/repsy-docs`) |
 
-Alle drei Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
+Beide Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
 `setup.install` im Sandbox-Home (siehe [Docker Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)),
 Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
 
@@ -517,10 +485,10 @@ Das Script loggt pro Tool `phase=… start/done` + eine Zeile mit Wall-Clock-Tim
 `/var/log/sbx-kit-install.log` (siehe [docs/debugging-analysis-logging.md](docs/debugging-analysis-logging.md)).
 
 **Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie vornehmen, dann die
-übrigen identisch halten (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`,
-`claude-zurich-agent/files/home/.local/bin/`). Der `--validate-only`-Lauf
+andere identisch halten (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`).
+Der `--validate-only`-Lauf
 (`local-test/local-test-kits.py`, IntelliJ-Config `local-test-kits-validate-only`) schlägt fehl, wenn die
-drei Kit-Kopien abweichen. Renovate trackt die Versionen via `customManager` gegen **alle** Kopien.
+beiden Kit-Kopien abweichen. Renovate trackt die Versionen via `customManager` gegen **beide** Kopien.
 
 ### npm bin-links: Install vs. Laufzeit
 
@@ -665,7 +633,7 @@ Stelle zudem sicher, dass Port 64615 in der Windows-Firewall freigegeben ist.
 
 ### Kit-Spec v2 und die sbx-Version
 
-Alle drei Kits (`opencode-agent/`, `mammouth-agent/`, `claude-zurich-agent/`) sind auf die
+Beide Kits (`opencode-agent/`, `mammouth-agent/`) sind auf die
 **v2-Kit-Grammatik** migriert:
 `schemaVersion: "2"`, `permissions.network.allow`, `credentials[].apiKey` (`apiKey.name` + `inject`),
 `setup.install` und `setup.startup`, Top-Level `environment.variables`, `agentInstructions` sowie flacher

@@ -11,9 +11,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     env:
-      # Sandbox-Template-Version (gepinnt, alle drei Kits): gilt fuer opencode-docker (OpenCode +
-      # Mammouth) und claude-code-docker (Claude Home + Zurich), die in Lockstep gleiche Versionsnummern
-      # tragen. Source of Truth fuer die -t-Pins der Mixin-Kits und das Mammouth-spec-Image;
+      # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
+      # Mammouth) und claude-code-docker (Claude Home), die in Lockstep gleiche Versionsnummern
+      # tragen. Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
       TEMPLATE_VERSION: 0.5.0
     steps:
@@ -49,16 +49,12 @@ jobs:
       - name: Validate Mammouth agent kit spec
         run: sbx kit validate ./mammouth-agent/
 
-      - name: Validate Claude Zurich agent kit spec
-        run: sbx kit validate ./claude-zurich-agent/
-
       - name: Check install-script copies are in sync
-        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (alle drei Kits);
-        # alle Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
-        # anderen per cp synchronisieren; Renovate aktualisiert alle gemeinsam).
+        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (beide Kits);
+        # beide Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
+        # andere per cp synchronisieren; Renovate aktualisiert beide gemeinsam).
         run: |
           set -euo pipefail
           for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py; do
             cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
-            cmp "opencode-agent/files/home/.local/bin/$f" "claude-zurich-agent/files/home/.local/bin/$f"
           done
