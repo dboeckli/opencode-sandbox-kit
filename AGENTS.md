@@ -468,21 +468,21 @@ nötig.
 Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.5.0` (2026-08-26) für beide Kits: OpenCode/Mammouth `opencode-docker-0.5.0`, Claude (Home) `claude-code-docker-0.5.0` — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `--template` im Command, das Mammouth-Agent-Kit (`kind: sandbox`) via spec-Image (Mirror). `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
 
 ```powershell
-sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check   # einmalig (IntelliJ MCP auf Host-Loopback, SSRF-Guard umgehen)
+sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --no-share-skills `
-    --static-mcp idea      # OpenCode (opencode-docker Template, Pin 0.5.0)
+    --static-mcp idea
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
-    --static-mcp idea      # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
+    --static-mcp idea
 sbx run ./mammouth-agent/ `
     --no-share-skills `
-    --static-mcp idea      # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
+    --static-mcp idea
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
