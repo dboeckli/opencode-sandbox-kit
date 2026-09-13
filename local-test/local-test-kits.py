@@ -8,7 +8,7 @@ Szenarien:
   1. OpenCode + opencode-agent    (sbx create opencode --kit ./opencode-agent/)
   2. Claude   + opencode-agent    (sbx create claude --kit ./opencode-agent/)      — Home (api.anthropic.com)
   3. Claude   + claude-zurich-agent (sbx create claude --kit ./claude-zurich-agent/) — Zurich LiteLLM-Proxy
-  4. Mammouth + mammouth-agent    (sbx create mammouth --kit ./mammouth-agent/)
+  4. Mammouth + mammouth-agent    (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
@@ -110,9 +110,9 @@ AGENT_TEMPLATES = {"opencode": "opencode-docker", "claude": "claude-code-docker"
 MAMMOUTH_INSTALL_RE = re.compile(r"install\.sh\s*\|\s*VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)\s+bash")
 MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
-# Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige `sbx create <agent> --kit <dir>`-
-# Szenario in der Sandbox benötigt (Kit-deklarierte Services aus den Specs credentials[].service +
-# Template-Built-ins wie github/anthropic). Nur das Zurich-Szenario braucht das zurich-Secret;
+# Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
+# benötigt (Kit-deklarierte Services aus den Specs credentials[].service + Template-Built-ins
+# wie github/anthropic). Nur das Zurich-Szenario braucht das zurich-Secret;
 # openrouter/google verdrahtet nur das opencode-Template. Fehlermeldungen nennen das betroffene Kit.
 SCENARIO_KIT = {
     "opencode": "opencode-agent",
@@ -408,6 +408,21 @@ def _template_image(agent):
     return f"docker/sandbox-templates:{fam}-{TEMPLATE_VERSION}"
 
 
+KIT_KIND_RE = re.compile(r"^kind:\s*(?P<v>\S+)", re.M)
+
+
+def _kit_kind(kit_dir):
+    """`kind` (mixin|sandbox) aus der spec.yaml eines Kits.
+    Sandbox-Kits werden bei `sbx create`/`sbx run` als erstes positionales Argument
+    uebergeben; `--kit` ist fuer Sandbox-Kits deprecated (sbx >= 0.42, gilt nur fuer Mixin-Kits)."""
+    path = os.path.join(kit_dir, "spec.yaml")
+    if not os.path.isfile(path):
+        return "mixin"
+    with open(path, encoding="utf-8") as f:
+        m = KIT_KIND_RE.search(f.read())
+    return m.group("v") if m else "mixin"
+
+
 def _mammouth_cli_pin_version():
     return _spec_version(MAMMOUTH_INSTALL_RE)
 
@@ -613,7 +628,7 @@ def main():
         'for t in "ctx7:ctx7 --version" "gh:gh auth status" "java:java -version" '
         '"javac:javac -version" "mvn:mvn -version" "docker:docker version" '
         '"kubectl:kubectl version --client" "jq:jq --version" "node:node --version" '
-        '"npm:npm --version"; do '
+        '"npm:npm --version" "kafka:kafka-topics.sh --version"; do '
         'name="${t%%:*}"; cmd="${t#*:}"; if $cmd >/dev/null 2>&1; then echo "TOOL-OK:$name"; '
         'else echo "TOOL-FAIL:$name"; fi; done'
     )
@@ -677,7 +692,12 @@ def main():
         if template_fam and not template_image:
             sfail("template pin (TEMPLATE_VERSION-Konstante fehlt)")
             continue
-        create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
+        if _kit_kind(s["kit"]) == "sandbox":
+            # Sandbox-Kit (kind:sandbox) definiert den Agenten selbst → Kit als erstes
+            # positionales Argument; kein Agent-Name, kein --kit (deprecated fuer Sandbox-Kits).
+            create_cmd = ["create", "--name", s["name"], s["kit"], ws]
+        else:
+            create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
         if template_image:
             create_cmd += ["-t", template_image]
             info(f"  Template gepinnt: {template_image}")
@@ -715,7 +735,7 @@ def main():
         c2, out = exec_sandbox(s["name"], tools_cmd)
         ok_tools = set(re.findall(r"TOOL-OK:(\w+)", out))
         missing_tools = []
-        for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm"):
+        for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka"):
             if t in ok_tools:
                 pass_(f"tool: {t}")
             else:

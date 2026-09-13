@@ -80,6 +80,13 @@ else
   report="$report helm:FAIL"
 fi
 
+# 7b. Kafka CLI (Apache distribution; bin/*.sh wrappers in /usr/local/bin)
+if kafka-topics.sh --version >/dev/null 2>&1; then
+  report="$report kafka:OK"
+else
+  report="$report kafka:FAIL"
+fi
+
 # 8. Skills
 if skills ls -g >/dev/null 2>&1; then
   report="$report skills:OK"

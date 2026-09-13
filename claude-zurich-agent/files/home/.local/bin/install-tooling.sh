@@ -13,7 +13,7 @@ set -euo pipefail
 # `claude-zurich-agent/files/home/.local/bin/`). Renovate bumps tool versions in all
 # copies together (validate-check fails on drift).
 #
-# Tools: `install-tooling.sh [shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|all]`.
+# Tools: `install-tooling.sh [shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all]`.
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
 # at once (previous behavior). npm is inlined directly into the spec.yaml commands; apt
@@ -198,6 +198,27 @@ run_helm4() {
 	log_step helm4
 }
 
+# --- Apache Kafka CLI (bin/*.sh) ---
+# Kafka-Skripte lösen ihr base_dir über `$(dirname $0)/..` auf — ein Symlink in
+# /usr/local/bin würde das brechen. Deshalb pro Skript ein kleiner Wrapper, der das
+# echte Skript per absolutem Pfad ausführt ($0 bleibt dort der echte Pfad).
+run_kafka() {
+	KAFKA_VER="4.3.1"
+	KAFKA_SCALA_VER="2.13"
+	download "https://dlcdn.apache.org/kafka/${KAFKA_VER}/kafka_${KAFKA_SCALA_VER}-${KAFKA_VER}.tgz" /tmp/kafka.tgz
+	mkdir -p /opt/kafka
+	tar -xzf /tmp/kafka.tgz -C /opt/kafka --strip-components=1
+	rm -f /tmp/kafka.tgz
+	local f name
+	for f in /opt/kafka/bin/*.sh; do
+		name="$(basename "${f}")"
+		printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "${f}" > "/usr/local/bin/${name}"
+		chmod +x "/usr/local/bin/${name}"
+	done
+	kafka-topics.sh --version
+	log_step kafka
+}
+
 # --- Dispatch ---
 PHASE="${1:-all}"
 case "${PHASE}" in
@@ -211,6 +232,7 @@ case "${PHASE}" in
 		run_step kubectl run_kubectl
 		run_step helm run_helm
 		run_step helm4 run_helm4
+		run_step kafka run_kafka
 		log_phase_done all
 		;;
 	shfmt)
@@ -237,8 +259,11 @@ case "${PHASE}" in
 	helm4)
 		run_step helm4 run_helm4
 		;;
+	kafka)
+		run_step kafka run_kafka
+		;;
 	*)
-		echo "Unknown tool: ${PHASE} (expected: shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|all)" >&2
+		echo "Unknown tool: ${PHASE} (expected: shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all)" >&2
 		exit 1
 		;;
 esac

@@ -140,8 +140,13 @@ Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
 
 ## Helm
 
-`helm` 3.21.3 (v3) at `/usr/local/bin/helm`, `helm4` 4.2.4 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
+`helm` 3.22.0 (v3) at `/usr/local/bin/helm`, `helm4` 4.3.0 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
 Docs: `npx ctx7 docs /helm/helm-www <query>` (Kubernetes package manager, charts).
+
+## Kafka CLI
+
+Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` ist in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
+Docs: `npx ctx7 docs /apache/kafka <query>`.
 
 ## Runtime tools / CLIs (docs via ctx7)
 
@@ -260,5 +265,5 @@ git -C ~/docs/repsy-docs pull --ff-only --quiet
 
 ## Startup checks
 
-A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, skills, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
+A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, kafka, skills, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->

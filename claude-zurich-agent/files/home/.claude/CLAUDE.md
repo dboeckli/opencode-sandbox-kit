@@ -186,7 +186,11 @@ Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-p
 
 ## Helm
 
-Helm 3.21.3 (v3) at `/usr/local/bin/helm`, Helm 4.2.4 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
+Helm 3.22.0 (v3) at `/usr/local/bin/helm`, Helm 4.3.0 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
+
+## Kafka CLI
+
+Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` ist in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
 
 ## Runtime tools / CLIs
 
@@ -245,5 +249,5 @@ The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Conne
 
 ## Startup checks
 
-A SessionStart hook runs the sandbox checks and passes a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, skills) as a system message at the start of the session. When you receive it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
+A SessionStart hook runs the sandbox checks and passes a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, kafka, skills) as a system message at the start of the session. When you receive it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->

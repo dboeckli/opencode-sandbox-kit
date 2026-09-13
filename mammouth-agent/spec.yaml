@@ -241,6 +241,8 @@ setup:
       description: Install Helm v3 — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh helm4"
       description: Install Helm v4 (as helm4) — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh kafka"
+      description: Install Apache Kafka CLI (bin/*.sh wrappers in /usr/local/bin) — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling-user.sh"
       user: "1000"
       description: Install agent-user tooling (skills + Claude statusline) — source files/home/.local/bin/install-tooling-user.sh
