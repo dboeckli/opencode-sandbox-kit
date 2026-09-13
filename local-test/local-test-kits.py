@@ -503,7 +503,7 @@ def check_template_update():
         warn(
             f"template version update available (Pin v{pin}, Docker Hub: {'; '.join(updates)})",
             f"Optional: TEMPLATE_VERSION-Konstante in local-test-kits.py + .github/workflows/*.yml erhoehen"
-            f" (Renovate), Mammouth-spec-Image + Start-Commands/README/AGENTS -t-Pins synchronisieren",
+            f" (Renovate), Mammouth-spec-Image + Start-Commands/README/AGENTS --template-Pins synchronisieren",
         )
     for p in problems:
         fail(f"template version (Pin v{pin}, Docker Hub: {p})")
@@ -684,9 +684,9 @@ def main():
 
         ws = tempfile.mkdtemp(prefix="sbx-kit-test-")
         info("  Sandbox erzeugen ...")
-        # Mixin-Kits (OpenCode/Claude): Template gepinnt via `-t docker/sandbox-templates:<family>-<pin>`
+        # Mixin-Kits (OpenCode/Claude): Template gepinnt via `--template docker/sandbox-templates:<family>-<pin>`
         # (TEMPLATE_VERSION-Konstante dieses Scripts) — so testet das Szenario die gepinnte
-        # Template-Version. Mammouth (kind:sandbox) braucht kein -t: Pin im spec-Image.
+        # Template-Version. Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
         if template_fam and not template_image:
@@ -698,9 +698,13 @@ def main():
             create_cmd = ["create", "--name", s["name"], s["kit"], ws]
         else:
             create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
+        # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
+        # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
+        # (install-tooling-user.sh), nicht vom Host.
         if template_image:
-            create_cmd += ["-t", template_image]
+            create_cmd += ["--template", template_image]
             info(f"  Template gepinnt: {template_image}")
+        create_cmd += ["--no-share-skills"]
         # IntelliJ MCP via sbx MCP Gateway (Issue #57): `--static-mcp idea` nur setzen, wenn der Server auf dem
         # Host registriert ist — sonst schlägt `sbx create` fehl (jeder static-mcp-Name muss registriert sein).
         # CI hat kein `idea` registriert → Sandbox ohne static-mcp; der Config-Check prüft dann nur die Whitelist,

@@ -32,7 +32,11 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 > kubectl hat lediglich keinen konfigurierten Cluster. Einfacher Start ohne Mount:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 ```
 
 > Mit Kubernetes-Zugriff (Mounts werden nur bei Sandbox-Erstellung gesetzt — beendet die
@@ -40,8 +44,15 @@ sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agen
 
 ```powershell
 # Recreate:
-sbx rm opencode-sandbox --force
-sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"
+sbx rm <sandbox-name> --force
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 | Aspekt | Detail |

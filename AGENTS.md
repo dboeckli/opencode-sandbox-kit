@@ -51,17 +51,87 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
 - `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
-- `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0` — test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`
-- `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`)
-- `sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0` — Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`); **gleiche** Template-Pin `0.5.0`
-- `sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea` — run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `-t` nötig)
-- `sbx run opencode --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — run from remote Git repo
-- `sbx run opencode --name spring-6-reactive --static-mcp idea --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" "C:\development\projects\spring-6-reactive"` — use kit with another project
-- `sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support + Maven-Host-Cache: Host-kubeconfig und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87)
-- `sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Claude Code)
-- `sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea "C:\development\projects\opencode-sandbox-kit" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"` — Kubernetes-Support (Mammouth Code)
-- `sbx kit add spring-6-reactive "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` — apply kit to an existing sandbox (restarts sandbox, preserves VM state)
+- Test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`:
+  ```powershell
+  sbx run opencode `
+      --kit ./opencode-agent/ `
+      --template docker/sandbox-templates:opencode-docker-0.5.0 `
+      --no-share-skills `
+      --static-mcp idea
+  ```
+- Test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`):
+  ```powershell
+  sbx run claude `
+      --kit ./opencode-agent/ `
+      --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+      --no-share-skills `
+      --static-mcp idea
+  ```
+- Claude Code gegen den Zurich-LiteLLM-Proxy (Büro; `opencode-agent/` ist der Home-Standard gegen `api.anthropic.com`); **gleiche** Template-Pin `0.5.0`:
+  ```powershell
+  sbx run claude `
+      --kit ./claude-zurich-agent/ `
+      --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+      --no-share-skills `
+      --static-mcp idea
+  ```
+- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `--template` nötig):
+  ```powershell
+  sbx run ./mammouth-agent/ `
+      --no-share-skills `
+      --static-mcp idea
+  ```
+- Run from remote Git repo:
+  ```powershell
+  sbx run opencode `
+      --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+      --no-share-skills `
+      --static-mcp idea
+  ```
+- Use kit with another project:
+  ```powershell
+  sbx run opencode `
+      --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+      --no-share-skills `
+      --static-mcp idea `
+      "C:\development\projects\spring-6-reactive"
+  ```
+- Kubernetes-Support + Maven-Host-Cache: Host-kubeconfig und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87):
+  ```powershell
+  sbx run opencode `
+      --kit ./opencode-agent/ `
+      --no-share-skills `
+      --static-mcp idea `
+      . `
+      "$env:USERPROFILE\.kube:ro" `
+      "C:\development\maven-repo:ro"
+  ```
+- Kubernetes-Support (Claude Code):
+  ```powershell
+  sbx run claude `
+      --kit ./opencode-agent/ `
+      --no-share-skills `
+      --static-mcp idea `
+      . `
+      "$env:USERPROFILE\.kube:ro" `
+      "C:\development\maven-repo:ro"
+  ```
+- Kubernetes-Support (Mammouth Code):
+  ```powershell
+  sbx run ./mammouth-agent/ `
+      --no-share-skills `
+      --static-mcp idea `
+      . `
+      "$env:USERPROFILE\.kube:ro" `
+      "C:\development\maven-repo:ro"
+  ```
+- Apply kit to an existing sandbox (restarts sandbox, preserves VM state):
+  ```powershell
+  sbx kit add <sandbox-name> `
+      "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+  ```
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
+- `--no-share-skills` gehört in **jedes** `sbx run`/`sbx create`: der Host-Shared-Skills-Store wird nicht gemountet (Trust Boundary); die Kit-Skills kommen aus `dboeckli/ai-agent-skills`, nicht vom Host. Nur bei Sandbox-Erstellung wirksam — bestehende Sandbox neu erstellen. Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`; die CLI selbst ist NICHT in Context7 — Offline-Referenz: `~/sbx-cli.md`)
 - `python local-test/local-test-kits.py` — automate the 4 scenarios (OpenCode/Claude/Claude-Zurich/Mammouth): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
@@ -222,7 +292,12 @@ Jede Sandbox lädt Dependencies neu. Um den **lokal gefüllten** Maven-Cache des
 `~/.m2/repository` **read-only** mounten (keine Credentials, nur Artefakte):
 
 ```powershell
-sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "C:\development\maven-repo:ro"
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --no-share-skills `
+    --static-mcp idea `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 Der settings.xml-Startup-Hook erkennt den Mount (`/c/Users/<user>/.m2/repository`, `/c/*/maven-repo` oder `/c/*/m2-repository`) und ergänzt ein aktives Profil mit
@@ -255,7 +330,11 @@ nur im Firmennetz erreichbar) das **separate Kit `claude-zurich-agent/`** verwen
 (`credentials[].apiKey` mit `name: ZURICH_LITELLM_API_KEY`, `proxyManaged: true`):
 
 ```powershell
-sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude `
+    --kit ./claude-zurich-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 sbx secret set zurich
 ```
 
@@ -418,15 +497,29 @@ nötig.
 
 ## Dual agent support
 
-Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.5.0` (2026-08-26) für alle drei Kits: OpenCode/Mammouth `opencode-docker-0.5.0`, Claude (Home **und** Zurich) `claude-code-docker-0.5.0` — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `-t` im Command, das Mammouth-Agent-Kit (`kind: sandbox`) via spec-Image (Mirror). `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
+Das Kit funktioniert mit **OpenCode, Claude Code und Mammouth Code** – der Agent wird nicht vom Kit bestimmt, sondern vom Template beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.5.0` (2026-08-26) für alle drei Kits: OpenCode/Mammouth `opencode-docker-0.5.0`, Claude (Home **und** Zurich) `claude-code-docker-0.5.0` — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `--template` im Command, das Mammouth-Agent-Kit (`kind: sandbox`) via spec-Image (Mirror). `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
 
 ```powershell
 sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check   # einmalig (IntelliJ MCP auf Host-Loopback, SSRF-Guard umgehen)
 
-sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0   # OpenCode (opencode-docker Template, Pin 0.5.0)
-sbx run claude   --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
-sbx run claude   --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0   # Claude Code gegen Zurich-LiteLLM-Proxy (Büro, gleiche Pin 0.5.0)
-sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea   # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea      # OpenCode (opencode-docker Template, Pin 0.5.0)
+sbx run claude `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea      # Claude Code (claude-code-docker Template, Home, Pin 0.5.0)
+sbx run claude `
+    --kit ./claude-zurich-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea      # Claude Code gegen Zurich-LiteLLM-Proxy (Büro, gleiche Pin 0.5.0)
+sbx run ./mammouth-agent/ `
+    --no-share-skills `
+    --static-mcp idea      # Mammouth Code (eigenes Agent-Kit, entrypoint mammouth; Pin 0.5.0 im spec-Image)
 ```
 
 Alle drei erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
@@ -537,5 +630,5 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 - **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig. Optional Zugriff auf den **Windows-Host-Daemon** (Container des Hosts sehen/steuern): Docker Desktop → Settings → General → **"Expose daemon on tcp://localhost:2375 without TLS"** aktivieren und in der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen (`host.docker.internal:2375` ist in der Network-Allowlist, siehe `permissions.network.allow`).
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
-- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run ./mammouth-agent/`).
+- **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run --no-share-skills ./mammouth-agent/`).
 - **Kit-spec v2**: Alle Kits (`opencode-agent/spec.yaml` (Mixin), `mammouth-agent/spec.yaml`, `claude-zurich-agent/spec.yaml`) nutzen die **stabilen** v2-Felder `schemaVersion: "2"` + `permissions.network.allow` + `setup` + `agentInstructions` (flacher `entrypoint`) — benötigt **sbx v0.38+** (strikte v2-Grammatik; ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler). Validieren mit `sbx kit validate ./opencode-agent` (bzw. `./mammouth-agent`, `./claude-zurich-agent`) und `sbx kit inspect ... --output json | jq '.warnings'` (erwartet `[]`). Migration aufs offizielle Skript: `git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git && go run scripts/migrate-v1-to-v2.go <kit-dir>`. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.
