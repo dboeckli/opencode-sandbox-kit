@@ -77,7 +77,11 @@ sbx mcp ls          # erwartet: idea   remote   ✓ ready
 sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: streamable-http
 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
-sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 ```
 
 > **Warum nicht `/sse`?** Der sbx MCP Gateway spricht bei Remote-Servern Streamable HTTP (POST `initialize`).
@@ -244,7 +248,12 @@ Um den lokal gefüllten Maven-Cache des Hosts zu nutzen (statt Neu-Download je S
 `~/.m2/repository` **read-only** mitmounten (keine Credentials, nur Artefakte):
 
 ```powershell
-sbx run opencode --name my-sandbox --static-mcp idea --kit ./opencode-agent/ "C:\development\projects\opencode-sandbox-kit" "C:\development\maven-repo:ro"
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --no-share-skills `
+    --static-mcp idea `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 Der settings.xml-Startup-Hook erkennt den Mount (`/c/Users/<user>/.m2/repository`, `/c/*/maven-repo` oder `/c/*/m2-repository`) und ergänzt ein aktives Profil mit
@@ -281,7 +290,11 @@ Für Claude Code über den Zurich-LiteLLM-Proxy (`genai-lounge-nx-litellm-uat-em
 Firmennetz erreichbar) das separate Kit `claude-zurich-agent/` verwenden:
 
 ```powershell
-sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude `
+    --kit ./claude-zurich-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 sbx secret set zurich
 ```
 
@@ -503,25 +516,46 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.5.0 (alle drei Kits, gleiche Version; Mammouth via spec-Image, kein -t nötig)
+# Template-Version gepinnt auf 0.5.0 (alle drei Kits, gleiche Version; Mammouth via spec-Image, kein --template nötig)
 
 # OpenCode (Home-Standard)
-sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 
 # Claude Code (Home, gegen api.anthropic.com)
-sbx run claude --name claude-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 
 # Claude Code gegen den Zurich-LiteLLM-Proxy (Büro)
-sbx run claude --name claude-zurich --static-mcp idea --kit ./claude-zurich-agent/ -t docker/sandbox-templates:claude-code-docker-0.5.0
+sbx run claude `
+    --kit ./claude-zurich-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea
 
 # Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
-sbx run ./mammouth-agent/ --name mammouth-sandbox --static-mcp idea
+sbx run ./mammouth-agent/ `
+    --no-share-skills `
+    --static-mcp idea
 ```
 
 Projekt einbinden + Kubernetes-Support:
 
 ```powershell
-sbx run opencode --name opencode-sandbox --static-mcp idea --kit ./opencode-agent/ -t docker/sandbox-templates:opencode-docker-0.5.0 "C:\development\projects\dein-projekt" "$env:USERPROFILE\.kube:ro" "C:\development\maven-repo:ro"
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --no-share-skills `
+    --static-mcp idea `
+    "C:\development\projects\dein-projekt" `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md`](AGENTS.md#commands) und
