@@ -1,0 +1,19 @@
+# Vibe pre_tool hooks for the mistral-vibe-agent sandbox kit.
+#
+# The image launches Vibe with the `auto-approve` agent profile (see the
+# Dockerfile CMD), which approves every tool call without prompting. The
+# IntelliJ MCP tools that arrive through the sbx MCP gateway are therefore
+# guarded here: only the read-only tools used by the kit are allowed, write/
+# execute tools and the gateway meta-tools are denied.
+#
+# The guard mirrors the OpenCode/Mammouth permission whitelist. It runs with
+# `strict = true`, so a hook failure (missing script/interpreter) denies the
+# tool instead of silently allowing it.
+[[hooks]]
+name = "mcp-gateway-readonly-guard"
+type = "pre_tool"
+match = "mcp-gateway_*"
+command = "python3 /home/agent/.config/sandbox-kit/vibe-mcp-guard.py"
+timeout = 30.0
+strict = true
+description = "Allow only read-only IntelliJ MCP tools; deny write/execute and gateway meta-tools."

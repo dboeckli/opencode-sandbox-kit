@@ -2,14 +2,19 @@ name: Kit e2e
 
 # End-to-end test: install a real `sbx` CLI, authenticate against Docker Hub
 # non-interactively (repo variable DOCKER_USERNAME / secret DOCKER_PAT),
-# register fake API-key secrets for github/github-maven/anthropic/mammouth/context7/openrouter/google, and run the 3 agent scenarios
-# (OpenCode / Claude / Mammouth) from local-test/local-test-kits.py with
-# `--ci` (no real mammouth/context7 API calls — fake keys only prove proxy wiring).
+# register fake API-key secrets for github/github-maven/anthropic/mammouth/mistral/context7/openrouter/google,
+# and run the 4 agent scenarios (OpenCode / Claude / Mammouth / Mistral Vibe)
+# from local-test/local-test-kits.py with `--ci` (no real
+# mammouth/mistral/context7 API calls — fake keys only prove proxy wiring).
 #
-# The 3 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
+# The 4 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
 # each on its own runner with the full setup (sbx, secrets, Docker Hub login).
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
+#
+# The `mistral-vibe` scenario pulls the published `domboeckli/sbx-mistral-vibe`
+# image; it must be published first (see publish-mistral-vibe-image.yml,
+# workflow_dispatch).
 
 on:
   push:
@@ -36,7 +41,7 @@ jobs:
       # parallelen Jobs nicht ab (ersetzt das fruehere `success() || failure()`).
       fail-fast: false
       matrix:
-        scenario: [opencode, claude, mammouth]
+        scenario: [opencode, claude, mammouth, mistral-vibe]
     env:
       # Sandbox-Template-Version (gepinnt, beide Kits) — Muss mit validate.yml identisch sein;
       # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (--template docker/sandbox-templates:<name>-<pin>).
@@ -142,11 +147,11 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/context7/openrouter/google fake)
+      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/mistral/context7/openrouter/google fake)
         # local-test/local-test-kits.py asserts these global services exist
         # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
         # `gh auth status` passes inside the sandbox; github-maven, anthropic,
-        # mammouth, context7, openrouter and google get fake keys — enough to prove the
+        # mammouth, mistral, context7, openrouter and google get fake keys — enough to prove the
         # kit's proxy env wiring.
         # `-g` was removed in sbx v0.38 (secrets are global by default);
         # `-f` overwrites an existing entry.
@@ -158,6 +163,7 @@ jobs:
           printf '%s' 'ghp-fake-ci-key' | sbx secret set github-maven -f
           printf '%s' 'sk-ant-fake-ci-key' | sbx secret set anthropic -f
           printf '%s' 'mammouth-fake-ci-key' | sbx secret set mammouth -f
+          printf '%s' 'mistral-fake-ci-key' | sbx secret set mistral -f
           printf '%s' 'ctx7op-fake-ci-key' | sbx secret set context7 -f
           printf '%s' 'openrouter-fake-ci-key' | sbx secret set openrouter -f
           printf '%s' 'google-fake-ci-key' | sbx secret set google -f

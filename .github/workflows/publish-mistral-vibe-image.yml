@@ -1,0 +1,89 @@
+name: Publish Mistral Vibe image
+
+# Builds and publishes the pinned `domboeckli/sbx-mistral-vibe` image that the
+# `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`).
+#
+# The image bakes a pinned Mistral Vibe version on top of the versioned `shell`
+# sandbox template, following https://docs.docker.com/guides/mistral-vibe-sandbox/.
+# Vibe is not a pre-built docker/sandbox-templates agent, so the kit ships its
+# own image instead of installing the agent at sandbox build time.
+#
+# Bootstrap: the image must exist on Docker Hub before the `mistral-vibe` e2e
+# scenario can run. On `workflow_dispatch` you can pick the branch and publish
+# the image before the PR's e2e run.
+#
+# The tag is the Vibe version from mistral-vibe-agent/Dockerfile (ARG
+# VIBE_VERSION) — a real version, not a moving tag. Renovate tracks the pin.
+# This workflow pushes only the version tag; a local bootstrap build
+# additionally tags `domboeckli/sbx-mistral-vibe:local` (see README).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - "mistral-vibe-agent/Dockerfile"
+      - "mistral-vibe-agent/spec.yaml"
+  pull_request:
+    paths:
+      - "mistral-vibe-agent/Dockerfile"
+      - "mistral-vibe-agent/spec.yaml"
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAMESPACE: domboeckli
+  IMAGE_NAME: sbx-mistral-vibe
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read Vibe version pin from Dockerfile
+        run: |
+          set -euo pipefail
+          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
+            | head -1 | cut -d= -f2)
+          if [ -z "$version" ]; then
+            echo "VIBE_VERSION pin not found in mistral-vibe-agent/Dockerfile" >&2
+            exit 1
+          fi
+          echo "VIBE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "Vibe version: $version"
+
+      - name: Check spec image tag matches the Dockerfile pin
+        run: |
+          set -euo pipefail
+          image=$(grep -oE 'image: *"?[^"]+' mistral-vibe-agent/spec.yaml | head -1)
+          echo "spec image: $image"
+          if ! printf '%s' "$image" | grep -q ":${VIBE_VERSION}$"; then
+            echo "spec.yaml sandbox.image tag does not match VIBE_VERSION=${VIBE_VERSION}" >&2
+            exit 1
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        # Push only on master/workflow_dispatch; PRs just validate the build.
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Build and push (multi-arch, provenance/SBOM)
+        uses: docker/build-push-action@v6
+        with:
+          context: mistral-vibe-agent
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          sbom: true
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.VIBE_VERSION }}

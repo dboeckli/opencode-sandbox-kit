@@ -1,0 +1,21 @@
+# Mistral Vibe configuration for the mistral-vibe-agent sandbox kit.
+# Docs: https://github.com/mistralai/mistral-vibe
+
+# IntelliJ MCP through the sbx MCP gateway. The gateway is sandbox
+# infrastructure (host-side, reachable as mcp-gateway.docker.internal) and
+# forwards the servers registered on the host that the sandbox was created
+# with (e.g. `--static-mcp idea`). Auth uses the proxy-managed sentinel, which
+# the sandbox proxy resolves; the real credentials never enter the VM.
+#
+# Tool permissions are enforced by the pre_tool hook in ~/.vibe/hooks.toml
+# (read-only whitelist), because the image launches Vibe with the
+# `auto-approve` agent profile, which bypasses the interactive permission
+# prompt.
+[[mcp_servers]]
+name = "mcp-gateway"
+transport = "streamable-http"
+url = "http://mcp-gateway.docker.internal/mcp"
+
+[mcp_servers.auth]
+type = "static"
+headers = { Authorization = "Bearer proxy-managed" }

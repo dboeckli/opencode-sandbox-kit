@@ -24,6 +24,12 @@
       "matchDatasources": ["github-releases"],
       "matchPackageNames": ["bell-sw/Liberica"],
       "allowedVersions": "/^(?:8|11|17|21|25)(?:\\.|-|$)/"
+    },
+    {
+      "description": "Mistral-Vibe-Pin (Dockerfile ARG VIBE_VERSION + spec-Image-Tag) gemeinsam aktualisieren",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["mistral-vibe"],
+      "groupName": "mistral-vibe"
     }
   ],
   "customManagers": [
@@ -135,6 +141,32 @@
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$",
       "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "Mistral Vibe version (mistral-vibe-agent/Dockerfile ARG VIBE_VERSION; PyPI) — spec-Image-Tag wird per packageRule mitgruppiert",
+      "managerFilePatterns": ["mistral-vibe-agent/Dockerfile"],
+      "matchStrings": ["ARG VIBE_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "mistral-vibe",
+      "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "description": "Mistral Vibe image tag (mistral-vibe-agent/spec.yaml sandbox.image; Mirror des Dockerfile-Pins)",
+      "managerFilePatterns": ["mistral-vibe-agent/spec.yaml"],
+      "matchStrings": ["sbx-mistral-vibe:(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "mistral-vibe",
+      "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "description": "Mistral Vibe Basis-Template (mistral-vibe-agent/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-<v>; muss TEMPLATE_VERSION spiegeln)",
+      "managerFilePatterns": ["mistral-vibe-agent/Dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^shell-(?<version>.*)$",
+      "versioningTemplate": "semver"
     }
   ]
 }

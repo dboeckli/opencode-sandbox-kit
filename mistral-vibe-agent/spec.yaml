@@ -1,0 +1,317 @@
+schemaVersion: "2"
+kind: sandbox
+name: mistral-vibe
+displayName: "Mistral Vibe"
+description: "Mistral Vibe Coding-Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
+
+sandbox:
+  # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-0.5.0
+  # + mistral-vibe<version>. Tag = Vibe-Version; Build/Publish multi-arch via docker buildx
+  # (provenance/SBOM). Renovate trackt den Vibe-Pin (PyPI) und das Image-Tag.
+  image: "docker.io/domboeckli/sbx-mistral-vibe:2.25.5"
+
+agentInstructions:
+  filename: AGENTS.md
+  content: |
+    ## Sandbox environment
+
+    You are running inside a Docker sandbox. The workspace is mounted at its
+    absolute host path. `sudo` is passwordless; use it for package installs.
+    Docker is available inside the sandbox; containers you start are isolated
+    in the microVM. The IntelliJ MCP server runs on the Windows host and is
+    delivered via the sbx MCP Gateway (registration `sbx mcp add idea --url
+    http://localhost:64615/stream`, sandbox with `--static-mcp idea`; port 64615
+    since IDEA 2026.2.2, previously 64342).
+
+permissions:
+  network:
+    allow:
+      # Mistral API (Vibe-Modell)
+      - "api.mistral.ai:443"
+      - "*.mistral.ai:443"
+      # Context7
+      - "context7.com:443"
+      - "*.context7.com:443"
+      # GitHub
+      - "api.github.com:443"
+      - "github.com:443"
+      - "*.github.com:443"
+      # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
+      - "maven.pkg.github.com:443"
+      - "objects.githubusercontent.com:443"
+      - "githubusercontent.com:443"
+      - "*.githubusercontent.com:443"
+      - "models.dev:443"
+      - "registry.npmjs.org:443"
+      - "dlcdn.apache.org:443"
+      # Apache Camel (Doku, Dependencies)
+      - "camel.apache.org:443"
+      - "*.camel.apache.org:443"
+      # JetBrains Help-Doku + Marketplace + YouTrack
+      - "jetbrains.com:443"
+      - "www.jetbrains.com:443"
+      - "plugins.jetbrains.com:443"
+      - "youtrack.jetbrains.com:443"
+      # IntelliJ IDEA MCP Server (Windows Host; MCP-Verbindung via sbx MCP Gateway → localhost:64615/stream,
+      # Port 64615 seit IDEA 2026.2.2, Legacy 64342; Allow-Eintrag nur für den Startup-Health-Check)
+      - "localhost:64342"
+      - "127.0.0.1:64342"
+      - "host.docker.internal:64342"
+      - "localhost:64615"
+      - "127.0.0.1:64615"
+      - "host.docker.internal:64615"
+      # Docker Desktop Kubernetes (kube-apiserver, Host via Docker Desktop DNS)
+      - "localhost:6443"
+      - "127.0.0.1:6443"
+      - "host.docker.internal:6443"
+      # Docker Desktop Docker Engine (Daemon-API via TCP, DOCKER_HOST=tcp://host.docker.internal:2375)
+      - "localhost:2375"
+      - "127.0.0.1:2375"
+      - "host.docker.internal:2375"
+      # Elastic REST-APIs (ELK-Stack im Host-Docker via Docker Compose)
+      - "localhost:9200"
+      - "127.0.0.1:9200"
+      - "host.docker.internal:9200"
+      - "localhost:5601"
+      - "127.0.0.1:5601"
+      - "host.docker.internal:5601"
+      - "localhost:8200"
+      - "127.0.0.1:8200"
+      - "host.docker.internal:8200"
+      # Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)
+      - "localhost:30920"
+      - "127.0.0.1:30920"
+      - "localhost:30561"
+      - "127.0.0.1:30561"
+      - "localhost:30820"
+      - "127.0.0.1:30820"
+      # Maven Central
+      - "repo1.maven.org:443"
+      - "maven.org:443"
+      - "*.maven.org:443"
+      # Spring
+      - "repo.spring.io:443"
+      - "spring.io:443"
+      - "*.spring.io:443"
+      - "start.spring.io:443"
+      # Docker
+      - "docker.io:443"
+      - "*.docker.io:443"
+      - "docker.com:443"
+      - "*.docker.com:443"
+      - "download.docker.com:443"
+      - "dl.k8s.io:443"
+      - "get.helm.sh:443"
+      # Zusätzliche Container-Registries (Observability / GitHub Packages)
+      - "docker.elastic.co:443"
+      - "docker-auth.elastic.co:443"
+      - "cr.jaegertracing.io:443"
+      - "ghcr.io:443"
+      # Private Maven- & Helm-Repositories
+      - "repo.repsy.io:443"
+      - "jitpack.io:443"
+      - "artifacts.cibseven.org:443"
+      - "packages.scm-manager.org:443"
+      # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry)
+      - "api.cloudsmith.io:443"
+      - "upload.cloudsmith.io:443"
+      - "docker.cloudsmith.io:443"
+      - "dl.cloudsmith.io:443"
+      # Cloudflare R2 (Object Storage)
+      - "**/*.r2.cloudflarestorage.com:443"
+      # Liberica JDK (Renovate Versions-API)
+      - "api.bell-sw.com:443"
+      # Ubuntu apt (archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)
+      - "archive.ubuntu.com"
+      - "security.ubuntu.com"
+      - "ports.ubuntu.com"
+      # MongoDB apt (Helm-Test-Pod)
+      - "repo.mongodb.org"
+      # Python / PyPI (mistral-vibe, uv)
+      - "pypi.org:443"
+      - "files.pythonhosted.org:443"
+      # Skills CLI (install via add-skill.vercel.sh)
+      - "add-skill.vercel.sh:443"
+      # Web search (last resort, allow-list for websearch/webfetch provider)
+      - "*.exa.ai:443"
+      # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
+      - "api.stackexchange.com:443"
+
+credentials:
+  - service: mistral
+    description: "Mistral API-Key (https://console.mistral.ai/) — Built-in-Service (MISTRAL_API_KEY, api.mistral.ai)"
+    apiKey:
+      name: MISTRAL_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.mistral.ai
+          header: Authorization
+          format: "Bearer %s"
+  - service: context7
+    description: "Context7 API-Key (https://context7.com/dashboard)"
+    apiKey:
+      name: CONTEXT7_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: context7.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: stackoverflow
+    description: "Stack Overflow API-Key (https://stackapps.com/applications)"
+    apiKey:
+      name: STACKOVERFLOW_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.stackexchange.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: cloudsmith
+    description: "Cloudsmith API-Key (https://cloudsmith.io/user/settings/api-keys/)"
+    apiKey:
+      name: CLOUDSMITH_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.cloudsmith.io
+          header: X-Api-Key
+          format: "%s"
+        - domain: upload.cloudsmith.io
+          header: X-Api-Key
+          format: "%s"
+  - service: github-maven
+    description: "GitHub Packages Maven — klassisches PAT (nur read:packages, https://github.com/settings/tokens)"
+    apiKey:
+      name: GITHUB_MAVEN_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: maven.pkg.github.com
+          header: Authorization
+          format: "Bearer %s"
+
+setup:
+  install:
+    - command: "npm_config_bin_links=true npm install -g ctx7"
+      description: Install ctx7 (docs-as-a-service CLI)
+    - command: "npm_config_bin_links=true npm install -g skills"
+      description: Install skills (vercel-labs CLI)
+    - command: "npm_config_bin_links=true npm install -g prettier"
+      description: Install prettier
+    - command: "npm_config_bin_links=true npm install -g renovate"
+      description: Install renovate
+    - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
+      description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"
+      description: Install shfmt — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh jdk"
+      description: Install Liberica JDK — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh maven"
+      description: Install Apache Maven — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh docker"
+      description: Install Docker CLI — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh compose"
+      description: Install Docker Compose plugin — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh kubectl"
+      description: Install kubectl — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh helm"
+      description: Install Helm v3 — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh helm4"
+      description: Install Helm v4 (as helm4) — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling.sh kafka"
+      description: Install Apache Kafka CLI (bin/*.sh wrappers in /usr/local/bin) — source files/home/.local/bin/install-tooling.sh
+    - command: "bash /home/agent/.local/bin/install-tooling-user.sh"
+      user: "1000"
+      description: Install agent-user tooling (skills) — source files/home/.local/bin/install-tooling-user.sh
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          if [ -n "$PROXY_CA_CERT_B64" ]; then
+            echo "$PROXY_CA_CERT_B64" | base64 -d > /tmp/proxy-ca.crt 2>/dev/null || true
+          fi
+          CA=/tmp/proxy-ca.crt
+          [ -s "$CA" ] || CA=/usr/local/share/ca-certificates/proxy-ca.crt
+          KS="${JAVA_HOME:-/usr/local/java}/lib/security/cacerts"
+          ok=0
+          for i in $(seq 1 300); do
+            if [ -f "$CA" ] && [ -f "$KS" ] && command -v keytool >/dev/null 2>&1; then
+              keytool -delete -alias proxy-ca -keystore "$KS" -storepass changeit >/dev/null 2>&1 || true
+              if keytool -importcert -noprompt -alias proxy-ca -file "$CA" -keystore "$KS" -storepass changeit >/dev/null 2>&1; then
+                echo "proxy-ca in JDK cacerts importiert (Quelle: $CA)"
+                ok=1
+              else
+                echo "FEHLER: proxy-ca Import in JDK cacerts fehlgeschlagen"
+              fi
+              break
+            fi
+            sleep 1
+          done
+          [ "$ok" = 1 ] || echo "proxy-ca Import nach 300s uebersprungen (KS=$([ -f "$KS" ] && echo da || echo fehlt), CA=$([ -f "$CA" ] && echo da || echo fehlt))"
+      user: "0"
+      description: Import proxy CA into the JDK cacerts so Java/Maven trust the sandbox proxy TLS interception (required for Bearer credential injection into Maven builds)
+    - command:
+        - python3
+        - -c
+        - |
+          import glob, os
+          path = os.path.expanduser('~/.m2/settings.xml')
+          os.makedirs(os.path.dirname(path), exist_ok=True)
+          content = '''<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+            <proxies>
+              <proxy>
+                <id>sbx-proxy</id>
+                <active>true</active>
+                <protocol>http</protocol>
+                <host>gateway.docker.internal</host>
+                <port>3128</port>
+                <nonProxyHosts>localhost|127.0.0.1|::1</nonProxyHosts>
+              </proxy>
+            </proxies>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>dboeckli</username>
+                <password>${env.GITHUB_MAVEN_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          '''
+          host_repos = []
+          for _pat in ('/c/Users/*/.m2/repository', '/c/*/maven-repo', '/c/*/m2-repository'):
+              host_repos = [p for p in glob.glob(_pat) if os.path.isdir(p)]
+              if host_repos:
+                  break
+          if host_repos:
+              url = 'file://' + host_repos[0]
+              profiles = (
+                  '  <profiles>\n'
+                  '    <profile>\n'
+                  '      <id>host-m2-cache</id>\n'
+                  '      <repositories>\n'
+                  '        <repository>\n'
+                  '          <id>host-cache</id>\n'
+                  '          <url>' + url + '</url>\n'
+                  '          <releases><enabled>true</enabled></releases>\n'
+                  '          <snapshots><enabled>false</enabled></snapshots>\n'
+                  '        </repository>\n'
+                  '      </repositories>\n'
+                  '    </profile>\n'
+                  '  </profiles>\n'
+                  '  <activeProfiles>\n'
+                  '    <activeProfile>host-m2-cache</activeProfile>\n'
+                  '  </activeProfiles>'
+              )
+              content = content.replace('</settings>', profiles + '</settings>')
+          with open(path, 'w') as f:
+              f.write(content)
+      user: "1000"
+      description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com. Wenn ein read-only Host-Maven-Cache gemountet ist (/c/Users/*/.m2/repository), wird zusaetzlich ein <repository> 'host-cache' (file://, snapshots disabled) in einem aktiven Profil ergaenzt — Maven nutzt den Host-Cache vor den echten Remotes
+    - command:
+        - python3
+        - /home/agent/.local/bin/regenerate-kubeconfig.py
+      user: "1000"
+      description: Regenerate ~/.kube/config from the read-only host kubeconfig mount (Docker Desktop Kubernetes) — idempotent, no-op without mount
+
+environment:
+  variables:
+    JAVA_HOME: "/usr/local/java"
+    npm_config_bin_links: "false"
