@@ -101,7 +101,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -270,7 +270,7 @@ Um den lokal gefüllten Maven-Cache des Hosts zu nutzen (statt Neu-Download je S
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "C:\development\maven-repo:ro"
@@ -521,19 +521,19 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 
 # Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
 sbx run ./mammouth-agent/ `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -543,7 +543,7 @@ Projekt einbinden + Kubernetes-Support:
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     "C:\development\projects\dein-projekt" `
     "$env:USERPROFILE\.kube:ro" `
