@@ -249,7 +249,7 @@ setup:
     - command: |
         curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.17.11.4 bash
       user: "1000"
-      description: Install Mammouth Code (gepinnt auf v1.17.11.2, install.sh via VERSION; Binaries landen in ~/.mammouth)
+      description: Install Mammouth Code (install.sh, Version via VERSION-Pin; Binaries landen in ~/.mammouth)
     - command: "ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth"
       description: Symlink mammouth into PATH for entrypoint
   startup:

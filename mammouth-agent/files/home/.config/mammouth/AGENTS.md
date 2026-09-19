@@ -106,6 +106,7 @@ rate limit — no extra setup needed. `echo $CONTEXT7_API_KEY` shows `proxy-mana
 Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills)):
 - **camel-matrix** — generates an AsciiDoc compatibility matrix for Apache Camel Spring Boot, Spring Boot, and Apache CXF versions by running `camel-springboot-matrix.sh`. Use when asked to generate/update the Camel compatibility matrix or check Camel Spring Boot version compatibility.
 - **cc-best-practices** — guidance on using Claude Code effectively (context management, verification, explore-plan-implement workflow, prompting, parallel sessions).
+- **cron-schedule-planner** — builds an overview of GitHub Actions `schedule` cron expressions across repos and helps spread CPU-intensive jobs into less contended slots (collisions, intensity, Markdown report).
 - **project-references** — look up conventions/patterns from GitHub repos checked out under `~/projects/referenzen/` (Helm charts, K8s manifests, Docker Compose, CI/CD). Cite the source project when adopting a pattern.
 - **skill-best-practices** — guide for creating/structuring/improving SKILL.md files.
 
