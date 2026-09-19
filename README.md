@@ -282,6 +282,53 @@ Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über
 └────────────────────────────────────────────────────────────────────┘
 ```
 
+### Deklaratives Environment (`sbx env`, experimentell)
+
+Alternative zu den langen `sbx run`-Zeilen: ein eingechecktes `sbxenv.yaml`
+beschreibt Agent, Kit, Template-Pin, `skills`, Workspace und IntelliJ MCP. Der
+Default bleibt der `sbx run`-Weg; `sbx env` ist **experimentell** (sbx ≥ 0.43,
+Format kann sich ändern).
+
+Beispiel: `examples/opencode/sbxenv.yaml` (Agent `opencode`).
+
+```powershell
+# Plan anzeigen (ändert nichts)
+sbx env plan examples/opencode --env-arg projectDir=C:/development/projects/spring-6-reactive
+
+# Anlegen + attachen (bzw. `sbx env create` ohne Attach)
+sbx env run examples/opencode --env-arg projectDir=C:/development/projects/spring-6-reactive
+
+# Entfernen
+sbx env rm examples/opencode --env-arg projectDir=C:/development/projects/spring-6-reactive
+```
+
+Abbildung auf den `sbx run`-Weg:
+
+| `sbx run`-Flag | `sbxenv.yaml` |
+|---|---|
+| `--template docker/sandbox-templates:opencode-docker-0.5.0` | `sandboxOptions.template` |
+| `--kit ./opencode-agent/` | `kits: [../../opencode-agent]` (relativ zum Env-File) |
+| `--skills=off` | `sandboxOptions.skills: "off"` |
+| `--static-mcp idea` | `mcp.servers: [{name: idea, url: http://localhost:64615/stream}]` |
+| `.` + `"…\.kube:ro"` + `"…\maven-repo:ro"` | `workspace:` + `additionalWorkspaces: [{path, readOnly: true}]` |
+| Projektpfad je Aufruf | `args.projectDir` + `${{ env.args.projectDir }}` |
+
+Hinweise:
+
+- **IntelliJ MCP**: `mcp.servers` ist verifiziert äquivalent zu `--static-mcp idea` —
+  das Sandbox-Gateway bietet das identische Tool-Set, die Kit-Permission-Whitelist
+  (`mcp-gateway_get_*` …) greift unverändert. Der Loopback-Endpoint wird registriert
+  (SSRF-Warnung wird protokolliert, nicht blockiert). Host-Voraussetzung bleibt
+  `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`.
+- **Secrets**: bewusst **nicht** über `sbxenv.yaml` (`secrets:` ist sandbox-scoped und
+  host-aufgelöst). Es bleibt beim globalen, proxy-managed Modell (`sbx secret set …`
+  + spec-`credentials[]`).
+- **Kube-/Maven-Mounts**: optional über `additionalWorkspaces` ergänzen (read-only).
+- **Experimental**: `sbx env` erfordert sbx ≥ 0.43; bei Änderungen am Env-File
+  (Workspaces, Kit, Ports, `sandboxOptions`) greifen diese erst beim nächsten
+  `create` — ggf. `sbx env rm` + neu anlegen.
+- Das Env-File liegt **außerhalb** des gemounteten Workspace (`examples/opencode/`).
+
 ## Architektur
 
 ```mermaid

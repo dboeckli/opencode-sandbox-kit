@@ -89,6 +89,9 @@ TEMPLATE_VERSION = "0.5.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 TEMPLATE_VERSION_RE = re.compile(r"TEMPLATE_VERSION:\s*([0-9]+\.[0-9]+\.[0-9]+)")
 MAMMOUTH_SPEC_FILE = "mammouth-agent/spec.yaml"
+# Deklaratives Environment (Issue #120): Template-Pin im sbxenv-Beispiel muss mit
+# der TEMPLATE_VERSION-Konstante uebereinstimmen (Renovate-managed via customManager).
+ENV_TEMPLATE_FILE = "examples/opencode/sbxenv.yaml"
 TEMPLATE_IMAGE_RE = re.compile(r"docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 TEMPLATE_TAG_RE = re.compile(r"^(?P<fam>opencode-docker|claude-code-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$")
 DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
@@ -388,6 +391,17 @@ def _template_spec_image_version():
     return _spec_version(TEMPLATE_IMAGE_RE)
 
 
+def _template_env_file_version():
+    """Template-Version im sbxenv-Beispiel (examples/opencode/sbxenv.yaml) — Mirror
+    der TEMPLATE_VERSION-Konstante; None wenn Datei oder Pin fehlt."""
+    path = os.path.join(ROOT, ENV_TEMPLATE_FILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = TEMPLATE_IMAGE_RE.search(f.read())
+    return m.group("v") if m else None
+
+
 def _template_image(agent):
     """docker/sandbox-templates:-Image fuer einen Agent (Familie + TEMPLATE_VERSION-Konstante).
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
@@ -443,8 +457,9 @@ def _template_latest_per_family():
 def check_template_update():
     """Vergleicht den expliziten Template-Pin der lokalen Tests (TEMPLATE_VERSION-Konstante dieses
     Scripts — gilt fuer beide Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker
-    fuer Claude Home) mit .github/workflows/validate.yml/e2e.yml, dem Mammouth-spec-Image und
-    den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
+    fuer Claude Home) mit .github/workflows/validate.yml/e2e.yml, dem Mammouth-spec-Image, dem
+    sbxenv-Beispiel (examples/opencode/sbxenv.yaml) und den Docker-Hub-Tags von
+    docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
     (opencode-docker ODER claude-code-docker) existiert als der Pin — der Check soll bei einem Update
     nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei echten Fehlern: Pin nicht gefunden, Tags
     nicht abrufbar, Drift (Konstante != validate.yml/e2e.yml bzw. Mammouth-spec-Image), oder ein
@@ -470,6 +485,18 @@ def check_template_update():
         fail(
             f"template version (Mammouth-spec-Image v{spec_ver} != Pin v{pin})",
             f"image in {MAMMOUTH_SPEC_FILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
+            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
+        )
+        return
+    env_ver = _template_env_file_version()
+    if not env_ver:
+        fail("template version (sbxenv-Beispiel nicht gepinnt)",
+             f"template in {ENV_TEMPLATE_FILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
+        return
+    if env_ver != pin:
+        fail(
+            f"template version (sbxenv-Beispiel v{env_ver} != Pin v{pin})",
+            f"template in {ENV_TEMPLATE_FILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
             f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
         )
         return

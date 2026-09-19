@@ -1,0 +1,38 @@
+# Optional: declarative alternative to the long `sbx run opencode ...` command line.
+#
+# `sbx env` is EXPERIMENTAL (sbx >= 0.43) — the command interface and file format
+# may change. The default way to start a sandbox stays `sbx run` (see README).
+#
+# Usage (from the repo root, PowerShell):
+#   sbx env plan examples/opencode --env-arg projectDir=C:/development/projects/<project>
+#   sbx env run  examples/opencode --env-arg projectDir=C:/development/projects/<project>
+#   sbx env rm   examples/opencode --env-arg projectDir=C:/development/projects/<project>
+#
+# The environment file lives outside the mounted workspace (docs recommendation).
+# `mcp.servers` is equivalent to `--static-mcp idea` (verified: the sandbox gateway
+# exposes the identical tool set, so the kit permission whitelist applies unchanged).
+# Secrets stay global + proxy-managed (`sbx secret set ...`); the env `secrets:` block
+# is sandbox-scoped and host-resolved and is deliberately not used here.
+
+schemaVersion: "1"
+
+args:
+  projectDir:
+    required: true
+    description: Absolute path to the project directory to mount as the workspace
+
+agent: opencode
+
+workspace: ${{ env.args.projectDir }}
+
+kits:
+  - ../../opencode-agent
+
+sandboxOptions:
+  template: docker/sandbox-templates:opencode-docker-0.5.0
+  skills: "off"
+
+mcp:
+  servers:
+    - name: idea
+      url: http://localhost:64615/stream

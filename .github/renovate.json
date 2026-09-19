@@ -108,9 +108,9 @@
     },
     {
       "customType": "regex",
-      "description": "Sandbox-Template-Version (.github/workflows/e2e.yml, validate.yml; TEMPLATE_VERSION gilt fuer opencode-docker + claude-code-docker, --template-Pins in Start-Commands/README + Mammouth-spec-Image)",
-      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
-      "matchStrings": ["TEMPLATE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "description": "Sandbox-Template-Version (.github/workflows/e2e.yml, validate.yml; TEMPLATE_VERSION gilt fuer opencode-docker + claude-code-docker, --template-Pins in Start-Commands/README + examples/opencode/sbxenv.yaml + Mammouth-spec-Image)",
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", "examples/opencode/sbxenv.yaml"],
+      "matchStrings": ["TEMPLATE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)", "template: docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker)-(?<version>.*)$",
