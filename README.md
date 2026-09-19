@@ -18,19 +18,31 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code with ctx7,
 > sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 > ```
 
+Lokales Kit (Entwicklung), Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth (`kind: sandbox`) braucht kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml`).
+
+**OpenCode:**
+
 ```powershell
-# Lokales Kit (Entwicklung) — Template-Version gepinnt (0.5.0), siehe Hinweis unten.
-# Mammouth (kind:sandbox) braucht kein --template: die Template-Version steckt im spec-Image (mammouth-agent/spec.yaml).
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
+```
+
+**Claude Code:**
+
+```powershell
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
+```
+
+**Mammouth Code:**
+
+```powershell
 sbx run ./mammouth-agent/ `
     --no-share-skills `
     --static-mcp idea
@@ -44,9 +56,9 @@ sbx run ./mammouth-agent/ `
 > (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
 > Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 
+Mit Projekt + read-only Host-Mounts (kubeconfig + Maven-Cache) — typischer Entwicklungs-Stack (Maven nutzt den lokal gefuellten Host-Cache statt Neu-Download, siehe unten; Issue #87):
+
 ```powershell
-# Mit Projekt + read-only Host-Mounts (kubeconfig + Maven-Cache) — typischer Entwicklungs-Stack
-# (Maven nutzt den lokal gefuellten Host-Cache statt Neu-Download, siehe unten; Issue #87)
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
@@ -57,36 +69,63 @@ sbx run opencode `
     "C:\development\maven-repo:ro"
 ```
 
+Kit direkt aus GitHub (ohne Clone) — einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
+
+**OpenCode:**
+
 ```powershell
-# Kit direkt aus GitHub (ohne Clone) — einmalig kit.allowedSources setzen (siehe INSTALL.md).
-# Template gepinnt via `--template docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
+```
+
+**Claude Code:**
+
+```powershell
 sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea
+```
+
+**Mammouth Code:**
+
+```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --no-share-skills `
     --static-mcp idea
+```
 
-# Kit mit anderem Projekt verwenden
+Kit mit anderem Projekt verwenden:
+
+**OpenCode:**
+
+```powershell
 sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea `
     "C:\development\projects\spring-6-reactive"
+```
+
+**Claude Code:**
+
+```powershell
 sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --no-share-skills `
     --static-mcp idea `
     "C:\development\projects\spring-6-reactive"
+```
+
+**Mammouth Code:**
+
+```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --no-share-skills `
     --static-mcp idea `
@@ -108,30 +147,44 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 > bei Drift zwischen Konstante/Workflows/spec-Image schlägt der Check fehl. Die Test-Sandboxes der
 > Mixin-Szenarien werden mit der expliziten `TEMPLATE_VERSION`-Konstante erstellt (`--template ...`).
 
+Ubuntu-WSL: Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image).
+
+**OpenCode:**
+
 ```bash
-# Ubuntu-WSL: Windows-Dateipfad im WSL-Format (/mnt/c/...) verwenden
-# Template gepinnt via --template (Mammouth: Pin im spec-Image).
 sbx run opencode \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker/sandbox-templates:opencode-docker-0.5.0 \
     --no-share-skills \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
+```
+
+**Claude Code:**
+
+```bash
 sbx run claude \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker/sandbox-templates:claude-code-docker-0.5.0 \
     --no-share-skills \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
+```
+
+**Mammouth Code:**
+
+```bash
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     --no-share-skills \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
 ```
 
+Kubernetes-Support + Maven-Host-Cache: kubeconfig (read-only) und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokal gefuellten Cache, Issue #87).
+
+**OpenCode:**
+
 ```powershell
-# Kubernetes-Support + Maven-Host-Cache: kubeconfig (read-only) mounten (kubectl/helm im Sandbox-Cluster),
-# Host-Maven-Repo (read-only) mounten, damit Maven den lokal gefuellten Cache nutzt (Issue #87)
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
@@ -140,6 +193,11 @@ sbx run opencode `
     . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
+```
+
+**Claude Code:**
+
+```powershell
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
@@ -148,18 +206,27 @@ sbx run claude `
     . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
+```
+
+**Mammouth Code:**
+
+```powershell
 sbx run ./mammouth-agent/ `
     --no-share-skills `
     --static-mcp idea `
     . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
+```
 
-# Kit auf bestehende Sandbox anwenden (restartet Sandbox, VM-State bleibt)
+Kit auf eine bestehende Sandbox anwenden (restartet die Sandbox, VM-State bleibt) — OpenCode/Claude nutzen das `opencode-agent`-Kit, Mammouth das `mammouth-agent`-Kit:
+
+```powershell
 sbx kit add <sandbox-name> `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
-sbx kit add <sandbox-name> `
-    "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+```
+
+```powershell
 sbx kit add <sandbox-name> `
     "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 ```
@@ -372,18 +439,42 @@ Die 3 Agent-Szenarien (OpenCode, Claude Home, Mammouth) lassen sich lokal automa
 `local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
 
+Alle 3 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
+
 ```bash
-python local-test/local-test-kits.py            # ohne --keep: Sandboxes werden wieder entfernt
-python local-test/local-test-kits.py --keep     # Sandboxes nach dem Test behalten
-python local-test/local-test-kits.py --validate-only   # nur Kit-Validierung, keine Sandboxes
+python local-test/local-test-kits.py
+```
+
+Sandboxes nach dem Test behalten:
+
+```bash
+python local-test/local-test-kits.py --keep
+```
+
+Nur Kit-Validierung, keine Sandboxes:
+
+```bash
+python local-test/local-test-kits.py --validate-only
 ```
 
 Lokales Testen in **Windows PowerShell** (Docker Desktop nativ):
 
+Alle 3 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
+
 ```powershell
-python .\local-test\local-test-kits.py          # ohne --keep: Sandboxes werden wieder entfernt
-python .\local-test\local-test-kits.py --keep   # Sandboxes nach dem Test behalten
-python .\local-test\local-test-kits.py --validate-only   # nur Kit-Validierung, keine Sandboxes
+python .\local-test\local-test-kits.py
+```
+
+Sandboxes nach dem Test behalten:
+
+```powershell
+python .\local-test\local-test-kits.py --keep
+```
+
+Nur Kit-Validierung, keine Sandboxes:
+
+```powershell
+python .\local-test\local-test-kits.py --validate-only
 ```
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
@@ -553,16 +644,21 @@ On WSL2, the sandbox VM (`nerdbox`) needs access to `/dev/kvm`. If you see:
 failed to create VM: sailor: Hypervisor error: KVM error: Permission denied
 ```
 
+User zu den Gruppen `kvm`/`sgx` hinzufügen und die `/dev/kvm`-Ownership korrigieren:
+
 ```console
-# Add user to groups
 sudo usermod -aG kvm $USER
 sudo usermod -aG sgx $USER
-
-# Fix /dev/kvm group ownership
 sudo chgrp kvm /dev/kvm
+```
 
-# Restart the sandbox daemon to pick up group changes
+Restart the sandbox daemon to pick up group changes:
+
+```console
 sbx daemon stop
+```
+
+```console
 sbx daemon start --detach
 ```
 
@@ -578,8 +674,15 @@ Seit Issue #57 läuft der IntelliJ MCP über den **sbx MCP Gateway** (dokumentie
 vom Windows-Host aus mit dem IntelliJ-MCP-Server (`127.0.0.1:64615`, Endpoint `/stream`; Port 64615 seit
 IDEA 2026.2.2, Legacy 64342). Voraussetzungen:
 
+Einmalig registrieren:
+
 ```powershell
-sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check   # einmalig registrieren
+sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
+```
+
+Sandbox mit dem MCP-Gateway erzeugen:
+
+```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
@@ -614,13 +717,22 @@ sbx run opencode `
 
 **Manuelle Verifikation vom Host** (PowerShell oder WSL):
 
-```bash
-# 1) IntelliJ-Server läuft? (Host-Seite; Health-Check-Pfad wie im Sandbox-Startup-Check)
-sbx exec <sandbox-name> bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
+IntelliJ-Server läuft? (Host-Seite; Health-Check-Pfad wie im Sandbox-Startup-Check):
 
-# 2) Registration + Gateway-Load?
+```bash
+sbx exec <sandbox-name> bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
+```
+
+Registration prüfen:
+
+```bash
 sbx mcp ls
-sbx mcp load idea --sandbox <sandbox-name>    # falls Sandbox ohne --static-mcp erzeugt wurde
+```
+
+Gateway laden (falls Sandbox ohne `--static-mcp` erzeugt wurde):
+
+```bash
+sbx mcp load idea --sandbox <sandbox-name>
 ```
 
 Erwartet (1): `HTTP 200` (das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s;
@@ -642,9 +754,18 @@ Beide Kits (`opencode-agent/`, `mammouth-agent/`) sind auf die
 Decode-Fehler für v1-Felder in einer `"2"`-Spec). Validierung:
 
 ```bash
-sbx kit validate ./opencode-agent          # und: sbx kit validate ./mammouth-agent
-sbx kit inspect ./opencode-agent --output json | jq '.warnings'   # erwartet: [] bzw. null
+sbx kit validate ./opencode-agent
 ```
+
+```bash
+sbx kit validate ./mammouth-agent
+```
+
+```bash
+sbx kit inspect ./opencode-agent --output json | jq '.warnings'
+```
+
+Erwartet: `[]` bzw. `null`.
 
 Migration auf das offizielle Skript aus `docker/sbx-kits-contrib`:
 
