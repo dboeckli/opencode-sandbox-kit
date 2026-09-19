@@ -158,6 +158,7 @@ Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated 
 Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills)):
 - **camel-matrix** — Camel/Spring Boot/CXF compatibility matrix via `camel-springboot-matrix.sh`
 - **cc-best-practices** — effective Claude Code usage
+- **cron-schedule-planner** — GitHub Actions cron schedule overview, collisions and redistribution across repos
 - **project-references** — conventions from `~/projects/referenzen/`
 - **skill-best-practices** — structuring SKILL.md files
 

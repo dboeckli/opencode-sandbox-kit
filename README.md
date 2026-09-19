@@ -533,6 +533,7 @@ Das Kit installiert automatisch Skills aus [dboeckli/ai-agent-skills](https://gi
 
 - **camel-matrix** — Camel Spring Boot Kompatibilitätsmatrix
 - **cc-best-practices** — Claude Code Best Practices
+- **cron-schedule-planner** — GitHub-Actions-Cron-Zeitpläne: Übersicht, Kollisionen, Umverteilung
 - **project-references** — Referenzprojekt-Suche
 - **skill-best-practices** — SKILL.md Schreib-Guide
 
