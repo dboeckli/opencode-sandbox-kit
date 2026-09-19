@@ -1,7 +1,7 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.42.1**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.43.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
 (nur teilweise abgedeckt — die CLI selbst ist NICHT in Context7). Kit-Grammatik v2:
@@ -166,6 +166,8 @@ Use "sbx run --name SANDBOX" to attach to the agent after creation.
 
 Without --cpus/--memory a cloud sandbox defaults to 2 CPUs and 4 GiB.
 
+Available agents: claude, codex, copilot, cursor, devin, docker-agent, droid, gemini, kiro, opencode, shell
+
 Usage:
   sbx create [flags] AGENT|SANDBOX_KIT [PATH...]
   sbx create COMMAND
@@ -195,13 +197,10 @@ Examples:
 Available Commands:
   claude         Create a sandbox for claude
   codex          Create a sandbox for codex
-  copilot        Create a sandbox for copilot
   cursor         Create a sandbox for cursor
   devin          Create a sandbox for devin
   docker-agent   Create a sandbox for docker-agent
-  droid          Create a sandbox for droid
   gemini         Create a sandbox for gemini
-  kiro           Create a sandbox for kiro
   opencode       Create a sandbox for opencode
   shell          Create a sandbox for shell
 
@@ -217,13 +216,14 @@ Flags:
       --kit strings                         (Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple times
       --kit-arg stringArray                 (Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be repeated)
       --kit-args-file stringArray           (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
-  -m, --memory string                       Memory limit in binary units (e.g., 1024m, 8g). Default: 50% of host memory, max 32 GiB
+  -m, --memory string                       Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
       --name string                         Name for the sandbox (defaults to <agent>-<workdir>; at least two characters, starting with a letter or number, containing only letters, numbers, hyphens and periods; 'default' is reserved)
       --on-timeout string                   What happens when --ttl lapses: 'delete' (default) tombstones the sandbox, or 'stop' stops it in place so it can be started again later (cloud only; 'stop' requires your account to be entitled to it).
       --platform string                     Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform.
       --profile string                      Governance profile to assign to the sandbox
   -p, --publish stringArray                 Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]
   -q, --quiet                               Suppress verbose output
+      --skills string                       Shared skills store mode: off, readonly, or readwrite (mounted at the agent's skills directory, e.g. ~/.claude/skills). Default: readonly, or the configured skills.defaultMode setting.
       --static-mcp strings                  MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. The set is chosen once at creation time.
   -t, --template string                     Container image to use for the sandbox (default: agent-specific image)
       --ttl duration                        Cloud sandbox time-to-live before it times out (e.g. 30m, 2h; cloud only; default: server-side)
@@ -312,15 +312,17 @@ it, so a checked-in file reaches the same kits from wherever `sbx` is run. Write
 local kit that way: a bare `kits/tool` is as much a registry reference as a
 directory, so it is left as written and resolves from the current directory.
 
-A `workspace:` names the directory mounted read/write into the sandbox,
-resolved against the project directory: the one holding the first PATH, or the
-current directory when none is named. `workspace: .` mounts the project from
-whichever file declares it. Declaring none mounts nothing — as omitting PATH
-does for `sbx create` — and the agent works in the container's own filesystem
-instead of on your files. Unless the file sets `name:`, the sandbox is named
-after the mounted directory, or after the project directory when nothing is
-mounted, so an environment that mounts nothing is still the same sandbox every
-time.
+A `workspace:` names the directory mounted read/write into the sandbox. A
+relative path resolves against the directory of the file that declares it — as
+a relative kit source does — so `workspace: .` mounts the directory the file
+sits in. ${{ env.projectDir }} names the project directory (the one holding the
+first PATH, or the current directory when none is named) and ${{ env.fileDir }}
+the declaring file's own, for a value that spells its anchor out. Declaring
+none mounts nothing — as omitting PATH does for `sbx create` — and the agent
+works in the container's own filesystem instead of on your files. Unless the file sets `name:` or --name overrides it,
+the sandbox is named after the mounted directory, or after the project directory
+when nothing is mounted, so an environment that mounts nothing is still the same
+sandbox every time.
 
 A `lifecycle:` block declares commands that run on the host — outside
 the sandbox, with your own privileges — around the sandbox's life:
@@ -334,9 +336,10 @@ the sandbox, with your own privileges — around the sandbox's life:
       - command: ./scripts/archive-state.sh
 
 Each runs through your shell from the project directory — the one holding the
-first PATH, which is also what a relative "workspace:" resolves against, and is
-shared by commands merged in from a file elsewhere. Change it per command with
-`workdir:`, and cap a command's runtime with `timeout:`.
+first PATH, or the current directory when none is named; ${{ env.projectDir }}
+names the same place, and commands merged in from a file elsewhere share it.
+Change it per command with `workdir:`, and cap a command's runtime with
+`timeout:`.
 
 "initialize" runs on every "create" and every "run", including one that only
 attaches, so it can produce the workspace the sandbox mounts; write it to be
@@ -645,6 +648,12 @@ Semantics (per the May 2026 design):
     its ID and full state, so 'sbx --cloud run <agent>' brings it back, and
     'sbx --cloud rm <id>' deletes it when you no longer need it. A source
     with no reported agent is left running instead.
+  - A failed or cancelled move tries to leave the system as it found it,
+    best-effort: it restarts a local source that was running (the restart
+    re-runs the sandbox entrypoint; processes started by hand inside it are
+    not revived) and removes the transport templates the attempt created.
+    If a cleanup step fails, the output names the leftover artifact and the
+    recovery command.
   - The destination sandbox gets a new ID; pass --name to control its name.
   - Filesystem-only: in-memory state, running processes, and open sockets
     are NOT carried across.
@@ -784,10 +793,11 @@ which makes this safe to run habitually. Stop a sandbox first with
 "sbx stop" if you want it pruned. To remove a specific sandbox regardless of
 state, use "sbx rm SANDBOX".
 
-Use --filter since=DURATION to narrow the set to sandboxes that have been
-stopped for longer than DURATION (e.g. since=168h to keep anything stopped
-within the last week). A sandbox whose stop time the daemon cannot report is
-left alone, since how long it has been stopped cannot be established.
+Use --filter until=TIMESTAMP to narrow the set to sandboxes that stopped before
+TIMESTAMP. The value can be an RFC 3339 timestamp, Unix timestamp, or Go duration
+relative to now (e.g. until=168h keeps anything stopped within the last week).
+A sandbox whose stop time the daemon cannot report is left alone, since how long
+it has been stopped cannot be established.
 
 Use --dry-run to list what would be removed without removing anything, and
 --json with it for machine-readable output.
@@ -805,7 +815,7 @@ Usage:
 
 Flags:
       --dry-run              List the sandboxes that would be removed without removing them
-      --filter stringArray   Filter candidates (supported: since=DURATION — stopped for longer than DURATION)
+      --filter stringArray   Filter candidates (supported: until=TIMESTAMP — stopped before TIMESTAMP)
   -f, --force                Skip confirmation prompts and remove even if in use (e.g. an open SSH connection)
   -h, --help                 help for prune
       --json                 Output the --dry-run listing in JSON format
@@ -971,13 +981,14 @@ Flags:
       --kit strings                         (Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple times
       --kit-arg stringArray                 (Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be repeated)
       --kit-args-file stringArray           (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
-  -m, --memory string                       Memory limit in binary units (e.g., 1024m, 8g). Default: 50% of host memory, max 32 GiB
+  -m, --memory string                       Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
       --name string                         Name for the sandbox (default: <agent>-<workdir>)
       --new                                 Always create a new cloud sandbox instead of prompting to reuse an existing one (cloud only)
       --on-timeout string                   What happens when --ttl lapses: 'delete' (default) tombstones the sandbox, or 'stop' stops it in place so it can be started again later (cloud only; 'stop' requires your account to be entitled to it).
       --platform string                     Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform.
       --profile string                      Governance profile to assign to the sandbox
   -p, --publish stringArray                 Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]. Applied when the sandbox is created; ignored when re-attaching (use "sbx ports")
+      --skills string                       Shared skills store mode: off, readonly, or readwrite (mounted at the agent's skills directory, e.g. ~/.claude/skills). Default: readonly, or the configured skills.defaultMode setting. Can only be used when creating a new sandbox.
       --static-mcp strings                  MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. The set is chosen once at creation time and cannot be changed when re-attaching to an existing sandbox.
   -t, --template string                     Container image to use for the sandbox (default: agent-specific image)
       --ttl duration                        Cloud sandbox time-to-live before it times out (e.g. 30m, 2h; cloud only; default: server-side)
@@ -1061,8 +1072,9 @@ EXPERIMENTAL: this command may change or be removed in future releases.
 
 Manage skills available to agents in Docker Sandboxes.
 
-Skills are shared across sandboxes by default. Use --no-share-skills when
-creating a sandbox to opt out.
+Skills are shared across sandboxes by default, mounted read-only. Use
+--skills=off when creating a sandbox to opt out, or --skills=readwrite to
+mount the store read-write.
 
 Usage:
   sbx skills COMMAND

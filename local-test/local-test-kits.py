@@ -682,7 +682,7 @@ def main():
         if template_image:
             create_cmd += ["--template", template_image]
             info(f"  Template gepinnt: {template_image}")
-        create_cmd += ["--no-share-skills"]
+        create_cmd += ["--skills=off"]
         # IntelliJ MCP via sbx MCP Gateway (Issue #57): `--static-mcp idea` nur setzen, wenn der Server auf dem
         # Host registriert ist — sonst schlägt `sbx create` fehl (jeder static-mcp-Name muss registriert sein).
         # CI hat kein `idea` registriert → Sandbox ohne static-mcp; der Config-Check prüft dann nur die Whitelist,

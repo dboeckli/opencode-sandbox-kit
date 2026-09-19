@@ -35,7 +35,7 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -48,7 +48,7 @@ sbx rm <sandbox-name> --force
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "$env:USERPROFILE\.kube:ro" `

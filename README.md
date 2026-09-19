@@ -26,7 +26,7 @@ Lokales Kit (Entwicklung), Template-Version gepinnt (`0.5.0`, siehe Hinweis unte
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -36,7 +36,7 @@ sbx run opencode `
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -44,13 +44,14 @@ sbx run claude `
 
 ```powershell
 sbx run ./mammouth-agent/ `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
-> **`--no-share-skills` (Pflicht):** Alle Sandboxes werden mit `--no-share-skills` erstellt — der
-> Host-übergreifende **Shared-Skills-Store** (`…/DockerSandboxes/sandboxes/state/agent-skills`, read-write
-> gemountet) wird **nicht** eingebunden. Die Sandbox bleibt damit außerhalb der geteilten Trust-Boundary;
+> **`--skills=off` (Pflicht):** Alle Sandboxes werden mit `--skills=off` erstellt — der
+> Host-übergreifende **Shared-Skills-Store** (`…/DockerSandboxes/sandboxes/state/agent-skills`) wird
+> **nicht** eingebunden. Seit sbx v0.43 ist der Default `readonly` (Store read-only gemountet); `off`
+> schaltet ihn ganz ab. Die Sandbox bleibt damit außerhalb der geteilten Trust-Boundary;
 > die Kit-Skills kommen ausschließlich aus `github.com/dboeckli/ai-agent-skills` (via
 > `install-tooling-user.sh`), **nicht** vom Host. Das Flag wirkt nur bei der Sandbox-Erstellung
 > (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
@@ -62,7 +63,7 @@ Mit Projekt + read-only Host-Mounts (kubeconfig + Maven-Cache) — typischer Ent
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "$env:USERPROFILE\.kube:ro" `
@@ -77,7 +78,7 @@ Kit direkt aus GitHub (ohne Clone) — einmalig `kit.allowedSources` setzen (sie
 sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -87,7 +88,7 @@ sbx run opencode `
 sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -95,7 +96,7 @@ sbx run claude `
 
 ```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -107,7 +108,7 @@ Kit mit anderem Projekt verwenden:
 sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     "C:\development\projects\spring-6-reactive"
 ```
@@ -118,7 +119,7 @@ sbx run opencode `
 sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     "C:\development\projects\spring-6-reactive"
 ```
@@ -127,7 +128,7 @@ sbx run claude `
 
 ```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     "C:\development\projects\spring-6-reactive"
 ```
@@ -155,7 +156,7 @@ Ubuntu-WSL: Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template g
 sbx run opencode \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker/sandbox-templates:opencode-docker-0.5.0 \
-    --no-share-skills \
+    --skills=off \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
 ```
@@ -166,7 +167,7 @@ sbx run opencode \
 sbx run claude \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker/sandbox-templates:claude-code-docker-0.5.0 \
-    --no-share-skills \
+    --skills=off \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
 ```
@@ -175,7 +176,7 @@ sbx run claude \
 
 ```bash
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
-    --no-share-skills \
+    --skills=off \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
 ```
@@ -188,7 +189,7 @@ Kubernetes-Support + Maven-Host-Cache: kubeconfig (read-only) und Host-Maven-Rep
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "$env:USERPROFILE\.kube:ro" `
@@ -201,7 +202,7 @@ sbx run opencode `
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "$env:USERPROFILE\.kube:ro" `
@@ -212,7 +213,7 @@ sbx run claude `
 
 ```powershell
 sbx run ./mammouth-agent/ `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "$env:USERPROFILE\.kube:ro" `
@@ -485,7 +486,7 @@ globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `mammouth`, `con
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.42.0`), validiert beide Kits (`sbx kit validate ./opencode-agent/`,
+  (`SBX_VERSION`, aktuell `v0.43.0`), validiert beide Kits (`sbx kit validate ./opencode-agent/`,
   `./mammouth-agent/`) und prüft, dass die Install-Skript-Kopien
   (`files/home/.local/bin/`) in beiden Kits identisch sind.
 - **`e2e.yml`** — bei jedem Push/PR + nightly (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
@@ -686,7 +687,7 @@ Sandbox mit dem MCP-Gateway erzeugen:
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -780,10 +781,10 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 ### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
-`sbx run --no-share-skills ./mammouth-agent/`) betrieben, das Mammouth automatisch
+`sbx run --skills=off ./mammouth-agent/`) betrieben, das Mammouth automatisch
 beim Build installiert (gepinnt auf **v1.17.11.2**: `curl -fsSL https://code.mammouth.ai/install.sh |
 VERSION=1.17.11.2 bash` + Symlink). Das
-`opencode-agent/`-Kit (`sbx run --no-share-skills opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
+`opencode-agent/`-Kit (`sbx run --skills=off opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
 Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
 
 ### Pre-installed Tools im Base Image

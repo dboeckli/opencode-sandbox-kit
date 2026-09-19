@@ -19,6 +19,27 @@ Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 > und die IntelliJ-MCP-Anbindung über den sbx MCP Gateway funktionieren dort genauso — inkl.
 > Secret-Injection (gh/ctx7) und Network-Allow-List.
 
+### `sbx` CLI aktualisieren (winget)
+
+Die sbx-Version ist im Repo gepinnt (`.github/workflows/validate.yml` → `SBX_VERSION`, via Renovate).
+Auf dem Windows-Host aktualisieren:
+
+```powershell
+winget list Docker.sbx            # installierte Version prüfen
+winget upgrade Docker.sbx         # Upgrade auf die neueste Version
+winget upgrade -h Docker.sbx      # silent (ohne UI)
+```
+
+Falls `winget upgrade` nichts findet (Paket nicht als updatebar gelistet):
+
+```powershell
+winget install --id Docker.sbx -e --accept-source-agreements
+```
+
+Danach eine neue Shell öffnen und `sbx version` prüfen. `local-test-kits.py --validate-only` warnt, wenn die
+installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzlich `sbx-cli.md` neu erzeugen:
+`python local-test/regenerate-sbx-doc.py v<version>`.
+
 ## 2. Docker Desktop konfigurieren
 
 > **Docker CLI in der Sandbox:** Das Kit installiert die Docker CLI (statisches Binary). Jede Sandbox hat einen
@@ -80,7 +101,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -249,7 +270,7 @@ Um den lokal gefüllten Maven-Cache des Hosts zu nutzen (statt Neu-Download je S
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     . `
     "C:\development\maven-repo:ro"
@@ -500,19 +521,19 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 
 # Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
 sbx run ./mammouth-agent/ `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea
 ```
 
@@ -522,7 +543,7 @@ Projekt einbinden + Kubernetes-Support:
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --no-share-skills `
+    --skills=off `
     --static-mcp idea `
     "C:\development\projects\dein-projekt" `
     "$env:USERPROFILE\.kube:ro" `
