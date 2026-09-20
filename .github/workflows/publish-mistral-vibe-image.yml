@@ -21,9 +21,10 @@ name: Publish Mistral Vibe image
 #   - feature/PR:    `<VIBE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` (semver
 #                    prerelease) plus the moving tag `<branch-slug>`
 #
-# The image is built for linux/amd64 only: the `uv tool install` step does not
-# run under QEMU arm64 emulation (buildx exit code 1). arm64 would need a native
-# `ubuntu-24.04-arm` runner plus a `docker buildx imagetools create` merge.
+# Multi-arch (linux/amd64 + linux/arm64) via NATIVE runners: `uv tool install`
+# does not run under QEMU arm64 emulation (buildx exit 1), so each arch is built
+# on its own runner (`ubuntu-latest` / `ubuntu-24.04-arm`) and the per-arch
+# images are combined into one manifest list with `docker buildx imagetools create`.
 
 on:
   workflow_dispatch:
@@ -41,7 +42,7 @@ on:
     outputs:
       version_tag:
         description: "Image version tag that was built/pushed"
-        value: ${{ jobs.build.outputs.version_tag }}
+        value: ${{ jobs.prepare.outputs.version_tag }}
 
 permissions:
   contents: read
@@ -51,10 +52,11 @@ env:
   IMAGE_NAME: sbx-mistral-vibe
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
     outputs:
       version_tag: ${{ steps.tags.outputs.version_tag }}
+      extra_tag: ${{ steps.tags.outputs.extra_tag }}
     steps:
       - uses: actions/checkout@v7
 
@@ -85,14 +87,25 @@ jobs:
             version_tag="${pin}-${slug}.${ts}"
             extra_tag="$slug"
           fi
-          {
-            echo "version_tag=$version_tag"
-            echo "tags<<EOF"
-            echo "${IMAGE_NAMESPACE}/${IMAGE_NAME}:${version_tag}"
-            if [ -n "$extra_tag" ]; then echo "${IMAGE_NAMESPACE}/${IMAGE_NAME}:${extra_tag}"; fi
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-          echo "version_tag=$version_tag extra_tag=${extra_tag:-<none>}"
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "extra_tag=$extra_tag" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$version_tag extra_tag=$extra_tag"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -104,12 +117,41 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      - name: Build and push (amd64, provenance/SBOM)
+      - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
         uses: docker/build-push-action@v6
         with:
           context: mistral-vibe-agent
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           provenance: true
           sbom: true
           push: ${{ inputs.push }}
-          tags: ${{ steps.tags.outputs.tags }}
+          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version_tag }}-${{ matrix.arch }}
+
+  merge:
+    needs: [prepare, build]
+    if: ${{ inputs.push }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Create multi-arch manifest list
+        env:
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+          EXTRA_TAG: ${{ needs.prepare.outputs.extra_tag }}
+        run: |
+          set -euo pipefail
+          image="${IMAGE_NAMESPACE}/${IMAGE_NAME}"
+          docker buildx imagetools create \
+            -t "${image}:${VERSION_TAG}" \
+            "${image}:${VERSION_TAG}-amd64" \
+            "${image}:${VERSION_TAG}-arm64"
+          if [ -n "${EXTRA_TAG}" ]; then
+            docker buildx imagetools create \
+              -t "${image}:${EXTRA_TAG}" \
+              "${image}:${VERSION_TAG}"
+          fi
+          docker buildx imagetools inspect "${image}:${VERSION_TAG}"

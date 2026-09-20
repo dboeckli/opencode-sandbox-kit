@@ -5,18 +5,13 @@
 # sandbox, tooling parity with the other kits) and bake a pinned Vibe version,
 # following https://docs.docker.com/guides/mistral-vibe-sandbox/.
 #
-# Build + publish (linux/amd64, provenance/SBOM), from this directory.
-# amd64 only: `uv tool install` does not run under QEMU arm64 emulation; an
-# arm64 build needs a native arm64 runner + a buildx imagetools manifest merge.
+# Build + publish (multi-arch, provenance/SBOM), from this directory.
+# CI (publish-mistral-vibe-image.yml) builds linux/amd64 and linux/arm64 on
+# NATIVE runners (ubuntu-latest / ubuntu-24.04-arm) and merges them with
+# `docker buildx imagetools create`: `uv tool install` does not run under QEMU
+# arm64 emulation (buildx exit 1).
 #
-# CI path (publish-mistral-vibe-image.yml) pushes only the version tag:
-#   docker buildx build \
-#     --platform linux/amd64 \
-#     --provenance=true --sbom=true \
-#     -t domboeckli/sbx-mistral-vibe:${VIBE_VERSION} \
-#     --push .
-#
-# Local bootstrap additionally tags `local` (moving tag for a locally built image):
+# Local build (single arch, from the host architecture), tags version + `local`:
 #   docker buildx build \
 #     --platform linux/amd64 \
 #     --provenance=true --sbom=true \
@@ -24,7 +19,7 @@
 #     -t domboeckli/sbx-mistral-vibe:local \
 #     --push .
 #
-# The kit (spec.yaml `sandbox.image`) references the version tag.
+# The kit (spec.yaml `sandbox.image`, arg `imageTag`) references the version tag.
 
 ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.5.0
 FROM ${BASE_IMAGE}

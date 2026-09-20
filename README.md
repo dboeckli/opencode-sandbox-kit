@@ -475,8 +475,10 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 
 - **Base-Image**: eigenes, gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>` — gebaut aus
   `docker/sandbox-templates:shell-docker-0.5.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
-  Publiziert für **linux/amd64** mit provenance/SBOM via `.github/workflows/publish-mistral-vibe-image.yml`
-  (arm64 folgt später über einen nativen `ubuntu-24.04-arm`-Runner — `uv tool install` läuft nicht unter QEMU).
+  Publiziert **multi-arch (linux/amd64 + linux/arm64)** mit provenance/SBOM via
+  `.github/workflows/publish-mistral-vibe-image.yml`: pro Architektur ein **nativer** Runner
+  (`ubuntu-latest` / `ubuntu-24.04-arm`), danach Manifest-Merge mit `docker buildx imagetools create`
+  (`uv tool install` läuft nicht unter QEMU-arm64).
 - **Launch**: `CMD ["vibe", "--agent", "auto-approve"]` (im Image; das Kit setzt keinen Entrypoint).
 - **Auth**: Built-in-Service `mistral` → `MISTRAL_API_KEY` (Sentinel `proxy-managed`, Proxy injiziert
   `Authorization: Bearer` für `api.mistral.ai`); kein kit-eigener Credential-Service nötig.
@@ -485,7 +487,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
   da `auto-approve` das Permission-System umgeht) und `~/.vibe/AGENTS.md`.
 - **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, ctx7, Skills).
 
-> **Image-Publish:** Das Image wird in CI gebaut/gepusht (linux/amd64, provenance/SBOM). Der e2e-Workflow
+> **Image-Publish:** Das Image wird in CI gebaut/gepusht (multi-arch amd64+arm64, provenance/SBOM; native Runner + `imagetools create`). Der e2e-Workflow
 > ruft den (auch manuell per `workflow_dispatch` startbaren) `publish-mistral-vibe-image.yml` als
 > `publish-image`-Job **vor** der Szenario-Matrix auf — so existiert das Image für das `mistral-vibe`-Szenario
 > bei jedem Push/PR/Nightly-Lauf. Manuell: Workflow `Publish Mistral Vibe image` → *Run workflow*.
@@ -589,7 +591,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   alle 4 Szenarien (`local-test-kits.py opencode|claude|mammouth|mistral-vibe --ci`) mit KVM-Zugriff,
   Docker-Hub-Login (`DOCKER_USERNAME`/`DOCKER_PAT`) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
-- **`publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (linux/amd64, provenance/SBOM)
+- **`publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`, provenance/SBOM)
   auf Docker Hub. Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
   via `workflow_dispatch` (Build-only möglich über den `push`-Input).
 

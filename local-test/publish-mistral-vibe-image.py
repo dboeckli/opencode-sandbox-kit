@@ -9,8 +9,12 @@ additionally sets the moving `local` tag:
     <namespace>/sbx-mistral-vibe:local
 
 Run via the IntelliJ run config `publish-mistral-vibe-image` (or directly):
-    python local-test/publish-mistral-vibe-image.py            # build + push
+    python local-test/publish-mistral-vibe-image.py            # build + push (linux/amd64)
     python local-test/publish-mistral-vibe-image.py --build-only
+    python local-test/publish-mistral-vibe-image.py --platform linux/arm64   # arm64 host only
+
+Note: arm64 cannot be built from an amd64 host via QEMU (`uv tool install`
+fails under emulation). CI builds multi-arch with native runners instead.
 
 Environment overrides: VIBE_IMAGE_NAMESPACE, VIBE_IMAGE_NAME, VIBE_BUILDX_BUILDER.
 Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
@@ -72,7 +76,11 @@ def ensure_builder():
 def main():
     if which("docker") is None:
         sys.exit("docker not found on PATH")
-    build_only = "--build-only" in sys.argv[1:]
+    argv = sys.argv[1:]
+    build_only = "--build-only" in argv
+    platform = "linux/amd64"
+    if "--platform" in argv:
+        platform = argv[argv.index("--platform") + 1]
     version = pin_version()
     slug = branch_slug()
     ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -80,9 +88,10 @@ def main():
     local_tag = f"{NAMESPACE}/{NAME}:local"
     print(f"Version tag: {version_tag}")
     print(f"Moving tag:  {local_tag}")
+    print(f"Platform:    {platform}")
     ensure_builder()
     cmd = ["docker", "buildx", "build",
-           "--platform", "linux/amd64",
+           "--platform", platform,
            "--provenance=true", "--sbom=true",
            "-t", version_tag,
            "-t", local_tag]
