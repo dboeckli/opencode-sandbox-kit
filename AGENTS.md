@@ -167,7 +167,7 @@ IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-tes
 | `local-test-kits-claude` | `claude` | Nur Claude-Szenario Home (Sandbox) |
 | `local-test-kits-mammouth` | `mammouth` | Nur Mammouth-Szenario (Sandbox) |
 | `local-test-kits-mistral-vibe` | `mistral-vibe` | Nur Mistral-Vibe-Szenario (Sandbox) |
-| `publish-mistral-vibe-image` | — | Baut/pusht das Vibe-Image lokal (`local-test/publish-mistral-vibe-image.py`, Tag `<pin>-<branch-slug>.<timestamp>` + `local`); `--build-only` baut ohne Push |
+| `publish-mistral-vibe-image` | — | Baut/pusht das Vibe-Image lokal (`local-test/publish-mistral-vibe-image.py`, Tag `<pin>-<branch-slug>.<timestamp>` + `local`); `--build-only` baut ohne Push. Das lokale `local-test-kits-mistral-vibe`-Szenario testet danach den `:local`-Tag |
 
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
 `$PROJECT_DIR$/local-test`, `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem

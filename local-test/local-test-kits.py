@@ -14,8 +14,9 @@ Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
   - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith
     (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
-  - Mistral-Vibe-Szenario: das Image `domboeckli/sbx-mistral-vibe:<vibe-version>` ist publiziert
-    (Workflow `.github/workflows/publish-mistral-vibe-image.yml`, workflow_dispatch)
+  - Mistral-Vibe-Szenario (lokal): das Image `domboeckli/sbx-mistral-vibe:local` ist publiziert
+    (IntelliJ-Run-Config `publish-mistral-vibe-image` bzw. `python local-test/publish-mistral-vibe-image.py`);
+    CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
 
 Verwendung:
   python local-test-kits.py                 # alle 4 Szenarien testen (default: all)
@@ -799,14 +800,15 @@ def main():
             create_cmd = ["create", "--name", s["name"], s["kit"], ws]
         else:
             create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
-        # Mistral-Vibe: CI baut fuer Feature-Branches einen eigenen Image-Tag
-        # (`<pin>-<branch>.<timestamp>`); ihn per --kit-arg an das Kit uebergeben,
-        # damit der e2e genau diesen Branch-Build testet.
+        # Mistral-Vibe-Image-Tag per --kit-arg an das Kit uebergeben:
+        #   - lokal (Host): `local` = zuletzt lokal gebauter/pushter Stand
+        #     (IntelliJ-Run-Config `publish-mistral-vibe-image`).
+        #   - CI/e2e: VIBE_IMAGE_TAG = Feature-Tag (`<pin>-<branch>.<timestamp>`),
+        #     damit der e2e genau diesen Branch-Build testet.
         if s["agent"] == "mistral-vibe":
-            vibe_tag = os.environ.get("VIBE_IMAGE_TAG")
-            if vibe_tag:
-                create_cmd += ["--kit-arg", f"imageTag={vibe_tag}"]
-                info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
+            vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
+            create_cmd += ["--kit-arg", f"imageTag={vibe_tag}"]
+            info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.

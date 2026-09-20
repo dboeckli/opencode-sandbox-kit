@@ -487,7 +487,7 @@ python .\local-test\local-test-kits.py --validate-only
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
 globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `mammouth`, `mistral`, `context7`).
-Für das Mistral-Vibe-Szenario muss das Image `domboeckli/sbx-mistral-vibe:<vibe-version>` publiziert sein.
+Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`domboeckli/sbx-mistral-vibe:local`, gesetzt von der Run-Config `publish-mistral-vibe-image`) — also vorher einmal `python local-test\publish-mistral-vibe-image.py` ausführen. CI/e2e übergibt stattdessen den Feature-Tag (`VIBE_IMAGE_TAG`).
 
 ### GitHub Actions (CI)
 
