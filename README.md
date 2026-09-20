@@ -28,7 +28,7 @@ cd C:\development\projects\opencode-sandbox-kit
 
 Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
-Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet — kein Pfad-Argument nötig. Typischer Entwicklungs-Stack mit read-only Host-Mounts: `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
+Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Entwicklungs-Stack: `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
 
 **OpenCode:**
 
@@ -38,6 +38,7 @@ sbx run opencode `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -50,6 +51,7 @@ sbx run claude `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -60,6 +62,7 @@ sbx run claude `
 sbx run ./mammouth-agent/ `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -70,6 +73,7 @@ sbx run ./mammouth-agent/ `
 sbx run ./mistral-vibe-agent/ `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -87,7 +91,7 @@ sbx run ./mistral-vibe-agent/ `
 
 Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 
-Ins Projekt wechseln (wird als Workspace gemountet — kein Pfad-Argument nötig):
+Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts):
 
 ```powershell
 cd C:\development\projects\mein-projekt
@@ -101,6 +105,7 @@ sbx run opencode `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -113,6 +118,7 @@ sbx run claude `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -123,6 +129,7 @@ sbx run claude `
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -133,6 +140,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --skills=off `
     --static-mcp idea `
+    . `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
@@ -155,7 +163,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
 
 ### Ubuntu-WSL
 
-Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet); Mounts: kubeconfig `$HOME/.kube:ro` (WSL-Home; bei Windows-seitiger kubeconfig `/mnt/c/Users/<user>/.kube:ro`) und Host-Maven-Cache `/mnt/c/development/maven-repo:ro`.
+Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mounts: kubeconfig `$HOME/.kube:ro` (WSL-Home; bei Windows-seitiger kubeconfig `/mnt/c/Users/<user>/.kube:ro`) und Host-Maven-Cache `/mnt/c/development/maven-repo:ro`.
 
 ```bash
 cd /mnt/c/development/projects/spring-6-reactive
@@ -169,6 +177,7 @@ sbx run opencode \
     --template docker/sandbox-templates:opencode-docker-0.5.0 \
     --skills=off \
     --static-mcp idea \
+    . \
     "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -181,6 +190,7 @@ sbx run claude \
     --template docker/sandbox-templates:claude-code-docker-0.5.0 \
     --skills=off \
     --static-mcp idea \
+    . \
     "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -191,6 +201,7 @@ sbx run claude \
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     --skills=off \
     --static-mcp idea \
+    . \
     "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -201,6 +212,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
     --skills=off \
     --static-mcp idea \
+    . \
     "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
