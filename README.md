@@ -24,7 +24,9 @@ Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-agent/`, `./mam
 cd C:\development\projects\opencode-sandbox-kit
 ```
 
-Lokales Kit (Entwicklung), Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
+### Lokale Entwicklung (Kit + Projekt)
+
+Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
 Typischer Entwicklungs-Stack mit read-only Host-Mounts: `.` (aktuelles Projekt), `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
 
@@ -85,7 +87,9 @@ sbx run ./mistral-vibe-agent/ `
 > (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
 > Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 
-Kit direkt aus GitHub (ohne Clone) — einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
+### Kit direkt aus GitHub (ohne Clone)
+
+Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 
 **OpenCode:**
 
@@ -123,7 +127,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
     --static-mcp idea
 ```
 
-Kit mit anderem Projekt verwenden:
+### Kit mit anderem Projekt
 
 **OpenCode:**
 
@@ -181,7 +185,9 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
 > bei Drift zwischen Konstante/Workflows/spec-Image schlägt der Check fehl. Die Test-Sandboxes der
 > Mixin-Szenarien werden mit der expliziten `TEMPLATE_VERSION`-Konstante erstellt (`--template ...`).
 
-Ubuntu-WSL: Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image).
+### Ubuntu-WSL
+
+Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image).
 
 **OpenCode:**
 
@@ -223,7 +229,9 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
     "/mnt/c/development/projects/spring-6-reactive"
 ```
 
-Kit auf eine bestehende Sandbox anwenden (restartet die Sandbox, VM-State bleibt) — OpenCode/Claude nutzen das `opencode-agent`-Kit, Mammouth das `mammouth-agent`-Kit, Mistral Vibe das `mistral-vibe-agent`-Kit:
+### Kit auf eine bestehende Sandbox anwenden
+
+Restartet die Sandbox, VM-State bleibt — OpenCode/Claude nutzen das `opencode-agent`-Kit, Mammouth das `mammouth-agent`-Kit, Mistral Vibe das `mistral-vibe-agent`-Kit:
 
 ```powershell
 sbx kit add <sandbox-name> `
