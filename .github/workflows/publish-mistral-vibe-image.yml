@@ -3,14 +3,16 @@ name: Publish Mistral Vibe image
 # Builds and publishes the pinned `domboeckli/sbx-mistral-vibe` image that the
 # `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`).
 #
-# The image bakes a pinned Mistral Vibe version on top of the versioned `shell`
-# sandbox template, following https://docs.docker.com/guides/mistral-vibe-sandbox/.
+# The image bakes a pinned Mistral Vibe version on top of the versioned
+# `shell-docker` sandbox template (Docker Engine inside the sandbox), following
+# https://docs.docker.com/guides/mistral-vibe-sandbox/.
 # Vibe is not a pre-built docker/sandbox-templates agent, so the kit ships its
 # own image instead of installing the agent at sandbox build time.
 #
-# Bootstrap: the image must exist on Docker Hub before the `mistral-vibe` e2e
-# scenario can run. On `workflow_dispatch` you can pick the branch and publish
-# the image before the PR's e2e run.
+# This workflow is both directly dispatchable and a reusable workflow
+# (`workflow_call`). The `e2e.yml` workflow calls it before the scenario matrix,
+# so the image exists for the `mistral-vibe` e2e scenario on every push/PR/nightly
+# run (multi-arch via QEMU on the runner). Manual runs use `workflow_dispatch`.
 #
 # The tag is the Vibe version from mistral-vibe-agent/Dockerfile (ARG
 # VIBE_VERSION) — a real version, not a moving tag. Renovate tracks the pin.
@@ -19,15 +21,17 @@ name: Publish Mistral Vibe image
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
-    paths:
-      - "mistral-vibe-agent/Dockerfile"
-      - "mistral-vibe-agent/spec.yaml"
-  pull_request:
-    paths:
-      - "mistral-vibe-agent/Dockerfile"
-      - "mistral-vibe-agent/spec.yaml"
+    inputs:
+      push:
+        description: "Push the image to Docker Hub (off = build only)"
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      push:
+        description: "Push the image to Docker Hub (off = build only)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -71,8 +75,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        # Push only on master/workflow_dispatch; PRs just validate the build.
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ inputs.push }}
         uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKER_USERNAME }}
@@ -85,5 +88,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           sbom: true
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ inputs.push }}
           tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.VIBE_VERSION }}

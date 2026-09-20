@@ -161,7 +161,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
 > **Template-Version (gepinnt):** Alle Kits nutzen Template-Tag **`0.5.0`** (2026-08-26).
 > - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.5.0`
 > - **Claude (Home)**: `docker/sandbox-templates:claude-code-docker-0.5.0`
-> - **Mistral Vibe**: `docker/sandbox-templates:shell-0.5.0` (Basis des eigenen Vibe-Images)
+> - **Mistral Vibe**: `docker/sandbox-templates:shell-docker-0.5.0` (Basis des eigenen Vibe-Images)
 >
 > Die **Version** (gilt für alle Kits) ist mehrfach gepinnt und wird auf Konsistenz geprüft:
 > explizit als Konstante in `local-test/local-test-kits.py` (Pin der lokalen Tests, Renovate-managed),
@@ -474,7 +474,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 (`kind: sandbox`, Name `mistral-vibe`) — nach dem [Docker-Guide](https://docs.docker.com/guides/mistral-vibe-sandbox/):
 
 - **Base-Image**: eigenes, gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>` — gebaut aus
-  `docker/sandbox-templates:shell-0.5.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
+  `docker/sandbox-templates:shell-docker-0.5.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
   Publiziert multi-arch (amd64/arm64) mit provenance/SBOM via `.github/workflows/publish-mistral-vibe-image.yml`.
 - **Launch**: `CMD ["vibe", "--agent", "auto-approve"]` (im Image; das Kit setzt keinen Entrypoint).
 - **Auth**: Built-in-Service `mistral` → `MISTRAL_API_KEY` (Sentinel `proxy-managed`, Proxy injiziert

@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # Pinned Mistral Vibe image for the `mistral-vibe-agent` sandbox kit (issue #116).
-# Build on the versioned `shell` sandbox template and bake a pinned Vibe version,
+# Build on the versioned `shell-docker` sandbox template (Docker Engine inside the
+# sandbox, tooling parity with the other kits) and bake a pinned Vibe version,
 # following https://docs.docker.com/guides/mistral-vibe-sandbox/.
 #
 # Build + publish (multi-arch, provenance/SBOM), from this directory.
@@ -22,7 +23,7 @@
 #
 # The kit (spec.yaml `sandbox.image`) references the version tag.
 
-ARG BASE_IMAGE=docker/sandbox-templates:shell-0.5.0
+ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.5.0
 FROM ${BASE_IMAGE}
 
 # Pin the agent version for reproducible sandboxes.

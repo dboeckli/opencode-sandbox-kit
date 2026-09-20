@@ -117,12 +117,12 @@ MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/la
 # Mistral Vibe: Pin im Dockerfile (ARG VIBE_VERSION) — die spec.yaml referenziert das Image
 # mit demselben Tag. Update-Check gegen die latest PyPI-Version (mistral-vibe); warnt (gelb)
 # bei neuerer Version. Das Basis-Image pinnt die shell-Template-Version
-# (docker/sandbox-templates:shell-<TEMPLATE_VERSION>), die mit TEMPLATE_VERSION uebereinstimmen muss.
+# (docker/sandbox-templates:shell-docker-<TEMPLATE_VERSION>), die mit TEMPLATE_VERSION uebereinstimmen muss.
 VIBE_DOCKERFILE = "mistral-vibe-agent/Dockerfile"
 VIBE_SPEC_FILE = "mistral-vibe-agent/spec.yaml"
 VIBE_VERSION_RE = re.compile(r"ARG VIBE_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
 VIBE_IMAGE_TAG_RE = re.compile(r"image:\s*\"?[^\"\s]*sbx-mistral-vibe:(?P<v>[0-9]+(?:\.[0-9]+)+)")
-VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
 # Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
@@ -609,7 +609,7 @@ def check_vibe_cli_update():
     if base != TEMPLATE_VERSION:
         fail(
             f"mistral-vibe base image (shell-{base} != TEMPLATE_VERSION v{TEMPLATE_VERSION})",
-            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-{TEMPLATE_VERSION} setzen",
+            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-{TEMPLATE_VERSION} setzen",
         )
         return
     try:
