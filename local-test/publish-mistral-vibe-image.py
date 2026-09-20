@@ -57,7 +57,7 @@ def branch_slug():
     try:
         ref = subprocess.check_output(
             ["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"],
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         ).strip()
     except (OSError, subprocess.CalledProcessError):
         ref = "local"
@@ -69,7 +69,7 @@ def ensure_builder():
     """Ensure a docker-container buildx builder (needed for provenance/SBOM)."""
     listing = subprocess.run(
         ["docker", "buildx", "ls", "--format", "{{.Name}}"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout
     if re.search(rf"^{re.escape(BUILDER)}\s*$", listing, re.M):
         run(["docker", "buildx", "use", BUILDER])

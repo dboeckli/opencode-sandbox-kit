@@ -149,8 +149,19 @@ SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "c
 
 
 def enable_ansi():
+    """ANSI-Farben + UTF-8 fuer die Konsole aktivieren.
+
+    Der `sbx`-Output enthaelt UTF-8-Box-Zeichen (──, ✓, →, …); ohne UTF-8
+    dekodiert/schreibt die Windows-Konsole sie als cp1252 -> Mojibake.
+    """
     if os.name == "nt":
-        os.system("")
+        os.system("")                        # ANSI/VT-Verarbeitung aktivieren
+        os.system("chcp 65001 >nul 2>&1")    # Konsole auf UTF-8
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 
 def _color(code, text):
@@ -190,6 +201,8 @@ def run_sbx(args, stream=False):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
         lines = []
         for line in proc.stdout:
@@ -197,7 +210,13 @@ def run_sbx(args, stream=False):
             lines.append(line)
         proc.wait()
         return proc.returncode, "".join(lines)
-    proc = subprocess.run(["sbx"] + args, capture_output=True, text=True)
+    proc = subprocess.run(
+        ["sbx"] + args,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     out = (proc.stdout or "") + (proc.stderr or "")
     return proc.returncode, out.strip()
 
