@@ -485,7 +485,7 @@ nötig.
 ## Layout
 
 - `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
-- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config (Permission-Whitelist für IntelliJ-MCP-Tools via sbx MCP Gateway `mcp-gateway_*`; keine direkte `mcp.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config (Permission-Whitelist für IntelliJ-MCP-Tools via sbx MCP Gateway `mcp-gateway_*`; Provider `deepseek`/`openrouter`/`google`/`zai` (GLM, `ZAI_API_KEY`); keine direkte `mcp.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `mcp-gateway_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
 - `opencode-agent/files/home/.claude/settings.json` — Claude Code config (Permission-Whitelist `mcp__mcp-gateway__*`; keine `mcpServers.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")

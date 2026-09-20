@@ -19,6 +19,9 @@ permissions:
     # OpenRouter (OpenCode-Zusatz-Provider, API auf openrouter.ai)
     - openrouter.ai
     - "*.openrouter.ai"
+    # Z.AI (GLM, OpenAI-kompatibler Provider; api.z.ai)
+    - api.z.ai
+    - "*.z.ai"
     # Google Gemini (OpenCode-Zusatz-Provider, API auf generativelanguage.googleapis.com)
     - generativelanguage.googleapis.com
     # OpenAI (OpenAI Platform/API, z. B. platform.openai.com)
@@ -144,6 +147,15 @@ credentials:
       proxyManaged: true
       inject:
         - domain: api.deepseek.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: zai
+    description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — GLM, OpenAI-kompatibler Provider"
+    apiKey:
+      name: ZAI_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.z.ai
           header: Authorization
           format: "Bearer %s"
   - service: context7

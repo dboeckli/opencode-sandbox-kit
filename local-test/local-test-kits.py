@@ -138,7 +138,7 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith"),
     "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith"),
     "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith"),
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith"),
@@ -1003,6 +1003,23 @@ def main():
                 pass_("google not wired (only opencode template declares google)")
             else:
                 sfail("google not wired (only opencode template declares google)", out)
+
+        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude)
+        # und vom mistral-vibe-agent-Kit deklariert; mammouth nicht.
+        # (mistral-vibe hat eigene zai-Checks im Kit-spezifischen Block.)
+        if s["agent"] != "mistral-vibe":
+            zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
+            c2, out = exec_sandbox(s["name"], zai_env_cmd)
+            if s["agent"] in ("opencode", "claude"):
+                if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
+                    pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
+                else:
+                    sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+            else:
+                if c2 == 0 and "ZAI_API_KEY=<unset>" in out:
+                    pass_("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)")
+                else:
+                    sfail("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)", out)
 
         # Kit-deklarierter stackoverflow-Service (beide Kits) → Platzhalter in allen 3 Szenarien
         stackoverflow_env_cmd = 'echo "STACKOVERFLOW_API_KEY=${STACKOVERFLOW_API_KEY:-<unset>}"'

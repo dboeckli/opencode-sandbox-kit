@@ -388,6 +388,9 @@ sbx secret set zai
 
 > **Credential-Binding:** vorab `zai: apiKey.domains: [api.z.ai]` in `~/.config/sbx/credentials.yaml`
 > (bzw. `%APPDATA%\sbx\credentials.yaml`) bestätigen/hinterlegen.
+>
+> **Gilt auch für OpenCode:** dasselbe `zai`-Secret aktiviert den Provider `zai` (GLM-5.3-Flash/GLM-5.3) im
+> opencode-agent-Kit (`opencode.jsonc` → `provider.zai`, `ZAI_API_KEY`) — Modell in OpenCode auswählbar.
 
 **Alternative (ohne Z.AI-Key):** Mistral hostet GLM 5.3 selbst als `zai-glm-5-3` (Alias `glm`, Provider
 `mistral`, gleiche `MISTRAL_API_KEY`). In der TUI per `/model` wählbar. Weitere Mistral-IDs:

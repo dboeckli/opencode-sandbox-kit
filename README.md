@@ -337,7 +337,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`; Zusatz-Provider `openrouter`, `google` und `zai` (GLM-5.3-Flash/GLM-5.3 via `ZAI_API_KEY`, `sbx secret set zai`)
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 - **Mistral Vibe**: `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md`

@@ -50,6 +50,19 @@
           "name": "Gemini 3 Pro"
         }
       }
+    },
+    "zai": {
+      "options": {
+        "apiKey": "{env:ZAI_API_KEY}"
+      },
+      "models": {
+        "glm-5.3-flash": {
+          "name": "GLM 5.3 Flash"
+        },
+        "glm-5.3": {
+          "name": "GLM 5.3"
+        }
+      }
     }
   },
   "permission": {
