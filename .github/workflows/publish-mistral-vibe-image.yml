@@ -23,8 +23,10 @@ name: Publish Mistral Vibe image
 #
 # Multi-arch (linux/amd64 + linux/arm64) via NATIVE runners: `uv tool install`
 # does not run under QEMU arm64 emulation (buildx exit 1), so each arch is built
-# on its own runner (`ubuntu-latest` / `ubuntu-24.04-arm`) and the per-arch
-# images are combined into one manifest list with `docker buildx imagetools create`.
+# on its own runner (`ubuntu-latest` / `ubuntu-24.04-arm`). The architecture goes
+# into the repository NAME (`<name>-amd64` / `<name>-arm64`), keeping the tag
+# clean; the two are combined into one manifest list with
+# `docker buildx imagetools create` under the plain `<name>`.
 
 on:
   workflow_dispatch:
@@ -125,7 +127,7 @@ jobs:
           provenance: true
           sbom: true
           push: ${{ inputs.push }}
-          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version_tag }}-${{ matrix.arch }}
+          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
 
   merge:
     needs: [prepare, build]
@@ -147,8 +149,8 @@ jobs:
           image="${IMAGE_NAMESPACE}/${IMAGE_NAME}"
           docker buildx imagetools create \
             -t "${image}:${VERSION_TAG}" \
-            "${image}:${VERSION_TAG}-amd64" \
-            "${image}:${VERSION_TAG}-arm64"
+            "${image}-amd64:${VERSION_TAG}" \
+            "${image}-arm64:${VERSION_TAG}"
           if [ -n "${EXTRA_TAG}" ]; then
             docker buildx imagetools create \
               -t "${image}:${EXTRA_TAG}" \

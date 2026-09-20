@@ -477,8 +477,9 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
   `docker/sandbox-templates:shell-docker-0.5.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
   Publiziert **multi-arch (linux/amd64 + linux/arm64)** mit provenance/SBOM via
   `.github/workflows/publish-mistral-vibe-image.yml`: pro Architektur ein **nativer** Runner
-  (`ubuntu-latest` / `ubuntu-24.04-arm`), danach Manifest-Merge mit `docker buildx imagetools create`
-  (`uv tool install` läuft nicht unter QEMU-arm64).
+  (`ubuntu-latest` / `ubuntu-24.04-arm`), Per-Arch-Image mit der Architektur im **Repo-Namen**
+  (`domboeckli/sbx-mistral-vibe-amd64` / `-arm64`), danach Manifest-Merge zum Multi-Arch-Index unter
+  `domboeckli/sbx-mistral-vibe` (`docker buildx imagetools create`; `uv tool install` läuft nicht unter QEMU-arm64).
 - **Launch**: `CMD ["vibe", "--agent", "auto-approve"]` (im Image; das Kit setzt keinen Entrypoint).
 - **Auth**: Built-in-Service `mistral` → `MISTRAL_API_KEY` (Sentinel `proxy-managed`, Proxy injiziert
   `Authorization: Bearer` für `api.mistral.ai`); kein kit-eigener Credential-Service nötig.
