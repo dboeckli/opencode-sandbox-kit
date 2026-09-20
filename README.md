@@ -278,54 +278,6 @@ sbx kit add <sandbox-name> `
 
 Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. Der IntelliJ-MCP-Server läuft auf dem Host (`localhost:64615`, Port 64615 seit IDEA 2026.2.2) und wird über den **sbx MCP Gateway** (`mcp-gateway.docker.internal`, host-seitig registriert via `sbx mcp add`) in die Sandbox geliefert.
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                         WINDOWS HOST                               │
-│                                                                    │
-│  ┌────────────────────────────────────────────────────────────┐    │
-│  │                    IntelliJ IDEA                           │    │
-│  │                                                            │    │
-│  │  MCP Server läuft auf http://127.0.0.1:64615/stream     │    │
-│  └──────────────────────┬─────────────────────────────────────┘    │
-│                         │ Port 64615                               │
-│                         ▼                                          │
-│  ┌────────────────────────────────────────────────────────────┐    │
-│  │              Docker Desktop (WSL)                          │    │
-│  │                                                            │    │
-│  │  ┌──────────────────────────────────────────────────────┐  │    │
-│  │  │         HOST-SEITIGER PROXY                          │  │    │
-│  │  │  - Network Policies (allow/deny)                     │  │    │
-│  │  │  - Credential Injection (GitHub Token u.a.)          │  │    │
-│  │  │  - Forward an IntelliJ MCP, GitHub, npm, etc.        │  │    │
-│  │  └──────────┬───────────────────────────────────────────┘  │    │
-│  │             │                                              │    │
-│  │  host.docker.internal → Windows-Host                       │    │
-│  │             │                                              │    │
-│  │  ┌──────────────────────────────────────────────────────┐  │    │
-│  │  │           SANDBOX (MicroVM / nerdbox)                │  │    │
-│  │  │  ┌────────────────────────────────────────────────┐  │  │    │
-│  │  │  │    Agent (opencode / claude / mammouth / vibe) │  │  │    │
-│  │  │  │                                                │  │  │    │
-│  │  │  │MCP Client ───► sbx MCP Gateway                 │  │  │    │
-│  │  │  │(mcp-gateway.docker.internal ─► IDEA)           │  │  │    │
-│  │  │  │                                                │  │  │    │
-│  │  │  │  docker (CLI) ───► isolierter Docker Daemon    │  │  │    │
-│  │  │  │                   (im MicroVM, nicht Host)     │  │  │    │
-│  │  │  │                                                │  │  │    │
-│  │  │  │  Filesystem Passthrough                        │  │  │    │
-│  │  │  │  C:\dev\projects\... (selber Pfad wie Host)    │  │  │    │
-│  │  │  └────────────────────────────────────────────────┘  │  │    │
-│  │  │                                                      │  │    │
-│  │  │  isolation: Hypervisor (KVM) + Namespaces + Proxy    │  │    │
-│  │  └──────────────────────────────────────────────────────┘  │    │
-│  │                                                            │    │
-│  └────────────────────────────────────────────────────────────┘    │
-│                                                                    │
-│  📁 C:\development\projects\ ← direkt via Filesystem Passthrough   │
-│                                                                    │
-└────────────────────────────────────────────────────────────────────┘
-```
-
 ## Architektur
 
 ```mermaid
@@ -336,7 +288,10 @@ flowchart TB
         SBX["sbx CLI"]
         IDE["IntelliJ IDEA\nMCP Server :64615"]
         WS["📁 Workspace\nC:\\development\\projects\\..."]
+        KUBE["☸️ ~/.kube (read-only)\nDocker-Desktop-Kubernetes"]
+        M2["📦 maven-repo (read-only)\nHost-Maven-Cache"]
         Secrets["🔑 Secrets Store\n(OS Keychain)"]
+        Hub["🐳 Docker Hub\ndomboeckli/sbx-mistral-vibe"]
 
         subgraph DD["Docker Desktop (WSL)"]
             Proxy["🌐 Host-seitiger Proxy\n• Network Policies (allow / deny)\n• Credential Injection\n• Credential Proxy (never enters VM)"]
@@ -345,7 +300,7 @@ flowchart TB
                 Agent["🤖 AI Coding Agent\n(opencode / claude / mammouth / mistral-vibe)"]
                 Dockerd["🐳 Isolierter Docker Daemon"]
                 FS["📂 Filesystem Passthrough\n(selber Pfad wie Host)"]
-                Kit["🔌 Kit / Mixin\n(Tools, Skills, Config)"]
+                Kit["🔌 Kit (Mixin / sandbox)\n(Tools, Skills, Config, Vibe-Image)"]
 
                 Agent -->|"docker CLI"| Dockerd
                 Agent -->|"liest / schreibt"| FS
@@ -359,7 +314,10 @@ flowchart TB
     Dev -->|"sbx run / create"| SBX
     SBX -->|"startet"| VM
     SBX -->|"übergibt Workspace"| WS
+    SBX -->|"zieht Kit + Image"| Hub
     WS -.->|"Filesystem Passthrough"| FS
+    KUBE -.->|"read-only Mount"| FS
+    M2 -.->|"read-only Mount"| FS
     Secrets -.->|"injiziert via Proxy"| Proxy
 
     Proxy -->|"GitHub API / gh CLI"| GH["github.com"]
