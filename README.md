@@ -445,7 +445,11 @@ Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 
 Die 4 Agent-Szenarien (OpenCode, Claude Home, Mammouth, Mistral Vibe) lassen sich lokal automatisiert testen —
 `local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
-Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf:
+Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf.
+
+Als **Workspace** mounten die Szenarien das **aktuelle Verzeichnis** (`--workspace <pfad>` bzw. `$WORKSPACE_DIR`
+übersteuert; die IntelliJ-Run-Configs laufen aus dem Repo-Root). Der Test startet den Agenten nicht und schreibt
+nichts ins Workspace.
 
 Alle 4 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
 

@@ -170,9 +170,12 @@ IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-tes
 | `publish-mistral-vibe-image` | — | Baut/pusht das Vibe-Image lokal (`local-test/publish-mistral-vibe-image.py`, Tag `<pin>-<branch-slug>.<timestamp>` + `local`); `--build-only` baut ohne Push. Das lokale `local-test-kits-mistral-vibe`-Szenario testet danach den `:local`-Tag |
 
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
-`$PROJECT_DIR$/local-test`, `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
+`$PROJECT_DIR$` (Repo-Root = Sandbox-Workspace), `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
 `PARAMETERS`; IntelliJ erkennt sie (die `get_run_configurations`-Liste kann kurz veraltet sein — direkt per Namen starten
 funktioniert trotzdem).
+
+Die Sandbox-Szenarien mounten das **aktuelle Verzeichnis** als Workspace (`--workspace <pfad>` bzw.
+`$WORKSPACE_DIR` übersteuert; kein Temp-Dir mehr). Der Test startet den Agenten nicht und schreibt nichts ins Workspace.
 
 Äquivalente PowerShell-Befehle:
 

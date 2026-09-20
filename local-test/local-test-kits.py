@@ -36,6 +36,8 @@ Optionen:
   --validate-only                 Nur Kit-Validierung (sbx kit validate),
                                   keine Secrets-/Sandbox-Checks (default: Sandboxes
                                   werden gestartet)
+  --workspace <pfad>              Workspace der Sandbox-Szenarien
+                                  (default: $WORKSPACE_DIR oder aktuelles Verzeichnis)
 """
 
 import argparse
@@ -45,7 +47,6 @@ import re
 import ssl
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.request
 from shutil import which
@@ -647,9 +648,16 @@ def main():
                         help="CI-Modus: Fake-API-Keys, kein realer mammouth-API-Call")
     parser.add_argument("--validate-only", action="store_true",
                         help="Nur Kit-Validierung, keine Sandbox-Szenarien (default: Sandboxes werden gestartet)")
+    parser.add_argument("--workspace", default=None,
+                        help="Workspace-Pfad fuer die Sandbox-Szenarien "
+                             "(default: $WORKSPACE_DIR oder aktuelles Verzeichnis)")
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
+    workspace = os.path.abspath(
+        args.workspace or os.environ.get("WORKSPACE_DIR") or os.getcwd())
+    if not os.path.isdir(workspace):
+        sys.exit(f"Workspace nicht gefunden: {workspace}")
 
     print()
     _, sbx_ver = run_sbx(["version"])
@@ -784,8 +792,8 @@ def main():
 
         run_sbx(["rm", s["name"], "-f"])
 
-        ws = tempfile.mkdtemp(prefix="sbx-kit-test-")
-        info("  Sandbox erzeugen ...")
+        ws = workspace
+        info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
         # Mixin-Kits (OpenCode/Claude): Template gepinnt via `--template docker/sandbox-templates:<family>-<pin>`
         # (TEMPLATE_VERSION-Konstante dieses Scripts) — so testet das Szenario die gepinnte
         # Template-Version. Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
