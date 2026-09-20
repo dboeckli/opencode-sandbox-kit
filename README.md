@@ -18,6 +18,12 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral 
 > sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 > ```
 
+Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`) sind relativ:
+
+```powershell
+cd C:\development\projects\opencode-sandbox-kit
+```
+
 Lokales Kit (Entwicklung), Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
 Typischer Entwicklungs-Stack mit read-only Host-Mounts: `.` (aktuelles Projekt), `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
