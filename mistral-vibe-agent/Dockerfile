@@ -42,5 +42,7 @@ USER agent
 RUN uv tool install "mistral-vibe==${VIBE_VERSION}" --with "httpx[socks]" \
     && vibe --version
 
-# Launch Vibe in auto-approve mode; the kit does not override the entrypoint.
+# Launch Vibe in auto-approve mode. For the sandbox the kit sets
+# `sandbox.entrypoint` in spec.yaml (sbx starts the default shell otherwise);
+# this CMD is kept for plain `docker run`.
 CMD ["vibe", "--agent", "auto-approve"]

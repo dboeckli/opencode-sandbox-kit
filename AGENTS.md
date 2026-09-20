@@ -492,7 +492,7 @@ nötig.
 - `opencode-agent/files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
 - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
-- `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`)
+- `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`, `entrypoint: [vibe, "--agent", "auto-approve"]` — ohne entrypoint startet sbx die Default-Shell)
 - `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.5.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/publish-mistral-vibe-image.yml`
 - `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`)
 - `mistral-vibe-agent/files/home/.vibe/hooks.toml` + `files/home/.config/sandbox-kit/vibe-mcp-guard.py` — pre_tool-Read-only-Guard für die IntelliJ-MCP-Tools (auto-approve umgeht das Permission-System)
@@ -535,7 +535,7 @@ Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka C
 > (`curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.18.31.1 bash` als User 1000, Renovate
 > `mammouth-ai/code`; `--validate-only` warnt bei neuerem Release) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
 
-> **Mistral Vibe**: Installiert das Agent-Kit als eigenes gepinntes Image (`mistral-vibe-agent/Dockerfile`: shell-docker-0.5.0 + `uv tool install mistral-vibe==<pin>`, Renovate `mistral-vibe` PyPI). API-Key via Built-in-Service `mistral` (`MISTRAL_API_KEY`, `api.mistral.ai`, Sentinel `proxy-managed`). Image muss vor dem ersten Start publiziert sein (`publish-mistral-vibe-image.yml`, workflow_dispatch).
+> **Mistral Vibe**: Installiert das Agent-Kit als eigenes gepinntes Image (`mistral-vibe-agent/Dockerfile`: shell-docker-0.5.0 + `uv tool install mistral-vibe==<pin>`, Renovate `mistral-vibe` PyPI). API-Key via Built-in-Service `mistral` (`MISTRAL_API_KEY`, `api.mistral.ai`, Sentinel `proxy-managed`). Launch via `sandbox.entrypoint: [vibe, "--agent", "auto-approve"]` in der spec (ohne entrypoint startet sbx die Default-Shell). Image muss vor dem ersten Start publiziert sein (`publish-mistral-vibe-image.yml`, workflow_dispatch).
 
 ## Tools installed by the kit
 

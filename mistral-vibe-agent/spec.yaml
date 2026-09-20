@@ -18,6 +18,9 @@ sandbox:
   # Renovate trackt den Vibe-Pin (PyPI); der Image-Tag ist ueber args.imageTag parametrisierbar
   # (Feature-Branches: <pin>-<branch>.<timestamp>, master: <pin>).
   image: "docker.io/domboeckli/sbx-mistral-vibe:${{ kit.args.imageTag }}"
+  # Vibe explizit als Entrypoint: ohne diesen startet sbx fuer kind:sandbox die Default-Shell
+  # (Dockerfile-CMD wird fuer den Sandbox-Start nicht herangezogen).
+  entrypoint: [vibe, "--agent", "auto-approve"]
 
 agentInstructions:
   filename: AGENTS.md
