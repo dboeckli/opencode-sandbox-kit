@@ -181,13 +181,21 @@ def run_sbx(args, stream=False):
     if which("sbx") is None:
         print(_color("31", "sbx CLI nicht gefunden (PATH?)"))
         sys.exit(1)
-    proc = subprocess.run(
-        ["sbx"] + args,
-        capture_output=not stream,
-        text=True,
-    )
     if stream:
-        return proc.returncode, ""
+        # Live-Ausgabe UND mitschneiden (z. B. um Binding-Warnungen zu erkennen).
+        proc = subprocess.Popen(
+            ["sbx"] + args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        lines = []
+        for line in proc.stdout:
+            print(line, end="")
+            lines.append(line)
+        proc.wait()
+        return proc.returncode, "".join(lines)
+    proc = subprocess.run(["sbx"] + args, capture_output=True, text=True)
     out = (proc.stdout or "") + (proc.stderr or "")
     return proc.returncode, out.strip()
 
@@ -817,12 +825,19 @@ def main():
         else:
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
                                       "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
-        code, _ = run_sbx(create_cmd, stream=True)
+        code, create_out = run_sbx(create_cmd, stream=True)
         if code != 0:
             sfail("sandbox create")
             blocked_requests(s["name"])
             run_sbx(["rm", s["name"], "-f"])
             continue
+        if "no binding authorizes" in create_out:
+            sfail(
+                "credential binding ('no binding authorizes this service')",
+                "Kit-deklarierte Services brauchen ein Credential-Binding in "
+                "~/.config/sbx/credentials.yaml (siehe .github/workflows/e2e.yml); "
+                "sonst wird der echte Key nicht injiziert (nur der Sentinel gesetzt).",
+            )
 
         ready = False
         for _ in range(30):

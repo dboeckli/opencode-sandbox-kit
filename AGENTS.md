@@ -626,6 +626,11 @@ sbx secret ls                                                    # Secret ist re
 sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models -H "Authorization: Bearer $MISTRAL_API_KEY" | head'
 ```
 
+> **Credential-Binding:** Kit-deklarierte Services (Third-Party-v2-Kits) brauchen ein Binding — für `mistral`
+> in `~/.config/sbx/credentials.yaml`: `mistral: apiKey.domains: [api.mistral.ai]` (oder interaktiv beim ersten
+> Start bestätigen). Ohne Binding wird nur der Sentinel gesetzt, der echte Key aber nicht injiziert
+> (`sbx create`: „no binding authorizes this service"); `local-test-kits.py` schlägt dann fehl.
+
 ## Netzwerk-Policy (Deny-by-Default)
 
 - **Quelle**: `permissions.network.allow` in `opencode-agent/spec.yaml` (bzw. `mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`). Nur gelistete

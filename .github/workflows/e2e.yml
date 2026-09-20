@@ -202,6 +202,9 @@ jobs:
             mammouth:
               apiKey:
                 domains: [api.mammouth.ai]
+            mistral:
+              apiKey:
+                domains: [api.mistral.ai]
             stackoverflow:
               apiKey:
                 domains: [api.stackexchange.com]

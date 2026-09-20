@@ -368,6 +368,12 @@ sbx secret ls
 sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models -H "Authorization: Bearer $MISTRAL_API_KEY" | head'
 ```
 
+> **Credential-Binding (wichtig):** Das Agent-Kit deklariert den Service `mistral` (Third-Party-v2-Kit) — beim
+> ersten Sandbox-Start muss das Binding bestätigt werden (interaktiv, oder vorab in
+> `~/.config/sbx/credentials.yaml` mit `mistral: apiKey.domains: [api.mistral.ai]`). Ohne Binding wird der
+> echte Key **nicht** injiziert (nur der Sentinel `MISTRAL_API_KEY=proxy-managed` gesetzt); `sbx create` warnt
+> dann mit „no binding authorizes this service". Der lokale Test (`local-test-kits.py`) schlägt in dem Fall fehl.
+
 #### Context7 API-Key (optional)
 
 Für höheres Rate-Limit kann ein Context7 API-Key verwendet werden (https://context7.com/dashboard).
