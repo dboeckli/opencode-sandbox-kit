@@ -14,8 +14,7 @@ name: Kit e2e
 #
 # The `mistral-vibe` scenario pulls the `domboeckli/sbx-mistral-vibe` image.
 # A `publish-image` job (reusing publish-mistral-vibe-image.yml) builds and, for
-# non-PR runs, pushes it before the scenario matrix starts — multi-arch via QEMU,
-# since the sandbox microVM has no binfmt for arm64.
+# non-PR runs, pushes it (linux/amd64) before the scenario matrix starts.
 
 on:
   push:
@@ -31,8 +30,7 @@ jobs:
   publish-image:
     # Build (and, unless it's a PR, push) the Mistral Vibe image the
     # `mistral-vibe` scenario pulls. Reuses the standalone publish workflow so
-    # the image always matches the branch under test (multi-arch via QEMU on
-    # the runner — the sandbox microVM has no binfmt for arm64).
+    # the image always matches the branch under test (linux/amd64).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     uses: ./.github/workflows/publish-mistral-vibe-image.yml

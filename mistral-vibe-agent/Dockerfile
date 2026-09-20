@@ -5,17 +5,20 @@
 # sandbox, tooling parity with the other kits) and bake a pinned Vibe version,
 # following https://docs.docker.com/guides/mistral-vibe-sandbox/.
 #
-# Build + publish (multi-arch, provenance/SBOM), from this directory.
+# Build + publish (linux/amd64, provenance/SBOM), from this directory.
+# amd64 only: `uv tool install` does not run under QEMU arm64 emulation; an
+# arm64 build needs a native arm64 runner + a buildx imagetools manifest merge.
+#
 # CI path (publish-mistral-vibe-image.yml) pushes only the version tag:
 #   docker buildx build \
-#     --platform linux/amd64,linux/arm64 \
+#     --platform linux/amd64 \
 #     --provenance=true --sbom=true \
 #     -t domboeckli/sbx-mistral-vibe:${VIBE_VERSION} \
 #     --push .
 #
 # Local bootstrap additionally tags `local` (moving tag for a locally built image):
 #   docker buildx build \
-#     --platform linux/amd64,linux/arm64 \
+#     --platform linux/amd64 \
 #     --provenance=true --sbom=true \
 #     -t domboeckli/sbx-mistral-vibe:${VIBE_VERSION} \
 #     -t domboeckli/sbx-mistral-vibe:local \

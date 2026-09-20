@@ -6,7 +6,7 @@ description: "Mistral Vibe Coding-Agent mit Context7, IntelliJ MCP, JDK, Maven, 
 
 sandbox:
   # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-docker-0.5.0
-  # + mistral-vibe<version>. Tag = Vibe-Version; Build/Publish multi-arch via docker buildx
+  # + mistral-vibe<version>. Tag = Vibe-Version; Build/Publish (linux/amd64) via docker buildx
   # (provenance/SBOM). Renovate trackt den Vibe-Pin (PyPI) und das Image-Tag.
   image: "docker.io/domboeckli/sbx-mistral-vibe:2.25.5"
 

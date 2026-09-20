@@ -12,7 +12,11 @@ name: Publish Mistral Vibe image
 # This workflow is both directly dispatchable and a reusable workflow
 # (`workflow_call`). The `e2e.yml` workflow calls it before the scenario matrix,
 # so the image exists for the `mistral-vibe` e2e scenario on every push/PR/nightly
-# run (multi-arch via QEMU on the runner). Manual runs use `workflow_dispatch`.
+# run. Manual runs use `workflow_dispatch`.
+#
+# The image is built for linux/amd64 only: the `uv tool install` step does not
+# run under QEMU arm64 emulation (buildx exit code 1). arm64 would need a native
+# `ubuntu-24.04-arm` runner plus a `docker buildx imagetools create` merge.
 #
 # The tag is the Vibe version from mistral-vibe-agent/Dockerfile (ARG
 # VIBE_VERSION) — a real version, not a moving tag. Renovate tracks the pin.
@@ -69,9 +73,6 @@ jobs:
             exit 1
           fi
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -82,11 +83,14 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      - name: Build and push (multi-arch, provenance/SBOM)
+      - name: Build and push (amd64, provenance/SBOM)
+        # amd64 only: the `uv tool install` step does not run under QEMU arm64
+        # emulation. arm64 can be added later via a native `ubuntu-24.04-arm`
+        # runner + `docker buildx imagetools create` manifest merge.
         uses: docker/build-push-action@v6
         with:
           context: mistral-vibe-agent
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           provenance: true
           sbom: true
           push: ${{ inputs.push }}
