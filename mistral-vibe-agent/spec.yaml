@@ -1,156 +1,176 @@
 schemaVersion: "2"
-kind: mixin
-name: opencode-agent
-displayName: "OpenCode-Konfiguration"
-description: "OpenCode, Context7 und IntelliJ MCP"
+kind: sandbox
+name: mistral-vibe
+displayName: "Mistral Vibe"
+description: "Mistral Vibe Coding-Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
+
+args:
+  imageTag:
+    default: "2.25.5"
+    description: >-
+      Tag of domboeckli/sbx-mistral-vibe to run. Default = release tag (= Vibe version).
+      CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build.
+
+sandbox:
+  # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-docker-0.5.0
+  # + mistral-vibe<version>. Build/Publish multi-arch (amd64+arm64, native Runner + imagetools merge)
+  # via docker buildx (provenance/SBOM).
+  # Renovate trackt den Vibe-Pin (PyPI); der Image-Tag ist ueber args.imageTag parametrisierbar
+  # (Feature-Branches: <pin>-<branch>.<timestamp>, master: <pin>).
+  image: "docker.io/domboeckli/sbx-mistral-vibe:${{ kit.args.imageTag }}"
+  # Vibe explizit als Entrypoint: ohne diesen startet sbx fuer kind:sandbox die Default-Shell
+  # (Dockerfile-CMD wird fuer den Sandbox-Start nicht herangezogen).
+  entrypoint: [vibe, "--agent", "auto-approve"]
+
+agentInstructions:
+  filename: AGENTS.md
+  content: |
+    ## Sandbox environment
+
+    You are running inside a Docker sandbox. The workspace is mounted at its
+    absolute host path. `sudo` is passwordless; use it for package installs.
+    Docker is available inside the sandbox; containers you start are isolated
+    in the microVM. The IntelliJ MCP server runs on the Windows host and is
+    delivered via the sbx MCP Gateway (registration `sbx mcp add idea --url
+    http://localhost:64615/stream`, sandbox with `--static-mcp idea`; port 64615
+    since IDEA 2026.2.2, previously 64342).
 
 permissions:
   network:
     allow:
-    - opencode.ai
-    - "*.opencode.ai"
-    - context7.com
-    - "*.context7.com"
-    # Mistral-Doku (docs.mistral.ai — Modelle/API/Vibe-Doku)
-    - docs.mistral.ai
-    # DeepSeek (OpenCode-Modell mit eigenem API-Key)
-    - api.deepseek.com
-    - "*.deepseek.com"
-    # OpenRouter (OpenCode-Zusatz-Provider, API auf openrouter.ai)
-    - openrouter.ai
-    - "*.openrouter.ai"
-    # Z.AI (GLM, OpenAI-kompatibler Provider; api.z.ai)
-    - api.z.ai
-    - "*.z.ai"
-    # Google Gemini (OpenCode-Zusatz-Provider, API auf generativelanguage.googleapis.com)
-    - generativelanguage.googleapis.com
-    # OpenAI (OpenAI Platform/API, z. B. platform.openai.com)
-    - openai.com
-    - "*.openai.com"
-    # Anthropic (Claude Code)
-    - anthropic.com
-    - api.anthropic.com
-    - "*.anthropic.com"
-    - platform.claude.com
-    - github.com
-    - api.github.com
-    - "*.github.com"
-    # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
-    - maven.pkg.github.com
-    - githubusercontent.com
-    - objects.githubusercontent.com
-    - "*.githubusercontent.com"
-    - models.dev
-    - registry.npmjs.org
-    - dlcdn.apache.org
-    # Apache Camel (Doku, Dependencies)
-    - camel.apache.org
-    - "*.camel.apache.org"
-    # JetBrains Help-Doku (IntelliJ HTTP-Client Feature-Seiten, z. B. www.jetbrains.com/help/idea/)
-    # + JetBrains Marketplace (plugins.jetbrains.com) fuer Plugin-Changelogs (z. B. MCP Server 26071)
-    # + YouTrack (youtrack.jetbrains.com) fuer Issue-Recherche (z. B. IJPL MCP-Server)
-    - jetbrains.com
-    - www.jetbrains.com
-    - plugins.jetbrains.com
-    - youtrack.jetbrains.com
-    # IntelliJ IDEA MCP Server (Windows Host; MCP-Verbindung via sbx MCP Gateway → localhost:64615/stream,
-    # Port 64615 seit IDEA 2026.2.2, Legacy 64342; Allow-Eintrag nur für den Startup-Health-Check,
-    # der die Host-Erreichbarkeit aus der Sandbox prüft)
-    - "localhost:64342"
-    - "127.0.0.1:64342"
-    - "host.docker.internal:64342"
-    - "localhost:64615"
-    - "127.0.0.1:64615"
-    - "host.docker.internal:64615"
-    # Docker Desktop Kubernetes (kube-apiserver, Host via Docker Desktop DNS)
-    - "localhost:6443"
-    - "127.0.0.1:6443"
-    - "host.docker.internal:6443"
-    # Docker Desktop Docker Engine (Daemon-API via TCP, Host via Docker Desktop DNS; DOCKER_HOST=tcp://host.docker.internal:2375)
-    - "localhost:2375"
-    - "127.0.0.1:2375"
-    - "host.docker.internal:2375"
-    # Elastic REST-APIs (ELK-Stack im Host-Docker via Docker Compose, Zugriff via host.docker.internal)
-    - "localhost:9200"
-    - "127.0.0.1:9200"
-    - "host.docker.internal:9200"
-    - "localhost:5601"
-    - "127.0.0.1:5601"
-    - "host.docker.internal:5601"
-    - "localhost:8200"
-    - "127.0.0.1:8200"
-    - "host.docker.internal:8200"
-    # Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)
-    - "localhost:30920"
-    - "127.0.0.1:30920"
-    - "localhost:30561"
-    - "127.0.0.1:30561"
-    - "localhost:30820"
-    - "127.0.0.1:30820"
-    # Maven Central
-    - maven.org
-    - repo1.maven.org
-    - "*.maven.org"
-    # Spring
-    - spring.io
-    - repo.spring.io
-    - "*.spring.io"
-    - start.spring.io
-    # Docker
-    - docker.io
-    - "*.docker.io"
-    - docker.com
-    - "*.docker.com"
-    - download.docker.com
-    - dl.k8s.io
-    - get.helm.sh
-    # Zusätzliche Container-Registries (Observability / GitHub Packages)
-    - docker.elastic.co
-    - docker-auth.elastic.co
-    - cr.jaegertracing.io
-    - ghcr.io
-    # Private Maven- & Helm-Repositories
-    - repo.repsy.io
-    - jitpack.io
-    - artifacts.cibseven.org
-    - packages.scm-manager.org
-    # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry)
-    - api.cloudsmith.io
-    - upload.cloudsmith.io
-    - docker.cloudsmith.io
-    - dl.cloudsmith.io
-    # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
-    - "**/*.r2.cloudflarestorage.com"
-    # Liberica JDK (Renovate Versions-API)
-    - api.bell-sw.com
-    # Ubuntu apt (archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)
-    - archive.ubuntu.com
-    - security.ubuntu.com
-    - ports.ubuntu.com
-    # MongoDB apt (Helm-Test-Pod)
-    - repo.mongodb.org
-    # Python / PyPI
-    - pypi.org
-    - files.pythonhosted.org
-    # Skills CLI
-    - add-skill.vercel.sh
-    # Web search (last resort, allow-list for websearch/webfetch provider)
-    - "*.exa.ai"
-    # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
-    - api.stackexchange.com
+      # Mistral API (Vibe-Modell)
+      - "api.mistral.ai:443"
+      - "*.mistral.ai:443"
+      # Regionale Mistral-Endpoints (GLM 5.3/5.2 nur auf global + EU, nicht US;
+      # `*.mistral.ai` matcht keine mehrstufigen Subdomains → explizit)
+      - "api.eu.mistral.ai:443"
+      - "api.us.mistral.ai:443"
+      # Mistral-Doku (Modelle/API/Vibe-Doku)
+      - "docs.mistral.ai:443"
+      # Vibe GrowthBook (Feature-Flags/Experimente)
+      - "experiments.mistral.services:443"
+      # Z.AI (GLM-5.3-Flash als Default-Modell, direkter OpenAI-kompatibler Provider)
+      - "api.z.ai:443"
+      - "*.z.ai:443"
+      # Context7
+      - "context7.com:443"
+      - "*.context7.com:443"
+      # GitHub
+      - "api.github.com:443"
+      - "github.com:443"
+      - "*.github.com:443"
+      # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
+      - "maven.pkg.github.com:443"
+      - "objects.githubusercontent.com:443"
+      - "githubusercontent.com:443"
+      - "*.githubusercontent.com:443"
+      - "models.dev:443"
+      - "registry.npmjs.org:443"
+      - "dlcdn.apache.org:443"
+      # Apache Camel (Doku, Dependencies)
+      - "camel.apache.org:443"
+      - "*.camel.apache.org:443"
+      # JetBrains Help-Doku + Marketplace + YouTrack
+      - "jetbrains.com:443"
+      - "www.jetbrains.com:443"
+      - "plugins.jetbrains.com:443"
+      - "youtrack.jetbrains.com:443"
+      # IntelliJ IDEA MCP Server (Windows Host; MCP-Verbindung via sbx MCP Gateway → localhost:64615/stream,
+      # Port 64615 seit IDEA 2026.2.2, Legacy 64342; Allow-Eintrag nur für den Startup-Health-Check)
+      - "localhost:64342"
+      - "127.0.0.1:64342"
+      - "host.docker.internal:64342"
+      - "localhost:64615"
+      - "127.0.0.1:64615"
+      - "host.docker.internal:64615"
+      # Docker Desktop Kubernetes (kube-apiserver, Host via Docker Desktop DNS)
+      - "localhost:6443"
+      - "127.0.0.1:6443"
+      - "host.docker.internal:6443"
+      # Docker Desktop Docker Engine (Daemon-API via TCP, DOCKER_HOST=tcp://host.docker.internal:2375)
+      - "localhost:2375"
+      - "127.0.0.1:2375"
+      - "host.docker.internal:2375"
+      # Elastic REST-APIs (ELK-Stack im Host-Docker via Docker Compose)
+      - "localhost:9200"
+      - "127.0.0.1:9200"
+      - "host.docker.internal:9200"
+      - "localhost:5601"
+      - "127.0.0.1:5601"
+      - "host.docker.internal:5601"
+      - "localhost:8200"
+      - "127.0.0.1:8200"
+      - "host.docker.internal:8200"
+      # Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)
+      - "localhost:30920"
+      - "127.0.0.1:30920"
+      - "localhost:30561"
+      - "127.0.0.1:30561"
+      - "localhost:30820"
+      - "127.0.0.1:30820"
+      # Maven Central
+      - "repo1.maven.org:443"
+      - "maven.org:443"
+      - "*.maven.org:443"
+      # Spring
+      - "repo.spring.io:443"
+      - "spring.io:443"
+      - "*.spring.io:443"
+      - "start.spring.io:443"
+      # Docker
+      - "docker.io:443"
+      - "*.docker.io:443"
+      - "docker.com:443"
+      - "*.docker.com:443"
+      - "download.docker.com:443"
+      - "dl.k8s.io:443"
+      - "get.helm.sh:443"
+      # Zusätzliche Container-Registries (Observability / GitHub Packages)
+      - "docker.elastic.co:443"
+      - "docker-auth.elastic.co:443"
+      - "cr.jaegertracing.io:443"
+      - "ghcr.io:443"
+      # Private Maven- & Helm-Repositories
+      - "repo.repsy.io:443"
+      - "jitpack.io:443"
+      - "artifacts.cibseven.org:443"
+      - "packages.scm-manager.org:443"
+      # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry)
+      - "api.cloudsmith.io:443"
+      - "upload.cloudsmith.io:443"
+      - "docker.cloudsmith.io:443"
+      - "dl.cloudsmith.io:443"
+      # Cloudflare R2 (Object Storage)
+      - "**/*.r2.cloudflarestorage.com:443"
+      # Liberica JDK (Renovate Versions-API)
+      - "api.bell-sw.com:443"
+      # Ubuntu apt (archive.ubuntu.com for amd64, ports.ubuntu.com for arm64)
+      - "archive.ubuntu.com"
+      - "security.ubuntu.com"
+      - "ports.ubuntu.com"
+      # MongoDB apt (Helm-Test-Pod)
+      - "repo.mongodb.org"
+      # Python / PyPI (mistral-vibe, uv)
+      - "pypi.org:443"
+      - "files.pythonhosted.org:443"
+      # Skills CLI (install via add-skill.vercel.sh)
+      - "add-skill.vercel.sh:443"
+      # Web search (last resort, allow-list for websearch/webfetch provider)
+      - "*.exa.ai:443"
+      # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
+      - "api.stackexchange.com:443"
 
 credentials:
-  - service: deepseek
-    description: "DeepSeek API-Key (https://platform.deepseek.com/api_keys)"
+  - service: mistral
+    description: "Mistral API-Key (https://console.mistral.ai/) — Built-in-Service (MISTRAL_API_KEY, api.mistral.ai)"
     apiKey:
-      name: DEEPSEEK_API_KEY
+      name: MISTRAL_API_KEY
       proxyManaged: true
       inject:
-        - domain: api.deepseek.com
-          header: Authorization
-          format: "Bearer %s"
+        - domain: api.mistral.ai
+          scheme: bearer
   - service: zai
-    description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — GLM, OpenAI-kompatibler Provider"
+    description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — OpenAI-kompatibler Provider (GLM-5.3-Flash)"
     apiKey:
       name: ZAI_API_KEY
       proxyManaged: true
@@ -230,9 +250,7 @@ setup:
       description: Install Apache Kafka CLI (bin/*.sh wrappers in /usr/local/bin) — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling-user.sh"
       user: "1000"
-      description: Install agent-user tooling (skills + Claude statusline) — source files/home/.local/bin/install-tooling-user.sh
-    - command: "bash /home/agent/.local/bin/write-managed-settings.sh"
-      description: Write managed-settings.json to /etc/claude-code — highest precedence, not overwritten by the template (statusLine + PreToolUse/SessionStart hooks always configured at session start); source files/home/.local/bin/write-managed-settings.sh
+      description: Install agent-user tooling (skills) — source files/home/.local/bin/install-tooling-user.sh
   startup:
     - command:
         - bash
@@ -320,29 +338,6 @@ setup:
       description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com. Wenn ein read-only Host-Maven-Cache gemountet ist (/c/Users/*/.m2/repository), wird zusaetzlich ein <repository> 'host-cache' (file://, snapshots disabled) in einem aktiven Profil ergaenzt — Maven nutzt den Host-Cache vor den echten Remotes
     - command:
         - python3
-        - -c
-        - |
-          import json, os
-          sf = os.path.expanduser('~/.claude/settings.json')
-          kf = os.path.expanduser('~/.claude/settings.kit.json')
-          if not (os.path.exists(sf) and os.path.exists(kf)):
-              exit(0)
-          with open(sf) as f: base = json.load(f)
-          with open(kf) as f: kit = json.load(f)
-          def merge(b, o):
-              r = dict(b)
-              for k, v in o.items():
-                  if k in r and isinstance(r[k], dict) and isinstance(v, dict):
-                      r[k] = merge(r[k], v)
-                  else:
-                      r[k] = v
-              return r
-          with open(sf, 'w') as f:
-              json.dump(merge(base, kit), f, indent=2)
-      user: "1000"
-      description: Re-apply kit settings after template overwrite — Python merge (faster than jq, handles arrays correctly)
-    - command:
-        - python3
         - /home/agent/.local/bin/regenerate-kubeconfig.py
       user: "1000"
       description: Regenerate ~/.kube/config from the read-only host kubeconfig mount (Docker Desktop Kubernetes) — idempotent, no-op without mount
@@ -350,6 +345,4 @@ setup:
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"
-    ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet-4-6"
-    ANTHROPIC_MODEL: "claude-sonnet-4-6"
     npm_config_bin_links: "false"

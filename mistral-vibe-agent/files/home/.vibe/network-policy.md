@@ -8,19 +8,21 @@ Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `web
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
-- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `api.deepseek.com`, `*.deepseek.com` (DeepSeek), `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `mammouth.ai`, `*.mammouth.ai`, `api.mammouth.ai`, `code.mammouth.ai`, `model-explorer.mammouth.ai`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini), `api.z.ai`, `*.z.ai` (Z.AI/GLM), `openai.com`, `*.openai.com` (OpenAI Platform/API)
+- **Agent API (Mistral Vibe)**: `api.mistral.ai`, `*.mistral.ai` (Mistral API; Key via Built-in-Service `mistral` → `MISTRAL_API_KEY`), `api.eu.mistral.ai` / `api.us.mistral.ai` (regionale Endpoints; GLM 5.3/5.2 nur global + EU), `experiments.mistral.services` (Vibe GrowthBook: Feature-Flags/Experimente)
+- **Z.AI (GLM-5.3-Flash, Default-Modell)**: `api.z.ai`, `*.z.ai` (direkter OpenAI-kompatibler Provider; Key via Kit-Service `zai` → `ZAI_API_KEY`)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `maven.pkg.github.com` (GitHub Packages Maven), `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku)
 - **JetBrains Help + Marketplace + YouTrack**: `jetbrains.com`, `www.jetbrains.com`, `plugins.jetbrains.com`, `youtrack.jetbrains.com` (IntelliJ HTTP-Client Feature-Doku, z. B. `www.jetbrains.com/help/idea/http-response-handler-examples.html`; Plugin-Changelogs, z. B. MCP Server 26071; Issue-Recherche, z. B. IJPL MCP-Server)
-- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
+- **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`, `start.spring.io`
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
-- **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API), `upload.cloudsmith.io` (Package-Upload), `docker.cloudsmith.io` (Helm-OCI-Registry für rest-mvc-Subcharts); API-Doku via Context7 (`npx ctx7 docs /cloudsmith-io/cloudsmith-api <query>`, z. B. FilesApi/Upload)
+- **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API), `upload.cloudsmith.io` (Package-Upload), `docker.cloudsmith.io` (Helm-OCI-Registry), `dl.cloudsmith.io` (Helm-OCI-Blob-Download/CDN); API-Doku via Context7 (`npx ctx7 docs /cloudsmith-io/cloudsmith-api <query>`, z. B. FilesApi/Upload)
 - **Cloudflare R2**: `**/*.r2.cloudflarestorage.com` (Object Storage; Multi-Level-Wildcard — Blob-Host ist z. B. `docker-registry-production.<hash>.r2.cloudflarestorage.com`)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
 - **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)
-- **MongoDB**: `repo.mongodb.org` (apt im Helm-Test-Pod)
+- **MongoDB apt (Helm-Test-Pod)**: `repo.mongodb.org`
+- **Python / PyPI**: `pypi.org`, `files.pythonhosted.org`
 - **Skills CLI**: `add-skill.vercel.sh`
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
@@ -30,4 +32,4 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Elastic REST-APIs (ELK-Stack, Docker Compose im Host-Docker)**: `localhost:9200`, `127.0.0.1:9200`, `host.docker.internal:9200` (Elasticsearch REST-API), `localhost:5601`, `127.0.0.1:5601`, `host.docker.internal:5601` (Kibana UI + REST-API), `localhost:8200`, `127.0.0.1:8200`, `host.docker.internal:8200` (APM Server OTLP-HTTP-Intake)
 - **Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)**: `localhost:30920`, `127.0.0.1:30920` (Elasticsearch), `localhost:30561`, `127.0.0.1:30561` (Kibana), `localhost:30820`, `127.0.0.1:30820` (APM Server)
 
-Not reachable (blocked): telemetry, and any other host not on this list.
+Not reachable (blocked): Anthropic, telemetry, and any other host not on this list.

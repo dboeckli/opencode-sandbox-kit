@@ -68,20 +68,21 @@ sbx exec opencode-sandbox -- tail -f /var/log/sbx-kit-install.log
 
 Die Timestamp-Logik steckt in `log_step()`, `log_phase_start()`, `log_phase_done()` und im
 Fail-open-Wrapper `run_step()` von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
-Phasen-Commands referenzieren die beiden Specs (`opencode-agent/`, `mammouth-agent/`).
-**Beide Kit-Kopien identisch halten** (`opencode-agent/`, `mammouth-agent/`) — der
+Phasen-Commands referenzieren die Specs (`opencode-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`).
+**Alle Kit-Kopien identisch halten** (`opencode-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`) — der
 Drift-Check schlägt sonst fehl:
 
 ```powershell
 cp opencode-agent\files\home\.local\bin\install-tooling.sh mammouth-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\files\home\.local\bin\install-tooling.sh
 ```
 
 ## Analyzing
 
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
-Alle `--help`-Outputs der v0.39.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
-`opencode-agent/files/home/sbx-cli.md`, identisch in den beiden Kit-Kopien) — die sbx CLI selbst ist **nicht** in
+Alle `--help`-Outputs der v0.43.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
+`opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — die sbx CLI selbst ist **nicht** in
 Context7. Detaillierte Hintergrunddoku (Kits, Policy, Proxy): `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus
@@ -95,9 +96,10 @@ vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schläg
 Läuft auf dem Host (Docker Desktop) — `sbx` ist **nicht** im Sandbox-Image installiert:
 
 ```powershell
-sbx kit validate ./opencode-agent                 # Mixin-Kit (OpenCode/Claude Home)
+sbx kit validate ./opencode-agent             # Mixin-Kit (OpenCode/Claude Home)
 sbx kit validate ./mammouth-agent             # Mammouth Agent-Kit
-sbx kit inspect ./opencode-agent --output json | jq '.warnings'   # erwartet: []
+sbx kit validate ./mistral-vibe-agent         # Mistral Vibe Agent-Kit
+sbx kit inspect ./opencode-agent --json | jq '.warnings'   # erwartet: []
 ```
 
 Automatisiert via `local-test-kits.py` bzw. IntelliJ-Config `local-test-kits-validate-only`:
@@ -108,12 +110,13 @@ python local-test\local-test-kits.py --validate-only
 
 ### Install-Script-Drift-Check
 
-`local-test-kits.py` prüft, dass die Install-Skripte in beiden Kit-Kopien identisch sind
+`local-test-kits.py` prüft, dass die Install-Skripte in allen Kit-Kopien identisch sind
 (`check_install_scripts_sync`). Nur diese Kopien anfassen und synchron halten:
 
-- `opencode-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`
+- `opencode-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `mistral-vibe-agent/…`
 - `opencode-agent/files/home/.local/bin/install-tooling-user.sh` → dito
 - `opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py` → dito
+- `opencode-agent/files/home/.local/bin/install-apt-packages.sh` → dito
 
 ### Startup-Checks
 
@@ -142,13 +145,13 @@ sbx policy log opencode-sandbox
 
 `local-test-kits.py --validate-only` vergleicht die in `~/stackexchange-api.md` dokumentierte
 API-Version mit dem offiziellen Change-Log — schlägt fehl, wenn eine neuere Version existiert
-(Doku-Dateien + `api_revision` aktualisieren). Beide Kit-Kopien
-(`opencode-agent/files/home/`, `mammouth-agent/files/home/`) identisch halten.
+(Doku-Dateien + `api_revision` aktualisieren). Alle Kit-Kopien
+(`opencode-agent/files/home/`, `mammouth-agent/files/home/`, `mistral-vibe-agent/files/home/`) identisch halten.
 
 ### IntelliJ: Probleme statisch analysieren
 
 Über den IntelliJ MCP direkt inspizieren (nur lesende Tools, Whitelist; Tools kommen über den sbx MCP Gateway,
-Präfix `mcp-gateway_` in OpenCode/Mammouth bzw. `mcp__mcp-gateway__` in Claude Code):
+Präfix `mcp-gateway_` in OpenCode/Mammouth/Mistral Vibe bzw. `mcp__mcp-gateway__` in Claude Code):
 
 - `mcp-gateway_get_file_problems` — Inspection-Errors/Warnings einer Datei
 - `mcp-gateway_search_symbol` / `mcp-gateway_search_text` — schnelle Suche im Projekt
@@ -173,14 +176,15 @@ Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten + Gateway-Verifikation: R
 ### IntelliJ MCP über die Permission-Whitelist
 
 OpenCode/Mammouth: `"mcp-gateway_*": "deny"` zuerst, danach gezielte `allow`-Regeln (Reihenfolge zählt —
-`findLast`-Semantik). Claude Code: explizite `allow`-Whitelist in `settings.json`. Schreibende/
-ausführende Tools und die Gateway-Meta-Tools (`code-mode`, `mcp-exec`, …) sind gar nicht sichtbar.
+`findLast`-Semantik). Claude Code: explizite `allow`-Whitelist in `settings.json`. Mistral Vibe: `pre_tool`-Hook
+(`~/.vibe/hooks.toml` → `vibe-mcp-guard.py`), da `--agent auto-approve` das Permission-System umgeht.
+Schreibende/ausführende Tools und die Gateway-Meta-Tools (`code-mode`, `mcp-exec`, …) sind nicht erlaubt.
 
 ### Run-Config-Guard & `mcp-gateway_execute_run_configuration`
 
 `mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) braucht
 Bestätigung und ist per Guard auf die Run-Config
-`local-test-kits-validate-only` begrenzt (OpenCode-Plugin bzw. Claude PreToolUse-Hook). Andere
+`local-test-kits-validate-only` begrenzt (OpenCode-Plugin, Claude PreToolUse-Hook bzw. Vibe-`pre_tool`-Hook). Andere
 Run-Configs werden mit einem Fehler geblockt.
 
 > **Timeout-Verhalten**: `mcp-gateway_execute_run_configuration` mit `waitForExit=true` timeout't nach
@@ -215,13 +219,13 @@ schreibt der **Dispatcher des Base-Templates** — Timestamps pro Zeile kann das
 | `002-startup-opencode-sandbox-kit/001-cmd.sh` | Kit `setup.startup` (agent) | `regenerate-kubeconfig.py` → `~/.kube/config` aus dem read-only Host-Kubeconfig-Mount regenerieren (idempotent, No-op ohne Mount) |
 
 Das `002-…-sandbox-kit`-Verzeichnis wird vom Template aus dem `setup.startup`-Abschnitt der Kit-Spec
-generiert (`opencode-agent/spec.yaml`, `mammouth-agent/spec.yaml`); die
+generiert (`opencode-agent/spec.yaml`, `mammouth-agent/spec.yaml`, `mistral-vibe-agent/spec.yaml`); die
 Hook-Skripte landen als `000-cmd.sh`, `001-cmd.sh`, … in Namensreihenfolge.
 
 ### Kit-Spec v2 / sbx-Version
 
 v2-Grammatik verlangt **sbx v0.38+** — ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler.
-Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --output json | jq '.warnings'` (erwartet `[]`).
+Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --json | jq '.warnings'` (erwartet `[]`).
 
 ## Zusammenfassung der Kommandos
 
@@ -230,7 +234,7 @@ Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agen
 | Install-Log ansehen | `sbx exec <sandbox> cat /var/log/sbx-kit-install.log` |
 | Install-Log live folgen | `sbx exec <sandbox> -- tail -f /var/log/sbx-kit-install.log` |
 | Startup-Hooks prüfen | `sbx exec <sandbox> cat /var/log/sbx-kit-startup.log` |
-| Kit validieren | `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --output json \| jq '.warnings'` |
+| Kit validieren | `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --json \| jq '.warnings'` |
 | Drift + SO-API-Check | `python local-test\local-test-kits.py --validate-only` |
 | Blocked requests | `sbx policy log <sandbox>` |
 | Startup-Checks (in Sandbox) | `bash ~/.config/sandbox-kit/run-checks.sh` |

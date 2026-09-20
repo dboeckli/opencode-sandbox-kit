@@ -1,36 +1,43 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 3 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 4 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
 
 Szenarien:
-  1. OpenCode + opencode-agent    (sbx create opencode --kit ./opencode-agent/)
-  2. Claude   + opencode-agent    (sbx create claude --kit ./opencode-agent/)      — Home (api.anthropic.com)
-  3. Mammouth + mammouth-agent    (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
+  1. OpenCode     + opencode-agent      (sbx create opencode --kit ./opencode-agent/)
+  2. Claude       + opencode-agent      (sbx create claude --kit ./opencode-agent/)   — Home (api.anthropic.com)
+  3. Mammouth     + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
+  4. Mistral Vibe + mistral-vibe-agent  (sbx create ./mistral-vibe-agent/ — Sandbox-Kit, eigenes gepinntes Image)
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, context7, openrouter, google, stackoverflow, cloudsmith
-    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith
+    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
+  - Mistral-Vibe-Szenario (lokal): das Image `domboeckli/sbx-mistral-vibe:local` ist publiziert
+    (IntelliJ-Run-Config `publish-mistral-vibe-image` bzw. `python local-test/publish-mistral-vibe-image.py`);
+    CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
 
 Verwendung:
-  python local-test-kits.py                 # alle 3 Szenarien testen (default: all)
+  python local-test-kits.py                 # alle 4 Szenarien testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
   python local-test-kits.py claude          # nur Claude testen (Home-Szenario)
   python local-test-kits.py mammouth        # nur Mammouth testen
+  python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,claude,mammouth}  Zu testendes Kit (default: all)
+  {all,opencode,claude,mammouth,mistral-vibe}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
-                                  mammouth-API-Call
+                                  mammouth-/mistral-API-Call
   --validate-only                 Nur Kit-Validierung (sbx kit validate),
                                   keine Secrets-/Sandbox-Checks (default: Sandboxes
                                   werden gestartet)
+  --workspace <pfad>              Workspace der Sandbox-Szenarien
+                                  (default: $WORKSPACE_DIR oder Repo-Root)
 """
 
 import argparse
@@ -40,7 +47,6 @@ import re
 import ssl
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.request
 from shutil import which
@@ -55,7 +61,8 @@ failed = []
 SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
 SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
-                "mammouth-agent/files/home/stackexchange-api.md")
+                "mammouth-agent/files/home/stackexchange-api.md",
+                "mistral-vibe-agent/files/home/stackexchange-api.md")
 
 # sbx CLI: die Offline-Referenz (opencode-agent/files/home/sbx-cli.md) wird aus der
 # Release-Binary generiert (local-test/regenerate-sbx-doc.py). Die dokumentierte Version
@@ -71,12 +78,20 @@ SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 INSTALL_SCRIPT_PAIRS = (
     ("opencode-agent/files/home/.local/bin/install-tooling.sh",
      "mammouth-agent/files/home/.local/bin/install-tooling.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+     "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"),
     ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
      "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+     "mistral-vibe-agent/files/home/.local/bin/install-tooling-user.sh"),
     ("opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py",
      "mammouth-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
+    ("opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py",
+     "mistral-vibe-agent/files/home/.local/bin/regenerate-kubeconfig.py"),
     ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
      "mammouth-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+     "mistral-vibe-agent/files/home/.local/bin/install-apt-packages.sh"),
 )
 
 # Sandbox-Template-Version (beide Kits, eine Version fuer beide Template-Familien):
@@ -101,6 +116,17 @@ AGENT_TEMPLATES = {"opencode": "opencode-docker", "claude": "claude-code-docker"
 MAMMOUTH_INSTALL_RE = re.compile(r"install\.sh\s*\|\s*VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)\s+bash")
 MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
+# Mistral Vibe: Pin im Dockerfile (ARG VIBE_VERSION) — die spec.yaml referenziert das Image
+# mit demselben Tag. Update-Check gegen die latest PyPI-Version (mistral-vibe); warnt (gelb)
+# bei neuerer Version. Das Basis-Image pinnt die shell-Template-Version
+# (docker/sandbox-templates:shell-docker-<TEMPLATE_VERSION>), die mit TEMPLATE_VERSION uebereinstimmen muss.
+VIBE_DOCKERFILE = "mistral-vibe-agent/Dockerfile"
+VIBE_SPEC_FILE = "mistral-vibe-agent/spec.yaml"
+VIBE_VERSION_RE = re.compile(r"ARG VIBE_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
+VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
+VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
+
 # Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
 # benötigt (Kit-deklarierte Services aus den Specs credentials[].service + Template-Built-ins
 # wie github/anthropic). openrouter/google verdrahtet nur das opencode-Template.
@@ -109,20 +135,33 @@ SCENARIO_KIT = {
     "opencode": "opencode-agent",
     "claude": "opencode-agent",  # Claude-Home-Szenario (claude-code-docker-Template + opencode-agent-Kit)
     "mammouth": "mammouth-agent",
+    "mistral-vibe": "mistral-vibe-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith"),
     "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith"),
     "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith"),
+    "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
-SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "context7", "openrouter", "google",
+SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "zai", "context7", "openrouter", "google",
                 "stackoverflow", "cloudsmith")
 
 
 def enable_ansi():
+    """ANSI-Farben + UTF-8 fuer die Konsole aktivieren.
+
+    Der `sbx`-Output enthaelt UTF-8-Box-Zeichen (──, ✓, →, …); ohne UTF-8
+    dekodiert/schreibt die Windows-Konsole sie als cp1252 -> Mojibake.
+    """
     if os.name == "nt":
-        os.system("")
+        os.system("")                        # ANSI/VT-Verarbeitung aktivieren
+        os.system("chcp 65001 >nul 2>&1")    # Konsole auf UTF-8
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 
 def _color(code, text):
@@ -155,13 +194,29 @@ def run_sbx(args, stream=False):
     if which("sbx") is None:
         print(_color("31", "sbx CLI nicht gefunden (PATH?)"))
         sys.exit(1)
+    if stream:
+        # Live-Ausgabe UND mitschneiden (z. B. um Binding-Warnungen zu erkennen).
+        proc = subprocess.Popen(
+            ["sbx"] + args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        lines = []
+        for line in proc.stdout:
+            print(line, end="")
+            lines.append(line)
+        proc.wait()
+        return proc.returncode, "".join(lines)
     proc = subprocess.run(
         ["sbx"] + args,
-        capture_output=not stream,
+        capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
-    if stream:
-        return proc.returncode, ""
     out = (proc.stdout or "") + (proc.stderr or "")
     return proc.returncode, out.strip()
 
@@ -193,6 +248,22 @@ def blocked_requests(name):
     info(f"  sbx policy log {name} (Blocked requests):")
     print("         " + "\n         ".join(lines[start:start + 2] + blocked))
     return code
+
+
+def dump_policy_log(name):
+    """Kompletten `sbx policy log` ausgeben (Diagnose bei Proxy-/Injection-Fehlern).
+
+    Anders als blocked_requests() wird nicht nur der Blocked-Abschnitt gezeigt:
+    fuer die Credential-Injection sind die PROXY-Spalte (forward vs.
+    transparent/forward-bypass) und die Injection-Entscheidung relevant.
+    """
+    code, out = run_sbx(["policy", "log", name])
+    info(f"  sbx policy log {name} (vollstaendig):")
+    if code != 0 or not out.strip():
+        print("         " + (out or "(kein Output / Fehler beim Aufruf)"))
+        return
+    for line in out.splitlines():
+        print("         " + line)
 
 
 def _so_doc_version():
@@ -530,19 +601,100 @@ def check_mammouth_cli_update():
         pass_(f"mammouth CLI version up-to-date (Pin v{pin}, latest v{latest})")
 
 
+def _vibe_dockerfile_pin():
+    path = os.path.join(ROOT, VIBE_DOCKERFILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = VIBE_VERSION_RE.search(f.read())
+    return m.group("v") if m else None
+
+
+def _vibe_spec_image_tag():
+    path = os.path.join(ROOT, VIBE_SPEC_FILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = VIBE_IMAGE_TAG_RE.search(f.read())
+    return m.group("v") if m else None
+
+
+def _vibe_base_image_version():
+    path = os.path.join(ROOT, VIBE_DOCKERFILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = VIBE_BASE_IMAGE_RE.search(f.read())
+    return m.group("v") if m else None
+
+
+def check_vibe_cli_update():
+    """Vergleicht den Vibe-Pin (ARG VIBE_VERSION im Dockerfile — das Image installiert
+    exakt diese Version) mit der latest PyPI-Version (mistral-vibe) und prueft, dass die
+    spec.yaml dasselbe Image-Tag referenziert sowie das shell-Basis-Image der
+    TEMPLATE_VERSION entspricht. Warnt (gelb) bei neuerer PyPI-Version."""
+    pin = _vibe_dockerfile_pin()
+    if not pin:
+        fail("mistral-vibe version (VIBE_VERSION nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        return
+    image_tag = _vibe_spec_image_tag()
+    if not image_tag:
+        fail("mistral-vibe version (Image-Tag nicht in mistral-vibe-agent/spec.yaml gefunden)")
+        return
+    if image_tag != pin:
+        fail(
+            f"mistral-vibe version (spec-Image-Tag v{image_tag} != Dockerfile-Pin v{pin})",
+            f"image in {VIBE_SPEC_FILE} auf domboeckli/sbx-mistral-vibe:{pin} setzen",
+        )
+        return
+    base = _vibe_base_image_version()
+    if base is None:
+        fail("mistral-vibe base image (shell-Basis-Image nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        return
+    if base != TEMPLATE_VERSION:
+        fail(
+            f"mistral-vibe base image (shell-{base} != TEMPLATE_VERSION v{TEMPLATE_VERSION})",
+            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-{TEMPLATE_VERSION} setzen",
+        )
+        return
+    try:
+        data = json.loads(_http_get(VIBE_PYPI_URL))
+        latest = str(data["info"]["version"])
+    except Exception as e:
+        fail("mistral-vibe version (PyPI latest nicht abrufbar)", str(e))
+        return
+    if _version_newer(latest, pin):
+        warn(
+            f"mistral-vibe update available (Pin v{pin}, PyPI latest v{latest})",
+            f"Optional: ARG VIBE_VERSION in {VIBE_DOCKERFILE} + image-Tag in {VIBE_SPEC_FILE} auf "
+            f"v{latest} heben, Image neu publizieren (publish-mistral-vibe-image.yml)",
+        )
+    else:
+        pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth", "mistral-vibe"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
-                        help="CI-Modus: Fake-API-Keys, kein realer mammouth-API-Call")
+                        help="CI-Modus: Fake-API-Keys, kein realer mammouth-/mistral-API-Call")
     parser.add_argument("--validate-only", action="store_true",
                         help="Nur Kit-Validierung, keine Sandbox-Szenarien (default: Sandboxes werden gestartet)")
+    parser.add_argument("--workspace", default=None,
+                        help="Workspace-Pfad fuer die Sandbox-Szenarien "
+                             "(default: $WORKSPACE_DIR oder Repo-Root)")
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
+    # Default = Repo-Root (nicht cwd): so mountet das Szenario unabhaengig vom
+    # Aufrufverzeichnis das Kit-Repo. `--workspace`/`$WORKSPACE_DIR` uebersteuern.
+    workspace = os.path.abspath(
+        args.workspace or os.environ.get("WORKSPACE_DIR") or ROOT)
+    if not os.path.isdir(workspace):
+        sys.exit(f"Workspace nicht gefunden: {workspace}")
 
     print()
     _, sbx_ver = run_sbx(["version"])
@@ -558,6 +710,9 @@ def main():
     info("  --> validate: " + os.path.join(ROOT, "mammouth-agent"))
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mammouth-agent")], stream=True)
     pass_("sbx kit validate (mammouth-agent)") if code == 0 else fail("sbx kit validate (mammouth-agent)")
+    info("  --> validate: " + os.path.join(ROOT, "mistral-vibe-agent"))
+    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mistral-vibe-agent")], stream=True)
+    pass_("sbx kit validate (mistral-vibe-agent)") if code == 0 else fail("sbx kit validate (mistral-vibe-agent)")
 
     if args.validate_only:
         print()
@@ -576,6 +731,9 @@ def main():
         print()
         info("==> Mammouth-CLI Version Update-Check (GitHub Release)")
         check_mammouth_cli_update()
+        print()
+        info("==> Mistral-Vibe Version Update-Check (PyPI + Image-Tag + Basis-Template)")
+        check_vibe_cli_update()
         print()
         if not failed:
             print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))
@@ -641,6 +799,17 @@ def main():
             "model": "deepseek/deepseek-v4-flash",
             "config": 'grep -q "deepseek/deepseek-v4-flash" ~/.config/mammouth/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/mammouth/opencode.jsonc && ! grep -q "host.docker.internal:64342" ~/.config/mammouth/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo 0)"; echo "DIRECT=$(grep -c host.docker.internal:64342 ~/.config/mammouth/opencode.jsonc 2>/dev/null || echo 0)"; exit 1; }',
             "run_checks": True,
+            "checks_tool": "mammouth",
+        },
+        {
+            "name": "kit-test-mistral-vibe",
+            "agent": "mistral-vibe",
+            "kit": os.path.join(ROOT, "mistral-vibe-agent"),
+            "model": "mistral-vibe",
+            "config_label": "vibe config (mcp-gateway + read-only guard)",
+            "config": 'test -f ~/.vibe/config.toml && grep -q "mcp-gateway.docker.internal" ~/.vibe/config.toml && grep -q "Bearer proxy-managed" ~/.vibe/config.toml && grep -q "mcp-gateway-readonly-guard" ~/.vibe/hooks.toml && test -f ~/.config/sandbox-kit/vibe-mcp-guard.py && echo CONFIG-OK || { echo "CONFIG=$(grep -c mcp-gateway.docker.internal ~/.vibe/config.toml 2>/dev/null || echo 0)"; echo "HOOKS=$(grep -c mcp-gateway-readonly-guard ~/.vibe/hooks.toml 2>/dev/null || echo 0)"; echo "GUARD=$(test -f ~/.config/sandbox-kit/vibe-mcp-guard.py && echo 1 || echo 0)"; exit 1; }',
+            "run_checks": True,
+            "checks_tool": "vibe",
         },
     ]
 
@@ -660,8 +829,8 @@ def main():
 
         run_sbx(["rm", s["name"], "-f"])
 
-        ws = tempfile.mkdtemp(prefix="sbx-kit-test-")
-        info("  Sandbox erzeugen ...")
+        ws = workspace
+        info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
         # Mixin-Kits (OpenCode/Claude): Template gepinnt via `--template docker/sandbox-templates:<family>-<pin>`
         # (TEMPLATE_VERSION-Konstante dieses Scripts) — so testet das Szenario die gepinnte
         # Template-Version. Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
@@ -676,6 +845,15 @@ def main():
             create_cmd = ["create", "--name", s["name"], s["kit"], ws]
         else:
             create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
+        # Mistral-Vibe-Image-Tag per --kit-arg an das Kit uebergeben:
+        #   - lokal (Host): `local` = zuletzt lokal gebauter/pushter Stand
+        #     (IntelliJ-Run-Config `publish-mistral-vibe-image`).
+        #   - CI/e2e: VIBE_IMAGE_TAG = Feature-Tag (`<pin>-<branch>.<timestamp>`),
+        #     damit der e2e genau diesen Branch-Build testet.
+        if s["agent"] == "mistral-vibe":
+            vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
+            create_cmd += ["--kit-arg", f"imageTag={vibe_tag}"]
+            info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.
@@ -694,12 +872,22 @@ def main():
         else:
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
                                       "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
-        code, _ = run_sbx(create_cmd, stream=True)
+        info("  setup.install laeuft jetzt (npm-CLIs, apt, JDK, Maven, Docker CLI, Compose, "
+             "kubectl, Helm v3/v4, Kafka, Skills) — mehrere Minuten ohne Zwischenausgabe (sbx buffert "
+             "die Install-Ausgabe bei gepipetem stdout).")
+        code, create_out = run_sbx(create_cmd, stream=True)
         if code != 0:
             sfail("sandbox create")
             blocked_requests(s["name"])
             run_sbx(["rm", s["name"], "-f"])
             continue
+        if "no binding authorizes" in create_out:
+            sfail(
+                "credential binding ('no binding authorizes this service')",
+                "Kit-deklarierte Services brauchen ein Credential-Binding in "
+                "~/.config/sbx/credentials.yaml (siehe .github/workflows/e2e.yml); "
+                "sonst wird der echte Key nicht injiziert (nur der Sentinel gesetzt).",
+            )
 
         ready = False
         for _ in range(30):
@@ -742,11 +930,12 @@ def main():
             sfail("gh api (authenticated call)", out)
 
         if s["config"]:
+            config_label = s.get("config_label", f"default model in config ({s['model']})")
             c2, out = exec_sandbox(s["name"], s["config"])
             if c2 == 0 and "CONFIG-OK" in out:
-                pass_(f"default model in config ({s['model']})")
+                pass_(config_label)
             else:
-                sfail(f"default model in config ({s['model']})", out)
+                sfail(config_label, out)
 
         mcp_cmd = (
             'code=""; '
@@ -815,6 +1004,23 @@ def main():
             else:
                 sfail("google not wired (only opencode template declares google)", out)
 
+        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude)
+        # und vom mistral-vibe-agent-Kit deklariert; mammouth nicht.
+        # (mistral-vibe hat eigene zai-Checks im Kit-spezifischen Block.)
+        if s["agent"] != "mistral-vibe":
+            zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
+            c2, out = exec_sandbox(s["name"], zai_env_cmd)
+            if s["agent"] in ("opencode", "claude"):
+                if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
+                    pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
+                else:
+                    sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+            else:
+                if c2 == 0 and "ZAI_API_KEY=<unset>" in out:
+                    pass_("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)")
+                else:
+                    sfail("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)", out)
+
         # Kit-deklarierter stackoverflow-Service (beide Kits) → Platzhalter in allen 3 Szenarien
         stackoverflow_env_cmd = 'echo "STACKOVERFLOW_API_KEY=${STACKOVERFLOW_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], stackoverflow_env_cmd)
@@ -858,45 +1064,122 @@ def main():
             sfail("github-maven maven wiring (settings.xml proxies+server, proxy-ca in cacerts, GITHUB_MAVEN_TOKEN=proxy-managed)", out)
 
         if s.get("run_checks"):
+            checks_tool = s.get("checks_tool", "mammouth")
             c2, out = exec_sandbox(s["name"], "bash ~/.config/sandbox-kit/run-checks.sh")
             m = {k: v for k, v in re.findall(r"([A-Za-z0-9_/-]+):(OK|FAIL)", out)}
-            if m.get("mammouth") == "OK":
-                pass_("startup check: mammouth")
+            if m.get(checks_tool) == "OK":
+                pass_(f"startup check: {checks_tool}")
             else:
-                sfail("startup check: mammouth", f"status={m.get('mammouth')}")
+                sfail(f"startup check: {checks_tool}", f"status={m.get(checks_tool)}")
 
-            # Installierte Mammouth-CLI-Version gegen den Pin aus der spec (VERSION=)
-            # pruefen — die Sandbox installiert exakt diese Version, der Pin ist die
-            # einzige erwartete installierte Version.
-            mammouth_ver_cmd = "mammouth --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
-            c2, out = exec_sandbox(s["name"], mammouth_ver_cmd)
-            installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
-            pin = _mammouth_cli_pin_version()
-            if installed and pin and installed == pin:
-                pass_(f"mammouth CLI version installed (v{installed} == Pin v{pin})")
-            elif installed and pin and _version_newer(installed, pin):
-                sfail(f"mammouth CLI version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
-                      f"install.sh-Command in {MAMMOUTH_SPEC_FILE} pruefen (VERSION={pin}); ggf. Sandbox neu bauen")
-            elif installed and pin:
-                sfail(f"mammouth CLI version installed (v{installed} != Pin v{pin})",
-                      f"Pin in {MAMMOUTH_SPEC_FILE} erhoehen oder Sandbox neu bauen")
-            else:
-                sfail("mammouth CLI version installed (nicht ermittelbar)", f"out={out!r}")
+            if s["agent"] == "mammouth":
+                # Installierte Mammouth-CLI-Version gegen den Pin aus der spec (VERSION=)
+                # pruefen — die Sandbox installiert exakt diese Version, der Pin ist die
+                # einzige erwartete installierte Version.
+                mammouth_ver_cmd = "mammouth --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
+                c2, out = exec_sandbox(s["name"], mammouth_ver_cmd)
+                installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
+                pin = _mammouth_cli_pin_version()
+                if installed and pin and installed == pin:
+                    pass_(f"mammouth CLI version installed (v{installed} == Pin v{pin})")
+                elif installed and pin and _version_newer(installed, pin):
+                    sfail(f"mammouth CLI version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
+                          f"install.sh-Command in {MAMMOUTH_SPEC_FILE} pruefen (VERSION={pin}); ggf. Sandbox neu bauen")
+                elif installed and pin:
+                    sfail(f"mammouth CLI version installed (v{installed} != Pin v{pin})",
+                          f"Pin in {MAMMOUTH_SPEC_FILE} erhoehen oder Sandbox neu bauen")
+                else:
+                    sfail("mammouth CLI version installed (nicht ermittelbar)", f"out={out!r}")
 
-            if ci:
-                env_cmd = 'echo "MAMMOUTH_API_KEY=${MAMMOUTH_API_KEY:-<unset>}"'
+                if ci:
+                    env_cmd = 'echo "MAMMOUTH_API_KEY=${MAMMOUTH_API_KEY:-<unset>}"'
+                    c2, out = exec_sandbox(s["name"], env_cmd)
+                    if c2 == 0 and "MAMMOUTH_API_KEY=proxy-managed" in out:
+                        pass_("mammouth proxy env wiring (fake-key CI)")
+                    else:
+                        sfail("mammouth proxy env wiring (fake-key CI)", out)
+                else:
+                    net_cmd = 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head -c 120'
+                    c2, out = exec_sandbox(s["name"], net_cmd)
+                    if c2 == 0 and ('"object":"list"' in out or '"id"' in out):
+                        pass_("api.mammouth.ai e2e (Proxy-Key)")
+                    else:
+                        sfail("api.mammouth.ai e2e (Proxy-Key)", out)
+
+            elif s["agent"] == "mistral-vibe":
+                # Installierte Vibe-Version gegen den Dockerfile-Pin pruefen — das Image
+                # bakt exakt diese Version (ARG VIBE_VERSION).
+                vibe_ver_cmd = "vibe --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
+                c2, out = exec_sandbox(s["name"], vibe_ver_cmd)
+                installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
+                pin = _vibe_dockerfile_pin()
+                if installed and pin and installed == pin:
+                    pass_(f"mistral-vibe version installed (v{installed} == Pin v{pin})")
+                elif installed and pin and _version_newer(installed, pin):
+                    sfail(f"mistral-vibe version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
+                          f"ARG VIBE_VERSION in {VIBE_DOCKERFILE} pruefen; Image neu publizieren")
+                elif installed and pin:
+                    sfail(f"mistral-vibe version installed (v{installed} != Pin v{pin})",
+                          f"Pin in {VIBE_DOCKERFILE} erhoehen oder Image neu bauen")
+                else:
+                    sfail("mistral-vibe version installed (nicht ermittelbar)", f"out={out!r}")
+
+                # proxyManaged: true -> Runtime setzt MISTRAL_API_KEY auf den Sentinel.
+                # (Ohne proxyManaged ist die Variable unset; Vibe braucht sie, um
+                # ueberhaupt zu authentifizieren.)
+                env_cmd = 'echo "MISTRAL_API_KEY=${MISTRAL_API_KEY:-<unset>}"'
                 c2, out = exec_sandbox(s["name"], env_cmd)
-                if c2 == 0 and "MAMMOUTH_API_KEY=proxy-managed" in out:
-                    pass_("mammouth proxy env wiring (fake-key CI)")
+                if c2 == 0 and "MISTRAL_API_KEY=proxy-managed" in out:
+                    pass_("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)")
                 else:
-                    sfail("mammouth proxy env wiring (fake-key CI)", out)
-            else:
-                net_cmd = 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head -c 120'
-                c2, out = exec_sandbox(s["name"], net_cmd)
-                if c2 == 0 and ('"object":"list"' in out or '"id"' in out):
-                    pass_("api.mammouth.ai e2e (Proxy-Key)")
+                    sfail("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)", out)
+
+                # Runtime-Contract (spec-v2 §9.5): SBX_CRED_<SERVICE>_MODE zeigt, wie die
+                # Credential aufgeloest wurde (apikey/oauth/none). 'none' => Binding/Secret
+                # fehlt -> der Proxy injiziert nichts (Vibe: 401 'Invalid API key').
+                cred_cmd = 'echo "SBX_CRED_MISTRAL_MODE=${SBX_CRED_MISTRAL_MODE:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], cred_cmd)
+                if c2 == 0 and "SBX_CRED_MISTRAL_MODE=apikey" in out:
+                    pass_("mistral credential resolved (SBX_CRED_MISTRAL_MODE=apikey)")
                 else:
-                    sfail("api.mammouth.ai e2e (Proxy-Key)", out)
+                    sfail("mistral credential resolved (SBX_CRED_MISTRAL_MODE=apikey)",
+                          out + " — mistral-Secret/Binding pruefen (~/.config/sbx/credentials.yaml bzw. "
+                                "%APPDATA%\\sbx\\credentials.yaml: mistral.apiKey.domains=[api.mistral.ai])")
+
+                # Wie mammouth: lokal den echten Proxy-Key-Pfad testen (nicht nur die
+                # Sentinel-Verdrahtung). Ein 401 'Invalid API key' bedeutet, dass der
+                # Proxy den Sentinel nicht ersetzt hat — dann `sbx policy log` (PROXY-
+                # Spalte: forward vs. transparent/forward-bypass) ausgeben.
+                if ci:
+                    print("  " + _color("33", "[SKIP] api.mistral.ai e2e (Proxy-Key) — fake key in CI, "
+                                             "nur Sentinel-Wiring geprueft"))
+                else:
+                    net_cmd = ('curl -s -o /tmp/mistral-models.json -w "HTTP:%{http_code}" '
+                               'https://api.mistral.ai/v1/models -H "Authorization: Bearer $MISTRAL_API_KEY"; '
+                               'echo; head -c 200 /tmp/mistral-models.json')
+                    c2, out = exec_sandbox(s["name"], net_cmd)
+                    if c2 == 0 and "HTTP:200" in out and '"id"' in out:
+                        pass_("api.mistral.ai e2e (Proxy-Key)")
+                    else:
+                        sfail("api.mistral.ai e2e (Proxy-Key)", out)
+                        dump_policy_log(s["name"])
+
+                # Z.AI (GLM-5.3-Flash, Default-Modell): Sentinel + Credential-Aufloesung.
+                # Kein Real-API-Call (eigenes Z.AI-Guthaben) — nur Verdrahtung.
+                zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], zai_env_cmd)
+                if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
+                    pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
+                else:
+                    sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+
+                zai_cred_cmd = 'echo "SBX_CRED_ZAI_MODE=${SBX_CRED_ZAI_MODE:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], zai_cred_cmd)
+                if c2 == 0 and "SBX_CRED_ZAI_MODE=apikey" in out:
+                    pass_("zai credential resolved (SBX_CRED_ZAI_MODE=apikey)")
+                else:
+                    sfail("zai credential resolved (SBX_CRED_ZAI_MODE=apikey)",
+                          out + " — zai-Secret/Binding pruefen (credentials.yaml: zai.apiKey.domains=[api.z.ai])")
 
         if not args.keep:
             if len(failed) > failed_before:

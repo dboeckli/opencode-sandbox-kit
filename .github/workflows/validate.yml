@@ -49,12 +49,28 @@ jobs:
       - name: Validate Mammouth agent kit spec
         run: sbx kit validate ./mammouth-agent/
 
+      - name: Validate Mistral Vibe agent kit spec
+        run: sbx kit validate ./mistral-vibe-agent/
+
       - name: Check install-script copies are in sync
-        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (beide Kits);
-        # beide Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
-        # andere per cp synchronisieren; Renovate aktualisiert beide gemeinsam).
+        # setup.install konsumiert die Skripte aus files/home/.local/bin/ (alle Kits);
+        # alle Kit-Kopien muessen identisch sein (edit target = eine Kopie, dann die
+        # anderen per cp synchronisieren; Renovate aktualisiert alle gemeinsam).
         run: |
           set -euo pipefail
-          for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py; do
+          for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py install-apt-packages.sh; do
             cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+            cmp "opencode-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
           done
+
+      - name: Check Mistral Vibe image tag matches the Dockerfile pin
+        # spec.yaml args.imageTag.default muss exakt den VIBE_VERSION-Pin aus dem Dockerfile
+        # spiegeln (Renovate aktualisiert beide gemeinsam, customManager in renovate.json).
+        run: |
+          set -euo pipefail
+          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
+            | head -1 | cut -d= -f2)
+          default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          echo "VIBE_VERSION=${version}  spec args.imageTag.default=${default}"
+          test "$version" = "$default"

@@ -70,7 +70,7 @@ sbx run opencode `
 ## Transformation: Gemountete Host-kubeconfig → Sandbox-kubeconfig
 
 > **Automatisch seit 13.08.2026:** Die Transformation läuft bei jedem Sandbox-Start
-> automatisch — `setup.startup` in beiden Kits (opencode-agent/spec.yaml, mammouth-agent/spec.yaml)
+> automatisch — `setup.startup` in allen Kits (opencode-agent/spec.yaml, mammouth-agent/spec.yaml, mistral-vibe-agent/spec.yaml)
 > führt `python3 /home/agent/.local/bin/regenerate-kubeconfig.py` als User 1000 aus.
 > Das Skript liegt als identische Kopie in `files/home/.local/bin/` aller Kits
 > (Drift-Check in `local-test-kits.py --validate-only`). Es ist idempotent (schreibt

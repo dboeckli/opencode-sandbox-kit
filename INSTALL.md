@@ -1,6 +1,6 @@
 # Installation
 
-Setup für das opencode-sandbox-kit (OpenCode / Claude Code / Mammouth Code in Docker-Sandboxes).
+Setup für das opencode-sandbox-kit (OpenCode / Claude Code / Mammouth Code / Mistral Vibe in Docker-Sandboxes).
 Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 [`docs/prerequisites.md`](docs/prerequisites.md) (kompakte Gesamtübersicht), [`AGENTS.md`](AGENTS.md) (alle Befehle).
 
@@ -122,9 +122,9 @@ sbx run opencode `
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
-Für **OpenCode (Mixin-Kit), Claude Code und Mammouth Code (Agent-Kit)** ist der Zugriff auf die über den
-Gateway gelieferten IntelliJ-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen
-erlaubt). Die Tools kommen durch den Gateway-Namespace: `mcp-gateway_<tool>` (OpenCode/Mammouth) bzw.
+Für **OpenCode (Mixin-Kit), Claude Code, Mammouth Code und Mistral Vibe (Agent-Kits)** ist der Zugriff auf die
+über den Gateway gelieferten IntelliJ-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen
+erlaubt). Die Tools kommen durch den Gateway-Namespace: `mcp-gateway_<tool>` (OpenCode/Mammouth/Mistral Vibe) bzw.
 `mcp__mcp-gateway__<tool>` (Claude Code). Die Config liegt je Agent-Location vor:
 
 **OpenCode / Mammouth** (Mammouth ist ein OpenCode-Fork und nutzt dieselben `permission`-Regeln und
@@ -169,8 +169,13 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
   `mcp__mcp-gateway__execute_run_configuration`. Liest `tool_input.configurationName`; erlaubt
   `local-test-kits-validate-only` (exit 0), blockt alles andere (`permissionDecision: deny`, exit 2). Andere
   MCP-Tools passieren den Hook unverändert.
+- Mistral Vibe (`~/.config/sandbox-kit/vibe-mcp-guard.py`, verdrahtet über `~/.vibe/hooks.toml`): `pre_tool`-Hook
+  gematcht auf `mcp-gateway_*`. Das Image startet Vibe mit `--agent auto-approve`, das alle Tool-Calls ohne
+  Rückfrage approvt — deshalb ist der Hook (nicht das Permission-System) der eigentliche Guard: Er erlaubt
+  dieselbe Read-only-Allowlist wie OpenCode/Mammouth und erlaubt `mcp-gateway_execute_run_configuration` nur für
+  `local-test-kits-validate-only`. `strict = true` → ein Hook-Fehler verweigert den Call (fail closed).
 
-> Config und Plugins werden beim Start geladen (kein Hot-Reload) — nach Änderungen opencode/mammouth/claude neu starten.
+> Config und Plugins/Hooks werden beim Start geladen (kein Hot-Reload) — nach Änderungen opencode/mammouth/claude/vibe neu starten.
 
 ## 4. Kit-Quellen freigeben (Remote-Git-Kits)
 
@@ -185,7 +190,7 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 
 > **`sbx secret` (v0.38+):** Das `-g`-Flag bei `sbx secret set` ist entfernt — Service-Secrets sind standardmäßig
 > **global**, der Service ist ein Positionsargument (`sbx secret set github`). Mit `--sandbox <name>` scopen.
-> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth/github-maven) funktionieren identisch. Third-Party-v2-Kits brauchen
+> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth/mistral/github-maven) funktionieren identisch. Third-Party-v2-Kits brauchen
 > zusätzlich pro Service ein **Credential-Binding** (`%APPDATA%\sbx\credentials.yaml`; beim ersten Lauf interaktiv).
 
 | Service | Secret | Befehl | Benötigt für |
@@ -194,6 +199,7 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | GitHub Packages Maven | klassisches PAT, Scope `read:packages` | `sbx secret set github-maven -t "<pat>"` | Maven-Builds mit GitHub-Packages-Dependency |
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
+| Mistral | Mistral API-Key (Built-in-Service) | `sbx secret set mistral` | Mistral Vibe |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode + Mammouth (Default-Modell `deepseek/…`) |
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
 | Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
@@ -332,6 +338,69 @@ sbx secret ls
 # 2. Test-Call aus der Sandbox (Key wird vom Proxy injiziert)
 sbx exec mammouth-sandbox bash -c 'curl -s https://api.mammouth.ai/v1/models -H "Authorization: Bearer $MAMMOUTH_API_KEY" | head'
 ```
+
+### Mistral Authentication
+
+**Auth** — API-Key wird als Env-Variable `MISTRAL_API_KEY` erwartet. `mistral` ist ein **Built-in-Service**
+von `sbx`: Er mappt den Service-Namen auf `MISTRAL_API_KEY` + Domain `api.mistral.ai`. Der Key stammt aus
+https://console.mistral.ai/.
+
+**Secret setzen** — den Key als globales Secret registrieren; der Proxy injiziert ihn für Requests an
+`api.mistral.ai`, der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+# Built-in-Service (wie sbx secret set anthropic)
+sbx secret set mistral
+```
+
+> **Wichtig:** `MISTRAL_API_KEY` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt. Das Kit
+> deklariert `credentials[].service: mistral` (`apiKey.name: MISTRAL_API_KEY`, `inject` als
+> `Authorization: Bearer`); der Proxy ersetzt den Platzhalter transparent bei Outbound-Requests an
+> `api.mistral.ai`. `env | grep MISTRAL` zeigt `MISTRAL_API_KEY=proxy-managed` (nie den echten Key).
+
+**Verifikation:**
+
+```powershell
+# 1. Secret ist registriert
+sbx secret ls
+
+# 2. Test-Call aus der Sandbox (Key wird vom Proxy injiziert)
+sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models -H "Authorization: Bearer $MISTRAL_API_KEY" | head'
+```
+
+> **Credential-Binding (wichtig):** Das Agent-Kit deklariert den Service `mistral` (Third-Party-v2-Kit) — beim
+> ersten Sandbox-Start muss das Binding bestätigt werden (interaktiv, oder vorab in
+> `~/.config/sbx/credentials.yaml` mit `mistral: apiKey.domains: [api.mistral.ai]`). Ohne Binding wird der
+> echte Key **nicht** injiziert (nur der Sentinel `MISTRAL_API_KEY=proxy-managed` gesetzt); `sbx create` warnt
+> dann mit „no binding authorizes this service". Der lokale Test (`local-test-kits.py`) schlägt in dem Fall fehl.
+
+#### Z.AI (GLM) — Default-Modell GLM-5.3-Flash
+
+`mistral-vibe-agent/files/home/.vibe/config.toml` setzt **GLM-5.3-Flash** als Default (`active_model = "glm-flash"`).
+GLM-5.3-Flash gibt es **nicht über Mistral**, sondern nur direkt bei Z.AI → eigener OpenAI-kompatibler Provider
+`zai` (`https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`). Key erstellen: https://z.ai/manage-apikey/apikey-list
+(Login https://z.ai/model-api, ggf. Guthaben aufladen). Der Proxy injiziert den Key als `Authorization: Bearer`
+für `api.z.ai` — der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set zai
+```
+
+> **Credential-Binding:** vorab `zai: apiKey.domains: [api.z.ai]` in `~/.config/sbx/credentials.yaml`
+> (bzw. `%APPDATA%\sbx\credentials.yaml`) bestätigen/hinterlegen.
+>
+> **Gilt auch für OpenCode:** dasselbe `zai`-Secret aktiviert den Provider `zai` (GLM-5.3-Flash/GLM-5.3) im
+> opencode-agent-Kit (`opencode.jsonc` → `provider.zai`, `ZAI_API_KEY`) — Modell in OpenCode auswählbar.
+
+**Alternative (ohne Z.AI-Key):** Mistral hostet GLM 5.3 selbst als `zai-glm-5-3` (Alias `glm`, Provider
+`mistral`, gleiche `MISTRAL_API_KEY`). In der TUI per `/model` wählbar. Weitere Mistral-IDs:
+`zai-glm-5-2`, `mistral-large-latest`, `codestral-latest` (https://docs.mistral.ai/models/zai-glm-5-2).
+
+> **Wichtig — Mistral-Plan vs. Guthaben:** Der Mistral-**Plan** steuert Rate-Limits und Modellzugriff, **nicht**
+> das Guthaben. **Free mode** (Default neuer Accounts, inkl. $10/mo API-Credits) hat sehr niedrige Limits
+> (→ `429`) und sperrt **Third-Party-Modelle** wie GLM (→ `403 tier_not_allowed`). Für höhere Limits und
+> Mistral-hosted GLM ist ein **bezahlter Plan** (Pro/Team/Enterprise) nötig.
+> Limits: https://admin.mistral.ai/plateforme/limits · Plan: https://admin.mistral.ai/subscription
 
 #### Context7 API-Key (optional)
 
@@ -515,7 +584,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.5.0 (beide Kits, gleiche Version; Mammouth via spec-Image, kein --template nötig)
+# Template-Version gepinnt auf 0.5.0 (alle Kits, gleiche Version; Mammouth/Mistral Vibe via spec-Image, kein --template nötig)
 
 # OpenCode (Home-Standard)
 sbx run opencode `
@@ -533,6 +602,13 @@ sbx run claude `
 
 # Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
 sbx run ./mammouth-agent/ `
+    --skills=off `
+    --static-mcp idea
+
+# Mistral Vibe (eigenes Agent-Kit; gepinntes Image domboeckli/sbx-mistral-vibe:<vibe-version>)
+# Voraussetzung: Image ist publiziert (Workflow publish-mistral-vibe-image.yml, workflow_dispatch;
+# oder lokal via buildx mit zusätzlichem Tag :local — siehe README → "Mistral Vibe Agent-Kit")
+sbx run ./mistral-vibe-agent/ `
     --skills=off `
     --static-mcp idea
 ```
@@ -556,8 +632,8 @@ Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md
 ## 7. Verifikation
 
 ```powershell
-python local-test\local-test-kits.py --validate-only   # Kit-Validierung (beide Kits) + Drift-Checks
-python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Mammouth)
+python local-test\local-test-kits.py --validate-only   # Kit-Validierung (alle Kits) + Drift-Checks
+python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Mammouth/Mistral Vibe)
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).

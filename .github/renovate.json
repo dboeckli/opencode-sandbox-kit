@@ -24,13 +24,19 @@
       "matchDatasources": ["github-releases"],
       "matchPackageNames": ["bell-sw/Liberica"],
       "allowedVersions": "/^(?:8|11|17|21|25)(?:\\.|-|$)/"
+    },
+    {
+      "description": "Mistral-Vibe-Pin (Dockerfile ARG VIBE_VERSION + spec-Image-Tag) gemeinsam aktualisieren",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["mistral-vibe"],
+      "groupName": "mistral-vibe"
     }
   ],
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Liberica JDK version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Liberica JDK version (install-tooling.sh, alle Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["LIBERICA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+)\""],
       "depNameTemplate": "bell-sw/Liberica",
       "datasourceTemplate": "github-releases",
@@ -38,16 +44,16 @@
     },
     {
       "customType": "regex",
-      "description": "Apache Maven version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Apache Maven version (install-tooling.sh, alle Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["MAVEN_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "org.apache.maven:apache-maven",
       "datasourceTemplate": "maven"
     },
     {
       "customType": "regex",
-      "description": "Docker CLI version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Docker CLI version (install-tooling.sh, alle Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/cli",
       "datasourceTemplate": "github-releases",
@@ -55,8 +61,8 @@
     },
     {
       "customType": "regex",
-      "description": "Docker Compose plugin version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Docker Compose plugin version (install-tooling.sh, alle Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["COMPOSE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/compose",
       "datasourceTemplate": "github-releases",
@@ -64,8 +70,8 @@
     },
     {
       "customType": "regex",
-      "description": "Helm v3 version (install-tooling.sh, beide Kit-Kopien) — Default `helm`, siehe packageRules",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Helm v3 version (install-tooling.sh, alle Kit-Kopien) — Default `helm`, siehe packageRules",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
@@ -73,8 +79,8 @@
     },
     {
       "customType": "regex",
-      "description": "Helm v4 version (install-tooling.sh, beide Kit-Kopien) — paralleles Binary `helm4`, siehe packageRules",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Helm v4 version (install-tooling.sh, alle Kit-Kopien) — paralleles Binary `helm4`, siehe packageRules",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM4_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
@@ -82,8 +88,8 @@
     },
     {
       "customType": "regex",
-      "description": "shfmt version (install-tooling.sh, beide Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "shfmt version (install-tooling.sh, alle Kit-Kopien)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["SHFMT_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "mvdan/sh",
       "datasourceTemplate": "github-releases",
@@ -91,8 +97,8 @@
     },
     {
       "customType": "regex",
-      "description": "Apache Kafka distribution version (install-tooling.sh, beide Kit-Kopien; Version = Maven-Central-Artifact org.apache.kafka:kafka_2.13)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh"],
+      "description": "Apache Kafka distribution version (install-tooling.sh, alle Kit-Kopien; Version = Maven-Central-Artifact org.apache.kafka:kafka_2.13)",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["KAFKA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "org.apache.kafka:kafka_2.13",
       "datasourceTemplate": "maven"
@@ -135,6 +141,32 @@
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$",
       "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "Mistral Vibe version (mistral-vibe-agent/Dockerfile ARG VIBE_VERSION; PyPI) — spec-Image-Tag wird per packageRule mitgruppiert",
+      "managerFilePatterns": ["mistral-vibe-agent/Dockerfile"],
+      "matchStrings": ["ARG VIBE_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "mistral-vibe",
+      "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "description": "Mistral Vibe image tag (mistral-vibe-agent/spec.yaml args.imageTag.default; Mirror des Dockerfile-Pins)",
+      "managerFilePatterns": ["mistral-vibe-agent/spec.yaml"],
+      "matchStrings": ["imageTag:\\s*\\n\\s+default: \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "mistral-vibe",
+      "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "description": "Mistral Vibe Basis-Template (mistral-vibe-agent/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-<v>; muss TEMPLATE_VERSION spiegeln)",
+      "managerFilePatterns": ["mistral-vibe-agent/Dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
+      "versioningTemplate": "semver"
     }
   ]
 }

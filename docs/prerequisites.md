@@ -1,6 +1,6 @@
 # Prerequisites: Host + Sandbox
 
-Alle Voraussetzungen, damit das Kit (`sbx run opencode|claude|mammouth`) funktioniert.
+Alle Voraussetzungen, damit das Kit (`sbx run opencode|claude|mammouth|mistral-vibe`) funktioniert.
 Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-MicroVM, die das Kit installiert.
 
 ## Host (Windows / Ubuntu-WSL)
@@ -21,6 +21,8 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `github-maven` | alle | Klassisches PAT (nur Scope `read:packages`) für GitHub Packages Maven — `https://github.com/settings/tokens` |
 | `anthropic` | Claude | https://console.anthropic.com — interaktiv, `-f` zum Überschreiben |
 | `mammouth` | Mammouth | https://mammouth.ai/app/account/settings/api |
+| `mistral` | Mistral Vibe | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
+| `zai` | OpenCode, Mistral Vibe | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
 | `context7` | alle | https://context7.com/dashboard |
 | `openrouter` | OpenCode | Built-in-Service des opencode-Templates (nicht im Kit deklariert) |
 | `google` | OpenCode | https://aistudio.google.com/apikey (Built-in-Service) |
@@ -30,7 +32,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 ## Sandbox (wird vom Kit via `setup.install` installiert)
 
 Quelle der Wahrheit: `opencode-agent/files/home/.local/bin/install-tooling.sh` + `install-tooling-user.sh`
-(identische Kopien in beiden Kits; Drift-Check via `local-test-kits.py --validate-only`).
+(identische Kopien in allen Kits; Drift-Check via `local-test-kits.py --validate-only`).
 Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Tool-Tabelle.
 
 ### Root-Tooling (`install-tooling.sh`, Setup-Install)
@@ -67,15 +69,16 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | OpenCode | (Basis-Image bringt CLI mit) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` |
 | Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
 | Mammouth Code | `curl -fsSL https://code.mammouth.ai/install.sh \| bash` → `~/.mammouth` + Symlink `/usr/local/bin/mammouth` | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
+| Mistral Vibe | Im eigenen gepinnten Image gebacken (`uv tool install mistral-vibe==<pin>`, `domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 
-Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mammouth-agent/spec.yaml`) sind erreichbar.
-Doku: `opencode-agent/files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth-Kopie). Enforced durch den
+Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`) sind erreichbar.
+Doku: `opencode-agent/files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth/Mistral-Vibe-Kopie). Enforced durch den
 Sandbox-Proxy (`mcp-gateway`), der auch die `proxy-managed`-Credential-Injection übernimmt.
 
 ## Verifikation
 
 - Host-Validierung: `python local-test/local-test-kits.py --validate-only` (bzw. IntelliJ-Config `local-test-kits-validate-only`)
-- Volltest: `python local-test/local-test-kits.py` (alle 3 Szenarien)
+- Volltest: `python local-test/local-test-kits.py` (alle 4 Szenarien)
 - Laufzeit-Checks: `bash ~/.config/sandbox-kit/run-checks.sh` → `[startup-checks] ...`
