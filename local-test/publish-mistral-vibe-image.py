@@ -9,9 +9,14 @@ additionally sets the moving `local` tag:
     <namespace>/sbx-mistral-vibe:local
 
 Run via the IntelliJ run config `publish-mistral-vibe-image` (or directly):
-    python local-test/publish-mistral-vibe-image.py            # build + push (linux/amd64)
+    python local-test/publish-mistral-vibe-image.py            # build + push + load locally (linux/amd64)
     python local-test/publish-mistral-vibe-image.py --build-only
+    python local-test/publish-mistral-vibe-image.py --no-load   # push only, don't load into local Docker
     python local-test/publish-mistral-vibe-image.py --platform linux/arm64   # arm64 host only
+
+Besides pushing the attested image to the registry, it loads the image into the
+local Docker daemon (a second, cache-backed build without provenance/SBOM, since
+the docker exporter cannot carry attestations).
 
 Note: arm64 cannot be built from an amd64 host via QEMU (`uv tool install`
 fails under emulation). CI builds multi-arch with native runners instead.
@@ -78,6 +83,7 @@ def main():
         sys.exit("docker not found on PATH")
     argv = sys.argv[1:]
     build_only = "--build-only" in argv
+    no_load = "--no-load" in argv
     platform = "linux/amd64"
     if "--platform" in argv:
         platform = argv[argv.index("--platform") + 1]
@@ -90,16 +96,30 @@ def main():
     print(f"Moving tag:  {local_tag}")
     print(f"Platform:    {platform}")
     ensure_builder()
-    cmd = ["docker", "buildx", "build",
-           "--platform", platform,
-           "--provenance=true", "--sbom=true",
-           "-t", version_tag,
-           "-t", local_tag]
+
+    # Registry build (attested: provenance + SBOM).
+    push_cmd = ["docker", "buildx", "build",
+                "--platform", platform,
+                "--provenance=true", "--sbom=true",
+                "-t", version_tag,
+                "-t", local_tag]
     if not build_only:
-        cmd += ["--push"]
-    cmd += [CONTEXT]
-    run(cmd)
-    print("Built (not pushed)." if build_only else "Pushed.")
+        push_cmd += ["--push"]
+    push_cmd += [CONTEXT]
+    run(push_cmd)
+    print("Built (not pushed)." if build_only else "Pushed to registry.")
+
+    # Also load into the local Docker daemon (docker exporter cannot carry
+    # attestations, so this second, cache-backed build omits provenance/SBOM).
+    if not build_only and not no_load:
+        load_cmd = ["docker", "buildx", "build",
+                    "--platform", platform,
+                    "--load",
+                    "-t", version_tag,
+                    "-t", local_tag,
+                    CONTEXT]
+        run(load_cmd)
+        print(f"Loaded locally: {version_tag} + {local_tag}")
 
 
 if __name__ == "__main__":
