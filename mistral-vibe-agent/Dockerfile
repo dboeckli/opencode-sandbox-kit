@@ -28,6 +28,14 @@ FROM ${BASE_IMAGE}
 # Check https://pypi.org/project/mistral-vibe/ and bump as needed (Renovate tracks it).
 ARG VIBE_VERSION=2.25.5
 
+# Build tools for source builds of native dependencies: `miniaudio` (a transitive
+# mistral-vibe dependency) ships no arm64 wheel for Python 3.14, so uv compiles it
+# from source and needs a C/C++ compiler.
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Vibe as the non-root agent user. The socks extra is installed explicitly
 # so the agent works through the sandbox proxy (some releases don't pull it in).
 USER agent
