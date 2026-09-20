@@ -398,11 +398,19 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > Kit durch (`spec.yaml` → `args.imageTag`), testet also genau den Branch-Build.
 >
 > **Lokal (Windows-Host):** IntelliJ-Run-Config **`publish-mistral-vibe-image`** (baut + pusht) — Tag wie beim
-> Feature-Branch-Build (`<pin>-<branch-slug>.<timestamp>`, semver) **plus** beweglicher Tag `local`:
+> Feature-Branch-Build (`<pin>-<branch-slug>.<timestamp>`, semver) **plus** beweglicher Tag `local`.
+>
+> Build + push + lokal laden:
 > ```powershell
-> python local-test\publish-mistral-vibe-image.py              # build + push + lokal laden
-> python local-test\publish-mistral-vibe-image.py --no-load    # nur pushen
-> python local-test\publish-mistral-vibe-image.py --build-only # nur bauen
+> python local-test\publish-mistral-vibe-image.py
+> ```
+> Nur pushen:
+> ```powershell
+> python local-test\publish-mistral-vibe-image.py --no-load
+> ```
+> Nur bauen:
+> ```powershell
+> python local-test\publish-mistral-vibe-image.py --build-only
 > ```
 > Neben dem Push in die Registry wird das Image in den **lokalen Docker-Daemon** geladen (zweiter, gecachter
 > Build ohne provenance/SBOM — der Docker-Exporter kann keine Attestations laden).
