@@ -64,12 +64,13 @@ jobs:
           done
 
       - name: Check Mistral Vibe image tag matches the Dockerfile pin
-        # spec.yaml sandbox.image muss exakt den VIBE_VERSION-Pin aus dem Dockerfile
+        # spec.yaml args.imageTag.default muss exakt den VIBE_VERSION-Pin aus dem Dockerfile
         # spiegeln (Renovate aktualisiert beide gemeinsam, customManager in renovate.json).
         run: |
           set -euo pipefail
           version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
             | head -1 | cut -d= -f2)
-          image=$(grep -oE 'image: *"?[^"]+' mistral-vibe-agent/spec.yaml | head -1)
-          echo "VIBE_VERSION=${version}  spec image=${image}"
-          printf '%s' "$image" | grep -q ":${version}$"
+          default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          echo "VIBE_VERSION=${version}  spec args.imageTag.default=${default}"
+          test "$version" = "$default"

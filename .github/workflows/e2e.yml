@@ -35,7 +35,9 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     uses: ./.github/workflows/publish-mistral-vibe-image.yml
     with:
-      push: ${{ github.event_name != 'pull_request' }}
+      # Always push here: the scenario job only runs for push/schedule/same-repo
+      # PRs, and the mistral-vibe scenario must pull this exact branch build.
+      push: true
     secrets: inherit
 
   e2e-scenario:
@@ -222,6 +224,10 @@ jobs:
         run: sbx policy init balanced
 
       - name: Run e2e tests (${{ matrix.scenario }})
+        env:
+          # Feature-tagged image built by publish-image; local-test passes it to
+          # `sbx create --kit-arg imageTag=<tag>` for the mistral-vibe scenario.
+          VIBE_IMAGE_TAG: ${{ needs.publish-image.outputs.version_tag }}
         run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub

@@ -4,11 +4,19 @@ name: mistral-vibe
 displayName: "Mistral Vibe"
 description: "Mistral Vibe Coding-Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
 
+args:
+  imageTag:
+    default: "2.25.5"
+    description: >-
+      Tag of domboeckli/sbx-mistral-vibe to run. Default = release tag (= Vibe version).
+      CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build.
+
 sandbox:
   # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-docker-0.5.0
-  # + mistral-vibe<version>. Tag = Vibe-Version; Build/Publish (linux/amd64) via docker buildx
-  # (provenance/SBOM). Renovate trackt den Vibe-Pin (PyPI) und das Image-Tag.
-  image: "docker.io/domboeckli/sbx-mistral-vibe:2.25.5"
+  # + mistral-vibe<version>. Build/Publish (linux/amd64) via docker buildx (provenance/SBOM).
+  # Renovate trackt den Vibe-Pin (PyPI); der Image-Tag ist ueber args.imageTag parametrisierbar
+  # (Feature-Branches: <pin>-<branch>.<timestamp>, master: <pin>).
+  image: "docker.io/domboeckli/sbx-mistral-vibe:${{ kit.args.imageTag }}"
 
 agentInstructions:
   filename: AGENTS.md

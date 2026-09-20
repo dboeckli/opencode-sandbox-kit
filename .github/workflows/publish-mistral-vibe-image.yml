@@ -1,7 +1,8 @@
 name: Publish Mistral Vibe image
 
 # Builds and publishes the pinned `domboeckli/sbx-mistral-vibe` image that the
-# `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`).
+# `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`, via the
+# `imageTag` kit arg).
 #
 # The image bakes a pinned Mistral Vibe version on top of the versioned
 # `shell-docker` sandbox template (Docker Engine inside the sandbox), following
@@ -14,14 +15,15 @@ name: Publish Mistral Vibe image
 # so the image exists for the `mistral-vibe` e2e scenario on every push/PR/nightly
 # run. Manual runs use `workflow_dispatch`.
 #
+# Tags (the image tag must stay a valid Docker tag, so the timestamp is a semver
+# prerelease identifier, not build metadata — `+` is not allowed in a tag):
+#   - master / main: `<VIBE_VERSION>` (release tag)
+#   - feature/PR:    `<VIBE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` (semver
+#                    prerelease) plus the moving tag `<branch-slug>`
+#
 # The image is built for linux/amd64 only: the `uv tool install` step does not
 # run under QEMU arm64 emulation (buildx exit code 1). arm64 would need a native
 # `ubuntu-24.04-arm` runner plus a `docker buildx imagetools create` merge.
-#
-# The tag is the Vibe version from mistral-vibe-agent/Dockerfile (ARG
-# VIBE_VERSION) — a real version, not a moving tag. Renovate tracks the pin.
-# This workflow pushes only the version tag; a local bootstrap build
-# additionally tags `domboeckli/sbx-mistral-vibe:local` (see README).
 
 on:
   workflow_dispatch:
@@ -36,6 +38,10 @@ on:
         description: "Push the image to Docker Hub (off = build only)"
         type: boolean
         default: true
+    outputs:
+      version_tag:
+        description: "Image version tag that was built/pushed"
+        value: ${{ jobs.build.outputs.version_tag }}
 
 permissions:
   contents: read
@@ -47,31 +53,46 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version_tag: ${{ steps.tags.outputs.version_tag }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Read Vibe version pin from Dockerfile
-        id: version
+      - name: Compute image tags from the Vibe pin and the branch
+        id: tags
         run: |
           set -euo pipefail
-          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
+          pin=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
             | head -1 | cut -d= -f2)
-          if [ -z "$version" ]; then
+          if [ -z "$pin" ]; then
             echo "VIBE_VERSION pin not found in mistral-vibe-agent/Dockerfile" >&2
             exit 1
           fi
-          echo "value=$version" >> "$GITHUB_OUTPUT"
-          echo "Vibe version: $version"
-
-      - name: Check spec image tag matches the Dockerfile pin
-        run: |
-          set -euo pipefail
-          image=$(grep -oE 'image: *"?[^"]+' mistral-vibe-agent/spec.yaml | head -1)
-          echo "spec image: $image"
-          if ! printf '%s' "$image" | grep -q ":${{ steps.version.outputs.value }}$"; then
-            echo "spec.yaml sandbox.image tag does not match the Dockerfile pin" >&2
+          spec_default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          if [ "$spec_default" != "$pin" ]; then
+            echo "spec.yaml args.imageTag.default ($spec_default) != Dockerfile pin ($pin)" >&2
             exit 1
           fi
+          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$ref" = "master" ] || [ "$ref" = "main" ]; then
+            version_tag="$pin"
+            extra_tag=""
+          else
+            slug=$(printf '%s' "$ref" | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's#[^a-z0-9_.-]+#-#g; s#^-+##; s#-+$##')
+            ts=$(date -u +%Y%m%d%H%M%S)
+            version_tag="${pin}-${slug}.${ts}"
+            extra_tag="$slug"
+          fi
+          {
+            echo "version_tag=$version_tag"
+            echo "tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${IMAGE_NAME}:${version_tag}"
+            if [ -n "$extra_tag" ]; then echo "${IMAGE_NAMESPACE}/${IMAGE_NAME}:${extra_tag}"; fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "version_tag=$version_tag extra_tag=${extra_tag:-<none>}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -84,9 +105,6 @@ jobs:
           password: ${{ secrets.DOCKER_PAT }}
 
       - name: Build and push (amd64, provenance/SBOM)
-        # amd64 only: the `uv tool install` step does not run under QEMU arm64
-        # emulation. arm64 can be added later via a native `ubuntu-24.04-arm`
-        # runner + `docker buildx imagetools create` manifest merge.
         uses: docker/build-push-action@v6
         with:
           context: mistral-vibe-agent
@@ -94,4 +112,4 @@ jobs:
           provenance: true
           sbom: true
           push: ${{ inputs.push }}
-          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.value }}
+          tags: ${{ steps.tags.outputs.tags }}

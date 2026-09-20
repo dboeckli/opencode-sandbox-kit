@@ -121,7 +121,7 @@ MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/la
 VIBE_DOCKERFILE = "mistral-vibe-agent/Dockerfile"
 VIBE_SPEC_FILE = "mistral-vibe-agent/spec.yaml"
 VIBE_VERSION_RE = re.compile(r"ARG VIBE_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
-VIBE_IMAGE_TAG_RE = re.compile(r"image:\s*\"?[^\"\s]*sbx-mistral-vibe:(?P<v>[0-9]+(?:\.[0-9]+)+)")
+VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
 VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
@@ -791,6 +791,14 @@ def main():
             create_cmd = ["create", "--name", s["name"], s["kit"], ws]
         else:
             create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
+        # Mistral-Vibe: CI baut fuer Feature-Branches einen eigenen Image-Tag
+        # (`<pin>-<branch>.<timestamp>`); ihn per --kit-arg an das Kit uebergeben,
+        # damit der e2e genau diesen Branch-Build testet.
+        if s["agent"] == "mistral-vibe":
+            vibe_tag = os.environ.get("VIBE_IMAGE_TAG")
+            if vibe_tag:
+                create_cmd += ["--kit-arg", f"imageTag={vibe_tag}"]
+                info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.
