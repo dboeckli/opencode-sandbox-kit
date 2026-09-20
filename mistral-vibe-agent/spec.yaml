@@ -41,6 +41,8 @@ permissions:
       # Mistral API (Vibe-Modell)
       - "api.mistral.ai:443"
       - "*.mistral.ai:443"
+      # Vibe GrowthBook (Feature-Flags/Experimente)
+      - "experiments.mistral.services:443"
       # Context7
       - "context7.com:443"
       - "*.context7.com:443"
@@ -157,8 +159,7 @@ credentials:
       proxyManaged: true
       inject:
         - domain: api.mistral.ai
-          header: Authorization
-          format: "Bearer %s"
+          scheme: bearer
   - service: context7
     description: "Context7 API-Key (https://context7.com/dashboard)"
     apiKey:
