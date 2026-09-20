@@ -20,52 +20,9 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral 
 
 Lokales Kit (Entwicklung), Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
+Typischer Entwicklungs-Stack mit read-only Host-Mounts: `.` (aktuelles Projekt), `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
+
 **OpenCode:**
-
-```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --skills=off `
-    --static-mcp idea
-```
-
-**Claude Code:**
-
-```powershell
-sbx run claude `
-    --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --skills=off `
-    --static-mcp idea
-```
-
-**Mammouth Code:**
-
-```powershell
-sbx run ./mammouth-agent/ `
-    --skills=off `
-    --static-mcp idea
-```
-
-**Mistral Vibe** (gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`; muss zuerst publiziert sein — Workflow `publish-mistral-vibe-image.yml`, `workflow_dispatch`):
-
-```powershell
-sbx run ./mistral-vibe-agent/ `
-    --skills=off `
-    --static-mcp idea
-```
-
-> **`--skills=off` (Pflicht):** Alle Sandboxes werden mit `--skills=off` erstellt — der
-> Host-übergreifende **Shared-Skills-Store** (`…/DockerSandboxes/sandboxes/state/agent-skills`) wird
-> **nicht** eingebunden. Seit sbx v0.43 ist der Default `readonly` (Store read-only gemountet); `off`
-> schaltet ihn ganz ab. Die Sandbox bleibt damit außerhalb der geteilten Trust-Boundary;
-> die Kit-Skills kommen ausschließlich aus `github.com/dboeckli/ai-agent-skills` (via
-> `install-tooling-user.sh`), **nicht** vom Host. Das Flag wirkt nur bei der Sandbox-Erstellung
-> (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
-> Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
-
-Mit Projekt + read-only Host-Mounts (kubeconfig + Maven-Cache) — typischer Entwicklungs-Stack (Maven nutzt den lokal gefuellten Host-Cache statt Neu-Download, siehe unten; Issue #87):
 
 ```powershell
 sbx run opencode `
@@ -77,6 +34,50 @@ sbx run opencode `
     "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
+
+**Claude Code:**
+
+```powershell
+sbx run claude `
+    --kit ./opencode-agent/ `
+    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --skills=off `
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
+```
+
+**Mammouth Code:**
+
+```powershell
+sbx run ./mammouth-agent/ `
+    --skills=off `
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
+```
+
+**Mistral Vibe** (gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`; muss zuerst publiziert sein — Workflow `publish-mistral-vibe-image.yml`, `workflow_dispatch`):
+
+```powershell
+sbx run ./mistral-vibe-agent/ `
+    --skills=off `
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
+```
+
+> **`--skills=off` (Pflicht):** Alle Sandboxes werden mit `--skills=off` erstellt — der
+> Host-übergreifende **Shared-Skills-Store** (`…/DockerSandboxes/sandboxes/state/agent-skills`) wird
+> **nicht** eingebunden. Seit sbx v0.43 ist der Default `readonly` (Store read-only gemountet); `off`
+> schaltet ihn ganz ab. Die Sandbox bleibt damit außerhalb der geteilten Trust-Boundary;
+> die Kit-Skills kommen ausschließlich aus `github.com/dboeckli/ai-agent-skills` (via
+> `install-tooling-user.sh`), **nicht** vom Host. Das Flag wirkt nur bei der Sandbox-Erstellung
+> (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
+> Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 
 Kit direkt aus GitHub (ohne Clone) — einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.5.0` (Mammouth: Pin im spec-Image).
 
@@ -214,56 +215,6 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
     --skills=off \
     --static-mcp idea \
     "/mnt/c/development/projects/spring-6-reactive"
-```
-
-Kubernetes-Support + Maven-Host-Cache: kubeconfig (read-only) und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokal gefuellten Cache, Issue #87).
-
-**OpenCode:**
-
-```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --skills=off `
-    --static-mcp idea `
-    . `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
-**Claude Code:**
-
-```powershell
-sbx run claude `
-    --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --skills=off `
-    --static-mcp idea `
-    . `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
-**Mammouth Code:**
-
-```powershell
-sbx run ./mammouth-agent/ `
-    --skills=off `
-    --static-mcp idea `
-    . `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
-**Mistral Vibe:**
-
-```powershell
-sbx run ./mistral-vibe-agent/ `
-    --skills=off `
-    --static-mcp idea `
-    . `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
 ```
 
 Kit auf eine bestehende Sandbox anwenden (restartet die Sandbox, VM-State bleibt) — OpenCode/Claude nutzen das `opencode-agent`-Kit, Mammouth das `mammouth-agent`-Kit, Mistral Vibe das `mistral-vibe-agent`-Kit:
