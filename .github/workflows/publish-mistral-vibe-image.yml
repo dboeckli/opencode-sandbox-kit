@@ -47,6 +47,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Read Vibe version pin from Dockerfile
+        id: version
         run: |
           set -euo pipefail
           version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
@@ -55,7 +56,7 @@ jobs:
             echo "VIBE_VERSION pin not found in mistral-vibe-agent/Dockerfile" >&2
             exit 1
           fi
-          echo "VIBE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
           echo "Vibe version: $version"
 
       - name: Check spec image tag matches the Dockerfile pin
@@ -63,8 +64,8 @@ jobs:
           set -euo pipefail
           image=$(grep -oE 'image: *"?[^"]+' mistral-vibe-agent/spec.yaml | head -1)
           echo "spec image: $image"
-          if ! printf '%s' "$image" | grep -q ":${VIBE_VERSION}$"; then
-            echo "spec.yaml sandbox.image tag does not match VIBE_VERSION=${VIBE_VERSION}" >&2
+          if ! printf '%s' "$image" | grep -q ":${{ steps.version.outputs.value }}$"; then
+            echo "spec.yaml sandbox.image tag does not match the Dockerfile pin" >&2
             exit 1
           fi
 
@@ -89,4 +90,4 @@ jobs:
           provenance: true
           sbom: true
           push: ${{ inputs.push }}
-          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.VIBE_VERSION }}
+          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.value }}
