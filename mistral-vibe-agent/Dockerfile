@@ -30,10 +30,10 @@ ARG VIBE_VERSION=2.25.5
 
 # Build tools for source builds of native dependencies: `miniaudio` (a transitive
 # mistral-vibe dependency) ships no arm64 wheel for Python 3.14, so uv compiles it
-# from source and needs a C/C++ compiler.
+# from source — needs a C/C++ compiler and the Python dev headers (pyconfig.h).
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc g++ \
+    && apt-get install -y --no-install-recommends gcc g++ python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Vibe as the non-root agent user. The socks extra is installed explicitly
