@@ -17,7 +17,7 @@ name: Publish Mistral Vibe image
 #
 # Tags (the image tag must stay a valid Docker tag, so the timestamp is a semver
 # prerelease identifier, not build metadata — `+` is not allowed in a tag):
-#   - master / main: `<VIBE_VERSION>` (release tag)
+#   - master / main: `<VIBE_VERSION>` (release tag) plus `latest`
 #   - feature/PR:    `<VIBE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` (semver
 #                    prerelease) plus the moving tag `<branch-slug>`
 #
@@ -77,7 +77,7 @@ jobs:
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
           if [ "$ref" = "master" ] || [ "$ref" = "main" ]; then
             version_tag="$pin"
-            extra_tag=""
+            extra_tag="latest"
           else
             slug=$(printf '%s' "$ref" | tr '[:upper:]' '[:lower:]' \
               | sed -E 's#[^a-z0-9_.-]+#-#g; s#^-+##; s#-+$##')

@@ -490,7 +490,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > `publish-image`-Job **vor** der Szenario-Matrix auf — so existiert das Image für das `mistral-vibe`-Szenario
 > bei jedem Push/PR/Nightly-Lauf. Manuell: Workflow `Publish Mistral Vibe image` → *Run workflow*.
 >
-> **Tags:** `master`/`main` → `<pin>` (z. B. `2.25.5`). Feature-Branch/PR → semver-Prerelease
+> **Tags:** `master`/`main` → `<pin>` (z. B. `2.25.5`) **und** `latest`. Feature-Branch/PR → semver-Prerelease
 > `<pin>-<branch-slug>.<YYYYMMDDHHMMSS>` (z. B. `2.25.5-feature-116-mistral-vibe-agent.20260920055746`)
 > plus beweglicher Tag `<branch-slug>`. Das e2e reicht den Feature-Tag per `--kit-arg imageTag=<tag>` an das
 > Kit durch (`spec.yaml` → `args.imageTag`), testet also genau den Branch-Build.
