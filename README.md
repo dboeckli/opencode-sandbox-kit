@@ -18,13 +18,13 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral 
 > sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 > ```
 
+### Lokale Entwicklung (opencode-sandbox-kit)
+
 Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`) sind relativ:
 
 ```powershell
 cd C:\development\projects\opencode-sandbox-kit
 ```
-
-### Lokale Entwicklung (Kit + Projekt)
 
 Template-Version gepinnt (`0.5.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
