@@ -98,7 +98,10 @@ sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 **Claude Code:**
@@ -108,7 +111,10 @@ sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 **Mammouth Code:**
@@ -116,7 +122,10 @@ sbx run claude `
 ```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 **Mistral Vibe:**
@@ -124,7 +133,10 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 ```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea `
+    . `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 ### Kit mit anderem Projekt
