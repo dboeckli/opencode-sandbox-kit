@@ -11,6 +11,8 @@ permissions:
     - "*.opencode.ai"
     - context7.com
     - "*.context7.com"
+    # Mistral-Doku (docs.mistral.ai — Modelle/API/Vibe-Doku)
+    - docs.mistral.ai
     # DeepSeek (OpenCode-Modell mit eigenem API-Key)
     - api.deepseek.com
     - "*.deepseek.com"
