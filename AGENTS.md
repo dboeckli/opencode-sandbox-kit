@@ -174,8 +174,9 @@ Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3
 `PARAMETERS`; IntelliJ erkennt sie (die `get_run_configurations`-Liste kann kurz veraltet sein — direkt per Namen starten
 funktioniert trotzdem).
 
-Die Sandbox-Szenarien mounten das **aktuelle Verzeichnis** als Workspace (`--workspace <pfad>` bzw.
-`$WORKSPACE_DIR` übersteuert; kein Temp-Dir mehr). Der Test startet den Agenten nicht und schreibt nichts ins Workspace.
+Die Sandbox-Szenarien mounten als Workspace den **Repo-Root** (`--workspace <pfad>` bzw.
+`$WORKSPACE_DIR` übersteuert; kein Temp-Dir mehr — Default ist bewusst nicht das Aufrufverzeichnis).
+Der Test startet den Agenten nicht und schreibt nichts ins Workspace.
 
 Äquivalente PowerShell-Befehle:
 

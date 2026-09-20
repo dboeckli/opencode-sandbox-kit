@@ -459,8 +459,8 @@ Die 4 Agent-Szenarien (OpenCode, Claude Home, Mammouth, Mistral Vibe) lassen sic
 `local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf.
 
-Als **Workspace** mounten die Szenarien das **aktuelle Verzeichnis** (`--workspace <pfad>` bzw. `$WORKSPACE_DIR`
-übersteuert; die IntelliJ-Run-Configs laufen aus dem Repo-Root). Der Test startet den Agenten nicht und schreibt
+Als **Workspace** mounten die Szenarien den **Repo-Root** (`--workspace <pfad>` bzw. `$WORKSPACE_DIR`
+übersteuert; Default ist nicht das Aufrufverzeichnis). Der Test startet den Agenten nicht und schreibt
 nichts ins Workspace.
 
 Alle 4 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
@@ -700,6 +700,19 @@ sbx daemon start --detach
 ```powershell
 sbx rm <sandbox-name> --force
 ```
+
+### Mistral Vibe: „Retrying…" / keine Antwort
+
+Vibe-Log in der laufenden Sandbox ansehen (Retry-Grund, z. B. Rate-Limit/Quota):
+
+```powershell
+sbx exec <sandbox-name> bash -c 'tail -n 30 ~/.vibe/logs/vibe.log'
+```
+
+- `Retrying request category=rate_limited detail=HTTP 429` → Mistral-Guthaben/Rate-Limit prüfen
+  (https://console.mistral.ai/billing/).
+- `blocked by network policy: domain …` → fehlende Domain in `mistral-vibe-agent/spec.yaml`
+  (`permissions.network.allow`, siehe auch `~/.vibe/network-policy.md`).
 
 ### IntelliJ MCP connection failed (WSL2 / Docker)
 

@@ -32,12 +32,12 @@ Optionen:
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
-                                  mammouth-API-Call
+                                  mammouth-/mistral-API-Call
   --validate-only                 Nur Kit-Validierung (sbx kit validate),
                                   keine Secrets-/Sandbox-Checks (default: Sandboxes
                                   werden gestartet)
   --workspace <pfad>              Workspace der Sandbox-Szenarien
-                                  (default: $WORKSPACE_DIR oder aktuelles Verzeichnis)
+                                  (default: $WORKSPACE_DIR oder Repo-Root)
 """
 
 import argparse
@@ -248,6 +248,22 @@ def blocked_requests(name):
     info(f"  sbx policy log {name} (Blocked requests):")
     print("         " + "\n         ".join(lines[start:start + 2] + blocked))
     return code
+
+
+def dump_policy_log(name):
+    """Kompletten `sbx policy log` ausgeben (Diagnose bei Proxy-/Injection-Fehlern).
+
+    Anders als blocked_requests() wird nicht nur der Blocked-Abschnitt gezeigt:
+    fuer die Credential-Injection sind die PROXY-Spalte (forward vs.
+    transparent/forward-bypass) und die Injection-Entscheidung relevant.
+    """
+    code, out = run_sbx(["policy", "log", name])
+    info(f"  sbx policy log {name} (vollstaendig):")
+    if code != 0 or not out.strip():
+        print("         " + (out or "(kein Output / Fehler beim Aufruf)"))
+        return
+    for line in out.splitlines():
+        print("         " + line)
 
 
 def _so_doc_version():
@@ -664,17 +680,19 @@ def main():
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
-                        help="CI-Modus: Fake-API-Keys, kein realer mammouth-API-Call")
+                        help="CI-Modus: Fake-API-Keys, kein realer mammouth-/mistral-API-Call")
     parser.add_argument("--validate-only", action="store_true",
                         help="Nur Kit-Validierung, keine Sandbox-Szenarien (default: Sandboxes werden gestartet)")
     parser.add_argument("--workspace", default=None,
                         help="Workspace-Pfad fuer die Sandbox-Szenarien "
-                             "(default: $WORKSPACE_DIR oder aktuelles Verzeichnis)")
+                             "(default: $WORKSPACE_DIR oder Repo-Root)")
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
+    # Default = Repo-Root (nicht cwd): so mountet das Szenario unabhaengig vom
+    # Aufrufverzeichnis das Kit-Repo. `--workspace`/`$WORKSPACE_DIR` uebersteuern.
     workspace = os.path.abspath(
-        args.workspace or os.environ.get("WORKSPACE_DIR") or os.getcwd())
+        args.workspace or os.environ.get("WORKSPACE_DIR") or ROOT)
     if not os.path.isdir(workspace):
         sys.exit(f"Workspace nicht gefunden: {workspace}")
 
@@ -854,6 +872,9 @@ def main():
         else:
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
                                       "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
+        info("  setup.install laeuft jetzt (npm-CLIs, apt, JDK, Maven, Docker CLI, Compose, "
+             "kubectl, Helm v3/v4, Kafka, Skills) — mehrere Minuten ohne Zwischenausgabe (sbx buffert "
+             "die Install-Ausgabe bei gepipetem stdout).")
         code, create_out = run_sbx(create_cmd, stream=True)
         if code != 0:
             sfail("sandbox create")
@@ -1086,12 +1107,45 @@ def main():
                 else:
                     sfail("mistral-vibe version installed (nicht ermittelbar)", f"out={out!r}")
 
+                # proxyManaged: true -> Runtime setzt MISTRAL_API_KEY auf den Sentinel.
+                # (Ohne proxyManaged ist die Variable unset; Vibe braucht sie, um
+                # ueberhaupt zu authentifizieren.)
                 env_cmd = 'echo "MISTRAL_API_KEY=${MISTRAL_API_KEY:-<unset>}"'
                 c2, out = exec_sandbox(s["name"], env_cmd)
                 if c2 == 0 and "MISTRAL_API_KEY=proxy-managed" in out:
                     pass_("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)")
                 else:
                     sfail("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)", out)
+
+                # Runtime-Contract (spec-v2 §9.5): SBX_CRED_<SERVICE>_MODE zeigt, wie die
+                # Credential aufgeloest wurde (apikey/oauth/none). 'none' => Binding/Secret
+                # fehlt -> der Proxy injiziert nichts (Vibe: 401 'Invalid API key').
+                cred_cmd = 'echo "SBX_CRED_MISTRAL_MODE=${SBX_CRED_MISTRAL_MODE:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], cred_cmd)
+                if c2 == 0 and "SBX_CRED_MISTRAL_MODE=apikey" in out:
+                    pass_("mistral credential resolved (SBX_CRED_MISTRAL_MODE=apikey)")
+                else:
+                    sfail("mistral credential resolved (SBX_CRED_MISTRAL_MODE=apikey)",
+                          out + " — mistral-Secret/Binding pruefen (~/.config/sbx/credentials.yaml bzw. "
+                                "%APPDATA%\\sbx\\credentials.yaml: mistral.apiKey.domains=[api.mistral.ai])")
+
+                # Wie mammouth: lokal den echten Proxy-Key-Pfad testen (nicht nur die
+                # Sentinel-Verdrahtung). Ein 401 'Invalid API key' bedeutet, dass der
+                # Proxy den Sentinel nicht ersetzt hat — dann `sbx policy log` (PROXY-
+                # Spalte: forward vs. transparent/forward-bypass) ausgeben.
+                if ci:
+                    print("  " + _color("33", "[SKIP] api.mistral.ai e2e (Proxy-Key) — fake key in CI, "
+                                             "nur Sentinel-Wiring geprueft"))
+                else:
+                    net_cmd = ('curl -s -o /tmp/mistral-models.json -w "HTTP:%{http_code}" '
+                               'https://api.mistral.ai/v1/models -H "Authorization: Bearer $MISTRAL_API_KEY"; '
+                               'echo; head -c 200 /tmp/mistral-models.json')
+                    c2, out = exec_sandbox(s["name"], net_cmd)
+                    if c2 == 0 and "HTTP:200" in out and '"id"' in out:
+                        pass_("api.mistral.ai e2e (Proxy-Key)")
+                    else:
+                        sfail("api.mistral.ai e2e (Proxy-Key)", out)
+                        dump_policy_log(s["name"])
 
         if not args.keep:
             if len(failed) > failed_before:
