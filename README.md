@@ -137,58 +137,6 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
     "C:\development\maven-repo:ro"
 ```
 
-### Kit mit anderem Projekt
-
-In ein anderes Projekt wechseln (wird als Workspace gemountet):
-
-```powershell
-cd C:\development\projects\spring-6-reactive
-```
-
-**OpenCode:**
-
-```powershell
-sbx run opencode `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
-    --skills=off `
-    --static-mcp idea `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
-**Claude Code:**
-
-```powershell
-sbx run claude `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
-    --skills=off `
-    --static-mcp idea `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
-**Mammouth Code:**
-
-```powershell
-sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
-    --skills=off `
-    --static-mcp idea `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
-**Mistral Vibe:**
-
-```powershell
-sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
-    --skills=off `
-    --static-mcp idea `
-    "$env:USERPROFILE\.kube:ro" `
-    "C:\development\maven-repo:ro"
-```
-
 > **Template-Version (gepinnt):** Alle Kits nutzen Template-Tag **`0.5.0`** (2026-08-26).
 > - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.5.0`
 > - **Claude (Home)**: `docker/sandbox-templates:claude-code-docker-0.5.0`
