@@ -8,9 +8,10 @@ Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `web
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
-- **Agent API (Mistral Vibe)**: `api.mistral.ai`, `*.mistral.ai` (Mistral API; Key via Built-in-Service `mistral` → `MISTRAL_API_KEY`), `experiments.mistral.services` (Vibe GrowthBook: Feature-Flags/Experimente)
+- **Agent API (Mistral Vibe)**: `api.mistral.ai`, `*.mistral.ai` (Mistral API; Key via Built-in-Service `mistral` → `MISTRAL_API_KEY`), `api.eu.mistral.ai` / `api.us.mistral.ai` (regionale Endpoints; GLM 5.3/5.2 nur global + EU), `experiments.mistral.services` (Vibe GrowthBook: Feature-Flags/Experimente)
+- **Z.AI (GLM-5.3-Flash, Default-Modell)**: `api.z.ai`, `*.z.ai` (direkter OpenAI-kompatibler Provider; Key via Kit-Service `zai` → `ZAI_API_KEY`)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `maven.pkg.github.com` (GitHub Packages Maven), `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
-- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`
+- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku)
 - **JetBrains Help + Marketplace + YouTrack**: `jetbrains.com`, `www.jetbrains.com`, `plugins.jetbrains.com`, `youtrack.jetbrains.com` (IntelliJ HTTP-Client Feature-Doku, z. B. `www.jetbrains.com/help/idea/http-response-handler-examples.html`; Plugin-Changelogs, z. B. MCP Server 26071; Issue-Recherche, z. B. IJPL MCP-Server)
 - **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`, `start.spring.io`
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`

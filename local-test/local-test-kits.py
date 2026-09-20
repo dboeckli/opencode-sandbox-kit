@@ -141,10 +141,10 @@ SCENARIO_SECRETS = {
     "opencode": ("github", "github-maven", "context7", "openrouter", "google", "stackoverflow", "cloudsmith"),
     "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith"),
     "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith"),
-    "mistral-vibe": ("github", "github-maven", "mistral", "context7", "stackoverflow", "cloudsmith"),
+    "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
-SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "context7", "openrouter", "google",
+SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "zai", "context7", "openrouter", "google",
                 "stackoverflow", "cloudsmith")
 
 
@@ -1146,6 +1146,23 @@ def main():
                     else:
                         sfail("api.mistral.ai e2e (Proxy-Key)", out)
                         dump_policy_log(s["name"])
+
+                # Z.AI (GLM-5.3-Flash, Default-Modell): Sentinel + Credential-Aufloesung.
+                # Kein Real-API-Call (eigenes Z.AI-Guthaben) — nur Verdrahtung.
+                zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], zai_env_cmd)
+                if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
+                    pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
+                else:
+                    sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+
+                zai_cred_cmd = 'echo "SBX_CRED_ZAI_MODE=${SBX_CRED_ZAI_MODE:-<unset>}"'
+                c2, out = exec_sandbox(s["name"], zai_cred_cmd)
+                if c2 == 0 and "SBX_CRED_ZAI_MODE=apikey" in out:
+                    pass_("zai credential resolved (SBX_CRED_ZAI_MODE=apikey)")
+                else:
+                    sfail("zai credential resolved (SBX_CRED_ZAI_MODE=apikey)",
+                          out + " — zai-Secret/Binding pruefen (credentials.yaml: zai.apiKey.domains=[api.z.ai])")
 
         if not args.keep:
             if len(failed) > failed_before:

@@ -1,6 +1,12 @@
 # Mistral Vibe configuration for the mistral-vibe-agent sandbox kit.
 # Docs: https://github.com/mistralai/mistral-vibe
 
+# Default model: Z.ai GLM-5.3-Flash (fast/cost-effective), served directly by Z.AI
+# through the OpenAI-compatible `zai` provider below. GLM-5.3-Flash is NOT available
+# via Mistral; switch to the alias `glm` (Mistral-hosted zai-glm-5-3) or
+# `mistral-medium-3.5` with `/model`.
+active_model = "glm-flash"
+
 # IntelliJ MCP through the sbx MCP gateway. The gateway is sandbox
 # infrastructure (host-side, reachable as mcp-gateway.docker.internal) and
 # forwards the servers registered on the host that the sandbox was created
@@ -19,3 +25,28 @@ url = "http://mcp-gateway.docker.internal/mcp"
 [mcp_servers.auth]
 type = "static"
 headers = { Authorization = "Bearer proxy-managed" }
+
+# Z.AI as an OpenAI-compatible provider. The API key is proxy-managed
+# (ZAI_API_KEY=proxy-managed sentinel); the sandbox proxy injects the real key on
+# requests to api.z.ai. Used for the Z.AI-exclusive GLM-5.3-Flash default model.
+[[providers]]
+name = "zai"
+api_base = "https://api.z.ai/api/paas/v4"
+api_key_env_var = "ZAI_API_KEY"
+api_style = "openai"
+
+[[models]]
+name = "glm-5.3-flash"
+provider = "zai"
+alias = "glm-flash"
+display_name = "GLM 5.3 Flash (Z.ai)"
+
+# Additional model: Z.ai GLM 5.3, hosted by Mistral on la Plateforme. It is served
+# through the existing `mistral` provider (same MISTRAL_API_KEY / api.mistral.ai),
+# so no extra credential is needed. Mistral model IDs: `zai-glm-5-3`, `zai-glm-5-2`.
+# Docs: https://docs.mistral.ai/models/zai-glm-5-2
+[[models]]
+name = "zai-glm-5-3"
+provider = "mistral"
+alias = "glm"
+display_name = "GLM 5.3 (Z.ai, via Mistral)"

@@ -56,6 +56,13 @@ Mistral Vibe is available in Context7 (`npx ctx7 docs /mistralai/mistral-vibe <q
 user-level instructions in `~/.vibe/AGENTS.md`, project instructions in the project's `AGENTS.md`.
 `VIBE_HOME` overrides the config directory.
 
+The default model is **GLM-5.3-Flash** (`active_model = "glm-flash"`), served directly by **Z.AI** through the
+OpenAI-compatible `zai` provider (`[[providers]]` → `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`; `[[models]]`
+`glm-flash` → `glm-5.3-flash`). GLM-5.3-Flash is **not** available via Mistral. The key is proxy-managed
+(`ZAI_API_KEY=proxy-managed`); the sandbox proxy injects the real key for `api.z.ai`. Switch models with `/model`.
+Alternative: Mistral hosts GLM 5.3 itself as `zai-glm-5-3` (alias `glm`, provider `mistral`, same
+`MISTRAL_API_KEY`). Other Mistral-hosted IDs: `zai-glm-5-2`, `mistral-large-latest`, `codestral-latest`.
+
 ## IntelliJ IDEA MCP
 
 The IntelliJ MCP server runs on the Windows host and is exposed through the sbx MCP gateway. Register it once on

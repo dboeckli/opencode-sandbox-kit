@@ -374,6 +374,25 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 > echte Key **nicht** injiziert (nur der Sentinel `MISTRAL_API_KEY=proxy-managed` gesetzt); `sbx create` warnt
 > dann mit „no binding authorizes this service". Der lokale Test (`local-test-kits.py`) schlägt in dem Fall fehl.
 
+#### Z.AI (GLM) — Default-Modell GLM-5.3-Flash
+
+`mistral-vibe-agent/files/home/.vibe/config.toml` setzt **GLM-5.3-Flash** als Default (`active_model = "glm-flash"`).
+GLM-5.3-Flash gibt es **nicht über Mistral**, sondern nur direkt bei Z.AI → eigener OpenAI-kompatibler Provider
+`zai` (`https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`). Key erstellen: https://z.ai/manage-apikey/apikey-list
+(Login https://z.ai/model-api, ggf. Guthaben aufladen). Der Proxy injiziert den Key als `Authorization: Bearer`
+für `api.z.ai` — der Key liegt nie im Sandbox-Filesystem:
+
+```powershell
+sbx secret set zai
+```
+
+> **Credential-Binding:** vorab `zai: apiKey.domains: [api.z.ai]` in `~/.config/sbx/credentials.yaml`
+> (bzw. `%APPDATA%\sbx\credentials.yaml`) bestätigen/hinterlegen.
+
+**Alternative (ohne Z.AI-Key):** Mistral hostet GLM 5.3 selbst als `zai-glm-5-3` (Alias `glm`, Provider
+`mistral`, gleiche `MISTRAL_API_KEY`). In der TUI per `/model` wählbar. Weitere Mistral-IDs:
+`zai-glm-5-2`, `mistral-large-latest`, `codestral-latest` (https://docs.mistral.ai/models/zai-glm-5-2).
+
 #### Context7 API-Key (optional)
 
 Für höheres Rate-Limit kann ein Context7 API-Key verwendet werden (https://context7.com/dashboard).

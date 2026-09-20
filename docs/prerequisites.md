@@ -22,6 +22,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `anthropic` | Claude | https://console.anthropic.com — interaktiv, `-f` zum Überschreiben |
 | `mammouth` | Mammouth | https://mammouth.ai/app/account/settings/api |
 | `mistral` | Mistral Vibe | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
+| `zai` | Mistral Vibe | Z.AI (Default-Modell GLM-5.3-Flash, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
 | `context7` | alle | https://context7.com/dashboard |
 | `openrouter` | OpenCode | Built-in-Service des opencode-Templates (nicht im Kit deklariert) |
 | `google` | OpenCode | https://aistudio.google.com/apikey (Built-in-Service) |

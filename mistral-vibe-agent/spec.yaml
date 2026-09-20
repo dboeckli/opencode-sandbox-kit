@@ -41,8 +41,17 @@ permissions:
       # Mistral API (Vibe-Modell)
       - "api.mistral.ai:443"
       - "*.mistral.ai:443"
+      # Regionale Mistral-Endpoints (GLM 5.3/5.2 nur auf global + EU, nicht US;
+      # `*.mistral.ai` matcht keine mehrstufigen Subdomains → explizit)
+      - "api.eu.mistral.ai:443"
+      - "api.us.mistral.ai:443"
+      # Mistral-Doku (Modelle/API/Vibe-Doku)
+      - "docs.mistral.ai:443"
       # Vibe GrowthBook (Feature-Flags/Experimente)
       - "experiments.mistral.services:443"
+      # Z.AI (GLM-5.3-Flash als Default-Modell, direkter OpenAI-kompatibler Provider)
+      - "api.z.ai:443"
+      - "*.z.ai:443"
       # Context7
       - "context7.com:443"
       - "*.context7.com:443"
@@ -160,6 +169,15 @@ credentials:
       inject:
         - domain: api.mistral.ai
           scheme: bearer
+  - service: zai
+    description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — OpenAI-kompatibler Provider (GLM-5.3-Flash)"
+    apiKey:
+      name: ZAI_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.z.ai
+          header: Authorization
+          format: "Bearer %s"
   - service: context7
     description: "Context7 API-Key (https://context7.com/dashboard)"
     apiKey:
