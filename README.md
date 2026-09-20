@@ -495,19 +495,14 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > plus beweglicher Tag `<branch-slug>`. Das e2e reicht den Feature-Tag per `--kit-arg imageTag=<tag>` an das
 > Kit durch (`spec.yaml` → `args.imageTag`), testet also genau den Branch-Build.
 >
-> **Lokal (Bootstrap, optional, Windows-Host):** vom Repo-Root aus — setzt zusätzlich den beweglichen Tag `local`:
+> **Lokal (Windows-Host):** IntelliJ-Run-Config **`publish-mistral-vibe-image`** (baut + pusht) — Tag wie beim
+> Feature-Branch-Build (`<pin>-<branch-slug>.<timestamp>`, semver) **plus** beweglicher Tag `local`:
 > ```powershell
-> docker buildx create --use --name sbx-vibe   # einmalig
-> docker login -u domboeckli
-> docker buildx build `
->     --platform linux/amd64 `
->     --provenance=true --sbom=true `
->     -t domboeckli/sbx-mistral-vibe:2.25.5 `
->     -t domboeckli/sbx-mistral-vibe:local `
->     --push ./mistral-vibe-agent
+> python local-test\publish-mistral-vibe-image.py              # build + push
+> python local-test\publish-mistral-vibe-image.py --build-only # nur bauen
 > ```
-> Tag = `ARG VIBE_VERSION` im Dockerfile (muss zum `sandbox.image` in `spec.yaml` passen). Der Vibe-Pin und der
-> Image-Tag in `spec.yaml` werden per Renovate (PyPI `mistral-vibe`) gemeinsam aktualisiert.
+> Voraussetzung: `docker` (Docker Desktop) mit eingeloggtem Docker-Hub-Account (read/write). Der Vibe-Pin und
+> `args.imageTag.default` in `spec.yaml` werden per Renovate (PyPI `mistral-vibe`) gemeinsam aktualisiert.
 
 > **Auth / Secret / Verifikation:** siehe [`INSTALL.md`](INSTALL.md#mistral-authentication) — `sbx secret set mistral`, Platzhalter-Check.
 

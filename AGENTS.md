@@ -157,7 +157,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 > Der Aufruf mit der Config **ohne** `waitForExit=false` timeout't nach 15 min, obwohl der Test
 > (~8 min) evtl. noch läuft — dann Prozessstatus via `idea_execute_terminal_command` + `Get-Process python` prüfen.
 
-IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.py` auf):
+IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-test/local-test-kits.py` auf, `publish-mistral-vibe-image` das Publish-Skript):
 
 | Config | PARAMETERS | Zweck |
 |--------|-----------|-------|
@@ -167,6 +167,7 @@ IntelliJ Run-Configs (`.run/*.run.xml`, alle rufen `local-test/local-test-kits.p
 | `local-test-kits-claude` | `claude` | Nur Claude-Szenario Home (Sandbox) |
 | `local-test-kits-mammouth` | `mammouth` | Nur Mammouth-Szenario (Sandbox) |
 | `local-test-kits-mistral-vibe` | `mistral-vibe` | Nur Mistral-Vibe-Szenario (Sandbox) |
+| `publish-mistral-vibe-image` | — | Baut/pusht das Vibe-Image lokal (`local-test/publish-mistral-vibe-image.py`, Tag `<pin>-<branch-slug>.<timestamp>` + `local`); `--build-only` baut ohne Push |
 
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
 `$PROJECT_DIR$/local-test`, `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
