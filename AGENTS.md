@@ -640,6 +640,11 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 > `ZAI_API_KEY`, `api.z.ai`) + `[[models]]` `glm-flash` → `glm-5.3-flash`. GLM-5.3-Flash gibt es **nicht über
 > Mistral** → eigener Service `zai` (`sbx secret set zai`, Key https://z.ai/manage-apikey/apikey-list, Binding
 > `zai: apiKey.domains: [api.z.ai]`). Alternative: Mistral-hosted `zai-glm-5-3` (Alias `glm`, Provider `mistral`).
+>
+> **Plan vs. Guthaben (wichtig):** Der Mistral-**Plan** steuert Rate-Limits + Modellzugriff, nicht das Guthaben.
+> **Free mode** (Default, inkl. $10/mo API-Credits) → `429` (Rate-Limit) und `403 tier_not_allowed` für
+> Third-Party-Modelle (GLM); höhere Limits + Mistral-GLM nur mit **bezahltem Plan** (Pro/Team). Z.AI direkt:
+> `429` = Z.AI-Guthaben nicht aktiv/leer (https://z.ai/manage-apikey/billing).
 
 ## Netzwerk-Policy (Deny-by-Default)
 

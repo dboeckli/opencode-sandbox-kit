@@ -721,10 +721,16 @@ Vibe-Log in der laufenden Sandbox ansehen (Retry-Grund, z. B. Rate-Limit/Quota):
 sbx exec <sandbox-name> bash -c 'tail -n 30 ~/.vibe/logs/vibe.log'
 ```
 
-- `Retrying request category=rate_limited detail=HTTP 429` → Mistral-Guthaben/Rate-Limit prüfen
-  (https://console.mistral.ai/billing/).
+- `Retrying request category=rate_limited detail=HTTP 429` → **Mistral-Plan/Tier** prüfen, **nicht** das Guthaben:
+  die RPS/TPM-Limits hängen am Plan. **Free mode** (Default neuer Accounts) hat sehr niedrige Limits → 429 auch
+  bei vorhandenem Guthaben. Limits: https://admin.mistral.ai/plateforme/limits · Plan: https://admin.mistral.ai/subscription
+- `403 … tier_not_allowed` (Mistral, Third-Party-Modell wie `zai-glm-5-3`) → Third-Party-Modelle erfordern einen
+  **bezahlten Mistral-Plan** (Free mode sperrt sie); das API-Guthaben ($10 Free-Credit) ändert das nicht.
+- Z.AI direkt (`api.z.ai`, GLM-5.3-Flash): `429` → **Z.AI-Guthaben nicht aktiv/leer** oder Monats-/Rate-Limit
+  (Guthaben: https://z.ai/manage-apikey/billing). Nach Aufladung kurz warten, bis das Guthaben aktiv ist.
 - `blocked by network policy: domain …` → fehlende Domain in `mistral-vibe-agent/spec.yaml`
-  (`permissions.network.allow`, siehe auch `~/.vibe/network-policy.md`).
+  (`permissions.network.allow`, siehe auch `~/.vibe/network-policy.md`). Hinweis: Wildcards wie `*.mistral.ai`
+  matchen **keine** mehrstufigen Subdomains (`api.eu.mistral.ai`) → explizit listen.
 
 ### IntelliJ MCP connection failed (WSL2 / Docker)
 

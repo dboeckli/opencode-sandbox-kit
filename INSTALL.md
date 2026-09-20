@@ -393,6 +393,12 @@ sbx secret set zai
 `mistral`, gleiche `MISTRAL_API_KEY`). In der TUI per `/model` wählbar. Weitere Mistral-IDs:
 `zai-glm-5-2`, `mistral-large-latest`, `codestral-latest` (https://docs.mistral.ai/models/zai-glm-5-2).
 
+> **Wichtig — Mistral-Plan vs. Guthaben:** Der Mistral-**Plan** steuert Rate-Limits und Modellzugriff, **nicht**
+> das Guthaben. **Free mode** (Default neuer Accounts, inkl. $10/mo API-Credits) hat sehr niedrige Limits
+> (→ `429`) und sperrt **Third-Party-Modelle** wie GLM (→ `403 tier_not_allowed`). Für höhere Limits und
+> Mistral-hosted GLM ist ein **bezahlter Plan** (Pro/Team/Enterprise) nötig.
+> Limits: https://admin.mistral.ai/plateforme/limits · Plan: https://admin.mistral.ai/subscription
+
 #### Context7 API-Key (optional)
 
 Für höheres Rate-Limit kann ein Context7 API-Key verwendet werden (https://context7.com/dashboard).
