@@ -149,7 +149,9 @@ sbx run opencode `
     --template docker/sandbox-templates:opencode-docker-0.5.0 `
     --skills=off `
     --static-mcp idea `
-    "C:\development\projects\spring-6-reactive"
+    "C:\development\projects\spring-6-reactive" `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 **Claude Code:**
@@ -160,7 +162,9 @@ sbx run claude `
     --template docker/sandbox-templates:claude-code-docker-0.5.0 `
     --skills=off `
     --static-mcp idea `
-    "C:\development\projects\spring-6-reactive"
+    "C:\development\projects\spring-6-reactive" `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 **Mammouth Code:**
@@ -169,7 +173,9 @@ sbx run claude `
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --skills=off `
     --static-mcp idea `
-    "C:\development\projects\spring-6-reactive"
+    "C:\development\projects\spring-6-reactive" `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 **Mistral Vibe:**
@@ -178,7 +184,9 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --skills=off `
     --static-mcp idea `
-    "C:\development\projects\spring-6-reactive"
+    "C:\development\projects\spring-6-reactive" `
+    "$env:USERPROFILE\.kube:ro" `
+    "C:\development\maven-repo:ro"
 ```
 
 > **Template-Version (gepinnt):** Alle Kits nutzen Template-Tag **`0.5.0`** (2026-08-26).
@@ -199,7 +207,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
 
 ### Ubuntu-WSL
 
-Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image).
+Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Mounts wie oben: Projekt `/mnt/c/...`, kubeconfig `$HOME/.kube:ro` (WSL-Home; bei Windows-seitiger kubeconfig `/mnt/c/Users/<user>/.kube:ro`) und Host-Maven-Cache `/mnt/c/development/maven-repo:ro`.
 
 **OpenCode:**
 
@@ -209,7 +217,9 @@ sbx run opencode \
     --template docker/sandbox-templates:opencode-docker-0.5.0 \
     --skills=off \
     --static-mcp idea \
-    "/mnt/c/development/projects/spring-6-reactive"
+    "/mnt/c/development/projects/spring-6-reactive" \
+    "$HOME/.kube:ro" \
+    "/mnt/c/development/maven-repo:ro"
 ```
 
 **Claude Code:**
@@ -220,7 +230,9 @@ sbx run claude \
     --template docker/sandbox-templates:claude-code-docker-0.5.0 \
     --skills=off \
     --static-mcp idea \
-    "/mnt/c/development/projects/spring-6-reactive"
+    "/mnt/c/development/projects/spring-6-reactive" \
+    "$HOME/.kube:ro" \
+    "/mnt/c/development/maven-repo:ro"
 ```
 
 **Mammouth Code:**
@@ -229,7 +241,9 @@ sbx run claude \
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     --skills=off \
     --static-mcp idea \
-    "/mnt/c/development/projects/spring-6-reactive"
+    "/mnt/c/development/projects/spring-6-reactive" \
+    "$HOME/.kube:ro" \
+    "/mnt/c/development/maven-repo:ro"
 ```
 
 **Mistral Vibe:**
@@ -238,7 +252,9 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
     --skills=off \
     --static-mcp idea \
-    "/mnt/c/development/projects/spring-6-reactive"
+    "/mnt/c/development/projects/spring-6-reactive" \
+    "$HOME/.kube:ro" \
+    "/mnt/c/development/maven-repo:ro"
 ```
 
 ### Kit auf eine bestehende Sandbox anwenden
