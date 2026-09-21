@@ -120,7 +120,7 @@ jobs:
           password: ${{ secrets.DOCKER_PAT }}
 
       - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: mistral-vibe-agent
           platforms: ${{ matrix.platform }}
