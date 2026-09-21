@@ -114,13 +114,13 @@ jobs:
 
       - name: Log in to Docker Hub
         if: ${{ inputs.push }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PAT }}
 
       - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: mistral-vibe-agent
           platforms: ${{ matrix.platform }}
@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PAT }}
