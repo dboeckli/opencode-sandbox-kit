@@ -6,7 +6,7 @@ description: "Mistral Vibe Coding-Agent mit Context7, IntelliJ MCP, JDK, Maven, 
 
 args:
   imageTag:
-    default: "2.25.5"
+    default: "2.25.7"
     description: >-
       Tag of domboeckli/sbx-mistral-vibe to run. Default = release tag (= Vibe version).
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build.
