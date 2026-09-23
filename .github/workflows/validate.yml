@@ -15,7 +15,7 @@ jobs:
       # Mammouth) und claude-code-docker (Claude Home), die in Lockstep gleiche Versionsnummern
       # tragen. Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
-      TEMPLATE_VERSION: 0.5.0
+      TEMPLATE_VERSION: 0.6.0
     steps:
       - uses: actions/checkout@v7
 
