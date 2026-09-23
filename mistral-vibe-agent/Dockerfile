@@ -26,7 +26,7 @@ FROM ${BASE_IMAGE}
 
 # Pin the agent version for reproducible sandboxes.
 # Check https://pypi.org/project/mistral-vibe/ and bump as needed (Renovate tracks it).
-ARG VIBE_VERSION=2.25.7
+ARG VIBE_VERSION=2.25.8
 
 # Build tools for source builds of native dependencies: `miniaudio` (a transitive
 # mistral-vibe dependency) ships no arm64 wheel for Python 3.14, so uv compiles it
