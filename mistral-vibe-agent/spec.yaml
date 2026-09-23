@@ -12,7 +12,7 @@ args:
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build.
 
 sandbox:
-  # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-docker-0.5.0
+  # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-docker-0.6.0
   # + mistral-vibe<version>. Build/Publish multi-arch (amd64+arm64, native Runner + imagetools merge)
   # via docker buildx (provenance/SBOM).
   # Renovate trackt den Vibe-Pin (PyPI); der Image-Tag ist ueber args.imageTag parametrisierbar
