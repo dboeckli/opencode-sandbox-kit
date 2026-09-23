@@ -21,7 +21,7 @@
 #
 # The kit (spec.yaml `sandbox.image`, arg `imageTag`) references the version tag.
 
-ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.5.0
+ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.6.0
 FROM ${BASE_IMAGE}
 
 # Pin the agent version for reproducible sandboxes.
