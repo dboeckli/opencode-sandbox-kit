@@ -584,7 +584,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.6.0 (alle Kits, gleiche Version; Mammouth/Mistral Vibe via spec-Image, kein --template nötig)
+# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version; Mammouth/Mistral Vibe via spec-Image, kein --template nötig)
 
 # OpenCode (Home-Standard)
 sbx run opencode `

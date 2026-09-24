@@ -134,6 +134,26 @@
     },
     {
       "customType": "regex",
+      "description": "Sandbox-Template-Version (mammouth-agent/spec.yaml sandbox.image, opencode-docker Mirror; muss TEMPLATE_VERSION spiegeln)",
+      "managerFilePatterns": ["mammouth-agent/spec.yaml"],
+      "matchStrings": ["image:\\s*\"docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker)-(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Sandbox-Template-Version in der Doku (konkrete sbx --template-Image-Refs in MD-Files; Prosa bleibt versionsneutral als 0.x.0)",
+      "managerFilePatterns": ["^README\\.md$", "^AGENTS\\.md$", "^INSTALL\\.md$", "^docs/kubernetes-integration\\.md$"],
+      "matchStrings": ["docker/sandbox-templates:(?:opencode-docker|claude-code-docker|shell-docker)-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker|shell-docker)-(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "description": "Mammouth CLI version (mammouth-agent/spec.yaml install.sh-VERSION, `VERSION=<v> bash`)",
       "managerFilePatterns": ["mammouth-agent/spec.yaml"],
       "matchStrings": ["install\\.sh \\| VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+) bash"],

@@ -26,7 +26,7 @@ Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-agent/`, `./mam
 cd C:\development\projects\opencode-sandbox-kit
 ```
 
-Template-Version gepinnt (`0.6.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
+Template-Version gepinnt (`0.x.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
 Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Entwicklungs-Stack: `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
 
@@ -89,7 +89,7 @@ sbx run ./mistral-vibe-agent/ `
 
 ### Kit direkt aus GitHub (ohne Clone)
 
-Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.6.0` (Mammouth: Pin im spec-Image).
+Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.x.0` (Mammouth: Pin im spec-Image).
 
 Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts):
 
@@ -145,10 +145,10 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
     "C:\development\maven-repo:ro"
 ```
 
-> **Template-Version (gepinnt):** Alle Kits nutzen Template-Tag **`0.6.0`** (2026-09-22).
-> - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.6.0`
-> - **Claude (Home)**: `docker/sandbox-templates:claude-code-docker-0.6.0`
-> - **Mistral Vibe**: `docker/sandbox-templates:shell-docker-0.6.0` (Basis des eigenen Vibe-Images)
+> **Template-Version (gepinnt, Renovate-managed):** Alle Kits nutzen Template-Tag **`0.x.0`**.
+> - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.x.0`
+> - **Claude (Home)**: `docker/sandbox-templates:claude-code-docker-0.x.0`
+> - **Mistral Vibe**: `docker/sandbox-templates:shell-docker-0.x.0` (Basis des eigenen Vibe-Images)
 >
 > Die **Version** (gilt für alle Kits) ist mehrfach gepinnt und wird auf Konsistenz geprüft:
 > explizit als Konstante in `local-test/local-test-kits.py` (Pin der lokalen Tests, Renovate-managed),
@@ -324,10 +324,10 @@ sondern vom Template bzw. dem Kit-Image beim `sbx run`:
 
 | Agent | Template | Kit |
 |-------|----------|-----|
-| OpenCode | `opencode-docker` (Pin `0.6.0`) | `opencode-agent/` (Mixin) |
-| Claude Code | `claude-code-docker` (Pin `0.6.0`) | `opencode-agent/` (Mixin) |
-| Mammouth Code | `opencode-docker` (Pin `0.6.0`) | `mammouth-agent/` (`kind: sandbox`, Pin im spec-Image) |
-| Mistral Vibe | `shell` (Pin `0.6.0`, im eigenen Image) | `mistral-vibe-agent/` (`kind: sandbox`, eigenes Image `domboeckli/sbx-mistral-vibe`) |
+| OpenCode | `opencode-docker` (Pin `0.x.0`) | `opencode-agent/` (Mixin) |
+| Claude Code | `claude-code-docker` (Pin `0.x.0`) | `opencode-agent/` (Mixin) |
+| Mammouth Code | `opencode-docker` (Pin `0.x.0`) | `mammouth-agent/` (`kind: sandbox`, Pin im spec-Image) |
+| Mistral Vibe | `shell` (Pin `0.x.0`, im eigenen Image) | `mistral-vibe-agent/` (`kind: sandbox`, eigenes Image `domboeckli/sbx-mistral-vibe`) |
 
 Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 
@@ -337,7 +337,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`; Zusatz-Provider `openrouter`, `google` und `zai` (GLM-5.3-Flash/GLM-5.3 via `ZAI_API_KEY`, `sbx secret set zai`)
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash); Zusatz-Provider `openrouter`, `google` und `zai` (GLM-5.3-Flash/GLM-5.3 via `ZAI_API_KEY`, `sbx secret set zai`)
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 - **Mistral Vibe**: `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md`
@@ -348,7 +348,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 Da `sbx` keinen eingebauten `mammouth`-Agenten kennt, liegt unter `mammouth-agent/` ein **eigenes
 Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus der Docker-Doku:
 
-- **Base-Image**: `docker/sandbox-templates:opencode-docker-0.6.0` (Mammouth ist ein OpenCode-Fork;
+- **Base-Image**: `docker/sandbox-templates:opencode-docker-0.x.0` (Mammouth ist ein OpenCode-Fork;
   Version gepinnt im `sandbox.image` der spec, siehe Abschnitt "Template-Version (gepinnt)")
 - **Entrypoint**: `mammouth` (direkt, ohne Template-Umweg)
 - **Auth**: `credentials[].apiKey` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
@@ -358,7 +358,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
-- **Modell**: `deepseek/deepseek-v4-flash` (DeepSeek V4 Flash) als Default
+- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default
 - **IntelliJ MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`), keine direkte `mcp.idea`-Config
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
@@ -385,7 +385,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 (`kind: sandbox`, Name `mistral-vibe`) — nach dem [Docker-Guide](https://docs.docker.com/guides/mistral-vibe-sandbox/):
 
 - **Base-Image**: eigenes, gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>` — gebaut aus
-  `docker/sandbox-templates:shell-docker-0.6.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
+  `docker/sandbox-templates:shell-docker-0.x.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
   Publiziert **multi-arch (linux/amd64 + linux/arm64)** mit provenance/SBOM via
   `.github/workflows/publish-mistral-vibe-image.yml`: pro Architektur ein **nativer** Runner
   (`ubuntu-latest` / `ubuntu-24.04-arm`), Per-Arch-Image mit der Architektur im **Repo-Namen**
@@ -864,7 +864,7 @@ Mistral Vibe wird über das **dedizierte Agent-Kit** (`mistral-vibe-agent/`,
 
 ### Pre-installed Tools im Base Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.6.0`, Version gepinnt) enthält eine eigene OpenCode CLI
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`, Version gepinnt) enthält eine eigene OpenCode CLI
 (aktuell `1.17.11` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
 bei `1.18.11` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
 vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:
