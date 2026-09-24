@@ -145,7 +145,7 @@
     {
       "customType": "regex",
       "description": "Sandbox-Template-Version in der Doku (konkrete sbx --template-Image-Refs in MD-Files; Prosa bleibt versionsneutral als 0.x.0)",
-      "managerFilePatterns": ["^README\\.md$", "^AGENTS\\.md$", "^INSTALL\\.md$", "^docs/kubernetes-integration\\.md$"],
+      "managerFilePatterns": ["README.md", "AGENTS.md", "INSTALL.md", "docs/kubernetes-integration.md"],
       "matchStrings": ["docker/sandbox-templates:(?:opencode-docker|claude-code-docker|shell-docker)-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
