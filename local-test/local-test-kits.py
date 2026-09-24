@@ -100,7 +100,7 @@ INSTALL_SCRIPT_PAIRS = (
 #     Mammouth-spec-Image (mammouth-agent/spec.yaml) — Drift-Check in check_template_update().
 #   - opencode-docker (OpenCode + Mammouth) / claude-code-docker (Claude Home, Mixin-Kit).
 # Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag.
-TEMPLATE_VERSION = "0.6.0"
+TEMPLATE_VERSION = "0.7.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 TEMPLATE_VERSION_RE = re.compile(r"TEMPLATE_VERSION:\s*([0-9]+\.[0-9]+\.[0-9]+)")
 MAMMOUTH_SPEC_FILE = "mammouth-agent/spec.yaml"

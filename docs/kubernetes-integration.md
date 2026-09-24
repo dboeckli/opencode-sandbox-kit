@@ -34,7 +34,7 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.6.0 `
+    --template docker/sandbox-templates:opencode-docker-0.7.0 `
     --skills=off `
     --static-mcp idea
 ```
@@ -47,7 +47,7 @@ sbx run opencode `
 sbx rm <sandbox-name> --force
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.6.0 `
+    --template docker/sandbox-templates:opencode-docker-0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `

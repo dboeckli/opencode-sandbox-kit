@@ -35,7 +35,7 @@ Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** b
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.6.0 `
+    --template docker/sandbox-templates:opencode-docker-0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `
@@ -48,7 +48,7 @@ sbx run opencode `
 ```powershell
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.6.0 `
+    --template docker/sandbox-templates:claude-code-docker-0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `
@@ -102,7 +102,7 @@ cd C:\development\projects\mein-projekt
 ```powershell
 sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker/sandbox-templates:opencode-docker-0.6.0 `
+    --template docker/sandbox-templates:opencode-docker-0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `
@@ -115,7 +115,7 @@ sbx run opencode `
 ```powershell
 sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker/sandbox-templates:claude-code-docker-0.6.0 `
+    --template docker/sandbox-templates:claude-code-docker-0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `
@@ -174,7 +174,7 @@ cd /mnt/c/development/projects/spring-6-reactive
 ```bash
 sbx run opencode \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
-    --template docker/sandbox-templates:opencode-docker-0.6.0 \
+    --template docker/sandbox-templates:opencode-docker-0.7.0 \
     --skills=off \
     --static-mcp idea \
     . \
@@ -187,7 +187,7 @@ sbx run opencode \
 ```bash
 sbx run claude \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
-    --template docker/sandbox-templates:claude-code-docker-0.6.0 \
+    --template docker/sandbox-templates:claude-code-docker-0.7.0 \
     --skills=off \
     --static-mcp idea \
     . \
@@ -749,7 +749,7 @@ Sandbox mit dem MCP-Gateway erzeugen:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.6.0 `
+    --template docker/sandbox-templates:opencode-docker-0.7.0 `
     --skills=off `
     --static-mcp idea
 ```

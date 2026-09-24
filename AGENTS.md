@@ -55,7 +55,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
-      --template docker/sandbox-templates:opencode-docker-0.6.0 `
+      --template docker/sandbox-templates:opencode-docker-0.7.0 `
       --skills=off `
       --static-mcp idea
   ```
@@ -63,7 +63,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   ```powershell
   sbx run claude `
       --kit ./opencode-agent/ `
-      --template docker/sandbox-templates:claude-code-docker-0.6.0 `
+      --template docker/sandbox-templates:claude-code-docker-0.7.0 `
       --skills=off `
       --static-mcp idea
   ```
@@ -508,12 +508,12 @@ sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.6.0 `
+    --template docker/sandbox-templates:opencode-docker-0.7.0 `
     --skills=off `
     --static-mcp idea
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.6.0 `
+    --template docker/sandbox-templates:claude-code-docker-0.7.0 `
     --skills=off `
     --static-mcp idea
 sbx run ./mammouth-agent/ `
