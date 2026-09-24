@@ -51,23 +51,23 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
 - `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
-- Test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.5.0`:
+- Test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.x.0`:
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
-      --template docker/sandbox-templates:opencode-docker-0.5.0 `
+      --template docker/sandbox-templates:opencode-docker-0.6.0 `
       --skills=off `
       --static-mcp idea
   ```
-- Test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.5.0` (Home, `api.anthropic.com`):
+- Test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.x.0` (Home, `api.anthropic.com`):
   ```powershell
   sbx run claude `
       --kit ./opencode-agent/ `
-      --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+      --template docker/sandbox-templates:claude-code-docker-0.6.0 `
       --skills=off `
       --static-mcp idea
   ```
-- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.5.0` steckt im spec-Image (kein `--template` nötig):
+- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`); Template-Pin `0.x.0` steckt im spec-Image (kein `--template` nötig):
   ```powershell
   sbx run ./mammouth-agent/ `
       --skills=off `
@@ -145,7 +145,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth/mistral API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (all kits), no secrets check and no sandbox start (default is starting the sandboxes); includes the Stack Exchange + sbx CLI offline-doc update checks, the install-script sync check, the **Sandbox-Template-Version check** (explizite `TEMPLATE_VERSION`-Konstante in `local-test-kits.py` gegen `validate.yml`/`e2e.yml` + Mammouth-spec-Image-Drift + Docker-Hub-Tags, alle Kits), den **Mammouth-CLI-Versions-Check** (Pin vs. latest GitHub-Release `mammouth-ai/code`) und den **Mistral-Vibe-Versions-Check** (Dockerfile-Pin + spec-Image-Tag + shell-Basis-Template vs. latest PyPI `mistral-vibe`)
 - `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `opencode-agent/files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync both kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
-- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/publish-mistral-vibe-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.43.0`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Version** (env `TEMPLATE_VERSION` in beiden Workflows + explizite Konstante in `local-test-kits.py`, aktuell `0.5.0`, Renovate customManager `docker/sandbox-templates`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`. `publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`, provenance/SBOM) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt den Tag per `--kit-arg imageTag=…` (`mistral-vibe-agent/spec.yaml` `args.imageTag`)
+- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/publish-mistral-vibe-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.43.0`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Version** (env `TEMPLATE_VERSION` in beiden Workflows + explizite Konstante in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`. `publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`, provenance/SBOM) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt den Tag per `--kit-arg imageTag=…` (`mistral-vibe-agent/spec.yaml` `args.imageTag`)
 
 ## Testing (lokale Verifikation per IntelliJ Run-Configs)
 
@@ -494,26 +494,26 @@ nötig.
 - `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
 - `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`, `entrypoint: [vibe, "--agent", "auto-approve"]` — ohne entrypoint startet sbx die Default-Shell)
-- `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.5.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/publish-mistral-vibe-image.yml`
+- `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/publish-mistral-vibe-image.yml`
 - `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`) + Default-Modell GLM-5.3-Flash (Z.AI-Provider `zai`) + Mistral-hosted GLM (`glm` → `zai-glm-5-3`)
 - `mistral-vibe-agent/files/home/.vibe/hooks.toml` + `files/home/.config/sandbox-kit/vibe-mcp-guard.py` — pre_tool-Read-only-Guard für die IntelliJ-MCP-Tools (auto-approve umgeht das Permission-System)
 - `docs/prerequisites.md` — kompakte Übersicht aller Voraussetzungen (Host + Sandbox + Secrets + Netzwerk)
 
 ## Dual agent support
 
-Das Kit funktioniert mit **OpenCode, Claude Code, Mammouth Code und Mistral Vibe** – der Agent wird nicht vom Kit bestimmt, sondern vom Template bzw. dem Kit-Image beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.5.0` (2026-08-26) für alle Kits: OpenCode/Mammouth `opencode-docker-0.5.0`, Claude (Home) `claude-code-docker-0.5.0`, Mistral Vibe `shell-docker-0.5.0` (Basis des eigenen Images) — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `--template` im Command, die Agent-Kits (`kind: sandbox`) via spec-Image bzw. Dockerfile. `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
+Das Kit funktioniert mit **OpenCode, Claude Code, Mammouth Code und Mistral Vibe** – der Agent wird nicht vom Kit bestimmt, sondern vom Template bzw. dem Kit-Image beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.x.0` für alle Kits: OpenCode/Mammouth `opencode-docker-0.x.0`, Claude (Home) `claude-code-docker-0.x.0`, Mistral Vibe `shell-docker-0.x.0` (Basis des eigenen Images) — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `--template` im Command, die Agent-Kits (`kind: sandbox`) via spec-Image bzw. Dockerfile. `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert.
 
 ```powershell
 sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --template docker/sandbox-templates:opencode-docker-0.6.0 `
     --skills=off `
     --static-mcp idea
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --template docker/sandbox-templates:claude-code-docker-0.6.0 `
     --skills=off `
     --static-mcp idea
 sbx run ./mammouth-agent/ `
@@ -527,7 +527,7 @@ sbx run ./mistral-vibe-agent/ `
 Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
 (Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Sandbox mit
 `--static-mcp idea` erzeugen oder `sbx mcp load idea --sandbox`). Die jeweilige Config wird automatisch gelesen:
-- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-v4-flash`
+- OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash)
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `opencode-agent/files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `opencode-agent/files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `opencode-agent/files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
 - Mistral Vibe: `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` (nur Agent-Kit)
@@ -536,7 +536,7 @@ Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka C
 > (`curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.18.31.1 bash` als User 1000, Renovate
 > `mammouth-ai/code`; `--validate-only` warnt bei neuerem Release) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
 
-> **Mistral Vibe**: Installiert das Agent-Kit als eigenes gepinntes Image (`mistral-vibe-agent/Dockerfile`: shell-docker-0.5.0 + `uv tool install mistral-vibe==<pin>`, Renovate `mistral-vibe` PyPI). API-Key via Built-in-Service `mistral` (`MISTRAL_API_KEY`, `api.mistral.ai`, Sentinel `proxy-managed`). Launch via `sandbox.entrypoint: [vibe, "--agent", "auto-approve"]` in der spec (ohne entrypoint startet sbx die Default-Shell). Image muss vor dem ersten Start publiziert sein (`publish-mistral-vibe-image.yml`, workflow_dispatch).
+> **Mistral Vibe**: Installiert das Agent-Kit als eigenes gepinntes Image (`mistral-vibe-agent/Dockerfile`: shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`, Renovate `mistral-vibe` PyPI). API-Key via Built-in-Service `mistral` (`MISTRAL_API_KEY`, `api.mistral.ai`, Sentinel `proxy-managed`). Launch via `sandbox.entrypoint: [vibe, "--agent", "auto-approve"]` in der spec (ohne entrypoint startet sbx die Default-Shell). Image muss vor dem ersten Start publiziert sein (`publish-mistral-vibe-image.yml`, workflow_dispatch).
 
 ## Tools installed by the kit
 

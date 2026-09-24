@@ -100,7 +100,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --template docker/sandbox-templates:opencode-docker-0.6.0 `
     --skills=off `
     --static-mcp idea
 ```
@@ -584,19 +584,19 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.5.0 (alle Kits, gleiche Version; Mammouth/Mistral Vibe via spec-Image, kein --template nötig)
+# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version; Mammouth/Mistral Vibe via spec-Image, kein --template nötig)
 
 # OpenCode (Home-Standard)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --template docker/sandbox-templates:opencode-docker-0.6.0 `
     --skills=off `
     --static-mcp idea
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.5.0 `
+    --template docker/sandbox-templates:claude-code-docker-0.6.0 `
     --skills=off `
     --static-mcp idea
 
@@ -618,7 +618,7 @@ Projekt einbinden + Kubernetes-Support:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.5.0 `
+    --template docker/sandbox-templates:opencode-docker-0.6.0 `
     --skills=off `
     --static-mcp idea `
     "C:\development\projects\dein-projekt" `
