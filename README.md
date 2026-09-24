@@ -522,7 +522,7 @@ Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`dom
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.43.0`), validiert alle Kits (`sbx kit validate ./opencode-agent/`,
+  (`SBX_VERSION`, aktuell `v0.45.1`), validiert alle Kits (`sbx kit validate ./opencode-agent/`,
   `./mammouth-agent/`, `./mistral-vibe-agent/`) und prüft, dass die Install-Skript-Kopien
   (`files/home/.local/bin/`) in allen Kits identisch sind, sowie dass der Vibe-Image-Tag in
   `mistral-vibe-agent/spec.yaml` zum `ARG VIBE_VERSION` im Dockerfile passt.
@@ -882,7 +882,7 @@ beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run
 ## References
 
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
-- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.43.0 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.45.1 — generiert aus der Release-Binary)
 - [GitHub Repo](https://github.com/dboeckli/opencode-sandbox-kit)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)

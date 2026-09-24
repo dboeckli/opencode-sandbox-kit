@@ -64,11 +64,13 @@ SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
                 "mammouth-agent/files/home/stackexchange-api.md",
                 "mistral-vibe-agent/files/home/stackexchange-api.md")
 
-# sbx CLI: die Offline-Referenz (opencode-agent/files/home/sbx-cli.md) wird aus der
-# Release-Binary generiert (local-test/regenerate-sbx-doc.py). Die dokumentierte Version
-# steht im Header der Datei; Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus
-# .github/workflows/validate.yml (Source of Truth, Renovate managed).
-SBX_DOC_FILE = "opencode-agent/files/home/sbx-cli.md"
+# sbx CLI: die Offline-Referenz (sbx-cli.md) wird aus der Release-Binary generiert
+# (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im Header der Datei;
+# Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus .github/workflows/validate.yml
+# (Source of Truth, Renovate managed). Identische Kopien in allen drei Kit-Bundles.
+SBX_DOC_FILES = ("opencode-agent/files/home/sbx-cli.md",
+                 "mammouth-agent/files/home/sbx-cli.md",
+                 "mistral-vibe-agent/files/home/sbx-cli.md")
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
@@ -316,8 +318,8 @@ def check_stackoverflow_api_update():
         pass_(f"stackoverflow API version up-to-date (v{documented})")
 
 
-def _sbx_doc_version():
-    path = os.path.join(ROOT, SBX_DOC_FILE)
+def _sbx_doc_version(rel=None):
+    path = os.path.join(ROOT, rel or SBX_DOC_FILES[0])
     if not os.path.isfile(path):
         return None, None
     with open(path, encoding="utf-8") as f:
@@ -329,29 +331,48 @@ def _sbx_doc_version():
 
 
 def check_sbx_doc_update(installed_ver=""):
-    """Vergleicht die im Kit dokumentierte sbx-CLI-Version (sbx-cli.md-Header) mit dem
-    gepinnten SBX_VERSION (validate.yml). Schlaegt fehl bei Abweichung — die Doku muss
-    den Pin spiegeln und wird per regenerate-sbx-doc.py neu erzeugt (Default liest
-    denselben Pin). Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin.
+    """Vergleicht die im Kit dokumentierte sbx-CLI-Version (sbx-cli.md-Header) in allen
+    drei Kit-Kopien mit dem gepinnten SBX_VERSION (validate.yml) und stellt sicher, dass
+    die Kopien identisch sind. Schlaegt fehl bei Abweichung — die Doku muss den Pin
+    spiegeln und wird per regenerate-sbx-doc.py neu erzeugt (Default liest denselben Pin).
+    Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin.
 
     Zusaetzlich wird die installierte CLI-Version (sofern ermittelbar) gegen den Pin
     geprueft — eine aeltere installierte sbx erzeugt nur eine Warnung (kein FAIL), da
     dieser Check offline ist und den Host-Stand nicht erzwingen soll."""
-    documented, doc_path = _sbx_doc_version()
-    if not documented:
-        fail("sbx CLI version (nicht in sbx-cli.md gefunden)")
-        return
     pin_version = _sbx_pin_version()
     if not pin_version:
         fail("sbx CLI version (SBX_VERSION nicht in validate.yml gefunden)")
         return
-    if documented != pin_version:
+    blobs = {}
+    ok = True
+    for rel in SBX_DOC_FILES:
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path):
+            fail(f"sbx CLI doc copy missing: {rel}", "cp der regenerierten sbx-cli.md")
+            ok = False
+            continue
+        documented, _ = _sbx_doc_version(rel)
+        if not documented:
+            fail(f"sbx CLI version (nicht in {rel} gefunden)")
+            ok = False
+            continue
+        with open(path, encoding="utf-8") as f:
+            blobs[rel] = f.read()
+        if documented != pin_version:
+            fail(
+                f"sbx CLI version mismatch ({rel}: v{documented}, Pin v{pin_version})",
+                f"Neuerzeugen: python local-test/regenerate-sbx-doc.py v{pin_version}",
+            )
+            ok = False
+    if len(blobs) == len(SBX_DOC_FILES) and len(set(blobs.values())) > 1:
         fail(
-            f"sbx CLI version mismatch (Doku v{documented}, Pin v{pin_version})",
-            f"Neuerzeugen: python local-test/regenerate-sbx-doc.py v{pin_version}",
+            "sbx CLI doc drift (Kopien nicht identisch)",
+            "python local-test/regenerate-sbx-doc.py (syncet alle Kopien)",
         )
-    else:
-        pass_(f"sbx CLI version up-to-date (v{documented}, Pin v{pin_version})")
+        ok = False
+    if ok:
+        pass_(f"sbx CLI version up-to-date (v{pin_version}, {len(SBX_DOC_FILES)} Kopien)")
 
     inst = re.search(r"v?(\d+)\.(\d+)\.(\d+)", installed_ver or "")
     if inst and tuple(int(x) for x in inst.groups()) < tuple(int(x) for x in pin_version.split(".")):
