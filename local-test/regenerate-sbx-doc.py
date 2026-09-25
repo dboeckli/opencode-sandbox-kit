@@ -5,7 +5,7 @@ Die sbx CLI ist NICHT in Context7 (nur /docker/docs mit Teil-Abdeckung). Die ein
 vollstaendige, versionstreue Quelle sind die `--help`-Outputs der Binary selbst. Dieses
 Skript laedt die Release-Binary aus `docker/sbx-releases`, sammelt `sbx --help` + die
 `--help` aller Subcommands, erzeugt `opencode-agent/files/home/sbx-cli.md` und syncet die
-Kopien in beide Kit-Bundles (opencode-agent/, mammouth-agent/).
+Kopien in alle drei Kit-Bundles (opencode-agent/, mammouth-agent/, mistral-vibe-agent/).
 
 Nach einem sbx-Version-Bump (Renovate/Validate-Check meldet Drift) einmal ausfuehren:
 
@@ -28,7 +28,8 @@ from shutil import which
 REPO = "docker/sbx-releases"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SBX_DOC_RELS = ("opencode-agent/files/home/sbx-cli.md",
-                "mammouth-agent/files/home/sbx-cli.md")
+                "mammouth-agent/files/home/sbx-cli.md",
+                "mistral-vibe-agent/files/home/sbx-cli.md")
 
 
 def _red(msg):
@@ -117,18 +118,27 @@ def collect_help(binary):
         code, main = run([binary, "help"])
     if code != 0:
         sys.exit(_red(f"sbx --help schlug fehl: {main}"))
+    # ab v0.45 gruppiert die CLI die Kommandos in mehrere Sektionen
+    # ("Sandbox Commands:", "Management Commands:", "Experimental Commands:",
+    # "Other Commands:"); aeltere Versionen nutzten eine einzige
+    # "Available Commands:"-Sektion. Beide Formate unterstuetzen.
+    section_hdr = re.compile(r"^[A-Z][\w ]*Commands:$")
+    cmd_re = re.compile(r"^\s{2}([a-z][\w-]*)\s+")
     commands = []
+    seen = set()
     in_cmds = False
     for line in main.splitlines():
-        if line.strip() == "Available Commands:":
+        stripped = line.strip()
+        if stripped == "Available Commands:" or section_hdr.match(stripped):
             in_cmds = True
             continue
         if in_cmds:
-            if line.strip() == "" or line.strip().startswith(("Flags:", "Use ")):
+            if stripped == "" or stripped.startswith(("Flags:", "Use ")):
                 in_cmds = False
                 continue
-            m = re.match(r"^\s{2}([a-z][\w-]*)\s+", line)
-            if m:
+            m = cmd_re.match(line)
+            if m and m.group(1) not in seen:
+                seen.add(m.group(1))
                 commands.append(m.group(1))
     sections = [("sbx --help", main)]
     for cmd in commands:
