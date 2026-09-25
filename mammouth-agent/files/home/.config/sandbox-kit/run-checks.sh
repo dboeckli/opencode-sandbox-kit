@@ -94,6 +94,17 @@ else
   report="$report skills:FAIL"
 fi
 
+# 8b. SonarCloud Web-API reachable (200 = token valid, 401 = reachable without valid token);
+# only blocked-by-policy (403) or unreachable (000/timeout) is a FAIL.
+sonar_code=$(curl -s -o /dev/null -w '%{http_code}' -m 8 \
+  -H "Authorization: Bearer ${SONAR_TOKEN:-proxy-managed}" \
+  "https://sonarcloud.io/api/authentication/validate" 2>/dev/null)
+if [ "$sonar_code" = "200" ] || [ "$sonar_code" = "401" ]; then
+  report="$report sonar:OK"
+else
+  report="$report sonar:FAIL"
+fi
+
 # 9. Mammouth Code
 if command -v mammouth >/dev/null 2>&1; then
   report="$report mammouth:OK"

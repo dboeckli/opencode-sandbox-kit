@@ -153,6 +153,9 @@ permissions:
       - "*.exa.ai:443"
       # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
       - "api.stackexchange.com:443"
+      # SonarCloud Web-API (CI-Analyse-Ergebnisse: Quality Gate, Issues, Measures, Coverage)
+      - "sonarcloud.io:443"
+      - "*.sonarcloud.io:443"
 
 credentials:
   - service: mammouth
@@ -210,6 +213,15 @@ credentials:
       proxyManaged: true
       inject:
         - domain: maven.pkg.github.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: sonarcloud
+    description: "SonarCloud API-Token (https://sonarcloud.io/account/security) — Web-API für CI-Ergebnis-Abfragen"
+    apiKey:
+      name: SONAR_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: sonarcloud.io
           header: Authorization
           format: "Bearer %s"
 

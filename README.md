@@ -305,7 +305,7 @@ Hosts werden zwar von den Agent-Tools versucht, kommen aber nie nach außen.
 **Sandbox-Proxy** (`mcp-gateway`, erreichbar als `mcp-gateway.docker.internal`). Er ist der einzige
 Netzwerk-Ausgang der Sandbox und blockt jeden Request an nicht-whitelisted Hosts mit HTTP 403 — der Request
 verlässt die Sandbox nie. Derselbe Proxy übernimmt auch die **Credential-Injection**: Er tauscht den
-`proxy-managed`-Platzhalter transparent gegen die echten API-Keys (z. B. Context7/DeepSeek) — der Key liegt nie
+`proxy-managed`-Platzhalter transparent gegen die echten API-Keys (z. B. Context7/DeepSeek/SonarCloud) — der Key liegt nie
 im Filesystem. Der `mcp-gateway`-Eintrag in der MCP-Liste des Agents (z. B. „mcp-gateway Connected“ in OpenCode)
 ist genau dieser Proxy: kein Fehler und kein Kit-Bestandteil, sondern Sandbox-Infrastruktur. Bei den Template-basierten
 Agenten (OpenCode/Mammouth/Claude) trägt ihn das Template automatisch in die Agent-Config ein; beim Mistral-Vibe-Kit
@@ -554,11 +554,11 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills) und zeigt den Report als
-`[startup-checks] ...` an:
+(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills, SonarCloud) und zeigt den
+Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK kafka:OK skills:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK kafka:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den

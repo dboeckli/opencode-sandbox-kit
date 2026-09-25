@@ -138,6 +138,9 @@ permissions:
     - "*.exa.ai"
     # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
     - api.stackexchange.com
+    # SonarCloud Web-API (CI-Analyse-Ergebnisse: Quality Gate, Issues, Measures, Coverage)
+    - sonarcloud.io
+    - "*.sonarcloud.io"
 
 credentials:
   - service: deepseek
@@ -195,6 +198,15 @@ credentials:
       proxyManaged: true
       inject:
         - domain: maven.pkg.github.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: sonarcloud
+    description: "SonarCloud API-Token (https://sonarcloud.io/account/security) — Web-API für CI-Ergebnis-Abfragen"
+    apiKey:
+      name: SONAR_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: sonarcloud.io
           header: Authorization
           format: "Bearer %s"
 
