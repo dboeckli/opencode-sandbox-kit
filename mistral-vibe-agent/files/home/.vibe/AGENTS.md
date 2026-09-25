@@ -245,6 +245,26 @@ nie im Sandbox-Filesystem.
 > für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection
 > nur für die API-Domains).
 
+## SonarCloud (CI-Ergebnis-Abfragen)
+
+Die SonarCloud-Web-API (`https://sonarcloud.io`) ist aus der Sandbox erreichbar (allow-list).
+Der API-Token wird proxy-managed als `SONAR_TOKEN` gesetzt (Platzhalter `proxy-managed`;
+`echo $SONAR_TOKEN` zeigt nie den echten Key). Token anlegen unter
+https://sonarcloud.io/account/security, registrieren via `sbx secret set sonarcloud`.
+Der Proxy injiziert `Authorization: Bearer` bei Requests an `sonarcloud.io`. Es laeuft **kein**
+`sonar-scanner` in der Sandbox — nur Ergebnis-Abfrage; Scans bleiben in der CI.
+
+Beispiele (`<key>` = SonarCloud-Projekt-Key, z. B. `dboeckli_rest-mvc`):
+
+```bash
+curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=<key>"
+curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+  "https://sonarcloud.io/api/issues/search?componentKeys=<key>&resolved=false"
+curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+  "https://sonarcloud.io/api/measures/component?component=<key>&metricKeys=coverage,code_smells,bugs,vulnerabilities"
+```
+
 ## Offline documentation (Repsy)
 
 Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist **nicht in

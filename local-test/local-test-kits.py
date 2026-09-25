@@ -12,8 +12,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith
-    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud
+    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud — seit v0.38 ohne `-g`)
   - Mistral-Vibe-Szenario (lokal): das Image `domboeckli/sbx-mistral-vibe:local` ist publiziert
     (IntelliJ-Run-Config `publish-mistral-vibe-image` bzw. `python local-test/publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
@@ -140,14 +140,14 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith"),
-    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith"),
-    "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith"),
-    "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith", "sonarcloud"),
+    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "sonarcloud"),
+    "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith", "sonarcloud"),
+    "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
 SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "zai", "context7", "openrouter", "google",
-                "stackoverflow", "cloudsmith")
+                "stackoverflow", "cloudsmith", "sonarcloud")
 
 
 def enable_ansi():
@@ -1065,6 +1065,29 @@ def main():
             pass_("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)")
         else:
             sfail("cloudsmith proxy env wiring (CLOUDSMITH_API_KEY=proxy-managed)", out)
+
+        # Kit-deklarierter sonarcloud-Service (alle 3 Kits) → Platzhalter in allen Szenarien
+        sonar_env_cmd = 'echo "SONAR_TOKEN=${SONAR_TOKEN:-<unset>}"'
+        c2, out = exec_sandbox(s["name"], sonar_env_cmd)
+        if c2 == 0 and "SONAR_TOKEN=proxy-managed" in out:
+            pass_("sonarcloud proxy env wiring (SONAR_TOKEN=proxy-managed)")
+        else:
+            sfail("sonarcloud proxy env wiring (SONAR_TOKEN=proxy-managed)", out)
+
+        # SonarCloud-Erreichbarkeit (Web-API): 200 (Token gültig) oder 401 (kein/ungültiger
+        # Token) = erreichbar; 403 (Netzwerk-Policy blockt) oder 000 (Timeout) = FAIL.
+        # CI nutzt einen fake Key → nur Sentinel-Wiring, kein Netz-Call.
+        if not ci:
+            sonar_net_cmd = ('curl -s -o /dev/null -w "HTTP:%{http_code}" '
+                             'https://sonarcloud.io/api/authentication/validate '
+                             '-H "Authorization: Bearer $SONAR_TOKEN"')
+            c2, out = exec_sandbox(s["name"], sonar_net_cmd)
+            if c2 == 0 and ("HTTP:200" in out or "HTTP:401" in out):
+                pass_("sonarcloud reachable (Web-API, HTTP 200/401)")
+            else:
+                sfail("sonarcloud reachable (Web-API, HTTP 200/401)", out)
+        else:
+            print("  " + _color("33", "[SKIP] sonarcloud reachability (Web-API) — CI (fake key)"))
 
         # Kit-deklarierter github-maven-Service (beide Kits) → settings.xml mit
         # <proxies> (Routing durch gateway.docker.internal:3128) + github-Server mit

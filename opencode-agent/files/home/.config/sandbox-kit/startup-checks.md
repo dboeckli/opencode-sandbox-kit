@@ -51,7 +51,7 @@ Erwartet: `HTTP 200`. Das SSE-Endpoint hält die Verbindung offen — `-m 3` bee
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK kafka:OK skills:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK helm:OK kafka:OK skills:OK sonar:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).

@@ -24,6 +24,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Skills CLI**: `add-skill.vercel.sh`
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
+- **SonarCloud**: `sonarcloud.io`, `*.sonarcloud.io` (Web-API für CI-Ergebnis-Abfragen: Quality Gate, Issues, Measures, Coverage; Token als `Authorization: Bearer`)
 - **IntelliJ MCP (Windows host)**: `localhost:64615`, `127.0.0.1:64615`, `host.docker.internal:64615` (seit IDEA 2026.2.2; Legacy `64342` weiterhin erlaubt) — MCP-Verbindung via sbx MCP Gateway (Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream`); der Allow-Eintrag dient nur dem Startup-Health-Check der Host-Erreichbarkeit
 - **Docker Desktop Kubernetes (Windows host)**: `localhost:6443`, `127.0.0.1:6443`, `host.docker.internal:6443` (kube-apiserver)
 - **Docker Desktop Docker Engine (Windows host)**: `localhost:2375`, `127.0.0.1:2375`, `host.docker.internal:2375` (Daemon-API via TCP; `export DOCKER_HOST=tcp://host.docker.internal:2375`)

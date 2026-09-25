@@ -206,6 +206,7 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
 | Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
 | Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
+| SonarCloud | SonarCloud API-Token (optional) | `sbx secret set sonarcloud` | Web-API für CI-Ergebnis-Abfragen (Quality Gate/Issues/Measures) |
 
 Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
 `DOCKER_PAT` (Secret) benötigt.
@@ -576,6 +577,31 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > (Blob-Download via `dl.cloudsmith.io`). Ein `helm registry login`
 > für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection
 > nur für die API-Domains); für lokale Helm-Pull-Tests den `CLOUDSMITH_API_KEY` direkt verwenden.
+
+#### SonarCloud API-Token (optional)
+
+SonarCloud (`https://sonarcloud.io`) stellt die Ergebnisse der CI-Analyse (Quality Gate, Issues,
+Measures, Coverage) über die Web-API bereit. Das Kit deklariert den Service `sonarcloud`
+(`credentials[].apiKey` mit `name: SONAR_TOKEN`, `proxyManaged: true`) — die Domains
+`sonarcloud.io`/`*.sonarcloud.io` sind in der Netzwerk-Allowlist. Token anlegen unter
+**https://sonarcloud.io/account/security** und als Secret registrieren:
+
+```powershell
+sbx secret set sonarcloud
+```
+
+> **Wichtig:** `SONAR_TOKEN` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> Der Agent sendet `Authorization: Bearer proxy-managed`; der Proxy ersetzt den Platzhalter
+> transparent bei Outbound-Requests an `sonarcloud.io`. `echo $SONAR_TOKEN` zeigt nie den echten Key.
+
+Beispiel (Quality Gate; `<key>` = SonarCloud-Projekt-Key):
+
+```bash
+curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=<key>"
+```
+
+Es läuft **kein** `sonar-scanner` in der Sandbox — nur Ergebnis-Abfrage; Scans bleiben in der CI.
 
 ## 6. Sandbox starten
 

@@ -465,6 +465,31 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection
 > nur für die API-Domains); für lokale Helm-Pull-Tests den `CLOUDSMITH_API_KEY` direkt verwenden.
 
+## SonarCloud Authentication
+
+SonarCloud (`https://sonarcloud.io`) stellt die CI-Analyse-Ergebnisse (Quality Gate, Issues,
+Measures, Coverage) über die Web-API bereit — Ergebnis-Abfrage aus der Sandbox (kein `sonar-scanner`
+in der Sandbox; Scans bleiben in der CI). Das Kit deklariert den Service `sonarcloud`
+(`credentials[].apiKey` mit `name: SONAR_TOKEN`, `proxyManaged: true`); `sonarcloud.io` +
+`*.sonarcloud.io` stehen in `permissions.network.allow`. Token anlegen unter
+https://sonarcloud.io/account/security und als Secret registrieren — der Key liegt nie im
+Sandbox-Filesystem:
+
+```powershell
+sbx secret set sonarcloud
+```
+
+In der Sandbox ist `SONAR_TOKEN=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`Authorization: Bearer proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
+an `sonarcloud.io`. `echo $SONAR_TOKEN` zeigt nie den echten Key.
+
+Beispiel (Quality Gate; `<key>` = SonarCloud-Projekt-Key):
+
+```bash
+curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=<key>"
+```
+
 ## Offline Dokumentation (Repsy)
 
 Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist
