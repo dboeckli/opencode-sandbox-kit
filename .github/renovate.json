@@ -30,6 +30,12 @@
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["mistral-vibe"],
       "groupName": "mistral-vibe"
+    },
+    {
+      "description": "Sandbox-Template-Version (docker/sandbox-templates) in EINEM PR gruppieren: TEMPLATE_VERSION in validate.yml/e2e.yml + local-test-kits.py, Mammouth-spec-Image, Dockerfile ARG BASE_IMAGE (opencode/claude/mistral). Verhindert Drift zwischen den Pins waehrend des Rollouts",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["docker/sandbox-templates"],
+      "groupName": "docker/sandbox-templates"
     }
   ],
   "customManagers": [
@@ -114,7 +120,7 @@
     },
     {
       "customType": "regex",
-      "description": "Sandbox-Template-Version (.github/workflows/e2e.yml, validate.yml; TEMPLATE_VERSION gilt fuer opencode-docker + claude-code-docker, --template-Pins in Start-Commands/README + Mammouth-spec-Image)",
+      "description": "Sandbox-Template-Version (.github/workflows/e2e.yml, validate.yml; TEMPLATE_VERSION gilt fuer opencode-docker + claude-code-docker; Start-Commands nutzen :local/:latest, daher keine Doku-Pins mehr)",
       "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
       "matchStrings": ["TEMPLATE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
@@ -140,16 +146,6 @@
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker)-(?<version>.*)$",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
-      "description": "Sandbox-Template-Version in der Doku (konkrete sbx --template-Image-Refs in MD-Files; Prosa bleibt versionsneutral als 0.x.0). Das OpenCode-Tooling-Image traegt denselben Basis-Versions-Tag (opencode-docker)",
-      "managerFilePatterns": ["README.md", "AGENTS.md", "INSTALL.md", "docs/kubernetes-integration.md"],
-      "matchStrings": ["docker/sandbox-templates:(?:opencode-docker|claude-code-docker|shell-docker)-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)", "domboeckli/sbx-opencode-tooling:(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker|shell-docker)-(?<version>.*)$",
       "versioningTemplate": "semver"
     },
     {
@@ -190,12 +186,22 @@
     },
     {
       "customType": "regex",
-      "description": "OpenCode Tooling-Image Basis-Template (opencode-agent/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION spiegeln)",
-      "managerFilePatterns": ["opencode-agent/Dockerfile"],
+      "description": "OpenCode Tooling-Image Basis-Template (opencode-agent/opencode/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION spiegeln)",
+      "managerFilePatterns": ["opencode-agent/opencode/Dockerfile"],
       "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Claude Tooling-Image Basis-Template (opencode-agent/claude/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-<v>; muss TEMPLATE_VERSION spiegeln)",
+      "managerFilePatterns": ["opencode-agent/claude/Dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
       "versioningTemplate": "semver"
     }
   ]

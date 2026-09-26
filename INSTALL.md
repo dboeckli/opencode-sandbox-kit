@@ -100,7 +100,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 ```
@@ -584,21 +584,22 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version). OpenCode nutzt das Tooling-Image
-# domboeckli/sbx-opencode-tooling:0.7.0 (muss publiziert sein: CI publish-opencode-image.yml bzw.
-# lokal Run-Config build-and-publish-opencode-image); Mammouth/Mistral Vibe via spec-Image, kein --template nötig.
+# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version). OpenCode/Claude nutzen eigene
+# Tooling-Images mit dem lokal gebauten Tag :local (vorher Run-Config build-and-publish-opencode-image /
+# build-and-publish-claude-image ausfuehren; der Release-Tag :<version>/:latest entsteht erst beim
+# Master-Publish); Mammouth/Mistral Vibe via spec-Image, kein --template noetig.
 
 # OpenCode (Home-Standard)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-claude-tooling:local `
     --skills=off `
     --static-mcp idea
 
@@ -607,10 +608,10 @@ sbx run ./mammouth-agent/ `
     --skills=off `
     --static-mcp idea
 
-# Mistral Vibe (eigenes Agent-Kit; gepinntes Image domboeckli/sbx-mistral-vibe:<vibe-version>)
-# Voraussetzung: Image ist publiziert (Workflow publish-mistral-vibe-image.yml, workflow_dispatch;
-# oder lokal via buildx mit zusätzlichem Tag :local — siehe README → "Mistral Vibe Agent-Kit")
+# Mistral Vibe (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
+# (vorher Run-Config build-and-publish-mistral-vibe-image); Release-Image via Workflow publish-mistral-vibe-image.yml
 sbx run ./mistral-vibe-agent/ `
+    --kit-arg imageTag=local `
     --skills=off `
     --static-mcp idea
 ```
@@ -620,7 +621,7 @@ Projekt einbinden + Kubernetes-Support:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea `
     "C:\development\projects\dein-projekt" `

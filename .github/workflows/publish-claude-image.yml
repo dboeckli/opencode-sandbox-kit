@@ -1,13 +1,13 @@
-name: Publish OpenCode tooling image
+name: Publish Claude tooling image
 
-# Builds and publishes `domboeckli/sbx-opencode-tooling`: the official
-# `opencode-docker` sandbox template with the kit tooling baked in (issue #137).
+# Builds and publishes `domboeckli/sbx-claude-tooling`: the official
+# `claude-code-docker` sandbox template with the kit tooling baked in (issue #137).
 # The `opencode-agent` mixin kit is still passed via `--kit`; the image only
 # removes the repeated `setup.install` downloads at sandbox creation time.
 #
 # This workflow is both directly dispatchable and a reusable workflow
-# (`workflow_call`), so e2e.yml can build/publish the image before its
-# scenario matrix. Manual runs use `workflow_dispatch`.
+# (`workflow_call`), so e2e.yml can build/publish the image before its scenario
+# matrix. Manual runs use `workflow_dispatch`.
 #
 # Tags (a Docker tag must stay valid, so the timestamp is a semver prerelease
 # identifier, not build metadata — `+` is not allowed in a tag):
@@ -41,7 +41,7 @@ permissions:
 
 env:
   IMAGE_NAMESPACE: domboeckli
-  IMAGE_NAME: sbx-opencode-tooling
+  IMAGE_NAME: sbx-claude-tooling
 
 jobs:
   prepare:
@@ -56,16 +56,16 @@ jobs:
         id: tags
         run: |
           set -euo pipefail
-          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-[0-9]+(\.[0-9]+)+' \
-            opencode-agent/opencode/Dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
+          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-[0-9]+(\.[0-9]+)+' \
+            opencode-agent/claude/Dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
           if [ -z "$pin" ]; then
-            echo "opencode-docker base pin not found in opencode-agent/opencode/Dockerfile" >&2
+            echo "claude-code-docker base pin not found in opencode-agent/claude/Dockerfile" >&2
             exit 1
           fi
           wf_pin=$(grep -oE 'TEMPLATE_VERSION: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
           if [ "$wf_pin" != "$pin" ]; then
-            echo "Dockerfile base pin ($pin) != TEMPLATE_VERSION in validate.yml ($wf_pin)" >&2
+            echo "claude Dockerfile base pin ($pin) != TEMPLATE_VERSION in validate.yml ($wf_pin)" >&2
             exit 1
           fi
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
@@ -113,7 +113,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: opencode-agent
-          file: opencode-agent/opencode/Dockerfile
+          file: opencode-agent/claude/Dockerfile
           platforms: ${{ matrix.platform }}
           provenance: true
           sbom: true

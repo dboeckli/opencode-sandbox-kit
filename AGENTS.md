@@ -51,19 +51,19 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
 - `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
-- Test the kit with an OpenCode sandbox (via PowerShell on Windows); Template-Version **gepinnt** auf `0.x.0`:
+- Test the kit with an OpenCode sandbox (via PowerShell on Windows); eigenes Tooling-Image, **lokal gebauter Tag `:local`** (Run-Config `build-and-publish-opencode-image`; Basis-Template gepinnt auf `0.x.0`):
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
-      --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+      --template docker.io/domboeckli/sbx-opencode-tooling:local `
       --skills=off `
       --static-mcp idea
   ```
-- Test the kit with a Claude Code sandbox (via PowerShell on Windows); Template-Pin `0.x.0` (Home, `api.anthropic.com`):
+- Test the kit with a Claude Code sandbox (via PowerShell on Windows); eigenes Tooling-Image, **lokal gebauter Tag `:local`** (Run-Config `build-and-publish-claude-image`; Home, `api.anthropic.com`):
   ```powershell
   sbx run claude `
       --kit ./opencode-agent/ `
-      --template docker/sandbox-templates:claude-code-docker-0.7.0 `
+      --template docker.io/domboeckli/sbx-claude-tooling:local `
       --skills=off `
       --static-mcp idea
   ```
@@ -73,9 +73,10 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --skills=off `
       --static-mcp idea
   ```
-- Run the dedicated Mistral Vibe agent kit (kind: sandbox; eigenes gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`, Pin im Dockerfile + spec-Image — kein `--template` nötig). Image muss vorher publiziert sein: CI via `publish-mistral-vibe-image.yml` (`workflow_dispatch`/Push auf `master`), lokal per `docker buildx build ... -t domboeckli/sbx-mistral-vibe:<version> -t domboeckli/sbx-mistral-vibe:local --push ./mistral-vibe-agent` (lokaler Bootstrap setzt zusätzlich den beweglichen Tag `:local`):
+- Run the dedicated Mistral Vibe agent kit (kind: sandbox; eigenes gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`, Pin im Dockerfile + spec-Image — kein `--template` nötig). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mistral-vibe-image`, setzt zusätzlich den beweglichen Tag `:local`); Release-Image via `publish-mistral-vibe-image.yml` (`workflow_dispatch`/Push auf `master`):
   ```powershell
   sbx run ./mistral-vibe-agent/ `
+      --kit-arg imageTag=local `
       --skills=off `
       --static-mcp idea
   ```
@@ -83,7 +84,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   ```powershell
   sbx run opencode `
       --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-      --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+      --template docker.io/domboeckli/sbx-opencode-tooling:latest `
       --skills=off `
       --static-mcp idea
   ```
@@ -91,7 +92,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   ```powershell
   sbx run opencode `
       --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-      --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+      --template docker.io/domboeckli/sbx-opencode-tooling:latest `
       --skills=off `
       --static-mcp idea `
       "C:\development\projects\spring-6-reactive"
@@ -100,7 +101,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
-      --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+      --template docker.io/domboeckli/sbx-opencode-tooling:local `
       --skills=off `
       --static-mcp idea `
       . `
@@ -129,6 +130,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Kubernetes-Support (Mistral Vibe):
   ```powershell
   sbx run ./mistral-vibe-agent/ `
+      --kit-arg imageTag=local `
       --skills=off `
       --static-mcp idea `
       . `
@@ -148,30 +150,32 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth/mistral API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (all kits), no secrets check and no sandbox start (default is starting the sandboxes); includes the Stack Exchange + sbx CLI offline-doc update checks, the install-script sync check, the **Sandbox-Template-Version check** (explizite `TEMPLATE_VERSION`-Konstante in `local-test-kits.py` gegen `validate.yml`/`e2e.yml` + Mammouth-spec-Image-Drift + Docker-Hub-Tags, alle Kits), den **Mammouth-CLI-Versions-Check** (Pin vs. latest GitHub-Release `mammouth-ai/code`) und den **Mistral-Vibe-Versions-Check** (Dockerfile-Pin + spec-Image-Tag + shell-Basis-Template vs. latest PyPI `mistral-vibe`)
 - `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `opencode-agent/files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync all three kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
-- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/publish-mistral-vibe-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.45.1`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Version** (env `TEMPLATE_VERSION` in beiden Workflows + explizite Konstante in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`. `publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`, provenance/SBOM) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt den Tag per `--kit-arg imageTag=…` (`mistral-vibe-agent/spec.yaml` `args.imageTag`)
+- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/publish-mistral-vibe-image.yml` + `.github/workflows/publish-opencode-image.yml` + `.github/workflows/publish-claude-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.45.1`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Version** (env `TEMPLATE_VERSION` in beiden Workflows + explizite Konstante in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`); e2e logs into Docker Hub (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`), registers fake sandbox secrets, runs `local-test-kits.py --ci`. `publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`, provenance/SBOM) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt den Tag per `--kit-arg imageTag=…` (`mistral-vibe-agent/spec.yaml` `args.imageTag`)
 
-## Image-Versionierung (OpenCode-Tooling-Image)
+## Image-Versionierung (OpenCode/Claude-Tooling-Images)
 
-Gilt für `domboeckli/sbx-opencode-tooling` (Issue #137); gleiches Schema wie `sbx-mistral-vibe`
-(dort ist `<basever>` die Vibe-Version). Basis-Version `<basever>` = `TEMPLATE_VERSION` = der Pin
-`ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<ver>` im Dockerfile (Renovate-managed).
-`<slug>` = Branch-Name (lowercase, Nicht-Alphanumerisches → `-`); `<ts>` = UTC `YYYYMMDDHHMMSS`
-(Semver-Prerelease, kein `+` im Tag). Identische Logik in `.github/workflows/publish-opencode-image.yml`
-und `local-test/build-and-publish-opencode-image.py`.
+Gilt für `domboeckli/sbx-opencode-tooling` und `domboeckli/sbx-claude-tooling` (Issue #137); gleiches
+Schema wie `sbx-mistral-vibe` (dort ist `<basever>` die Vibe-Version). Basis-Version `<basever>` =
+`TEMPLATE_VERSION` = der Pin `ARG BASE_IMAGE=docker/sandbox-templates:<opencode-docker|claude-code-docker>-<ver>`
+im jeweiligen Dockerfile (Renovate-managed). `<slug>` = Branch-Name (lowercase, Nicht-Alphanumerisches →
+`-`); `<ts>` = UTC `YYYYMMDDHHMMSS` (Semver-Prerelease, kein `+` im Tag). Identische Logik in
+`.github/workflows/publish-<agent>-image.yml` und `local-test/build-and-publish-<agent>-image.py`
+(`<agent>` = `opencode`/`claude`).
 
 | Kontext | Auslöser | Tag(s) |
 |---------|----------|--------|
-| Lokal | Run-Config `build-and-publish-opencode-image` | `<basever>-<slug>.<ts>` + `:local` |
+| Lokal | Run-Config `build-and-publish-opencode-image` / `-claude-image` | `<basever>-<slug>.<ts>` + `:local` |
 | CI – master/main | Push/Merge auf `master`, `workflow_dispatch` auf master | `<basever>` + `:latest` |
 | CI – Feature-Branch | Push auf Branch, `workflow_dispatch` auf Branch | `<basever>-<slug>.<ts>` + `<slug>` |
 | CI – PR (gleiches Repo) | `pull_request` | wie Feature-Branch (`GITHUB_HEAD_REF` = Quell-Branch) |
 | CI – Fork-PR | `pull_request` aus Fork | kein Publish (keine Docker-Hub-Secrets → Job übersprungen) |
 
 Verwendung:
-- `:local` → `local-test-kits-opencode` / `local-test-kits.py opencode` (Default von `OPENCODE_IMAGE_TAG`).
+- `:local` → `local-test-kits-opencode` / `local-test-kits-claude` (Default von `OPENCODE_IMAGE_TAG`
+  bzw. `CLAUDE_IMAGE_TAG`).
 - Release-Tag `<basever>` (README/AGENTS-Startcommands, z. B. `…:0.7.0`).
-- e2e zieht exakt den Branch-Build: `OPENCODE_IMAGE_TAG` = `version_tag`-Output des Publish-Jobs →
-  `--template docker.io/domboeckli/sbx-opencode-tooling:<tag>`.
+- e2e zieht exakt den Branch-Build: `OPENCODE_IMAGE_TAG` / `CLAUDE_IMAGE_TAG` = `version_tag`-Output
+  des jeweiligen Publish-Jobs → `--template docker.io/domboeckli/sbx-<agent>-tooling:<tag>`.
 
 Eigenschaften:
 - **Nicht inhaltsgebunden:** Der Tag hängt nur an `<basever>` (Base-Template). Tool-Versionsbumps in den
@@ -179,6 +183,9 @@ Eigenschaften:
   (Tags sind nicht unveränderlich). Renovate hebt `<basever>` nur bei neuem `TEMPLATE_VERSION` an.
 - Feature-/PR-Tags sind durch `<slug>.<ts>` eindeutig; der bewegliche `<slug>`-Tag zeigt auf den letzten
   Build des Branch. `:latest` gibt es nur auf master.
+- Die beiden Dockerfiles (`opencode-agent/opencode/Dockerfile`, `opencode-agent/claude/Dockerfile`) müssen
+  funktional identisch sein (nur ARG BASE_IMAGE + Kopf-Kommentare abweichend) — Drift-Check in
+  `local-test-kits.py --validate-only`.
 
 ## Testing (lokale Verifikation per IntelliJ Run-Configs)
 
@@ -190,7 +197,7 @@ Eigenschaften:
 > Der Aufruf mit der Config **ohne** `waitForExit=false` timeout't nach 15 min, obwohl der Test
 > (~8 min) evtl. noch läuft — dann Prozessstatus via `idea_execute_terminal_command` + `Get-Process python` prüfen.
 
-IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-test/local-test-kits.py` auf, `publish-mistral-vibe-image` das Publish-Skript):
+IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-test/local-test-kits.py` auf, die `build-and-publish-*-image`-Configs die jeweiligen Publish-Skripte):
 
 | Config | PARAMETERS | Zweck |
 |--------|-----------|-------|
@@ -200,8 +207,9 @@ IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-tes
 | `local-test-kits-claude` | `claude` | Nur Claude-Szenario Home (Sandbox) |
 | `local-test-kits-mammouth` | `mammouth` | Nur Mammouth-Szenario (Sandbox) |
 | `local-test-kits-mistral-vibe` | `mistral-vibe` | Nur Mistral-Vibe-Szenario (Sandbox) |
-| `publish-mistral-vibe-image` | — | Baut/pusht das Vibe-Image lokal (`local-test/publish-mistral-vibe-image.py`, Tag `<pin>-<branch-slug>.<timestamp>` + `local`); `--build-only` baut ohne Push. Das lokale `local-test-kits-mistral-vibe`-Szenario testet danach den `:local`-Tag |
+| `build-and-publish-mistral-vibe-image` | — | Baut/pusht das Vibe-Image lokal (`local-test/build-and-publish-mistral-vibe-image.py`, Tag `<pin>-<branch-slug>.<timestamp>` + `local`); schreibt die Konsolen-Ausgabe (inkl. docker/buildx) zusätzlich nach `target/build-and-publish-mistral-vibe-image.log` (gitignored); `--build-only` baut ohne Push. Das lokale `local-test-kits-mistral-vibe`-Szenario testet danach den `:local`-Tag |
 | `build-and-publish-opencode-image` | — | Baut/pusht das OpenCode-Tooling-Image lokal (`local-test/build-and-publish-opencode-image.py`, Tag `<basever>-<branch-slug>.<timestamp>` + `local`); schreibt die Konsolen-Ausgabe (inkl. docker/buildx) zusätzlich nach `target/build-and-publish-opencode-image.log` (gitignored); `--build-only` baut ohne Push. Das lokale `local-test-kits-opencode`-Szenario nutzt danach `--template docker.io/domboeckli/sbx-opencode-tooling:local` (Issue #137) |
+| `build-and-publish-claude-image` | — | Wie zuvor, für das Claude-Tooling-Image (`local-test/build-and-publish-claude-image.py`, Tag `<basever>-<branch-slug>.<timestamp>` + `local`, Log `target/build-and-publish-claude-image.log`); das `local-test-kits-claude`-Szenario nutzt danach `--template docker.io/domboeckli/sbx-claude-tooling:local` (Issue #137) |
 
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
 `$PROJECT_DIR$` (Repo-Root = Sandbox-Workspace), `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
@@ -350,7 +358,7 @@ Jede Sandbox lädt Dependencies neu. Um den **lokal gefüllten** Maven-Cache des
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea `
     . `
@@ -536,25 +544,26 @@ nötig.
 
 ## Dual agent support
 
-Das Kit funktioniert mit **OpenCode, Claude Code, Mammouth Code und Mistral Vibe** – der Agent wird nicht vom Kit bestimmt, sondern vom Template bzw. dem Kit-Image beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.x.0` für alle Kits: OpenCode über das eigene Tooling-Image `domboeckli/sbx-opencode-tooling:0.x.0` (baut auf `opencode-docker-0.x.0` auf, Tooling vorgebacken, Issue #137), Mammouth `opencode-docker-0.x.0`, Claude (Home) `claude-code-docker-0.x.0`, Mistral Vibe `shell-docker-0.x.0` (Basis des eigenen Images) — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `--template` im Command, die Agent-Kits (`kind: sandbox`) via spec-Image bzw. Dockerfile. `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert. Das OpenCode-Image muss vor dem Start publiziert sein: CI via `.github/workflows/publish-opencode-image.yml` (`workflow_dispatch`/Push auf `master`), lokal via Run-Config `build-and-publish-opencode-image` (setzt zusätzlich den beweglichen Tag `:local`).
+Das Kit funktioniert mit **OpenCode, Claude Code, Mammouth Code und Mistral Vibe** – der Agent wird nicht vom Kit bestimmt, sondern vom Template bzw. dem Kit-Image beim `sbx run`. Die **Template-Version ist gepinnt** auf `0.x.0` für alle Kits: OpenCode über das eigene Tooling-Image `domboeckli/sbx-opencode-tooling:0.x.0` (baut auf `opencode-docker-0.x.0` auf, Tooling vorgebacken, Issue #137), Claude (Home) über `domboeckli/sbx-claude-tooling:0.x.0` (baut auf `claude-code-docker-0.x.0` auf, Issue #137), Mammouth `opencode-docker-0.x.0`, Mistral Vibe `shell-docker-0.x.0` (Basis des eigenen Images) — zentrale Source of Truth: `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml` (Renovate); Mixin-Kits pinnen via `--template` im Command, die Agent-Kits (`kind: sandbox`) via spec-Image bzw. Dockerfile. `local-test-kits.py --validate-only` **warnt** (gelb), sobald ein neuerer Template-Tag auf Docker Hub existiert. Die Tooling-Images (OpenCode/Claude) müssen vor dem Start publiziert sein: CI via `.github/workflows/publish-opencode-image.yml` / `publish-claude-image.yml` (`workflow_dispatch`/Push auf `master`), lokal via Run-Config `build-and-publish-opencode-image` / `build-and-publish-claude-image` (setzen zusätzlich den beweglichen Tag `:local`).
 
 ```powershell
 sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:claude-code-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-claude-tooling:local `
     --skills=off `
     --static-mcp idea
 sbx run ./mammouth-agent/ `
     --skills=off `
     --static-mcp idea
 sbx run ./mistral-vibe-agent/ `
+    --kit-arg imageTag=local `
     --skills=off `
     --static-mcp idea
 ```
@@ -687,7 +696,7 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
   Domains sind erreichbar, alles andere → HTTP 403.
 - **Enforcement**: Nicht das Kit, sondern die Sandbox selbst erzwingt die Liste — über den **Sandbox-Proxy**
   (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; die Template
-  (`domboeckli/sbx-opencode-tooling`, baut auf `docker/sandbox-templates:opencode-docker` auf) trägt ihn automatisch als `mcp-gateway`-MCP-Server in die
+  (`domboeckli/sbx-opencode-tooling` / `sbx-claude-tooling`, bauen auf `docker/sandbox-templates:opencode-docker` / `claude-code-docker` auf) trägt ihn automatisch als `mcp-gateway`-MCP-Server in die
   Agent-Config ein (daher „mcp-gateway Connected“ in OpenCode — kein Fehler). Derselbe Proxy macht die
   **Credential-Injection** (`proxy-managed`-Platzhalter → echter Key, siehe Auth-Abschnitte oben).
 - **`files/home/.../network-policy.md` ist rein informativ**: Nur Doku der Allow-Liste in den Agent-Instructions

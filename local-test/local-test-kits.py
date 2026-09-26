@@ -15,7 +15,7 @@ Voraussetzungen:
   - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith
     (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith — seit v0.38 ohne `-g`)
   - Mistral-Vibe-Szenario (lokal): das Image `domboeckli/sbx-mistral-vibe:local` ist publiziert
-    (IntelliJ-Run-Config `publish-mistral-vibe-image` bzw. `python local-test/publish-mistral-vibe-image.py`);
+    (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image` bzw. `python local-test/build-and-publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
 
 Verwendung:
@@ -129,16 +129,24 @@ VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
 VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
-# OpenCode Tooling-Image (Issue #137): eigener Custom-Template-Build (opencode-agent/Dockerfile)
-# auf Basis des opencode-docker-Templates mit vorgebackenem Tooling. Das opencode-Szenario
-# nutzt es statt des offiziellen Templates; Claude bleibt auf docker/sandbox-templates.
-# Tag: CI/e2e uebergibt den Feature-Tag per `OPENCODE_IMAGE_TAG`; lokal default `local`
-# (zuletzt per local-test/build-and-publish-opencode-image.py gebaut/gepusht).
-OPENCODE_DOCKERFILE = "opencode-agent/Dockerfile"
+# Tooling-Images (Issue #137): eigene Custom-Template-Builds des opencode-agent-Mixin-Kits
+# mit vorgebackenem Tooling — opencode-agent/opencode/Dockerfile (Basis opencode-docker) und
+# opencode-agent/claude/Dockerfile (Basis claude-code-docker). Die opencode-/claude-Szenarien
+# nutzen sie statt der offiziellen Templates. Die beiden Dockerfiles muessen identisch sein
+# ausser der ARG BASE_IMAGE-Zeile (Drift-Check in check_image_dockerfiles_sync()).
+# Tag: CI/e2e uebergibt den Feature-Tag per `OPENCODE_IMAGE_TAG` / `CLAUDE_IMAGE_TAG`; lokal
+# default `local` (zuletzt per local-test/build-and-publish-<agent>-image.py gebaut/gepusht).
+OPENCODE_DOCKERFILE = "opencode-agent/opencode/Dockerfile"
+CLAUDE_DOCKERFILE = "opencode-agent/claude/Dockerfile"
 OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
 OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
+CLAUDE_IMAGE_NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
+CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 OPENCODE_BASE_IMAGE_RE = re.compile(
     r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+)
+CLAUDE_BASE_IMAGE_RE = re.compile(
+    r"ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
 
 # Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
@@ -492,24 +500,37 @@ def _template_spec_image_version():
     return _spec_version(TEMPLATE_IMAGE_RE)
 
 
-def _opencode_base_image_version():
-    """opencode-docker-Basis-Tag im OpenCode-Tooling-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
-    path = os.path.join(ROOT, OPENCODE_DOCKERFILE)
+def _dockerfile_base_version(rel_path, regex):
+    """Basis-Template-Version aus der `ARG BASE_IMAGE=...`-Zeile eines Tooling-Dockerfiles."""
+    path = os.path.join(ROOT, rel_path)
     if not os.path.isfile(path):
         return None
     with open(path, encoding="utf-8") as f:
-        m = OPENCODE_BASE_IMAGE_RE.search(f.read())
+        m = regex.search(f.read())
     return m.group("v") if m else None
+
+
+def _opencode_base_image_version():
+    """opencode-docker-Basis-Tag im OpenCode-Tooling-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    return _dockerfile_base_version(OPENCODE_DOCKERFILE, OPENCODE_BASE_IMAGE_RE)
+
+
+def _claude_base_image_version():
+    """claude-code-docker-Basis-Tag im Claude-Tooling-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    return _dockerfile_base_version(CLAUDE_DOCKERFILE, CLAUDE_BASE_IMAGE_RE)
 
 
 def _template_image(agent):
     """Template-Image fuer einen Agent.
     - opencode: eigenes Tooling-Image (Issue #137), Tag per `OPENCODE_IMAGE_TAG` (default `local`).
-    - claude: offizielles docker/sandbox-templates:claude-code-docker-<TEMPLATE_VERSION>.
+    - claude: eigenes Tooling-Image (Issue #137), Tag per `CLAUDE_IMAGE_TAG` (default `local`).
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
     if agent == "opencode":
         tag = os.environ.get("OPENCODE_IMAGE_TAG") or "local"
         return f"docker.io/{OPENCODE_IMAGE_NAMESPACE}/{OPENCODE_IMAGE_NAME}:{tag}"
+    if agent == "claude":
+        tag = os.environ.get("CLAUDE_IMAGE_TAG") or "local"
+        return f"docker.io/{CLAUDE_IMAGE_NAMESPACE}/{CLAUDE_IMAGE_NAME}:{tag}"
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None
@@ -559,6 +580,37 @@ def _template_latest_per_family():
     return latest
 
 
+def check_image_dockerfiles_sync():
+    """opencode-agent/opencode/Dockerfile und opencode-agent/claude/Dockerfile muessen funktional
+    identisch sein (gemeinsame Tooling-Schritte) — Unterschied nur in der ARG BASE_IMAGE-Zeile
+    und den Kopf-Kommentaren. Kommentar-/Leerzeilen werden ignoriert."""
+    base = os.path.join(ROOT, OPENCODE_DOCKERFILE)
+    other = os.path.join(ROOT, CLAUDE_DOCKERFILE)
+    if not os.path.isfile(base) or not os.path.isfile(other):
+        fail("image dockerfiles (opencode-agent/{opencode,claude}/Dockerfile fehlt)")
+        return
+
+    def normalize(path):
+        out = []
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s or s.startswith("#"):
+                    continue
+                if s.startswith("ARG BASE_IMAGE="):
+                    s = "ARG BASE_IMAGE=<base>"
+                out.append(s)
+        return "\n".join(out)
+
+    if normalize(base) != normalize(other):
+        fail(
+            "image dockerfiles drift (opencode-agent/opencode/Dockerfile != opencode-agent/claude/Dockerfile)",
+            "Beide Dateien funktional identisch halten — nur ARG BASE_IMAGE + Kopf-Kommentare duerfen abweichen",
+        )
+    else:
+        pass_("image dockerfiles in sync (opencode-agent/opencode/Dockerfile == opencode-agent/claude/Dockerfile, ausser ARG BASE_IMAGE)")
+
+
 def check_template_update():
     """Vergleicht den expliziten Template-Pin der lokalen Tests (TEMPLATE_VERSION-Konstante dieses
     Scripts — gilt fuer beide Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker
@@ -594,13 +646,25 @@ def check_template_update():
         return
     oc_ver = _opencode_base_image_version()
     if not oc_ver:
-        fail("template version (opencode-agent/Dockerfile BASE_IMAGE nicht gepinnt)",
+        fail("template version (opencode-agent/opencode/Dockerfile BASE_IMAGE nicht gepinnt)",
              f"ARG BASE_IMAGE in {OPENCODE_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
         return
     if oc_ver != pin:
         fail(
             f"template version (opencode Dockerfile BASE_IMAGE v{oc_ver} != Pin v{pin})",
             f"ARG BASE_IMAGE in {OPENCODE_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
+            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
+        )
+        return
+    cc_ver = _claude_base_image_version()
+    if not cc_ver:
+        fail("template version (opencode-agent/claude/Dockerfile BASE_IMAGE nicht gepinnt)",
+             f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin} setzen")
+        return
+    if cc_ver != pin:
+        fail(
+            f"template version (claude Dockerfile BASE_IMAGE v{cc_ver} != Pin v{pin})",
+            f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin} anheben"
             f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
         )
         return
@@ -786,6 +850,9 @@ def main():
         info("==> Install-Skripte (Single Source of Truth) sync check")
         check_install_scripts_sync()
         print()
+        info("==> Tooling-Image Dockerfiles sync check")
+        check_image_dockerfiles_sync()
+        print()
         info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
         check_template_update()
         print()
@@ -891,11 +958,9 @@ def main():
 
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
-        # Mixin-Kits (OpenCode/Claude) bekommen ein `--template`:
-        #   - opencode: eigenes Tooling-Image docker.io/domboeckli/sbx-opencode-tooling:<tag>
-        #     (Issue #137; Tag per OPENCODE_IMAGE_TAG, default `local`) — Tooling vorgebacken.
-        #   - claude: offizielles docker/sandbox-templates:claude-code-docker-<pin>
-        #     (TEMPLATE_VERSION-Konstante dieses Scripts).
+        # Mixin-Kits (OpenCode/Claude) bekommen ein `--template` (Issue #137, Tooling vorgebacken):
+        #   - opencode: docker.io/domboeckli/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
+        #   - claude:   docker.io/domboeckli/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
         # Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
@@ -910,7 +975,7 @@ def main():
             create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
         # Mistral-Vibe-Image-Tag per --kit-arg an das Kit uebergeben:
         #   - lokal (Host): `local` = zuletzt lokal gebauter/pushter Stand
-        #     (IntelliJ-Run-Config `publish-mistral-vibe-image`).
+        #     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image`).
         #   - CI/e2e: VIBE_IMAGE_TAG = Feature-Tag (`<pin>-<branch>.<timestamp>`),
         #     damit der e2e genau diesen Branch-Build testet.
         if s["agent"] == "mistral-vibe":

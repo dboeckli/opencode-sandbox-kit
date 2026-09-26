@@ -1,32 +1,29 @@
 #!/usr/bin/env python3
-"""Build and push the OpenCode tooling image locally (docker buildx).
+"""Build and push the Mistral Vibe image locally (docker buildx).
 
-Local counterpart of .github/workflows/publish-opencode-image.yml. The image is the
-official `opencode-docker` sandbox template with the kit tooling baked in (issue #137);
-the tag is derived from the base template pin (TEMPLATE_VERSION). The tag scheme mirrors
-the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
-moving `local` tag:
+Local counterpart of .github/workflows/publish-mistral-vibe-image.yml. The tag
+scheme mirrors the feature-branch CI build (semver prerelease + timestamp) and
+additionally sets the moving `local` tag:
 
-    <namespace>/sbx-opencode-tooling:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
-    <namespace>/sbx-opencode-tooling:local
+    <namespace>/sbx-mistral-vibe:<pin>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <namespace>/sbx-mistral-vibe:local
 
-Run via the IntelliJ run config `build-and-publish-opencode-image` (or directly):
-    python local-test/build-and-publish-opencode-image.py            # build + push + load locally (linux/amd64)
-    python local-test/build-and-publish-opencode-image.py --build-only
-    python local-test/build-and-publish-opencode-image.py --no-load   # push only, don't load into local Docker
-    python local-test/build-and-publish-opencode-image.py --platform linux/arm64   # arm64 host only
+Run via the IntelliJ run config `build-and-publish-mistral-vibe-image` (or directly):
+    python local-test/build-and-publish-mistral-vibe-image.py            # build + push + load locally (linux/amd64)
+    python local-test/build-and-publish-mistral-vibe-image.py --build-only
+    python local-test/build-and-publish-mistral-vibe-image.py --no-load   # push only, don't load into local Docker
+    python local-test/build-and-publish-mistral-vibe-image.py --platform linux/arm64   # arm64 host only
 
 Besides pushing the attested image to the registry, it loads the image into the
 local Docker daemon (a second, cache-backed build without provenance/SBOM, since
 the docker exporter cannot carry attestations). The full console output (including
 the docker/buildx output) is additionally written to
-`target/build-and-publish-opencode-image.log` (gitignored) for later inspection.
+`target/build-and-publish-mistral-vibe-image.log` (gitignored) for later inspection.
 
-`local-test-kits.py opencode` uses the moving `local` tag by default
-(`--template docker.io/<namespace>/sbx-opencode-tooling:local`), so a local run after
-this script tests exactly this build. CI passes a feature tag via `OPENCODE_IMAGE_TAG`.
+Note: arm64 cannot be built from an amd64 host via QEMU (`uv tool install`
+fails under emulation). CI builds multi-arch with native runners instead.
 
-Environment overrides: OPENCODE_IMAGE_NAMESPACE, OPENCODE_IMAGE_NAME, OPENCODE_BUILDX_BUILDER.
+Environment overrides: VIBE_IMAGE_NAMESPACE, VIBE_IMAGE_NAME, VIBE_BUILDX_BUILDER.
 Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
 """
 
@@ -38,13 +35,13 @@ from datetime import datetime, timezone
 from shutil import which
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONTEXT = os.path.join(ROOT, "opencode-agent")
-DOCKERFILE = os.path.join(CONTEXT, "opencode", "Dockerfile")
+CONTEXT = os.path.join(ROOT, "mistral-vibe-agent")
+DOCKERFILE = os.path.join(CONTEXT, "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
-LOG_FILE = os.path.join(TARGET, "build-and-publish-opencode-image.log")
-NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
-NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
-BUILDER = os.environ.get("OPENCODE_BUILDX_BUILDER", "sbx-opencode")
+LOG_FILE = os.path.join(TARGET, "build-and-publish-mistral-vibe-image.log")
+NAMESPACE = os.environ.get("VIBE_IMAGE_NAMESPACE", "domboeckli")
+NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
+BUILDER = os.environ.get("VIBE_BUILDX_BUILDER", "sbx-vibe")
 
 
 class Tee:
@@ -90,14 +87,11 @@ def run(cmd):
         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
 
-def base_version():
+def pin_version():
     with open(DOCKERFILE, encoding="utf-8") as f:
-        m = re.search(
-            r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-([0-9]+(?:\.[0-9]+)+)",
-            f.read(),
-        )
+        m = re.search(r"ARG VIBE_VERSION=([0-9]+(?:\.[0-9]+)+)", f.read())
     if not m:
-        sys.exit("opencode-docker BASE_IMAGE pin not found in opencode-agent/opencode/Dockerfile")
+        sys.exit("VIBE_VERSION pin not found in mistral-vibe-agent/Dockerfile")
     return m.group(1)
 
 
@@ -143,7 +137,7 @@ def main():
         platform = "linux/amd64"
         if "--platform" in argv:
             platform = argv[argv.index("--platform") + 1]
-        version = base_version()
+        version = pin_version()
         slug = branch_slug()
         ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         version_tag = f"{NAMESPACE}/{NAME}:{version}-{slug}.{ts}"
@@ -151,13 +145,10 @@ def main():
         print(f"Version tag: {version_tag}")
         print(f"Moving tag:  {local_tag}")
         print(f"Platform:    {platform}")
-        print(f"Dockerfile:  {DOCKERFILE}")
         ensure_builder()
 
-        # Registry build (attested: provenance + SBOM). Explicit -f: the Dockerfile
-        # lives in a subfolder (IntelliJ-friendly canonical name), context is the kit dir.
+        # Registry build (attested: provenance + SBOM).
         push_cmd = ["docker", "buildx", "build",
-                    "-f", DOCKERFILE,
                     "--platform", platform,
                     "--provenance=true", "--sbom=true",
                     "-t", version_tag,
@@ -172,7 +163,6 @@ def main():
         # attestations, so this second, cache-backed build omits provenance/SBOM).
         if not build_only and not no_load:
             load_cmd = ["docker", "buildx", "build",
-                        "-f", DOCKERFILE,
                         "--platform", platform,
                         "--load",
                         "-t", version_tag,

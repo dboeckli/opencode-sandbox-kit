@@ -13,8 +13,9 @@ name: Kit e2e
 # this repo: no Go TCK, the Python scenario runner instead.
 #
 # The `mistral-vibe` scenario pulls the `domboeckli/sbx-mistral-vibe` image; the
-# `opencode` scenario pulls `domboeckli/sbx-opencode-tooling` (baked tooling, issue
-# #137). The `publish-image` / `publish-opencode-image` jobs (reusing the standalone
+# `opencode` / `claude` scenarios pull `domboeckli/sbx-opencode-tooling` /
+# `domboeckli/sbx-claude-tooling` (baked tooling, issue #137). The `publish-image` /
+# `publish-opencode-image` / `publish-claude-image` jobs (reusing the standalone
 # publish workflows) build and, for non-PR runs, push those images (multi-arch)
 # before the scenario matrix starts.
 
@@ -53,10 +54,21 @@ jobs:
       push: true
     secrets: inherit
 
+  publish-claude-image:
+    # Build (and, unless it's a PR, push) the Claude tooling image the
+    # `claude` scenario pulls (`--template docker.io/domboeckli/sbx-claude-tooling:<tag>`).
+    # Reuses the standalone publish workflow so the image matches the branch under test (multi-arch).
+    # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: ./.github/workflows/publish-claude-image.yml
+    with:
+      push: true
+    secrets: inherit
+
   e2e-scenario:
     # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
-    needs: [publish-image, publish-opencode-image]
+    needs: [publish-image, publish-opencode-image, publish-claude-image]
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -70,9 +82,9 @@ jobs:
       matrix:
         scenario: [opencode, claude, mammouth, mistral-vibe]
     env:
-      # Sandbox-Template-Version (gepinnt, beide Kits) — Muss mit validate.yml identisch sein;
-      # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (--template docker/sandbox-templates:<name>-<pin>).
-      # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
+      # Sandbox-Template-Version (gepinnt) — muss mit validate.yml identisch sein; Basis der
+      # Tooling-Images (opencode-agent/{opencode,claude}/Dockerfile ARG BASE_IMAGE) und des
+      # Mammouth-spec-Images. Updates via Renovate (customManager docker/sandbox-templates).
       TEMPLATE_VERSION: 0.7.0
     steps:
       - uses: actions/checkout@v7
@@ -248,8 +260,10 @@ jobs:
           # Feature-tagged images built by the publish jobs; local-test uses them
           # - VIBE_IMAGE_TAG: mistral-vibe scenario (`--kit-arg imageTag=<tag>`)
           # - OPENCODE_IMAGE_TAG: opencode scenario (`--template docker.io/domboeckli/sbx-opencode-tooling:<tag>`)
+          # - CLAUDE_IMAGE_TAG: claude scenario (`--template docker.io/domboeckli/sbx-claude-tooling:<tag>`)
           VIBE_IMAGE_TAG: ${{ needs.publish-image.outputs.version_tag }}
           OPENCODE_IMAGE_TAG: ${{ needs.publish-opencode-image.outputs.version_tag }}
+          CLAUDE_IMAGE_TAG: ${{ needs.publish-claude-image.outputs.version_tag }}
         run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub
