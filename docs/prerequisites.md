@@ -28,6 +28,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `google` | OpenCode | https://aistudio.google.com/apikey (Built-in-Service) |
 | `stackoverflow` | alle | https://stackapps.com/applications (Fallback-Quelle) |
 | `cloudsmith` | alle | https://cloudsmith.io/user/settings/api-keys/ |
+| `sonarcloud` | alle | SonarCloud API-Token (Web-API) — https://sonarcloud.io/account/security |
 
 ## Sandbox (wird vom Kit via `setup.install` installiert)
 

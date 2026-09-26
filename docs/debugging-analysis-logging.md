@@ -120,7 +120,7 @@ python local-test\local-test-kits.py --validate-only
 
 ### Startup-Checks
 
-Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills)
+Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills, SonarCloud)
 wird beim Session-Start injiziert und nach `~/.config/sandbox-kit/startup-checks.report` geschrieben.
 Manuell neu ausführen:
 
