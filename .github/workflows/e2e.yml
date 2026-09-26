@@ -12,9 +12,12 @@ name: Kit e2e
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
 #
-# The `mistral-vibe` scenario pulls the `domboeckli/sbx-mistral-vibe` image.
-# A `publish-image` job (reusing publish-mistral-vibe-image.yml) builds and, for
-# non-PR runs, pushes it (multi-arch) before the scenario matrix starts.
+# The `mistral-vibe` scenario pulls the `domboeckli/sbx-mistral-vibe` image; the
+# `opencode` / `claude` scenarios pull `domboeckli/sbx-opencode-tooling` /
+# `domboeckli/sbx-claude-tooling`, and `mammouth` pulls `domboeckli/sbx-mammouth`
+# (baked tooling/agent, issue #137). The `build-and-publish-*-image` jobs (reusing the
+# standalone build-and-publish workflows) build and, for non-PR runs, push those
+# images (multi-arch) before the scenario matrix starts.
 
 on:
   push:
@@ -27,23 +30,55 @@ permissions:
   contents: read
 
 jobs:
-  publish-image:
+  build-and-publish-mistral-vibe-image:
     # Build (and, unless it's a PR, push) the Mistral Vibe image the
-    # `mistral-vibe` scenario pulls. Reuses the standalone publish workflow so
-    # the image always matches the branch under test (multi-arch).
+    # `mistral-vibe` scenario pulls. Reuses the standalone build-and-publish workflow
+    # so the image always matches the branch under test (multi-arch).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
-    uses: ./.github/workflows/publish-mistral-vibe-image.yml
+    uses: ./.github/workflows/build-and-publish-mistral-vibe-image.yml
     with:
       # Always push here: the scenario job only runs for push/schedule/same-repo
       # PRs, and the mistral-vibe scenario must pull this exact branch build.
       push: true
     secrets: inherit
 
+  build-and-publish-opencode-image:
+    # Build (and, unless it's a PR, push) the OpenCode tooling image the
+    # `opencode` scenario pulls (`--template docker.io/domboeckli/sbx-opencode-tooling:<tag>`).
+    # Reuses the standalone build-and-publish workflow (multi-arch).
+    # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: ./.github/workflows/build-and-publish-opencode-image.yml
+    with:
+      push: true
+    secrets: inherit
+
+  build-and-publish-claude-image:
+    # Build (and, unless it's a PR, push) the Claude tooling image the
+    # `claude` scenario pulls (`--template docker.io/domboeckli/sbx-claude-tooling:<tag>`).
+    # Reuses the standalone build-and-publish workflow (multi-arch).
+    # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: ./.github/workflows/build-and-publish-claude-image.yml
+    with:
+      push: true
+    secrets: inherit
+
+  build-and-publish-mammouth-image:
+    # Build (and, unless it's a PR, push) the Mammouth image the `mammouth` scenario pulls
+    # (`--kit-arg imageTag=<tag>`). Reuses the standalone build-and-publish workflow (multi-arch).
+    # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: ./.github/workflows/build-and-publish-mammouth-image.yml
+    with:
+      push: true
+    secrets: inherit
+
   e2e-scenario:
     # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
-    needs: [publish-image]
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image]
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -57,9 +92,9 @@ jobs:
       matrix:
         scenario: [opencode, claude, mammouth, mistral-vibe]
     env:
-      # Sandbox-Template-Version (gepinnt, beide Kits) — Muss mit validate.yml identisch sein;
-      # local-test-kits.py pinnt die Mixin-Sandbox-Szenarien damit (--template docker/sandbox-templates:<name>-<pin>).
-      # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
+      # Sandbox-Template-Version (gepinnt) — muss mit validate.yml identisch sein; Basis der
+      # Tooling-Images (opencode-agent/{opencode,claude}/Dockerfile ARG BASE_IMAGE) und des
+      # Mammouth-spec-Images. Updates via Renovate (customManager docker/sandbox-templates).
       TEMPLATE_VERSION: 0.7.0
     steps:
       - uses: actions/checkout@v7
@@ -161,6 +196,29 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
+      - name: Store Docker Hub registry credential (authenticated pulls)
+        # Docker Hub rate-limits *anonymous* pulls per IP. On shared GitHub
+        # runners that quota is routinely exhausted by other users, so
+        # `sbx create` fails while pulling the template image:
+        #   "You have reached your unauthenticated pull rate limit."
+        # The `sbx login` session above is supposed to authenticate Hub pulls,
+        # but in CI the sandbox runtime still fell back to anonymous. Store an
+        # explicit host-only Docker Hub registry credential (the sbx CLI uses it
+        # to pull templates/kits before sandbox creation) and log the Docker CLI
+        # in as well, as a fallback to the Docker credential store.
+        # Docs: REGISTRY SECRETS can't be combined with --token/--oauth/--ref.
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: |
+          set -euo pipefail
+          USER_CLEAN=$(printf '%s' "$DOCKER_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx secret set --registry docker.io \
+            --username "$USER_CLEAN" --password-stdin
+          printf '%s' "$TOKEN_CLEAN" | docker login docker.io \
+            --username "$USER_CLEAN" --password-stdin
+
       - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/mistral/zai/context7/openrouter/google fake)
         # local-test/local-test-kits.py asserts these global services exist
         # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
@@ -236,9 +294,15 @@ jobs:
 
       - name: Run e2e tests (${{ matrix.scenario }})
         env:
-          # Feature-tagged image built by publish-image; local-test passes it to
-          # `sbx create --kit-arg imageTag=<tag>` for the mistral-vibe scenario.
-          VIBE_IMAGE_TAG: ${{ needs.publish-image.outputs.version_tag }}
+          # Feature-tagged images built by the publish jobs; local-test uses them
+          # - VIBE_IMAGE_TAG: mistral-vibe scenario (`--kit-arg imageTag=<tag>`)
+          # - MAMMOUTH_IMAGE_TAG: mammouth scenario (`--kit-arg imageTag=<tag>`)
+          # - OPENCODE_IMAGE_TAG: opencode scenario (`--template docker.io/domboeckli/sbx-opencode-tooling:<tag>`)
+          # - CLAUDE_IMAGE_TAG: claude scenario (`--template docker.io/domboeckli/sbx-claude-tooling:<tag>`)
+          VIBE_IMAGE_TAG: ${{ needs.build-and-publish-mistral-vibe-image.outputs.version_tag }}
+          MAMMOUTH_IMAGE_TAG: ${{ needs.build-and-publish-mammouth-image.outputs.version_tag }}
+          OPENCODE_IMAGE_TAG: ${{ needs.build-and-publish-opencode-image.outputs.version_tag }}
+          CLAUDE_IMAGE_TAG: ${{ needs.build-and-publish-claude-image.outputs.version_tag }}
         run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub

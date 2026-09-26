@@ -1,32 +1,22 @@
-name: Publish Mistral Vibe image
+name: Build and publish Claude tooling image
 
-# Builds and publishes the pinned `domboeckli/sbx-mistral-vibe` image that the
-# `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`, via the
-# `imageTag` kit arg).
-#
-# The image bakes a pinned Mistral Vibe version on top of the versioned
-# `shell-docker` sandbox template (Docker Engine inside the sandbox), following
-# https://docs.docker.com/guides/mistral-vibe-sandbox/.
-# Vibe is not a pre-built docker/sandbox-templates agent, so the kit ships its
-# own image instead of installing the agent at sandbox build time.
+# Builds and publishes `domboeckli/sbx-claude-tooling`: the official
+# `claude-code-docker` sandbox template with the kit tooling baked in (issue #137).
+# The `opencode-agent` mixin kit is still passed via `--kit`; the image only
+# removes the repeated `setup.install` downloads at sandbox creation time.
 #
 # This workflow is both directly dispatchable and a reusable workflow
-# (`workflow_call`). The `e2e.yml` workflow calls it before the scenario matrix,
-# so the image exists for the `mistral-vibe` e2e scenario on every push/PR/nightly
-# run. Manual runs use `workflow_dispatch`.
+# (`workflow_call`), so e2e.yml can build/publish the image before its scenario
+# matrix. Manual runs use `workflow_dispatch`.
 #
-# Tags (the image tag must stay a valid Docker tag, so the timestamp is a semver
-# prerelease identifier, not build metadata — `+` is not allowed in a tag):
-#   - master / main: `<VIBE_VERSION>` (release tag) plus `latest`
-#   - feature/PR:    `<VIBE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` (semver
-#                    prerelease) plus the moving tag `<branch-slug>`
+# Tags (a Docker tag must stay valid, so the timestamp is a semver prerelease
+# identifier, not build metadata — `+` is not allowed in a tag):
+#   - master / main: `<TEMPLATE_VERSION>` plus the moving `latest`
+#   - feature/PR:    `<TEMPLATE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
 #
-# Multi-arch (linux/amd64 + linux/arm64) via NATIVE runners: `uv tool install`
-# does not run under QEMU arm64 emulation (buildx exit 1), so each arch is built
-# on its own runner (`ubuntu-latest` / `ubuntu-24.04-arm`). The architecture goes
-# into the repository NAME (`<name>-amd64` / `<name>-arm64`), keeping the tag
-# clean; the two are combined into one manifest list with
-# `docker buildx imagetools create` under the plain `<name>`.
+# Multi-arch (linux/amd64 + linux/arm64) via NATIVE runners; the arch is part of
+# the repository NAME (`<name>-amd64` / `<name>-arm64`), merged into one manifest
+# list with `docker buildx imagetools create`.
 
 on:
   workflow_dispatch:
@@ -51,7 +41,7 @@ permissions:
 
 env:
   IMAGE_NAMESPACE: domboeckli
-  IMAGE_NAME: sbx-mistral-vibe
+  IMAGE_NAME: sbx-claude-tooling
 
 jobs:
   prepare:
@@ -62,20 +52,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Compute image tags from the Vibe pin and the branch
+      - name: Compute image tags from the base template pin and the branch
         id: tags
         run: |
           set -euo pipefail
-          pin=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
-            | head -1 | cut -d= -f2)
+          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-[0-9]+(\.[0-9]+)+' \
+            opencode-agent/claude/Dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
           if [ -z "$pin" ]; then
-            echo "VIBE_VERSION pin not found in mistral-vibe-agent/Dockerfile" >&2
+            echo "claude-code-docker base pin not found in opencode-agent/claude/Dockerfile" >&2
             exit 1
           fi
-          spec_default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+          wf_pin=$(grep -oE 'TEMPLATE_VERSION: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
-          if [ "$spec_default" != "$pin" ]; then
-            echo "spec.yaml args.imageTag.default ($spec_default) != Dockerfile pin ($pin)" >&2
+          if [ "$wf_pin" != "$pin" ]; then
+            echo "claude Dockerfile base pin ($pin) != TEMPLATE_VERSION in validate.yml ($wf_pin)" >&2
             exit 1
           fi
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
@@ -122,7 +112,8 @@ jobs:
       - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
         uses: docker/build-push-action@v7
         with:
-          context: mistral-vibe-agent
+          context: opencode-agent
+          file: opencode-agent/claude/Dockerfile
           platforms: ${{ matrix.platform }}
           provenance: true
           sbom: true

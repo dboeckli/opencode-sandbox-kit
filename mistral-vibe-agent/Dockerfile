@@ -6,7 +6,7 @@
 # following https://docs.docker.com/guides/mistral-vibe-sandbox/.
 #
 # Build + publish (multi-arch, provenance/SBOM), from this directory.
-# CI (publish-mistral-vibe-image.yml) builds linux/amd64 and linux/arm64 on
+# CI (build-and-publish-mistral-vibe-image.yml) builds linux/amd64 and linux/arm64 on
 # NATIVE runners (ubuntu-latest / ubuntu-24.04-arm) and merges them with
 # `docker buildx imagetools create`: `uv tool install` does not run under QEMU
 # arm64 emulation (buildx exit 1).
