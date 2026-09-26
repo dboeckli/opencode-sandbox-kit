@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build and push the Claude tooling image locally (docker buildx).
 
-Local counterpart of .github/workflows/publish-claude-image.yml. The image is the
+Local counterpart of .github/workflows/build-and-publish-claude-image.yml. The image is the
 official `claude-code-docker` sandbox template with the kit tooling baked in (issue #137);
 the tag is derived from the base template pin (TEMPLATE_VERSION). The tag scheme mirrors
 the feature-branch CI build (semver prerelease + timestamp) and additionally sets the

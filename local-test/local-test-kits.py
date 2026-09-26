@@ -791,7 +791,7 @@ def check_vibe_cli_update():
         warn(
             f"mistral-vibe update available (Pin v{pin}, PyPI latest v{latest})",
             f"Optional: ARG VIBE_VERSION in {VIBE_DOCKERFILE} + image-Tag in {VIBE_SPEC_FILE} auf "
-            f"v{latest} heben, Image neu publizieren (publish-mistral-vibe-image.yml)",
+            f"v{latest} heben, Image neu publizieren (build-and-publish-mistral-vibe-image.yml)",
         )
     else:
         pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")

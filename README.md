@@ -67,7 +67,7 @@ sbx run ./mammouth-agent/ `
     "C:\development\maven-repo:ro"
 ```
 
-**Mistral Vibe** (eigenes gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`; für die **lokale Entwicklung** `--kit-arg imageTag=local` verwenden — vorher Run-Config `build-and-publish-mistral-vibe-image` ausführen; der Release-Tag kommt aus dem Workflow `publish-mistral-vibe-image.yml`, `workflow_dispatch`):
+**Mistral Vibe** (eigenes gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>`; für die **lokale Entwicklung** `--kit-arg imageTag=local` verwenden — vorher Run-Config `build-and-publish-mistral-vibe-image` ausführen; der Release-Tag kommt aus dem Workflow `build-and-publish-mistral-vibe-image.yml`, `workflow_dispatch`):
 
 ```powershell
 sbx run ./mistral-vibe-agent/ `
@@ -171,8 +171,8 @@ bei Drift fehl.
 | master/main (CI) | `<version>` + `:latest` |
 | Feature-Branch / PR (CI) | `<version>-<branch-slug>.<timestamp>` + `<branch-slug>` |
 
-Die Images müssen vor dem ersten Start **publiziert** sein — CI via `.github/workflows/publish-opencode-image.yml`
-bzw. `publish-claude-image.yml` (`workflow_dispatch`/Push auf `master`), lokal via Run-Config
+Die Images müssen vor dem ersten Start **publiziert** sein — CI via `.github/workflows/build-and-publish-opencode-image.yml`
+bzw. `build-and-publish-claude-image.yml` (`workflow_dispatch`/Push auf `master`), lokal via Run-Config
 `build-and-publish-opencode-image` / `build-and-publish-claude-image`. Für die **lokale Entwicklung** daher
 `:local` verwenden (siehe „Lokale Entwicklung"). Details: `AGENTS.md` → "Image-Versionierung (OpenCode/Claude-Tooling-Images)".
 
@@ -402,7 +402,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 - **Base-Image**: eigenes, gepinntes Image `domboeckli/sbx-mistral-vibe:<vibe-version>` — gebaut aus
   `docker/sandbox-templates:shell-docker-0.x.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
   Publiziert **multi-arch (linux/amd64 + linux/arm64)** mit provenance/SBOM via
-  `.github/workflows/publish-mistral-vibe-image.yml`: pro Architektur ein **nativer** Runner
+  `.github/workflows/build-and-publish-mistral-vibe-image.yml`: pro Architektur ein **nativer** Runner
   (`ubuntu-latest` / `ubuntu-24.04-arm`), Per-Arch-Image mit der Architektur im **Repo-Namen**
   (`domboeckli/sbx-mistral-vibe-amd64` / `-arm64`), danach Manifest-Merge zum Multi-Arch-Index unter
   `domboeckli/sbx-mistral-vibe` (`docker buildx imagetools create`; `uv tool install` läuft nicht unter QEMU-arm64).
@@ -427,7 +427,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > key-freie Alternative.
 
 > **Image-Publish:** Das Image wird in CI gebaut/gepusht (multi-arch amd64+arm64, provenance/SBOM; native Runner + `imagetools create`). Der e2e-Workflow
-> ruft den (auch manuell per `workflow_dispatch` startbaren) `publish-mistral-vibe-image.yml` als
+> ruft den (auch manuell per `workflow_dispatch` startbaren) `build-and-publish-mistral-vibe-image.yml` als
 > `publish-image`-Job **vor** der Szenario-Matrix auf — so existiert das Image für das `mistral-vibe`-Szenario
 > bei jedem Push/PR/Nightly-Lauf. Manuell: Workflow `Publish Mistral Vibe image` → *Run workflow*.
 >
@@ -545,7 +545,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   alle 4 Szenarien (`local-test-kits.py opencode|claude|mammouth|mistral-vibe --ci`) mit KVM-Zugriff,
   Docker-Hub-Login (`DOCKER_USERNAME`/`DOCKER_PAT`) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
-- **`publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`, provenance/SBOM)
+- **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`, provenance/SBOM)
   auf Docker Hub. Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
   via `workflow_dispatch` (Build-only möglich über den `push`-Input).
 
@@ -875,7 +875,7 @@ Mistral Vibe wird über das **dedizierte Agent-Kit** (`mistral-vibe-agent/`,
 `sbx run --skills=off ./mistral-vibe-agent/`) betrieben. Das Kit nutzt ein eigenes, gepinntes Image
 (`domboeckli/sbx-mistral-vibe:<vibe-version>`), das Vibe beim Image-Build installiert — es gibt keinen
 `setup.install`-Schritt für Vibe. Das Image muss vor dem ersten Start publiziert sein
-(`publish-mistral-vibe-image.yml`, `workflow_dispatch`).
+(`build-and-publish-mistral-vibe-image.yml`, `workflow_dispatch`).
 
 ### Pre-installed Tools im Base Image
 

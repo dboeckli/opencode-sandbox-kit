@@ -1,4 +1,4 @@
-name: Publish Mistral Vibe image
+name: Build and publish Mistral Vibe image
 
 # Builds and publishes the pinned `domboeckli/sbx-mistral-vibe` image that the
 # `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`, via the

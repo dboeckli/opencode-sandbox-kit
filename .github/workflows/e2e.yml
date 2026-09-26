@@ -14,10 +14,10 @@ name: Kit e2e
 #
 # The `mistral-vibe` scenario pulls the `domboeckli/sbx-mistral-vibe` image; the
 # `opencode` / `claude` scenarios pull `domboeckli/sbx-opencode-tooling` /
-# `domboeckli/sbx-claude-tooling` (baked tooling, issue #137). The `publish-image` /
-# `publish-opencode-image` / `publish-claude-image` jobs (reusing the standalone
-# publish workflows) build and, for non-PR runs, push those images (multi-arch)
-# before the scenario matrix starts.
+# `domboeckli/sbx-claude-tooling` (baked tooling, issue #137). The
+# `build-and-publish-*-image` jobs (reusing the standalone build-and-publish workflows)
+# build and, for non-PR runs, push those images (multi-arch) before the scenario
+# matrix starts.
 
 on:
   push:
@@ -30,37 +30,37 @@ permissions:
   contents: read
 
 jobs:
-  publish-image:
+  build-and-publish-mistral-vibe-image:
     # Build (and, unless it's a PR, push) the Mistral Vibe image the
-    # `mistral-vibe` scenario pulls. Reuses the standalone publish workflow so
-    # the image always matches the branch under test (multi-arch).
+    # `mistral-vibe` scenario pulls. Reuses the standalone build-and-publish workflow
+    # so the image always matches the branch under test (multi-arch).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
-    uses: ./.github/workflows/publish-mistral-vibe-image.yml
+    uses: ./.github/workflows/build-and-publish-mistral-vibe-image.yml
     with:
       # Always push here: the scenario job only runs for push/schedule/same-repo
       # PRs, and the mistral-vibe scenario must pull this exact branch build.
       push: true
     secrets: inherit
 
-  publish-opencode-image:
+  build-and-publish-opencode-image:
     # Build (and, unless it's a PR, push) the OpenCode tooling image the
     # `opencode` scenario pulls (`--template docker.io/domboeckli/sbx-opencode-tooling:<tag>`).
-    # Reuses the standalone publish workflow so the image matches the branch under test (multi-arch).
+    # Reuses the standalone build-and-publish workflow (multi-arch).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
-    uses: ./.github/workflows/publish-opencode-image.yml
+    uses: ./.github/workflows/build-and-publish-opencode-image.yml
     with:
       push: true
     secrets: inherit
 
-  publish-claude-image:
+  build-and-publish-claude-image:
     # Build (and, unless it's a PR, push) the Claude tooling image the
     # `claude` scenario pulls (`--template docker.io/domboeckli/sbx-claude-tooling:<tag>`).
-    # Reuses the standalone publish workflow so the image matches the branch under test (multi-arch).
+    # Reuses the standalone build-and-publish workflow (multi-arch).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
-    uses: ./.github/workflows/publish-claude-image.yml
+    uses: ./.github/workflows/build-and-publish-claude-image.yml
     with:
       push: true
     secrets: inherit
@@ -68,7 +68,7 @@ jobs:
   e2e-scenario:
     # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
-    needs: [publish-image, publish-opencode-image, publish-claude-image]
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image]
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -261,9 +261,9 @@ jobs:
           # - VIBE_IMAGE_TAG: mistral-vibe scenario (`--kit-arg imageTag=<tag>`)
           # - OPENCODE_IMAGE_TAG: opencode scenario (`--template docker.io/domboeckli/sbx-opencode-tooling:<tag>`)
           # - CLAUDE_IMAGE_TAG: claude scenario (`--template docker.io/domboeckli/sbx-claude-tooling:<tag>`)
-          VIBE_IMAGE_TAG: ${{ needs.publish-image.outputs.version_tag }}
-          OPENCODE_IMAGE_TAG: ${{ needs.publish-opencode-image.outputs.version_tag }}
-          CLAUDE_IMAGE_TAG: ${{ needs.publish-claude-image.outputs.version_tag }}
+          VIBE_IMAGE_TAG: ${{ needs.build-and-publish-mistral-vibe-image.outputs.version_tag }}
+          OPENCODE_IMAGE_TAG: ${{ needs.build-and-publish-opencode-image.outputs.version_tag }}
+          CLAUDE_IMAGE_TAG: ${{ needs.build-and-publish-claude-image.outputs.version_tag }}
         run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub

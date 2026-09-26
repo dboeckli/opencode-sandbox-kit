@@ -9,7 +9,7 @@
 # to `opencode-agent/opencode/Dockerfile` except for the `ARG BASE_IMAGE` line — checked
 # by `local-test/local-test-kits.py --validate-only`.
 #
-# Build/publish: .github/workflows/publish-claude-image.yml (multi-arch amd64+arm64,
+# Build/publish: .github/workflows/build-and-publish-claude-image.yml (multi-arch amd64+arm64,
 # native runners + imagetools merge, provenance/SBOM).
 #
 # Run:

@@ -1,4 +1,4 @@
-name: Publish OpenCode tooling image
+name: Build and publish OpenCode tooling image
 
 # Builds and publishes `domboeckli/sbx-opencode-tooling`: the official
 # `opencode-docker` sandbox template with the kit tooling baked in (issue #137).

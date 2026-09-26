@@ -10,7 +10,7 @@
 # NPM_CONFIG_PREFIX=/usr/local/share/npm-global). The kit stays a mixin and is
 # still passed via `--kit`; it supplies network policy, credentials and files.
 #
-# Build/publish: .github/workflows/publish-opencode-image.yml (multi-arch amd64+arm64,
+# Build/publish: .github/workflows/build-and-publish-opencode-image.yml (multi-arch amd64+arm64,
 # native runners + imagetools merge, provenance/SBOM).
 #
 # Run:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build and push the Mistral Vibe image locally (docker buildx).
 
-Local counterpart of .github/workflows/publish-mistral-vibe-image.yml. The tag
+Local counterpart of .github/workflows/build-and-publish-mistral-vibe-image.yml. The tag
 scheme mirrors the feature-branch CI build (semver prerelease + timestamp) and
 additionally sets the moving `local` tag:
 

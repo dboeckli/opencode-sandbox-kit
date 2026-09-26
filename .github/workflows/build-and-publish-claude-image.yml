@@ -1,4 +1,4 @@
-name: Publish Claude tooling image
+name: Build and publish Claude tooling image
 
 # Builds and publishes `domboeckli/sbx-claude-tooling`: the official
 # `claude-code-docker` sandbox template with the kit tooling baked in (issue #137).

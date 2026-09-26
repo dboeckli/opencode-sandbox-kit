@@ -609,7 +609,7 @@ sbx run ./mammouth-agent/ `
     --static-mcp idea
 
 # Mistral Vibe (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
-# (vorher Run-Config build-and-publish-mistral-vibe-image); Release-Image via Workflow publish-mistral-vibe-image.yml
+# (vorher Run-Config build-and-publish-mistral-vibe-image); Release-Image via Workflow build-and-publish-mistral-vibe-image.yml
 sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
