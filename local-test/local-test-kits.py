@@ -105,17 +105,22 @@ INSTALL_SCRIPT_PAIRS = (
 TEMPLATE_VERSION = "0.7.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 TEMPLATE_VERSION_RE = re.compile(r"TEMPLATE_VERSION:\s*([0-9]+\.[0-9]+\.[0-9]+)")
-MAMMOUTH_SPEC_FILE = "mammouth-agent/spec.yaml"
-TEMPLATE_IMAGE_RE = re.compile(r"docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 TEMPLATE_TAG_RE = re.compile(r"^(?P<fam>opencode-docker|claude-code-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$")
 DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
 # Template-Familie je Agent. Mammouth (kind:sandbox) fehlt bewusst: dort pinnt das spec-Image.
 AGENT_TEMPLATES = {"opencode": "opencode-docker", "claude": "claude-code-docker"}
 
-# Mammouth-CLI: Pin via `VERSION=<ver>` vor `bash` im install.sh-Command der spec (Source of Truth).
-# Update-Check gegen die latest GitHub-Release-Version (mammouth-ai/code, Release-Tag v<ver>);
+# Mammouth (Issue #137): eigenes Image (mammouth-agent/Dockerfile) — Basis opencode-docker + Kit-Tooling
+# + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG BASE_IMAGE muss TEMPLATE_VERSION
+# spiegeln. Update-Check des CLI-Pins gegen das latest GitHub-Release (mammouth-ai/code, Tag v<ver>);
 # warnt (gelb) bei neuerem Release.
-MAMMOUTH_INSTALL_RE = re.compile(r"install\.sh\s*\|\s*VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)\s+bash")
+MAMMOUTH_DOCKERFILE = "mammouth-agent/Dockerfile"
+MAMMOUTH_IMAGE_NAMESPACE = os.environ.get("MAMMOUTH_IMAGE_NAMESPACE", "domboeckli")
+MAMMOUTH_IMAGE_NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
+MAMMOUTH_VERSION_RE = re.compile(r"ARG MAMMOUTH_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
+MAMMOUTH_BASE_IMAGE_RE = re.compile(
+    r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+)
 MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
 # Mistral Vibe: Pin im Dockerfile (ARG VIBE_VERSION) — die spec.yaml referenziert das Image
@@ -469,17 +474,6 @@ def _version_newer(a, b):
     return len(ka) > len(kb)
 
 
-def _spec_version(regex):
-    """Version per Regex aus mammouth-agent/spec.yaml extrahieren (Mammouth-CLI-Pin, spec-Image-Mirror)."""
-    path = os.path.join(ROOT, MAMMOUTH_SPEC_FILE)
-    if not os.path.isfile(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        content = f.read()
-    m = regex.search(content)
-    return m.group("v") if m else None
-
-
 def _template_workflow_version():
     """`TEMPLATE_VERSION` aus validate.yml/e2e.yml (Renovate-managed) — muss mit der
     TEMPLATE_VERSION-Konstante dieses Scripts uebereinstimmen (Drift-Check)."""
@@ -495,9 +489,9 @@ def _template_workflow_version():
     return None
 
 
-def _template_spec_image_version():
-    """Template-Version im Mammouth-spec-Image (Mirror der TEMPLATE_VERSION-Konstante)."""
-    return _spec_version(TEMPLATE_IMAGE_RE)
+def _mammouth_base_image_version():
+    """opencode-docker-Basis-Tag im Mammouth-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    return _dockerfile_base_version(MAMMOUTH_DOCKERFILE, MAMMOUTH_BASE_IMAGE_RE)
 
 
 def _dockerfile_base_version(rel_path, regex):
@@ -553,7 +547,8 @@ def _kit_kind(kit_dir):
 
 
 def _mammouth_cli_pin_version():
-    return _spec_version(MAMMOUTH_INSTALL_RE)
+    """Mammouth-CLI-Pin aus dem Dockerfile (ARG MAMMOUTH_VERSION) — treibt den Image-Tag."""
+    return _dockerfile_base_version(MAMMOUTH_DOCKERFILE, MAMMOUTH_VERSION_RE)
 
 
 def _template_latest_per_family():
@@ -618,7 +613,7 @@ def check_template_update():
     den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
     (opencode-docker ODER claude-code-docker) existiert als der Pin — der Check soll bei einem Update
     nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei echten Fehlern: Pin nicht gefunden, Tags
-    nicht abrufbar, Drift (Konstante != validate.yml/e2e.yml bzw. Mammouth-spec-Image), oder ein
+    nicht abrufbar, Drift (Konstante != validate.yml/e2e.yml bzw. Mammouth-Dockerfile-Base), oder ein
     Pin-Tag ist nicht auf Docker Hub publiziert."""
     pin = TEMPLATE_VERSION
     wf_ver = _template_workflow_version()
@@ -632,15 +627,15 @@ def check_template_update():
             f" (Pin der lokalen Tests ist die Konstante in {os.path.relpath(__file__, ROOT)})",
         )
         return
-    spec_ver = _template_spec_image_version()
-    if not spec_ver:
-        fail("template version (Mammouth-spec-Image nicht gepinnt)",
-             f"image in {MAMMOUTH_SPEC_FILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
+    mam_ver = _mammouth_base_image_version()
+    if not mam_ver:
+        fail("template version (mammouth-agent/Dockerfile BASE_IMAGE nicht gepinnt)",
+             f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
         return
-    if spec_ver != pin:
+    if mam_ver != pin:
         fail(
-            f"template version (Mammouth-spec-Image v{spec_ver} != Pin v{pin})",
-            f"image in {MAMMOUTH_SPEC_FILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
+            f"template version (Mammouth Dockerfile BASE_IMAGE v{mam_ver} != Pin v{pin})",
+            f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
             f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
         )
         return
@@ -696,14 +691,14 @@ def check_template_update():
 
 
 def check_mammouth_cli_update():
-    """Vergleicht die gepinnte Mammouth-CLI-Version (VERSION= im install.sh-Command der
-    spec — die Sandbox installiert exakt diese Version) mit der latest GitHub-Release-
-    Version (mammouth-ai/code). Warnt (gelb), wenn ein neueres Release existiert — der
+    """Vergleicht die gepinnte Mammouth-CLI-Version (ARG MAMMOUTH_VERSION im Dockerfile —
+    das Image backt exakt diese Version) mit der latest GitHub-Release-Version (mammouth-ai/code).
+    Warnt (gelb), wenn ein neueres Release existiert — der
     Check soll bei einem Update nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei
     echten Fehlern (Pin nicht gefunden, Release nicht abrufbar)."""
     pin = _mammouth_cli_pin_version()
     if not pin:
-        fail("mammouth CLI version (Pin nicht im install.sh-Command von mammouth-agent/spec.yaml gefunden)")
+        fail(f"mammouth CLI version (Pin nicht als ARG MAMMOUTH_VERSION in {MAMMOUTH_DOCKERFILE} gefunden)")
         return
     try:
         body = _http_get(MAMMOUTH_LATEST_URL)
@@ -718,8 +713,8 @@ def check_mammouth_cli_update():
     if _version_newer(latest, pin):
         warn(
             f"mammouth CLI update available (Pin v{pin}, latest v{latest})",
-            f"Optional: VERSION={latest} im install.sh-Command von {MAMMOUTH_SPEC_FILE} setzen "
-            f"(installierte Version in der Sandbox = Pin)",
+            f"Optional: ARG MAMMOUTH_VERSION={latest} in {MAMMOUTH_DOCKERFILE} setzen "
+            f"(gebackene Version im Image = Pin)",
         )
     else:
         pass_(f"mammouth CLI version up-to-date (Pin v{pin}, latest v{latest})")
@@ -958,10 +953,12 @@ def main():
 
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
-        # Mixin-Kits (OpenCode/Claude) bekommen ein `--template` (Issue #137, Tooling vorgebacken):
+        # Tooling-Images (Issue #137, Tooling vorgebacken):
         #   - opencode: docker.io/domboeckli/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
         #   - claude:   docker.io/domboeckli/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
-        # Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
+        #   - mammouth: docker.io/domboeckli/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
+        #   - mistral-vibe: docker.io/domboeckli/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
+        #     alle via `--template` (Mixin) bzw. `--kit-arg imageTag` (sandbox-Kits).
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
         if template_fam and not template_image:
@@ -982,6 +979,10 @@ def main():
             vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
             create_cmd += ["--kit-arg", f"imageTag={vibe_tag}"]
             info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
+        if s["agent"] == "mammouth":
+            mam_tag = os.environ.get("MAMMOUTH_IMAGE_TAG") or "local"
+            create_cmd += ["--kit-arg", f"imageTag={mam_tag}"]
+            info(f"  Mammouth-Image-Tag (--kit-arg imageTag): {mam_tag}")
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.
@@ -1202,9 +1203,8 @@ def main():
                 sfail(f"startup check: {checks_tool}", f"status={m.get(checks_tool)}")
 
             if s["agent"] == "mammouth":
-                # Installierte Mammouth-CLI-Version gegen den Pin aus der spec (VERSION=)
-                # pruefen — die Sandbox installiert exakt diese Version, der Pin ist die
-                # einzige erwartete installierte Version.
+                # Installierte Mammouth-CLI-Version gegen den Pin im Dockerfile (ARG MAMMOUTH_VERSION)
+                # pruefen — das Image backt exakt diese Version.
                 mammouth_ver_cmd = "mammouth --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
                 c2, out = exec_sandbox(s["name"], mammouth_ver_cmd)
                 installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
@@ -1213,10 +1213,10 @@ def main():
                     pass_(f"mammouth CLI version installed (v{installed} == Pin v{pin})")
                 elif installed and pin and _version_newer(installed, pin):
                     sfail(f"mammouth CLI version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
-                          f"install.sh-Command in {MAMMOUTH_SPEC_FILE} pruefen (VERSION={pin}); ggf. Sandbox neu bauen")
+                          f"ARG MAMMOUTH_VERSION in {MAMMOUTH_DOCKERFILE} pruefen (Pin {pin}); Image neu bauen")
                 elif installed and pin:
                     sfail(f"mammouth CLI version installed (v{installed} != Pin v{pin})",
-                          f"Pin in {MAMMOUTH_SPEC_FILE} erhoehen oder Sandbox neu bauen")
+                          f"ARG MAMMOUTH_VERSION in {MAMMOUTH_DOCKERFILE} erhoehen oder Image neu bauen")
                 else:
                     sfail("mammouth CLI version installed (nicht ermittelbar)", f"out={out!r}")
 

@@ -603,8 +603,10 @@ sbx run claude `
     --skills=off `
     --static-mcp idea
 
-# Mammouth Code (eigenes Agent-Kit; Pin im spec-Image)
+# Mammouth Code (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
+# (vorher Run-Config build-and-publish-mammouth-image); Release-Image via Workflow build-and-publish-mammouth-image.yml
 sbx run ./mammouth-agent/ `
+    --kit-arg imageTag=local `
     --skills=off `
     --static-mcp idea
 

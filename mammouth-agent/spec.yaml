@@ -4,13 +4,20 @@ name: mammouth
 displayName: "Mammouth Code (OpenCode-Fork)"
 description: "Mammouth Code Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker CLI und kubectl"
 
+args:
+  imageTag:
+    default: "1.18.31.1"
+    description: >-
+      Tag of domboeckli/sbx-mammouth to run. Default = release tag (= Mammouth CLI version).
+      CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build;
+      lokal `--kit-arg imageTag=local`.
+
 sandbox:
-  # Template-Version gepinnt (opencode-docker-0.x.0, Renovate-managed) — Mirror der zentralen
-  # TEMPLATE_VERSION aus .github/workflows/validate.yml + e2e.yml (Renovate-managed, beide
-  # Template-Familien). `local-test-kits.py --validate-only` warnt (gelb) bei neuerem Tag auf
-  # Docker Hub und schlaegt bei Drift zu dieser Version fehl. Gleiche Version fuer
-  # claude-code-docker (Claude).
-  image: "docker/sandbox-templates:opencode-docker-0.7.0"
+  # Eigenes, gepinntes Image (siehe mammouth-agent/Dockerfile): Basis
+  # docker/sandbox-templates:opencode-docker-0.x.0 (Mammouth ist ein OpenCode-Fork) + Kit-Tooling
+  # + Mammouth-CLI. Build/Publish via .github/workflows/build-and-publish-mammouth-image.yml
+  # (Renovate trackt den Base-Pin ARG BASE_IMAGE + ARG MAMMOUTH_VERSION).
+  image: "docker.io/domboeckli/sbx-mammouth:${{ kit.args.imageTag }}"
   entrypoint: [mammouth]
 
 agentInstructions:
@@ -246,12 +253,6 @@ setup:
     - command: "bash /home/agent/.local/bin/install-tooling-user.sh"
       user: "1000"
       description: Install agent-user tooling (skills + Claude statusline) — source files/home/.local/bin/install-tooling-user.sh
-    - command: |
-        curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.18.31.1 bash
-      user: "1000"
-      description: Install Mammouth Code (install.sh, Version via VERSION-Pin; Binaries landen in ~/.mammouth)
-    - command: "ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth"
-      description: Symlink mammouth into PATH for entrypoint
   startup:
     - command:
         - bash

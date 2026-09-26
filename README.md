@@ -3,7 +3,7 @@
 [![Validate Kit](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml)
 [![Kit e2e](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml)
 
-Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich dedizierte Agent-Kits: **Mammouth Code** (`mammouth-agent/`, `kind: sandbox`, entrypoint `mammouth`) und **Mistral Vibe** (`mistral-vibe-agent/`, `kind: sandbox`, eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`).
+Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich dedizierte Agent-Kits: **Mammouth Code** (`mammouth-agent/`, `kind: sandbox`, eigenes Image `domboeckli/sbx-mammouth`, entrypoint `mammouth`) und **Mistral Vibe** (`mistral-vibe-agent/`, `kind: sandbox`, eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`).
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
 
@@ -56,10 +56,11 @@ sbx run claude `
     "C:\development\maven-repo:ro"
 ```
 
-**Mammouth Code:**
+**Mammouth Code** (eigenes Image `domboeckli/sbx-mammouth`; für die **lokale Entwicklung** `--kit-arg imageTag=local` verwenden — vorher Run-Config `build-and-publish-mammouth-image` ausführen; Release aus `build-and-publish-mammouth-image.yml`):
 
 ```powershell
 sbx run ./mammouth-agent/ `
+    --kit-arg imageTag=local `
     --skills=off `
     --static-mcp idea `
     . `
@@ -128,6 +129,7 @@ sbx run claude `
 
 ```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
+    --kit-arg imageTag=latest `
     --skills=off `
     --static-mcp idea `
     . `
@@ -139,6 +141,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 
 ```powershell
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
+    --kit-arg imageTag=latest `
     --skills=off `
     --static-mcp idea `
     . `
@@ -152,29 +155,29 @@ Alle Kits nutzen die Template-Version **`0.x.0`** (`TEMPLATE_VERSION`, Renovate-
 
 - **OpenCode**: `docker.io/domboeckli/sbx-opencode-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling vorgebacken, Issue #137)
 - **Claude (Home)**: `docker.io/domboeckli/sbx-claude-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:claude-code-docker-0.x.0` auf (Issue #137)
-- **Mammouth**: `docker/sandbox-templates:opencode-docker-0.x.0` (Pin im `sandbox.image` der spec)
-- **Mistral Vibe**: `docker/sandbox-templates:shell-docker-0.x.0` (Basis des eigenen Vibe-Images)
+- **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken, Issue #137)
+- **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
 
-Die Version ist mehrfach gepinnt und wird auf Konsistenz geprüft: als Konstante in `local-test/local-test-kits.py`
+Die Base-Version `0.x.0` ist mehrfach gepinnt und wird auf Konsistenz geprüft: als Konstante in `local-test/local-test-kits.py`
 (Renovate-managed), als `TEMPLATE_VERSION` in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed),
-als Mirror im `sandbox.image` von `mammouth-agent/spec.yaml` und im `ARG BASE_IMAGE` von
-`opencode-agent/opencode/Dockerfile` + `opencode-agent/claude/Dockerfile`.
+als `ARG BASE_IMAGE` in `opencode-agent/opencode/Dockerfile`, `opencode-agent/claude/Dockerfile` und
+`mammouth-agent/Dockerfile`.
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
 bei Drift fehl.
 
-**Tooling-Image-Tags (OpenCode/Claude)** — Schema identisch zu `sbx-mistral-vibe`; `<version>` = `TEMPLATE_VERSION`,
-`<branch-slug>` = Branch-Name (lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
+**Image-Tags** — Schema für alle Tooling-/Agent-Images; `<version>` = `TEMPLATE_VERSION` (OpenCode/Claude/Mammouth)
+bzw. die Agent-Version (Mistral Vibe), `<branch-slug>` = Branch-Name (lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
 
 | Kontext | Tag(s) |
 |---------|--------|
-| Lokal (Run-Config `build-and-publish-<agent>-image`) | `<version>-<branch-slug>.<timestamp>` + `:local` |
+| Lokal (Run-Config `build-and-publish-<name>-image`) | `<version>-<branch-slug>.<timestamp>` + `:local` |
 | master/main (CI) | `<version>` + `:latest` |
 | Feature-Branch / PR (CI) | `<version>-<branch-slug>.<timestamp>` + `<branch-slug>` |
 
-Die Images müssen vor dem ersten Start **publiziert** sein — CI via `.github/workflows/build-and-publish-opencode-image.yml`
-bzw. `build-and-publish-claude-image.yml` (`workflow_dispatch`/Push auf `master`), lokal via Run-Config
-`build-and-publish-opencode-image` / `build-and-publish-claude-image`. Für die **lokale Entwicklung** daher
-`:local` verwenden (siehe „Lokale Entwicklung"). Details: `AGENTS.md` → "Image-Versionierung (OpenCode/Claude-Tooling-Images)".
+Die Images müssen vor dem ersten Start **publiziert** sein — CI via `.github/workflows/build-and-publish-<name>-image.yml`
+(`workflow_dispatch`/Push auf `master`), lokal via Run-Config `build-and-publish-<name>-image`. Für die **lokale
+Entwicklung** daher `:local` verwenden (siehe „Lokale Entwicklung"); für Remote-Bezug `:latest`. Details: `AGENTS.md`
+→ "Image-Versionierung (Tooling-/Agent-Images)".
 
 ### Ubuntu-WSL
 
@@ -214,6 +217,7 @@ sbx run claude \
 
 ```bash
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
+    --kit-arg imageTag=latest \
     --skills=off \
     --static-mcp idea \
     . \
@@ -225,6 +229,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 
 ```bash
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
+    --kit-arg imageTag=latest \
     --skills=off \
     --static-mcp idea \
     . \
@@ -378,8 +383,8 @@ Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
 
-**Installation** — das Agent-Kit installiert Mammouth automatisch beim Sandbox-Build, gepinnt auf
-**v1.18.31.1** (`curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.18.31.1 bash` als User 1000,
+**Installation** — das Image `domboeckli/sbx-mammouth` backt Mammouth beim **Image-Build**, gepinnt auf
+**v1.18.31.1** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/Dockerfile`, ausgeführt als User `agent`;
 Pin via Renovate `mammouth-ai/code`; `local-test-kits.py --validate-only` warnt bei neuerem
 GitHub-Release) und legt einen Symlink `/usr/local/bin/mammouth` an, damit der Entrypoint den
 Agenten findet. Manuell nur nötig, wenn die Sandbox bereits läuft:
@@ -863,9 +868,9 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 ### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
-`sbx run --skills=off ./mammouth-agent/`) betrieben, das Mammouth automatisch
-beim Build installiert (gepinnt auf **v1.18.31.1**: `curl -fsSL https://code.mammouth.ai/install.sh |
-VERSION=1.18.31.1 bash` + Symlink; Pin via Renovate). Das
+`sbx run --skills=off ./mammouth-agent/`) betrieben; das eigene Image `domboeckli/sbx-mammouth`
+backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.1** via `ARG MAMMOUTH_VERSION` +
+Symlink; Pin via Renovate). Das
 `opencode-agent/`-Kit (`sbx run --skills=off opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
 Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
 
