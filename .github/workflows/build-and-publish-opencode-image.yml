@@ -1,0 +1,150 @@
+name: Build and publish OpenCode tooling image
+
+# Builds and publishes `domboeckli/sbx-opencode-tooling`: the official
+# `opencode-docker` sandbox template with the kit tooling baked in (issue #137).
+# The `opencode-agent` mixin kit is still passed via `--kit`; the image only
+# removes the repeated `setup.install` downloads at sandbox creation time.
+#
+# This workflow is both directly dispatchable and a reusable workflow
+# (`workflow_call`), so e2e.yml can build/publish the image before its
+# scenario matrix. Manual runs use `workflow_dispatch`.
+#
+# Tags (a Docker tag must stay valid, so the timestamp is a semver prerelease
+# identifier, not build metadata — `+` is not allowed in a tag):
+#   - master / main: `<TEMPLATE_VERSION>` plus the moving `latest`
+#   - feature/PR:    `<TEMPLATE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
+#
+# Multi-arch (linux/amd64 + linux/arm64) via NATIVE runners; the arch is part of
+# the repository NAME (`<name>-amd64` / `<name>-arm64`), merged into one manifest
+# list with `docker buildx imagetools create`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push the image to Docker Hub (off = build only)"
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      push:
+        description: "Push the image to Docker Hub (off = build only)"
+        type: boolean
+        default: true
+    outputs:
+      version_tag:
+        description: "Image version tag that was built/pushed"
+        value: ${{ jobs.prepare.outputs.version_tag }}
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAMESPACE: domboeckli
+  IMAGE_NAME: sbx-opencode-tooling
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version_tag: ${{ steps.tags.outputs.version_tag }}
+      extra_tag: ${{ steps.tags.outputs.extra_tag }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compute image tags from the base template pin and the branch
+        id: tags
+        run: |
+          set -euo pipefail
+          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-[0-9]+(\.[0-9]+)+' \
+            opencode-agent/opencode/Dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
+          if [ -z "$pin" ]; then
+            echo "opencode-docker base pin not found in opencode-agent/opencode/Dockerfile" >&2
+            exit 1
+          fi
+          wf_pin=$(grep -oE 'TEMPLATE_VERSION: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          if [ "$wf_pin" != "$pin" ]; then
+            echo "Dockerfile base pin ($pin) != TEMPLATE_VERSION in validate.yml ($wf_pin)" >&2
+            exit 1
+          fi
+          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$ref" = "master" ] || [ "$ref" = "main" ]; then
+            version_tag="$pin"
+            extra_tag="latest"
+          else
+            slug=$(printf '%s' "$ref" | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's#[^a-z0-9_.-]+#-#g; s#^-+##; s#-+$##')
+            ts=$(date -u +%Y%m%d%H%M%S)
+            version_tag="${pin}-${slug}.${ts}"
+            extra_tag="$slug"
+          fi
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "extra_tag=$extra_tag" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$version_tag extra_tag=$extra_tag"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
+        uses: docker/build-push-action@v7
+        with:
+          context: opencode-agent
+          file: opencode-agent/opencode/Dockerfile
+          platforms: ${{ matrix.platform }}
+          provenance: true
+          sbom: true
+          push: ${{ inputs.push }}
+          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
+
+  merge:
+    needs: [prepare, build]
+    if: ${{ inputs.push }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Create multi-arch manifest list
+        env:
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+          EXTRA_TAG: ${{ needs.prepare.outputs.extra_tag }}
+        run: |
+          set -euo pipefail
+          image="${IMAGE_NAMESPACE}/${IMAGE_NAME}"
+          docker buildx imagetools create \
+            -t "${image}:${VERSION_TAG}" \
+            "${image}-amd64:${VERSION_TAG}" \
+            "${image}-arm64:${VERSION_TAG}"
+          if [ -n "${EXTRA_TAG}" ]; then
+            docker buildx imagetools create \
+              -t "${image}:${EXTRA_TAG}" \
+              "${image}:${VERSION_TAG}"
+          fi
+          docker buildx imagetools inspect "${image}:${VERSION_TAG}"

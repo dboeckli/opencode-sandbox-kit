@@ -16,6 +16,11 @@ set -euo pipefail
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
 # at once (previous behavior). npm is inlined directly into the spec.yaml commands; apt
 # packages live in install-apt-packages.sh.
+# Idempotency guards: each tool checks whether it is already installed at the expected
+# version and skips the download otherwise. This keeps `setup.install` fast when the
+# tooling is pre-baked into a custom template image (e.g. domboeckli/sbx-opencode-tooling),
+# while a clean base template (e.g. Claude on the official template) still installs.
+#
 # Fail-open: every tool runs via `run_step` in a subshell. A failing tool does NOT abort
 # the sandbox start — the tool output + a `warn` line (tool + exit code) are appended to
 # `$INSTALL_LOG` and the script continues with the next tool. The sandbox still starts,
@@ -98,6 +103,11 @@ download() {
 # --- shfmt ---
 run_shfmt() {
 	SHFMT_VER="3.14.1"
+	# Idempotenz-Guard: vorgebackenes Tooling (Custom-Template-Image) → Download überspringen.
+	if command -v shfmt >/dev/null 2>&1 && shfmt --version 2>/dev/null | grep -qF "v${SHFMT_VER}"; then
+		log_step shfmt
+		return 0
+	fi
 	download "https://github.com/mvdan/sh/releases/download/v${SHFMT_VER}/shfmt_v${SHFMT_VER}_linux_${DEB_ARCH}" /usr/local/bin/shfmt
 	chmod +x /usr/local/bin/shfmt
 	shfmt --version
@@ -107,6 +117,10 @@ run_shfmt() {
 # --- Liberica JDK (LTS) ---
 run_jdk() {
 	LIBERICA_VER="25.0.4+9"
+	if [ -x /usr/local/java/bin/java ] && /usr/local/java/bin/java -version 2>&1 | grep -qF "25.0.4"; then
+		log_step jdk
+		return 0
+	fi
 	download "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-${JDK_ARCH}.tar.gz" /tmp/jdk.tar.gz
 	mkdir -p /usr/local/java
 	tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1
@@ -118,6 +132,10 @@ run_jdk() {
 # --- Apache Maven ---
 run_maven() {
 	MAVEN_VER="3.9.16"
+	if command -v mvn >/dev/null 2>&1 && mvn -v 2>/dev/null | grep -qF "${MAVEN_VER}"; then
+		log_step maven
+		return 0
+	fi
 	download "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" /tmp/maven.tar.gz
 	mkdir -p /opt/maven
 	tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1
@@ -129,6 +147,10 @@ run_maven() {
 # --- Docker CLI (static binary) ---
 run_docker() {
 	DOCKER_VER="27.5.1"
+	if command -v docker >/dev/null 2>&1 && docker --version 2>/dev/null | grep -qF "${DOCKER_VER}"; then
+		log_step docker
+		return 0
+	fi
 	# Docker static binaries use x86_64 / aarch64 in the URL path
 	case "${UNAME_M}" in
 	    x86_64)  DOCKER_ARCH="x86_64" ;;
@@ -144,6 +166,10 @@ run_docker() {
 run_compose() {
 	# Compose release assets use x86_64/aarch64, not amd64/arm64
 	COMPOSE_VER="5.5.1"
+	if [ -x /usr/local/lib/docker/cli-plugins/docker-compose ] && docker compose version 2>/dev/null | grep -qF "${COMPOSE_VER}"; then
+		log_step compose
+		return 0
+	fi
 	case "${UNAME_M}" in
 	    x86_64)  COMPOSE_ARCH="x86_64" ;;
 	    aarch64) COMPOSE_ARCH="aarch64" ;;
@@ -157,6 +183,10 @@ run_compose() {
 
 # --- kubectl (latest stable) ---
 run_kubectl() {
+	if command -v kubectl >/dev/null 2>&1; then
+		log_step kubectl
+		return 0
+	fi
 	KUBE_VER=""
 	local attempt
 	for attempt in 1 2 3 4 5; do
@@ -184,6 +214,10 @@ install_helm() {
 
 run_helm() {
 	HELM_VER="3.22.0"
+	if command -v helm >/dev/null 2>&1 && helm version --short 2>/dev/null | grep -qF "v${HELM_VER}"; then
+		log_step helm
+		return 0
+	fi
 	install_helm "${HELM_VER}" /usr/local/bin/helm
 	helm version
 	log_step helm
@@ -191,6 +225,10 @@ run_helm() {
 
 run_helm4() {
 	HELM4_VER="4.3.0"
+	if command -v helm4 >/dev/null 2>&1 && helm4 version --short 2>/dev/null | grep -qF "v${HELM4_VER}"; then
+		log_step helm4
+		return 0
+	fi
 	install_helm "${HELM4_VER}" /usr/local/bin/helm4
 	helm4 version
 	log_step helm4
@@ -203,6 +241,10 @@ run_helm4() {
 run_kafka() {
 	KAFKA_VER="4.3.1"
 	KAFKA_SCALA_VER="2.13"
+	if [ -x /opt/kafka/bin/kafka-topics.sh ] && command -v kafka-topics.sh >/dev/null 2>&1 && kafka-topics.sh --version 2>/dev/null | grep -qF "${KAFKA_VER}"; then
+		log_step kafka
+		return 0
+	fi
 	download "https://dlcdn.apache.org/kafka/${KAFKA_VER}/kafka_${KAFKA_SCALA_VER}-${KAFKA_VER}.tgz" /tmp/kafka.tgz
 	mkdir -p /opt/kafka
 	tar -xzf /tmp/kafka.tgz -C /opt/kafka --strip-components=1
