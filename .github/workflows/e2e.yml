@@ -196,6 +196,29 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
+      - name: Store Docker Hub registry credential (authenticated pulls)
+        # Docker Hub rate-limits *anonymous* pulls per IP. On shared GitHub
+        # runners that quota is routinely exhausted by other users, so
+        # `sbx create` fails while pulling the template image:
+        #   "You have reached your unauthenticated pull rate limit."
+        # The `sbx login` session above is supposed to authenticate Hub pulls,
+        # but in CI the sandbox runtime still fell back to anonymous. Store an
+        # explicit host-only Docker Hub registry credential (the sbx CLI uses it
+        # to pull templates/kits before sandbox creation) and log the Docker CLI
+        # in as well, as a fallback to the Docker credential store.
+        # Docs: REGISTRY SECRETS can't be combined with --token/--oauth/--ref.
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: |
+          set -euo pipefail
+          USER_CLEAN=$(printf '%s' "$DOCKER_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx secret set --registry docker.io \
+            --username "$USER_CLEAN" --password-stdin
+          printf '%s' "$TOKEN_CLEAN" | docker login docker.io \
+            --username "$USER_CLEAN" --password-stdin
+
       - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/mistral/zai/context7/openrouter/google fake)
         # local-test/local-test-kits.py asserts these global services exist
         # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
