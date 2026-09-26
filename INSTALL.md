@@ -100,7 +100,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
     --skills=off `
     --static-mcp idea
 ```
@@ -444,7 +444,7 @@ einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider k
 (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
 Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
 
-`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
+`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
 — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (eine zweite Deklaration führt zu
 `credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
 Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
@@ -479,7 +479,7 @@ Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günst
 zusätzlicher Provider konfiguriert (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.google`,
 DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
 
-`google` ist ein **Built-in-Service des `opencode`-Templates** (`docker/sandbox-templates:opencode-docker`)
+`google` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
 — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
 Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
 `GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
@@ -584,12 +584,14 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 > für bereits laufende Sandboxes).
 
 ```powershell
-# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version; Mammouth/Mistral Vibe via spec-Image, kein --template nötig)
+# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version). OpenCode nutzt das Tooling-Image
+# domboeckli/sbx-opencode-tooling:0.7.0 (muss publiziert sein: CI publish-opencode-image.yml bzw.
+# lokal Run-Config build-and-publish-opencode-image); Mammouth/Mistral Vibe via spec-Image, kein --template nötig.
 
 # OpenCode (Home-Standard)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
     --skills=off `
     --static-mcp idea
 
@@ -618,7 +620,7 @@ Projekt einbinden + Kubernetes-Support:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
     --skills=off `
     --static-mcp idea `
     "C:\development\projects\dein-projekt" `

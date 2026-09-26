@@ -144,9 +144,9 @@
     },
     {
       "customType": "regex",
-      "description": "Sandbox-Template-Version in der Doku (konkrete sbx --template-Image-Refs in MD-Files; Prosa bleibt versionsneutral als 0.x.0)",
+      "description": "Sandbox-Template-Version in der Doku (konkrete sbx --template-Image-Refs in MD-Files; Prosa bleibt versionsneutral als 0.x.0). Das OpenCode-Tooling-Image traegt denselben Basis-Versions-Tag (opencode-docker)",
       "managerFilePatterns": ["README.md", "AGENTS.md", "INSTALL.md", "docs/kubernetes-integration.md"],
-      "matchStrings": ["docker/sandbox-templates:(?:opencode-docker|claude-code-docker|shell-docker)-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "matchStrings": ["docker/sandbox-templates:(?:opencode-docker|claude-code-docker|shell-docker)-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)", "domboeckli/sbx-opencode-tooling:(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^(?:opencode-docker|claude-code-docker|shell-docker)-(?<version>.*)$",
@@ -186,6 +186,16 @@
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "OpenCode Tooling-Image Basis-Template (opencode-agent/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION spiegeln)",
+      "managerFilePatterns": ["opencode-agent/Dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
       "versioningTemplate": "semver"
     }
   ]

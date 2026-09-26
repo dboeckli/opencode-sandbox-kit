@@ -26,7 +26,7 @@ Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-agent/`, `./mam
 cd C:\development\projects\opencode-sandbox-kit
 ```
 
-Template-Version gepinnt (`0.x.0`, siehe Hinweis unten). Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
+Template-Version gepinnt (`0.x.0`, siehe Hinweis unten). **OpenCode** nutzt das eigene Tooling-Image `docker.io/domboeckli/sbx-opencode-tooling:0.x.0` (baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf, Tooling vorgebacken → schneller Start; muss vorher publiziert sein, siehe Hinweis unten), **Claude** das offizielle `claude-code-docker-0.x.0`. Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
 Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Entwicklungs-Stack: `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
 
@@ -35,7 +35,7 @@ Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** b
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `
@@ -89,7 +89,7 @@ sbx run ./mistral-vibe-agent/ `
 
 ### Kit direkt aus GitHub (ohne Clone)
 
-Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template docker/sandbox-templates:<family>-0.x.0` (Mammouth: Pin im spec-Image).
+Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Template gepinnt via `--template` (OpenCode: `docker.io/domboeckli/sbx-opencode-tooling:0.x.0`, Claude: `docker/sandbox-templates:claude-code-docker-0.x.0`; Mammouth: Pin im spec-Image).
 
 Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts):
 
@@ -102,7 +102,7 @@ cd C:\development\projects\mein-projekt
 ```powershell
 sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker/sandbox-templates:opencode-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
     --skills=off `
     --static-mcp idea `
     . `
@@ -146,20 +146,28 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vi
 ```
 
 > **Template-Version (gepinnt, Renovate-managed):** Alle Kits nutzen Template-Tag **`0.x.0`**.
-> - **OpenCode / Mammouth**: `docker/sandbox-templates:opencode-docker-0.x.0`
+> - **OpenCode**: `docker.io/domboeckli/sbx-opencode-tooling:0.x.0` (eigenes Tooling-Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf; Tooling vorgebacken, Issue #137)
+> - **Mammouth**: `docker/sandbox-templates:opencode-docker-0.x.0` (Pin im `sandbox.image` der spec)
 > - **Claude (Home)**: `docker/sandbox-templates:claude-code-docker-0.x.0`
 > - **Mistral Vibe**: `docker/sandbox-templates:shell-docker-0.x.0` (Basis des eigenen Vibe-Images)
 >
 > Die **Version** (gilt für alle Kits) ist mehrfach gepinnt und wird auf Konsistenz geprüft:
 > explizit als Konstante in `local-test/local-test-kits.py` (Pin der lokalen Tests, Renovate-managed),
 > als `TEMPLATE_VERSION` in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed, wie
-> `SBX_VERSION`) sowie als Mirror im `sandbox.image` von `mammouth-agent/spec.yaml`. Das Mixin-Kit
-> (`opencode-agent/`) pinnt das Template per
-> `--template docker/sandbox-templates:<template>-<version>` im Start-Command.
+> `SBX_VERSION`), als Mirror im `sandbox.image` von `mammouth-agent/spec.yaml` und im `ARG BASE_IMAGE`
+> von `opencode-agent/Dockerfile`. Das Mixin-Kit (`opencode-agent/`) pinnt das Template per
+> `--template` im Start-Command.
 > `python local-test/local-test-kits.py --validate-only` prüft die Pins gegen die Docker-Hub-Tags und
 > **warnt** (gelb), sobald ein neuerer Tag existiert (`opencode-docker` ODER `claude-code-docker`);
-> bei Drift zwischen Konstante/Workflows/spec-Image schlägt der Check fehl. Die Test-Sandboxes der
+> bei Drift zwischen Konstante/Workflows/spec-Image/Dockerfile-Base schlägt der Check fehl. Die Test-Sandboxes der
 > Mixin-Szenarien werden mit der expliziten `TEMPLATE_VERSION`-Konstante erstellt (`--template ...`).
+>
+> **OpenCode-Tooling-Image:** muss vor dem ersten Start publiziert sein — CI via
+> `.github/workflows/publish-opencode-image.yml` (`workflow_dispatch`/Push auf `master`), lokal via
+> IntelliJ-Run-Config **`build-and-publish-opencode-image`**
+> (`local-test/build-and-publish-opencode-image.py`, setzt zusätzlich den beweglichen Tag `:local`).
+> Tags: lokal `:local`; master `<version>` + `:latest`; Feature-Branch/PR `<version>-<branch-slug>.<timestamp>`
+> (Details: `AGENTS.md` → "Image-Versionierung (OpenCode-Tooling-Image)").
 
 ### Ubuntu-WSL
 
@@ -174,7 +182,7 @@ cd /mnt/c/development/projects/spring-6-reactive
 ```bash
 sbx run opencode \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
-    --template docker/sandbox-templates:opencode-docker-0.7.0 \
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 \
     --skills=off \
     --static-mcp idea \
     . \
@@ -324,7 +332,7 @@ sondern vom Template bzw. dem Kit-Image beim `sbx run`:
 
 | Agent | Template | Kit |
 |-------|----------|-----|
-| OpenCode | `opencode-docker` (Pin `0.x.0`) | `opencode-agent/` (Mixin) |
+| OpenCode | `domboeckli/sbx-opencode-tooling` (baut auf `opencode-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
 | Claude Code | `claude-code-docker` (Pin `0.x.0`) | `opencode-agent/` (Mixin) |
 | Mammouth Code | `opencode-docker` (Pin `0.x.0`) | `mammouth-agent/` (`kind: sandbox`, Pin im spec-Image) |
 | Mistral Vibe | `shell` (Pin `0.x.0`, im eigenen Image) | `mistral-vibe-agent/` (`kind: sandbox`, eigenes Image `domboeckli/sbx-mistral-vibe`) |
@@ -749,7 +757,7 @@ Sandbox mit dem MCP-Gateway erzeugen:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker/sandbox-templates:opencode-docker-0.7.0 `
+    --template docker.io/domboeckli/sbx-opencode-tooling:0.7.0 `
     --skills=off `
     --static-mcp idea
 ```
@@ -864,7 +872,7 @@ Mistral Vibe wird über das **dedizierte Agent-Kit** (`mistral-vibe-agent/`,
 
 ### Pre-installed Tools im Base Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`, Version gepinnt) enthält eine eigene OpenCode CLI
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`; für OpenCode gebacken in `docker.io/domboeckli/sbx-opencode-tooling:0.x.0`) enthält eine eigene OpenCode CLI
 (aktuell `1.17.11` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
 bei `1.18.11` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
 vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:

@@ -14,6 +14,14 @@ set -euo pipefail
 
 export PATH="/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
 
+# Idempotenz-Guard: bereits vollständig provisioniert (vorgebackenes Custom-Template-Image)
+# → kein Netzwerk-Refetch (skills/clone) beim Sandbox-Start.
+if [ -d "${HOME}/.agents/skills" ] && [ -n "$(ls -A "${HOME}/.agents/skills" 2>/dev/null)" ] \
+  && [ -d "${HOME}/docs/repsy-docs/.git" ] && [ -x "${HOME}/.claude/statusline.sh" ]; then
+  echo "install-tooling-user: bereits provisioniert, überspringe"
+  exit 0
+fi
+
 # --- skills (vercel-labs) → ~/.agents/skills ---
 /usr/local/share/npm-global/bin/skills add -g -y --all https://github.com/dboeckli/ai-agent-skills.git
 

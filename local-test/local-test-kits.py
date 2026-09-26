@@ -129,6 +129,18 @@ VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
 VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
+# OpenCode Tooling-Image (Issue #137): eigener Custom-Template-Build (opencode-agent/Dockerfile)
+# auf Basis des opencode-docker-Templates mit vorgebackenem Tooling. Das opencode-Szenario
+# nutzt es statt des offiziellen Templates; Claude bleibt auf docker/sandbox-templates.
+# Tag: CI/e2e uebergibt den Feature-Tag per `OPENCODE_IMAGE_TAG`; lokal default `local`
+# (zuletzt per local-test/build-and-publish-opencode-image.py gebaut/gepusht).
+OPENCODE_DOCKERFILE = "opencode-agent/Dockerfile"
+OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
+OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
+OPENCODE_BASE_IMAGE_RE = re.compile(
+    r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+)
+
 # Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
 # benötigt (Kit-deklarierte Services aus den Specs credentials[].service + Template-Built-ins
 # wie github/anthropic). openrouter/google verdrahtet nur das opencode-Template.
@@ -480,9 +492,24 @@ def _template_spec_image_version():
     return _spec_version(TEMPLATE_IMAGE_RE)
 
 
+def _opencode_base_image_version():
+    """opencode-docker-Basis-Tag im OpenCode-Tooling-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    path = os.path.join(ROOT, OPENCODE_DOCKERFILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = OPENCODE_BASE_IMAGE_RE.search(f.read())
+    return m.group("v") if m else None
+
+
 def _template_image(agent):
-    """docker/sandbox-templates:-Image fuer einen Agent (Familie + TEMPLATE_VERSION-Konstante).
+    """Template-Image fuer einen Agent.
+    - opencode: eigenes Tooling-Image (Issue #137), Tag per `OPENCODE_IMAGE_TAG` (default `local`).
+    - claude: offizielles docker/sandbox-templates:claude-code-docker-<TEMPLATE_VERSION>.
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
+    if agent == "opencode":
+        tag = os.environ.get("OPENCODE_IMAGE_TAG") or "local"
+        return f"docker.io/{OPENCODE_IMAGE_NAMESPACE}/{OPENCODE_IMAGE_NAME}:{tag}"
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None
@@ -562,6 +589,18 @@ def check_template_update():
         fail(
             f"template version (Mammouth-spec-Image v{spec_ver} != Pin v{pin})",
             f"image in {MAMMOUTH_SPEC_FILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
+            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
+        )
+        return
+    oc_ver = _opencode_base_image_version()
+    if not oc_ver:
+        fail("template version (opencode-agent/Dockerfile BASE_IMAGE nicht gepinnt)",
+             f"ARG BASE_IMAGE in {OPENCODE_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
+        return
+    if oc_ver != pin:
+        fail(
+            f"template version (opencode Dockerfile BASE_IMAGE v{oc_ver} != Pin v{pin})",
+            f"ARG BASE_IMAGE in {OPENCODE_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
             f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
         )
         return
@@ -852,9 +891,12 @@ def main():
 
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
-        # Mixin-Kits (OpenCode/Claude): Template gepinnt via `--template docker/sandbox-templates:<family>-<pin>`
-        # (TEMPLATE_VERSION-Konstante dieses Scripts) — so testet das Szenario die gepinnte
-        # Template-Version. Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
+        # Mixin-Kits (OpenCode/Claude) bekommen ein `--template`:
+        #   - opencode: eigenes Tooling-Image docker.io/domboeckli/sbx-opencode-tooling:<tag>
+        #     (Issue #137; Tag per OPENCODE_IMAGE_TAG, default `local`) — Tooling vorgebacken.
+        #   - claude: offizielles docker/sandbox-templates:claude-code-docker-<pin>
+        #     (TEMPLATE_VERSION-Konstante dieses Scripts).
+        # Mammouth (kind:sandbox) braucht kein --template: Pin im spec-Image.
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
         if template_fam and not template_image:
@@ -894,8 +936,9 @@ def main():
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
                                       "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
         info("  setup.install laeuft jetzt (npm-CLIs, apt, JDK, Maven, Docker CLI, Compose, "
-             "kubectl, Helm v3/v4, Kafka, Skills) — mehrere Minuten ohne Zwischenausgabe (sbx buffert "
-             "die Install-Ausgabe bei gepipetem stdout).")
+             "kubectl, Helm v3/v4, Kafka, Skills). Mit vorgebackenem Image (opencode) in Sekunden; "
+             "sonst mehrere Minuten ohne Zwischenausgabe (sbx buffert die Install-Ausgabe bei "
+             "gepipetem stdout).")
         code, create_out = run_sbx(create_cmd, stream=True)
         if code != 0:
             sfail("sandbox create")

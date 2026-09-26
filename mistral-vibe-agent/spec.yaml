@@ -220,14 +220,14 @@ credentials:
 
 setup:
   install:
-    - command: "npm_config_bin_links=true npm install -g ctx7"
-      description: Install ctx7 (docs-as-a-service CLI)
-    - command: "npm_config_bin_links=true npm install -g skills"
-      description: Install skills (vercel-labs CLI)
-    - command: "npm_config_bin_links=true npm install -g prettier"
-      description: Install prettier
-    - command: "npm_config_bin_links=true npm install -g renovate"
-      description: Install renovate
+    - command: "[ -x /usr/local/share/npm-global/bin/ctx7 ] || npm_config_bin_links=true npm install -g ctx7"
+      description: Install ctx7 (docs-as-a-service CLI) — skip if already baked into the image
+    - command: "[ -x /usr/local/share/npm-global/bin/skills ] || npm_config_bin_links=true npm install -g skills"
+      description: Install skills (vercel-labs CLI) — skip if already baked into the image
+    - command: "[ -x /usr/local/share/npm-global/bin/prettier ] || npm_config_bin_links=true npm install -g prettier"
+      description: Install prettier — skip if already baked into the image
+    - command: "[ -x /usr/local/share/npm-global/bin/renovate ] || npm_config_bin_links=true npm install -g renovate"
+      description: Install renovate — skip if already baked into the image
     - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
       description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"
