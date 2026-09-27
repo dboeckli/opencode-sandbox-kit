@@ -62,7 +62,7 @@ Sandbox liegt der GitHub-Token nur als Sentinel vor → **UI-Schritt** (oder API
 
 ## Portierte Workflows (`.forgejo/workflows/`)
 
-- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; Runner: `${{ vars.RUNNER_LABEL || 'codeberg-medium' }}` (Codebergs gehosteter Runner).
+- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; Runner: `${{ vars.RUNNER_LABEL || 'codeberg-small' }}` (Codebergs gehosteter Runner).
 - `cleanup-cloudsmith.yml` — Cloudsmith-Cleanup + Recycle-Bin-Purge (nightly/master-push/dispatch).
 - `build-and-publish-{opencode,claude,mammouth,mistral-vibe}-image.yml` — Forgejo-nativ:
   **plain `docker`/`docker buildx`** statt der GitHub-JS-Actions (`setup-buildx`/`login`/`build-push`),
@@ -76,16 +76,18 @@ die kanonische CI. Die Build-Ports lesen den Template-Pin aus `.forgejo/workflow
 ## Runner-Anforderungen + Repo-Variablen
 
 Codeberg **hostet** Forgejo-Actions-Runner (Open Alpha, kostenlos, public+FLOSS):
-Labels `codeberg-tiny` (1 CPU/2G/2 min), `codeberg-small` (2/4/5 min),
-`codeberg-medium` (4/8/10 min) + `-lazy`-Varianten; Default-Image
-`ghcr.io/catthehacker/ubuntu:act-latest` (GitHub-kompatibel, mit `sudo`/`apt`).
-Grenzen: kein Docker-Daemon (Image-Builds nur podman/buildah), nur amd64, knappe Zeitlimits.
+Labels `codeberg-tiny` (1 CPU/2G/2 min, **Kapazität 3**), `codeberg-small`
+(2/4/5 min, **Kapazität 2**), `codeberg-medium` (4/8/10 min, **Kapazität 1**) +
+`-lazy`-Varianten; Default-Image `ghcr.io/catthehacker/ubuntu:act-latest`
+(GitHub-kompatibel, mit `sudo`/`apt`). Achtung: `codeberg-medium` hat nur Kapazität 1 →
+Jobs hängen oft stundenlang (Codeberg/Community#2849) → `codeberg-tiny`/`-small` bevorzugen.
+Weitere Grenzen: kein Docker-Daemon (Image-Builds nur podman/buildah), nur amd64, knappe Zeitlimits.
 
 Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern):
 
 | Variable | Default | Verwendung |
 |----------|---------|------------|
-| `RUNNER_LABEL` | `codeberg-medium` | validate, cleanup, build prepare/merge, amd64-Build |
+| `RUNNER_LABEL` | `codeberg-small` | validate, cleanup, build prepare/merge, amd64-Build |
 | `RUNNER_ARM64` | `arm64` | arm64-Build (nativer arm64-Runner) |
 | `RUNNER_E2E` | `self-hosted` | e2e-Szenarien (Host-Modus) |
 

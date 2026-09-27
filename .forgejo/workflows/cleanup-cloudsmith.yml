@@ -17,11 +17,9 @@ run-name: >
 # Die Skripte liegen weiterhin unter .github/workflows/scripts/ (repo-relativ, daher
 # auch aus Forgejo nutzbar); bei einem späteren Entfernen der GitHub-Workflows ggf. verschieben.
 
+# ZURZEIT INAKTIV: nur workflow_dispatch (kein Auto-Trigger). Nach Runner-Klärung
+# wieder push (master) + schedule (nightly 04:25 UTC) aktivieren.
 on:
-  push:
-    branches: [master]
-  schedule:
-    - cron: '25 4 * * *'
   workflow_dispatch:
     inputs:
       dry-run:
@@ -39,9 +37,9 @@ on:
 
 jobs:
   cleanup:
-    # Runner-Label: `docker` = Codeberg-Shared-/Container-Runner; für einen
-    # self-hosted Runner die Repo-Variable RUNNER_LABEL setzen.
-    runs-on: ${{ vars.RUNNER_LABEL || 'docker' }}
+    # Runner-Label: Default Codebergs gehosteter Runner (codeberg-small);
+    # für self-hosted die Repo-Variable RUNNER_LABEL setzen.
+    runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-small' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v6
 

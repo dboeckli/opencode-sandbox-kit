@@ -17,12 +17,10 @@ name: Kit e2e
 # Portierungs-Entscheidungen: fully-qualified checkout; plain `docker`-CLI in den
 # Build-Workflows; `secrets: inherit` (Forgejo unterstützt das bei `workflow_call`).
 
+# ZURZEIT INAKTIV: nur workflow_dispatch. e2e braucht Docker+KVM (self-hosted) —
+# sobald ein passender Runner steht, wieder push/pull_request/schedule aktivieren.
 on:
-  push:
-  pull_request:
-  schedule:
-    # Nightly at 03:05 UTC, after validate.yml (03:00) has finished.
-    - cron: "5 3 * * *"
+  workflow_dispatch:
 
 jobs:
   build-and-publish-mistral-vibe-image:
@@ -30,7 +28,7 @@ jobs:
     # `mistral-vibe` scenario pulls. Reuses the standalone build-and-publish workflow
     # so the image always matches the branch under test (multi-arch).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
-    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
     uses: ./.forgejo/workflows/build-and-publish-mistral-vibe-image.yml
     with:
       push: true
@@ -39,21 +37,21 @@ jobs:
   build-and-publish-opencode-image:
     # Build (and, unless it's a PR, push) the OpenCode tooling image the
     # `opencode` scenario pulls. Reuses the standalone build-and-publish workflow (multi-arch).
-    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
     uses: ./.forgejo/workflows/build-and-publish-opencode-image.yml
     with:
       push: true
     secrets: inherit
 
   build-and-publish-claude-image:
-    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
     uses: ./.forgejo/workflows/build-and-publish-claude-image.yml
     with:
       push: true
     secrets: inherit
 
   build-and-publish-mammouth-image:
-    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
     uses: ./.forgejo/workflows/build-and-publish-mammouth-image.yml
     with:
       push: true
@@ -63,7 +61,7 @@ jobs:
     # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
     needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image]
-    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
     runs-on: ${{ vars.RUNNER_E2E || 'self-hosted' }}
     timeout-minutes: 60
     name: e2e (${{ matrix.scenario }})

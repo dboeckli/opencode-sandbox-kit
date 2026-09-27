@@ -1,29 +1,31 @@
 name: Validate Kit
 
 # Forgejo Actions port of .github/workflows/validate.yml (issue #114).
-# GitHub remains a mirror, so the GitHub workflow stays authoritative until the
-# Codeberg pipeline is proven. Differences vs GitHub Actions:
-#   - workflows live in .forgejo/workflows/ (Forgejo also reads .gitea/workflows/)
-#   - runs-on uses Forgejo runner labels; "ubuntu-latest" does not exist.
-#     "docker" = containerized job (default image is Debian bookworm, not Ubuntu).
-#   - actions/* are resolved from Codeberg's mirror: https://code.forgejo.org/actions/...
-#   - permissions/continue-on-error are ignored by Forgejo.
-#   - the github/sbX download uses a public release, so no GitHub token is required.
+# Codeberg ist kanonisch (origin), GitHub nur Mirror.
+# Unterschiede vs GitHub Actions:
+#   - workflows live in .forgejo/workflows/ (Forgejo liest sonst .github/workflows/)
+#   - runs-on: Codebergs gehostete Runner-Labels (codeberg-tiny/small/medium);
+#     "ubuntu-latest" existiert nicht, Default-Image ist GitHub-kompatibel.
+#   - fully-qualified actions von https://code.forgejo.org/actions/...
+#   - permissions/continue-on-error werden ignoriert.
+#   - der sbx-Download nutzt den oeffentlichen Release -> kein GitHub-Token noetig.
 
 on:
   push:
   pull_request:
-  schedule:
-    # Nightly at 03:00 UTC; e2e runs at 03:05 so validation finishes first.
-    - cron: "0 3 * * *"
+  # schedule (nightly 03:00 UTC) erst nach dem Merge aktivieren: Schedules laufen vom
+  # Default-Branch, und auf master liegt noch kein .forgejo/ -> Fallback auf .github
+  # (ubuntu-latest). Nach dem Merge einkommentieren.
+  # schedule:
+  #   - cron: "0 3 * * *"
 
 jobs:
   validate:
     # Forgejo runner label. Default: Codebergs gehosteter Runner (Open Alpha,
-    # kostenlos): codeberg-tiny/small/medium (4 CPU/8G/10 min) — GitHub-kompatibles
-    # Default-Image (ghcr.io/catthehacker/ubuntu:act-latest, mit sudo/apt).
-    # Für einen self-hosted Runner die Repo-Variable RUNNER_LABEL setzen.
-    runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-medium' }}
+    # kostenlos): codeberg-tiny/small/medium. WICHTIG: `codeberg-medium` hat nur
+    # Kapazität 1 -> langer Stau (tiny=3, small=2). Daher `codeberg-small`
+    # (2 CPU/4G/5 min Limit). Für einen self-hosted Runner RUNNER_LABEL setzen.
+    runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-small' }}
     env:
       # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
       # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins
