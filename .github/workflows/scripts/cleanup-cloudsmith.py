@@ -159,7 +159,8 @@ def main():
     for p in keep_tagged:
         for tag in version_tags(p):
             try:
-                referenced.update(child_digests(p["name"], tag))
+                # child_digests liefert "sha256:<hex>"; die Package-`version` ist nur <hex>.
+                referenced.update(d.split(":", 1)[-1] for d in child_digests(p["name"], tag))
             except Exception as e:  # noqa: BLE001
                 ref_ok = False
                 print(f"WARN: Referenzen von {p['name']}:{tag} nicht lesbar ({e}) — Orphan-Loeschung wird uebersprungen")
