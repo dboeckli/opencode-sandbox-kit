@@ -46,7 +46,7 @@ NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
 REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
 CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-REPO = os.environ.get("CLOUDSMITH_REPO", "dboeckli-sbx-repo")
+REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
 IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
 BUILDER = os.environ.get("OPENCODE_BUILDX_BUILDER", "sbx-opencode")
 

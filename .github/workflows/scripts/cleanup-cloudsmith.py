@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Löscht alte Cloudsmith-Feature-Branch-Image-Snapshots aus `dboeckli-sbx-repo`.
+"""Löscht alte Cloudsmith-Feature-Branch-Image-Snapshots aus `sbx`.
 
 Cloudsmith-Docker-Modell: pro Image gibt es ein **getaggtes Index-Package** (Multi-Arch)
 mit `tags.version = ['<basever>-<branch-slug>.<YYYYMMDDHHMMSS>', '<branch-slug>']` sowie

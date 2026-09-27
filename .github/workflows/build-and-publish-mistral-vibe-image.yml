@@ -1,6 +1,6 @@
 name: Build and publish Mistral Vibe image
 
-# Builds and publishes the pinned `docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mistral-vibe` image that the
+# Builds and publishes the pinned `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe` image that the
 # `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`, via the
 # `imageTag` kit arg).
 #

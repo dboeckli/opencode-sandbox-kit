@@ -1,6 +1,6 @@
 name: Build and publish OpenCode tooling image
 
-# Builds and publishes `docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-opencode-tooling`: the official
+# Builds and publishes `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling`: the official
 # `opencode-docker` sandbox template with the kit tooling baked in (issue #137).
 # The `opencode-agent` mixin kit is still passed via `--kit`; the image only
 # removes the repeated `setup.install` downloads at sandbox creation time.

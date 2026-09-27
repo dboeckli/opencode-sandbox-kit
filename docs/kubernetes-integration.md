@@ -34,7 +34,7 @@ absoluten Host-Pfad gemountet, mit `:ro` als **Read-only-Mount**
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-opencode-tooling:local `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 ```
@@ -47,7 +47,7 @@ sbx run opencode `
 sbx rm <sandbox-name> --force
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-opencode-tooling:local `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea `
     . `

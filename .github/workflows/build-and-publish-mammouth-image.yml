@@ -1,6 +1,6 @@
 name: Build and publish Mammouth image
 
-# Builds and publishes the pinned `docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mammouth` image that the
+# Builds and publishes the pinned `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth` image that the
 # `mammouth-agent` sandbox kit references (spec.yaml `sandbox.image`, via the
 # `imageTag` kit arg).
 #

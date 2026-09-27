@@ -18,7 +18,7 @@ set -euo pipefail
 # packages live in install-apt-packages.sh.
 # Idempotency guards: each tool checks whether it is already installed at the expected
 # version and skips the download otherwise. This keeps `setup.install` fast when the
-# tooling is pre-baked into a custom template image (e.g. docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-opencode-tooling),
+# tooling is pre-baked into a custom template image (e.g. docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling),
 # while a clean base template (e.g. Claude on the official template) still installs.
 #
 # Fail-open: every tool runs via `run_step` in a subshell. A failing tool does NOT abort

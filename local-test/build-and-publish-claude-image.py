@@ -46,7 +46,7 @@ NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
 CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-REPO = os.environ.get("CLOUDSMITH_REPO", "dboeckli-sbx-repo")
+REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
 IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
 BUILDER = os.environ.get("CLAUDE_BUILDX_BUILDER", "sbx-claude")
 

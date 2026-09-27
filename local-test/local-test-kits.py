@@ -14,7 +14,7 @@ Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
   - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud
     (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud — seit v0.38 ohne `-g`)
-  - Mistral-Vibe-Szenario (lokal): das Image `docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mistral-vibe:local` ist publiziert
+  - Mistral-Vibe-Szenario (lokal): das Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:local` ist publiziert
     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image` bzw. `python local-test/build-and-publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
 
@@ -151,7 +151,7 @@ CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 # anonym pullbar. Bildpfad: <registry>/<namespace>/<repo>/<image>:<tag>.
 CLOUDSMITH_REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
 CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-CLOUDSMITH_REPO = os.environ.get("CLOUDSMITH_REPO", "dboeckli-sbx-repo")
+CLOUDSMITH_REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
 OPENCODE_BASE_IMAGE_RE = re.compile(
     r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
@@ -768,7 +768,7 @@ def check_vibe_cli_update():
     if image_tag != pin:
         fail(
             f"mistral-vibe version (spec-Image-Tag v{image_tag} != Dockerfile-Pin v{pin})",
-            f"image in {VIBE_SPEC_FILE} auf docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mistral-vibe:{pin} setzen",
+            f"image in {VIBE_SPEC_FILE} auf docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:{pin} setzen",
         )
         return
     base = _vibe_base_image_version()
@@ -959,10 +959,10 @@ def main():
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
         # Tooling-Images (Issue #137, Tooling vorgebacken):
-        #   - opencode: docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
-        #   - claude:   docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
-        #   - mammouth: docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
-        #   - mistral-vibe: docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
+        #   - opencode: docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
+        #   - claude:   docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
+        #   - mammouth: docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
+        #   - mistral-vibe: docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
         #     alle via `--template` (Mixin) bzw. `--kit-arg imageTag` (sandbox-Kits).
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
