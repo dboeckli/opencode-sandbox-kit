@@ -7,7 +7,7 @@ name: Renovate (Codeberg)
 # sync. This replaces Dependabot (which is GitHub-only and would fight the mirror).
 #
 # Requires a repo secret:
-#   RENOVATE_TOKEN = Codeberg PAT with scope `write:repository` (and `write:issue`)
+#   CODEBERG_FOR_RENOVATE_TOKEN = Codeberg PAT with scope `write:repository` (and `write:issue`)
 # No GitHub token is needed — Renovate only talks to Codeberg.
 #
 # Runs on a schedule (default branch = master) plus manual dispatch. Until the
@@ -32,7 +32,7 @@ jobs:
         env:
           RENOVATE_PLATFORM: forgejo
           RENOVATE_ENDPOINT: https://codeberg.org
-          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_TOKEN: ${{ secrets.CODEBERG_FOR_RENOVATE_TOKEN }}
           RENOVATE_REPOSITORIES: dboeckli/opencode-sandbox-kit
           RENOVATE_ONBOARDING: "false"
           LOG_LEVEL: info

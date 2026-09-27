@@ -130,7 +130,7 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
   die Pin-Manager (SBX_VERSION/TEMPLATE_VERSION) deckt jetzt `.github/workflows/` **und**
   `.forgejo/workflows/` ab. Der `github-actions`-Manager erkennt auch `.forgejo/workflows/`
   (inkl. `https://code.forgejo.org/...`-URLs).
-- Nötiges Secret (GitHub): `RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`).
+- Nötiges Secret (GitHub): `CODEBERG_FOR_RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`).
 - Die GitHub-**Renovate-App muss deinstalliert** werden (sonst erzeugt sie GitHub-PRs, die der
   `--mirror`-Push löscht).
 
@@ -157,7 +157,7 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - [x] README-Badges/Links auf Codeberg
 - [x] Push-Mirror Codeberg → GitHub (UI, `sync_on_commit=true`, interval `8h0m0s`)
 - [x] Renovate self-hosted gegen Codeberg (`.github/workflows/renovate.yml` + `renovate.json`); Dependabot entfernt
-- [~] Renovate-Aktivierung: GitHub-Secret `RENOVATE_TOKEN` setzen + GitHub-Renovate-App deinstallieren (Host)
+- [~] Renovate-Aktivierung: GitHub-Secret `CODEBERG_FOR_RENOVATE_TOKEN` setzen + GitHub-Renovate-App deinstallieren (Host)
 - [~] Actions aktiviert + Repo-Variablen gesetzt; Secrets (`DOCKER_PAT`, `CLOUDSMITH_API_KEY`) offen
 - [ ] Codeberg-Runner/Queue klären (gehostete Runner hängen; `codeberg-*` überlastet)
 - [ ] Codeberg-`validate` wieder auf `push`/`pull_request`/`schedule` stellen (aktuell nur `workflow_dispatch`)
