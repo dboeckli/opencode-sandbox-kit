@@ -2,12 +2,21 @@ name: Cleanup Cloudsmith Feature Images
 run-name: >
   ${{ github.workflow }}: ${{ github.event_name }} for ${{ github.ref_name }} by @${{ github.actor }}
 
-# Löscht alte Feature-Branch-Image-Snapshots aus dem Cloudsmith-Repo
-# `dboeckli/sbx` (Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>`).
-# Master-Images (`<basever>` + `latest`) bleiben erhalten. Dry-Run als Default;
-# nightly läuft es scharf. Analog zu spring-6-rest-mvc (`cleanup-cloudsmith.yml`).
+# Löscht Feature-Branch-Image-Snapshots aus dem Cloudsmith-Repo `dboeckli/sbx`.
+# Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>` (+ Moving-Tag `<slug>`).
+# Master-Images (`<basever>` + `latest`) bleiben immer erhalten.
+#
+# Auslöser:
+#   - push auf master:  Feature-Images sind nach dem Merge obsolet -> alle löschen (MAX_AGE_DAYS=0)
+#   - schedule (nightly 04:25 UTC): verwaiste Branch-Snapshots älter als MAX_AGE_DAYS löschen
+#   - workflow_dispatch: manuell, mit dry-run (Default an) + max-age-days
+# Analog zu spring-6-rest-mvc (`cleanup-cloudsmith.yml`).
 
 on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: '25 4 * * *'
   workflow_dispatch:
     inputs:
       dry-run:
@@ -18,8 +27,6 @@ on:
         type: number
         default: 1
         description: 'Nur älter als X Tage löschen'
-  schedule:
-    - cron: '25 4 * * *'
 
 jobs:
   cleanup:
@@ -37,6 +44,8 @@ jobs:
           OWNER: dboeckli
           REPO: sbx
           PACKAGE: sbx-
-          MAX_AGE_DAYS: ${{ inputs.max-age-days != '' && inputs.max-age-days || 1 }}
-          DRY_RUN: ${{ github.event_name != 'schedule' && inputs.dry-run == true }}
+          # push (master) = 0 (alles löschen); sonst max-age-days bzw. 1
+          MAX_AGE_DAYS: ${{ github.event_name == 'push' && '0' || (inputs.max-age-days != '' && inputs.max-age-days || 1) }}
+          # Nur manuelle Runs sind Dry-Run-fähig; schedule + push laufen scharf
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == true }}
         run: python3 .github/workflows/scripts/cleanup-cloudsmith.py
