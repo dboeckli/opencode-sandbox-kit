@@ -1,0 +1,88 @@
+name: Validate Kit
+
+# Forgejo Actions port of .github/workflows/validate.yml (issue #114).
+# GitHub remains a mirror, so the GitHub workflow stays authoritative until the
+# Codeberg pipeline is proven. Differences vs GitHub Actions:
+#   - workflows live in .forgejo/workflows/ (Forgejo also reads .gitea/workflows/)
+#   - runs-on uses Forgejo runner labels; "ubuntu-latest" does not exist.
+#     "docker" = containerized job (default image is Debian bookworm, not Ubuntu).
+#   - actions/* are resolved from Codeberg's mirror: https://code.forgejo.org/actions/...
+#   - permissions/continue-on-error are ignored by Forgejo.
+#   - the github/sbX download uses a public release, so no GitHub token is required.
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Nightly at 03:00 UTC; e2e runs at 03:05 so validation finishes first.
+    - cron: "0 3 * * *"
+
+jobs:
+  validate:
+    # Forgejo runner label. "docker" = shared containerized runner. If you run a
+    # self-hosted runner (needed for e2e anyway), point this at its label.
+    runs-on: docker
+    env:
+      # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
+      # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins
+      # der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate (auf Codeberg ggf. manuell,
+      # siehe docs/codeberg-migration.md).
+      TEMPLATE_VERSION: 0.7.0
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+
+      - name: Install prerequisites
+        run: |
+          set -euo pipefail
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq curl ca-certificates
+          fi
+
+      - name: Download sbx (pinned version)
+        # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
+        # (customManager docker/sbx-releases). Der Release ist oeffentlich -> kein Token noetig.
+        env:
+          SBX_VERSION: v0.45.1
+        run: |
+          set -euo pipefail
+          echo "using sbx ${SBX_VERSION}"
+          curl -fsSL \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
+            -o /tmp/DockerSandboxes-linux.tar.gz
+          tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
+
+      - name: Install sbx
+        run: |
+          set -euo pipefail
+          sudo PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
+          echo "${HOME}/.docker/sbx/bin" >> "$GITHUB_PATH"
+
+      - name: Verify sbx installation
+        run: sbx version
+
+      - name: Validate OpenCode agent kit spec
+        run: sbx kit validate ./opencode-agent/
+
+      - name: Validate Mammouth agent kit spec
+        run: sbx kit validate ./mammouth-agent/
+
+      - name: Validate Mistral Vibe agent kit spec
+        run: sbx kit validate ./mistral-vibe-agent/
+
+      - name: Check install-script copies are in sync
+        run: |
+          set -euo pipefail
+          for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py install-apt-packages.sh; do
+            cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+            cmp "opencode-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
+          done
+
+      - name: Check Mistral Vibe image tag matches the Dockerfile pin
+        run: |
+          set -euo pipefail
+          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
+            | head -1 | cut -d= -f2)
+          default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          echo "VIBE_VERSION=${version}  spec args.imageTag.default=${default}"
+          test "$version" = "$default"
