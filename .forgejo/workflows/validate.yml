@@ -19,10 +19,11 @@ on:
 
 jobs:
   validate:
-    # Forgejo runner label. Default "docker" = shared/containerized runner.
-    # Für einen self-hosted Runner (für e2e ohnehin nötig) die Repo-Variable
-    # RUNNER_LABEL setzen.
-    runs-on: ${{ vars.RUNNER_LABEL || 'docker' }}
+    # Forgejo runner label. Default: Codebergs gehosteter Runner (Open Alpha,
+    # kostenlos): codeberg-tiny/small/medium (4 CPU/8G/10 min) — GitHub-kompatibles
+    # Default-Image (ghcr.io/catthehacker/ubuntu:act-latest, mit sudo/apt).
+    # Für einen self-hosted Runner die Repo-Variable RUNNER_LABEL setzen.
+    runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-medium' }}
     env:
       # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
       # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins

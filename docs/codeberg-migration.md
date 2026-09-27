@@ -45,7 +45,7 @@ Sandbox liegt der GitHub-Token nur als Sentinel vor → **UI-Schritt** (oder API
 | GitHub Actions | Forgejo Actions |
 |----------------|-----------------|
 | `.github/workflows/` | `.forgejo/workflows/` (auch `.gitea/workflows/`) |
-| `runs-on: ubuntu-latest` | Runner-Label (z. B. `docker`, `host`, custom) — `ubuntu-latest` existiert nicht |
+| `runs-on: ubuntu-latest` | Runner-Label (Codebergs gehostet: `codeberg-tiny/small/medium[-lazy]`; sonst `host`/custom) — `ubuntu-latest` existiert nicht |
 | Default-Image Ubuntu | Default-Image **Debian bookworm** (Tools via `apt-get` nachinstallieren) |
 | `actions/checkout@v7` | fully-qualified `https://code.forgejo.org/actions/checkout@v6` empfohlen |
 | `${{ github.* }}` | `github`-Context ist **identisch** zum `forgejo`-Context (`forgejo.*`) |
@@ -62,7 +62,7 @@ Sandbox liegt der GitHub-Token nur als Sentinel vor → **UI-Schritt** (oder API
 
 ## Portierte Workflows (`.forgejo/workflows/`)
 
-- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; Runner: `${{ vars.RUNNER_LABEL || 'docker' }}`.
+- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; Runner: `${{ vars.RUNNER_LABEL || 'codeberg-medium' }}` (Codebergs gehosteter Runner).
 - `cleanup-cloudsmith.yml` — Cloudsmith-Cleanup + Recycle-Bin-Purge (nightly/master-push/dispatch).
 - `build-and-publish-{opencode,claude,mammouth,mistral-vibe}-image.yml` — Forgejo-nativ:
   **plain `docker`/`docker buildx`** statt der GitHub-JS-Actions (`setup-buildx`/`login`/`build-push`),
@@ -75,20 +75,26 @@ die kanonische CI. Die Build-Ports lesen den Template-Pin aus `.forgejo/workflow
 
 ## Runner-Anforderungen + Repo-Variablen
 
-Forgejo-Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern):
+Codeberg **hostet** Forgejo-Actions-Runner (Open Alpha, kostenlos, public+FLOSS):
+Labels `codeberg-tiny` (1 CPU/2G/2 min), `codeberg-small` (2/4/5 min),
+`codeberg-medium` (4/8/10 min) + `-lazy`-Varianten; Default-Image
+`ghcr.io/catthehacker/ubuntu:act-latest` (GitHub-kompatibel, mit `sudo`/`apt`).
+Grenzen: kein Docker-Daemon (Image-Builds nur podman/buildah), nur amd64, knappe Zeitlimits.
+
+Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern):
 
 | Variable | Default | Verwendung |
 |----------|---------|------------|
-| `RUNNER_LABEL` | `docker` | validate, cleanup, build prepare/merge, amd64-Build |
+| `RUNNER_LABEL` | `codeberg-medium` | validate, cleanup, build prepare/merge, amd64-Build |
 | `RUNNER_ARM64` | `arm64` | arm64-Build (nativer arm64-Runner) |
 | `RUNNER_E2E` | `self-hosted` | e2e-Szenarien (Host-Modus) |
 
-- **`validate`/`cleanup`:** nur `curl`/`tar`/`python3` + Netz → Shared- oder Self-hosted-Runner.
-- **`build-and-publish-*`:** Docker + Buildx + Docker-Hub/Cloudsmith-Login; arm64 **nativ**
-  (kein QEMU — `uv tool install` scheitert unter QEMU-arm64).
-- **`e2e`:** **Docker + KVM** (`/dev/kvm`, `kernel.apparmor_restrict_unprivileged_userns=0`) +
-  Secret-Service-Setup (gnome-keyring/dbus) → **self-hosted Runner im Host-Modus**.
-  Machbarkeit (KVM im Forgejo-Job, nested virtualization) ist noch zu beweisen.
+- **`validate`/`cleanup`:** laufen auf Codebergs gehostetem Runner (`codeberg-medium`)
+  ohne self-hosted Runner.
+- **`build-and-publish-*`:** Docker + Buildx + arm64 **nativ** (kein QEMU) → auf Codebergs
+  gehostetem Runner **nicht** möglich (kein Docker-Daemon) → vorerst self-hosted oder GitHub.
+- **`e2e`:** **Docker + KVM** (`/dev/kvm`, `kernel.apparmor_restrict_unprivileged_userns=0`)
+  + Secret-Service (gnome-keyring/dbus) → nur self-hosted oder vorerst GitHub.
 
 ## Secrets/Variablen auf Codeberg
 
@@ -106,8 +112,9 @@ Forgejo-Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in 
    GitHub-PAT (`repo`-Scope). Alternativ API `POST /repos/dboeckli/opencode-sandbox-kit/push_mirrors`.
 3. **Actions aktivieren:** Repo → *Settings → Actions* (Unit/Workflows) einschalten.
 4. **Variablen/Secrets** setzen (siehe oben).
-5. **Runner** registrieren: Docker-fähig (Build) + arm64 (Multi-Arch) + Host/KVM (e2e);
-   Labels passend zu den Variablen.
+5. **Runner:** für `validate`/`cleanup` nichts zu tun — Codebergs gehosteter Runner
+   (`codeberg-medium`) genügt. Nur für `build-and-publish-*` (Docker) und `e2e` (Docker+KVM)
+   einen self-hosted Runner registrieren (oder diese vorerst auf GitHub lassen).
 6. **Verifizieren:** `validate.yml` im Actions-Tab starten; danach Build-Workflow (build-only) und
    e2e.
 
@@ -133,7 +140,7 @@ Forgejo-Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in 
 - [x] README-Badges/Links auf Codeberg
 - [ ] Push-Mirror Codeberg → GitHub (Host/UI)
 - [ ] Actions aktivieren + Variablen/Secrets setzen (Host)
-- [ ] Runner (Docker/arm64/KVM) bereitstellen + Machbarkeit beweisen (Host)
+- [ ] `build-and-publish`/`e2e` auf Codeberg (self-hosted Runner: Docker/arm64/KVM)
 - [ ] CI-Pipeline (`validate` + `e2e`) läuft grün auf Codeberg
 - [ ] GitHub Actions stilllegen (nach grünem Codeberg-CI)
 - [ ] „Mindestens ein Projekt zieht das Kit von Codeberg" verifizieren
