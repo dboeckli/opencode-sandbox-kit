@@ -13,7 +13,7 @@
 # native runners + imagetools merge, provenance/SBOM).
 #
 # Run:
-#   sbx run --template docker.io/domboeckli/sbx-claude-tooling:<tag> claude `
+#   sbx run --template docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-claude-tooling:<tag> claude `
 #       --kit ./opencode-agent/ --skills=off --static-mcp idea .
 #
 # ARG BASE_IMAGE must mirror TEMPLATE_VERSION (Renovate-managed, see .github/renovate.json).

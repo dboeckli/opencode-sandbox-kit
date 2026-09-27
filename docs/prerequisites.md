@@ -70,7 +70,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | OpenCode | (Basis-Image bringt CLI mit) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` |
 | Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
 | Mammouth Code | `curl -fsSL https://code.mammouth.ai/install.sh \| bash` → `~/.mammouth` + Symlink `/usr/local/bin/mammouth` | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
-| Mistral Vibe | Im eigenen gepinnten Image gebacken (`uv tool install mistral-vibe==<pin>`, `domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
+| Mistral Vibe | Im eigenen gepinnten Image gebacken (`uv tool install mistral-vibe==<pin>`, `docker.cloudsmith.io/dboeckli/dboeckli-sbx-repo/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 

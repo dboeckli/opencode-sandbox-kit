@@ -44,6 +44,9 @@ TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-claude-image.log")
 NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
+REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
+REPO = os.environ.get("CLOUDSMITH_REPO", "dboeckli-sbx-repo")
+IMAGE = f"{REGISTRY}/{NAMESPACE}/{REPO}/{NAME}"
 BUILDER = os.environ.get("CLAUDE_BUILDX_BUILDER", "sbx-claude")
 
 
@@ -146,8 +149,8 @@ def main():
         version = base_version()
         slug = branch_slug()
         ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-        version_tag = f"{NAMESPACE}/{NAME}:{version}-{slug}.{ts}"
-        local_tag = f"{NAMESPACE}/{NAME}:local"
+        version_tag = f"{IMAGE}:{version}-{slug}.{ts}"
+        local_tag = f"{IMAGE}:local"
         print(f"Version tag: {version_tag}")
         print(f"Moving tag:  {local_tag}")
         print(f"Platform:    {platform}")
