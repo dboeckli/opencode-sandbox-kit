@@ -140,9 +140,15 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - [x] Git-Remotes: `origin` → Codeberg, `github` → Mirror-Remote
 - [x] `.forgejo/workflows/` vollständig portiert (validate, cleanup, build-and-publish-*, e2e)
 - [x] README-Badges/Links auf Codeberg
-- [ ] Push-Mirror Codeberg → GitHub (Host/UI)
-- [ ] Actions aktivieren + Variablen/Secrets setzen (Host)
+- [x] Push-Mirror Codeberg → GitHub (UI, `sync_on_commit=true`, interval `8h0m0s`)
+- [~] Actions aktiviert + Repo-Variablen gesetzt; Secrets (`DOCKER_PAT`, `CLOUDSMITH_API_KEY`) offen
+- [ ] Codeberg-Runner/Queue klären (gehostete Runner hängen; `codeberg-*` überlastet)
+- [ ] Codeberg-`validate` wieder auf `push`/`pull_request`/`schedule` stellen (aktuell nur `workflow_dispatch`)
 - [ ] `build-and-publish`/`e2e` auf Codeberg (self-hosted Runner: Docker/arm64/KVM)
 - [ ] CI-Pipeline (`validate` + `e2e`) läuft grün auf Codeberg
 - [ ] GitHub Actions stilllegen (nach grünem Codeberg-CI)
 - [ ] „Mindestens ein Projekt zieht das Kit von Codeberg" verifizieren
+
+> **Aktueller Stand (Übergang):** CI läuft auf **GitHub** (via Push-Mirror). Alle
+> `.forgejo/workflows` sind vorerst auf **`workflow_dispatch`** (kein Auto-Trigger), damit die
+> Codeberg-Runner-Queue nicht bei jedem Push hängt. Aktivierung nach Klärung des Runner-Themas.

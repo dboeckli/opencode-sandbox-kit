@@ -10,14 +10,11 @@ name: Validate Kit
 #   - permissions/continue-on-error werden ignoriert.
 #   - der sbx-Download nutzt den oeffentlichen Release -> kein GitHub-Token noetig.
 
+# ÜBERGANG: Codeberg-CI vorerst nur manuell (gehostete Runner hängen in der Queue,
+# siehe docs/codeberg-migration.md). CI läuft aktuell auf GitHub (Push-Mirror).
+# Sobald die Codeberg-Runner zuverlässig sind: push/pull_request (+ schedule) aktivieren.
 on:
-  push:
-  pull_request:
-  # schedule (nightly 03:00 UTC) erst nach dem Merge aktivieren: Schedules laufen vom
-  # Default-Branch, und auf master liegt noch kein .forgejo/ -> Fallback auf .github
-  # (ubuntu-latest). Nach dem Merge einkommentieren.
-  # schedule:
-  #   - cron: "0 3 * * *"
+  workflow_dispatch:
 
 jobs:
   validate:
