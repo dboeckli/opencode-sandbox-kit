@@ -84,6 +84,31 @@ Kit-Referenzen auf Codeberg umstellen
 - **KVM im Forgejo-Job:** zentrale Machbarkeitsfrage für e2e.
 - **GitHub-Packages-Maven / `gh` / sbx-CLI / Docker Hub** bleiben externe GitHub-/Drittdienste.
 
+## Host-Schritte auf Codeberg (konkret)
+
+> Hinweis Mirror-Richtung: Die Agent-Sandbox kann **Codeberg nicht erreichen** (Network-Policy, 403)
+> und pusht daher nach **GitHub**. Damit GitHubs Rolle als „Mirror" funktioniert, ist Codeberg als
+> **Pull-Mirror von GitHub** einzurichten (GitHub = Schreib-Target). Ein echter Push-Mirror
+> Codeberg→GitHub würde erfordern, dass von Codeberg (Host) gepusht wird — der Agent kann das nicht.
+
+1. **Konto/Repo:** Codeberg-Konto `dboeckli` (E-Mail verifiziert).
+2. **Import:** `https://codeberg.org/repo/migrate` → Host **GitHub** → Repo `dboeckli/opencode-sandbox-kit`
+   → Owner `dboeckli`, Name `opencode-sandbox-kit`; Features **Issues, Pull Requests, Releases,
+   Labels, Milestones, Wiki** aktivieren. Für den Issue-Import/gegen Rate-Limits einen GitHub-PAT
+   mit `public_repo` (read) angeben.
+3. **Mirror:** Repo → *Settings → Repository → Mirror Settings* → **Pull-Mirror** auf
+   `https://github.com/dboeckli/opencode-sandbox-kit.git` (Intervall z. B. 1 h). Mirroring synct nur
+   den Code; importierte Issues/Releases bleiben erhalten.
+4. **Actions aktivieren:** Repo → *Settings → Actions* (Unit/Workflows) einschalten.
+5. **Secrets/Variablen:** `DOCKER_USERNAME` (Variable) + `DOCKER_PAT` (Secret), e2e-Test-Secrets
+   (`anthropic`, `mammouth`, `mistral`, `zai`, `context7`, `openrouter`, `google`, `stackoverflow`,
+   `cloudsmith`, `sonarcloud`, `github-maven`); optional `SBX_RELEASES_TOKEN` (sbx-Download).
+6. **Runner:** self-hosted Forgejo-Runner mit **Docker + KVM** (`/dev/kvm`, Label z. B.
+   `codeberg-docker`) für `e2e`/`build-and-publish`; `validate` kann ggf. auf einem Shared-Runner
+   (Label `docker`) laufen — verifizieren.
+7. **Verifizieren:** Nach dem ersten Pull-Sync `.forgejo/workflows/validate.yml` im Actions-Tab
+   starten; Runner-Label/Default-Image prüfen und ggf. anpassen.
+
 ## Checkliste (aus #114)
 
 - [x] Netzwerk-Allowlist + Doku (`codeberg.org`) — dieser Branch
