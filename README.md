@@ -564,6 +564,9 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   bleiben unangetastet (Referenz-Check via Registry-API, fail-safe).
   In den Image-Builds ist `provenance`/`sbom` **deaktiviert** (keine Attestation-Manifeste → weniger
   Package-Bloat).
+  Zusätzlich leert die Pipeline den **Recycle Bin** (`purge-cloudsmith-recycle-bin.py`, hard delete):
+  soft-gelöschte Packages zählen 7 Tage weiter gegen das Storage-Kontingent; endgültiges Löschen gibt
+  Speicher sofort frei (via `purge-recycle-bin` steuerbar, Default an).
 
 > Die **gepinnte `sbx`-Version** (`SBX_VERSION`) wird von Renovate aktualisiert
 > (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).

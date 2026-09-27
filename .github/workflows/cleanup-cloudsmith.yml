@@ -9,8 +9,12 @@ run-name: >
 # Auslöser:
 #   - push auf master:  Feature-Images sind nach dem Merge obsolet -> alle löschen (MAX_AGE_DAYS=0)
 #   - schedule (nightly 04:25 UTC): verwaiste Branch-Snapshots älter als MAX_AGE_DAYS löschen
-#   - workflow_dispatch: manuell, mit dry-run (Default an) + max-age-days
+#   - workflow_dispatch: manuell, mit dry-run (Default an) + max-age-days + purge-recycle-bin
 # Analog zu spring-6-rest-mvc (`cleanup-cloudsmith.yml`).
+#
+# Zusätzlich wird der **Recycle Bin** geleert (hard delete): soft-gelöschte Packages zählen
+# 7 Tage weiter gegen das Storage-Kontingent (Codeberg-OSS 50 GB). `purge-recycle-bin` steuert
+# das (Default an; bei workflow_dispatch abschaltbar). Siehe .github/workflows/scripts/purge-cloudsmith-recycle-bin.py.
 
 on:
   push:
@@ -27,6 +31,10 @@ on:
         type: number
         default: 1
         description: 'Nur älter als X Tage löschen'
+      purge-recycle-bin:
+        type: boolean
+        default: true
+        description: 'Recycle Bin endgültig löschen (Storage freigeben)'
 
 jobs:
   cleanup:
@@ -49,3 +57,14 @@ jobs:
           # Nur manuelle Runs sind Dry-Run-fähig; schedule + push laufen scharf
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == true }}
         run: python3 .github/workflows/scripts/cleanup-cloudsmith.py
+
+      - name: Purge recycle bin (hard delete, reclaim storage)
+        # Soft-gelöschte Packages zählen 7 Tage weiter; endgültig löschen gibt Storage frei.
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.purge-recycle-bin }}
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          OWNER: dboeckli
+          REPO: sbx
+          # Nur manuelle Runs sind Dry-Run-fähig; schedule + push laufen scharf
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == true }}
+        run: python3 .github/workflows/scripts/purge-cloudsmith-recycle-bin.py
