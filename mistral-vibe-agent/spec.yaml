@@ -59,6 +59,9 @@ permissions:
       - "api.github.com:443"
       - "github.com:443"
       - "*.github.com:443"
+      # Codeberg (Kit-Repo canonical + Forgejo Actions; GitHub bleibt Mirror)
+      - "codeberg.org:443"
+      - "*.codeberg.org:443"
       # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
       - "maven.pkg.github.com:443"
       - "objects.githubusercontent.com:443"
@@ -229,6 +232,15 @@ credentials:
         - domain: sonarcloud.io
           header: Authorization
           format: "Bearer %s"
+  - service: codeberg
+    description: "Codeberg API-Token (https://codeberg.org/user/settings/applications) — Forgejo-API (Repo/Issues/PRs); Header 'Authorization: token <TOKEN>'"
+    apiKey:
+      name: CODEBERG_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: codeberg.org
+          header: Authorization
+          format: "token %s"
 
 setup:
   install:

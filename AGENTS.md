@@ -144,7 +144,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   sbx kit add <sandbox-name> `
       "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
   ```
-- `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"` — allow GitHub as kit source (required once before remote Git)
+- `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"` — allow GitHub and Codeberg as kit source (required once before remote Git)
 - `--skills=off` gehört in **jedes** `sbx run`/`sbx create`: der Host-Shared-Skills-Store wird nicht gemountet (Trust Boundary); die Kit-Skills kommen aus `dboeckli/ai-agent-skills`, nicht vom Host. Nur bei Sandbox-Erstellung wirksam — bestehende Sandbox neu erstellen. Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`; die CLI selbst ist NICHT in Context7 — Offline-Referenz: `~/sbx-cli.md`)
@@ -539,6 +539,34 @@ Beispiel (Quality Gate; `<key>` = SonarCloud-Projekt-Key):
 curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
   "https://sonarcloud.io/api/qualitygates/project_status?projectKey=<key>"
 ```
+
+## Codeberg Authentication
+
+Codeberg (`https://codeberg.org`) ist die **kanonische Kit-Quelle** (Forgejo; GitHub bleibt Mirror)
+und bietet eine **Forgejo-REST-API** (`https://codeberg.org/api/v1/`). Das Kit deklariert den Service
+`codeberg` (`credentials[].apiKey` mit `name: CODEBERG_TOKEN`, `proxyManaged: true`, Header
+`Authorization: token <TOKEN>`); `codeberg.org` + `*.codeberg.org` stehen in
+`permissions.network.allow`. Token anlegen unter https://codeberg.org/user/settings/applications
+(Scopes z. B. `write:repository`, `write:issue`) und als Secret registrieren — der Key liegt nie im
+Sandbox-Filesystem:
+
+```powershell
+sbx secret set codeberg
+```
+
+In der Sandbox ist `CODEBERG_TOKEN=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`Authorization: token proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
+an `codeberg.org` (Forgejo-API). `echo $CODEBERG_TOKEN` zeigt nie den echten Key.
+
+Beispiel:
+
+```bash
+curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/user
+```
+
+> **Git über HTTPS** (Push/Clone) nutzt Basic-Auth (Username + Token) — die Proxy-Injection setzt
+> nur den `Authorization: token`-Header (Forgejo-API). Für Git-Push nach Codeberg daher auf dem Host
+> oder mit Credential-Helper arbeiten.
 
 ## Offline Dokumentation (Repsy)
 

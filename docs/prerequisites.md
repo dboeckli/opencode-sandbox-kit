@@ -29,6 +29,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `stackoverflow` | alle | https://stackapps.com/applications (Fallback-Quelle) |
 | `cloudsmith` | alle | https://cloudsmith.io/user/settings/api-keys/ |
 | `sonarcloud` | alle | SonarCloud API-Token (Web-API) — https://sonarcloud.io/account/security |
+| `codeberg` | alle | Codeberg API-Token (Forgejo-API) — https://codeberg.org/user/settings/applications |
 
 ## Sandbox (wird vom Kit via `setup.install` installiert)
 
