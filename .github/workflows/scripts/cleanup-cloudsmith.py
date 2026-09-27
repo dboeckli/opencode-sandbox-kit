@@ -13,10 +13,16 @@ Cloudsmith räumt unreferenzierte Manifeste selbst auf). Zusätzlich nur älter 
 
 Dry-Run als Default.
 
+Modi:
+  - SLUG gesetzt (z. B. bei PR-Merge): loescht ALLE Images dieses Branch-Slugs
+    (Moving-Tag `<slug>` und `<basever>-<slug>.<YYYYMMDDHHMMSS>`), unabhaengig vom Alter.
+  - SLUG leer (Nightly): loescht Feature-Snapshots `<basever>-<slug>.<ts>` aelter als MAX_AGE_DAYS.
+
 Umgebungsvariablen:
   OWNER / REPO               Cloudsmith owner + Repo (pflicht)
   CLOUDSMITH_API_KEY         API-Key (pflicht)
   PACKAGE                    Nur Packages, deren Name diesen String enthält (optional)
+  SLUG                       Branch-Slug; gesetzt = nur diesen Branch loeschen (optional)
   MAX_AGE_DAYS               Mindestalter in Tagen (Default 1)
   DRY_RUN                    "true" = nur auflisten (Default true)
 """
@@ -34,6 +40,8 @@ PACKAGE = os.environ.get("PACKAGE", "")
 KEY = os.environ["CLOUDSMITH_API_KEY"]
 MAX_AGE_DAYS = int(os.environ.get("MAX_AGE_DAYS", "1"))
 DRY_RUN = os.environ.get("DRY_RUN", "true").lower() == "true"
+# Branch-Slug wie in den build-and-publish-Workflows (lowercase, non-alnum -> '-').
+SLUG = re.sub(r"[^a-z0-9_.-]+", "-", os.environ.get("SLUG", "").strip().lower()).strip("-")
 # Feature-Branch-Snapshot: <basever>-<branch-slug>.<YYYYMMDDHHMMSS>
 # (Master-Tags sind <basever> bzw. "latest" -> kein Match).
 FEATURE_RE = re.compile(r"-\S*\.[0-9]{14}$")
@@ -51,7 +59,13 @@ def version_tags(pkg):
 
 
 def feature_versions(pkg):
-    return [v for v in version_tags(pkg) if FEATURE_RE.search(v)]
+    """Kandidaten-Tags fuer dieses Package (SLUG-Modus oder Nightly-Feature-Muster)."""
+    tags = version_tags(pkg)
+    if SLUG:
+        # Nur dieser Branch: Moving-Tag `<slug>` ODER `<basever>-<slug>.<ts>`.
+        slug_re = re.compile(rf"-{re.escape(SLUG)}\.[0-9]{{14}}$")
+        return [t for t in tags if t == SLUG or slug_re.search(t)]
+    return [t for t in tags if FEATURE_RE.search(t)]
 
 
 def age_days(uploaded_at):

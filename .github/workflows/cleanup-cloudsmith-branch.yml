@@ -1,0 +1,35 @@
+name: Cleanup Cloudsmith merged-branch images
+run-name: >
+  ${{ github.workflow }}: PR #${{ github.event.pull_request.number }} (${{ github.event.pull_request.head.ref }}) by @${{ github.actor }}
+
+# Löscht beim Merge eines PR die Feature-Branch-Image-Snapshots dieses Branches
+# aus dem Cloudsmith-Repo `dboeckli/sbx` (Moving-Tag `<slug>` + `<basever>-<slug>.<ts>`).
+# Nach dem Merge sind diese obsolet; master-Images (`<basever>`/`latest`) bleiben.
+# Dry-Run ist hier bewusst AUS (der Merge ist die Freigabe); nur bei merged=true
+# und nur für Same-Repo-PRs (Fork-PRs haben keine Secrets).
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Delete feature-branch image snapshots
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          OWNER: dboeckli
+          REPO: sbx
+          PACKAGE: sbx-
+          SLUG: ${{ github.event.pull_request.head.ref }}
+          MAX_AGE_DAYS: 0
+          DRY_RUN: false
+        run: python3 .github/workflows/scripts/cleanup-cloudsmith.py

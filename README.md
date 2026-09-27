@@ -557,6 +557,9 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   (Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>`; Master-Images `<basever>`/`latest` bleiben).
   `workflow_dispatch` mit `dry-run` (Default an) + `max-age-days`; nightly 04:25 UTC scharf. Skript:
   `.github/workflows/scripts/cleanup-cloudsmith.py` (analog zu `spring-6-rest-mvc`).
+- **`cleanup-cloudsmith-branch.yml`** — löscht **beim Merge eines PR** sofort die Feature-Branch-Images
+  dieses Branch-Slugs (Moving-Tag `<slug>` + `<basever>-<slug>.<ts>`) aus `dboeckli/sbx`; nach dem Merge
+  obsolet. Dry-Run aus, nur bei `merged == true` und Same-Repo-PRs.
 
 > Die **gepinnte `sbx`-Version** (`SBX_VERSION`) wird von Renovate aktualisiert
 > (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
