@@ -74,3 +74,33 @@ jobs:
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
           echo "VIBE_VERSION=${version}  spec args.imageTag.default=${default}"
           test "$version" = "$default"
+
+      - name: Report status to Codeberg
+        # GitHub Actions is the execution host (reliable runners); report the outcome back to the
+        # canonical Codeberg commit so Codeberg commits/PRs show the check (Forgejo commit status API).
+        # Requires repo secret CODEBERG_STATUS_TOKEN (Codeberg PAT, scope `write:repository`).
+        # Without the secret this step is a no-op.
+        if: ${{ always() }}
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_STATUS_TOKEN }}
+          STATE: ${{ job.status }}
+          TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CODEBERG_TOKEN}" ]; then
+            echo "CODEBERG_STATUS_TOKEN not set - skipping Codeberg status report."
+            exit 0
+          fi
+          state="failure"
+          if [ "${STATE}" = "success" ]; then state="success"; fi
+          code=$(curl -sS -o /tmp/statusresp -w '%{http_code}' -X POST \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://codeberg.org/api/v1/repos/dboeckli/opencode-sandbox-kit/statuses/${SHA}" \
+            -d "{\"state\":\"${state}\",\"context\":\"github-actions/validate\",\"description\":\"GitHub Actions (Validate Kit)\",\"target_url\":\"${TARGET_URL}\"}" || echo "000")
+          echo "Codeberg commit status -> HTTP ${code} (${state})"
+          case "${code}" in
+            2*) ;;
+            *) cat /tmp/statusresp 2>/dev/null || true ;;
+          esac
