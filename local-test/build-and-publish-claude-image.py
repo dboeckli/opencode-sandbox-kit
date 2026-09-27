@@ -16,9 +16,9 @@ Run via the IntelliJ run config `build-and-publish-claude-image` (or directly):
     python local-test/build-and-publish-claude-image.py --no-load   # push only, don't load into local Docker
     python local-test/build-and-publish-claude-image.py --platform linux/arm64   # arm64 host only
 
-Besides pushing the attested image to the registry, it loads the image into the
-local Docker daemon (a second, cache-backed build without provenance/SBOM, since
-the docker exporter cannot carry attestations). The full console output (including
+Besides pushing the image to the registry, it loads the image into the
+local Docker daemon (a second, cache-backed build, since the docker exporter
+cannot carry attestations). The full console output (including
 the docker/buildx output) is additionally written to
 `target/build-and-publish-claude-image.log` (gitignored) for later inspection.
 
@@ -118,7 +118,7 @@ def branch_slug():
 
 
 def ensure_builder():
-    """Ensure a docker-container buildx builder (needed for provenance/SBOM)."""
+    """Ensure a docker-container buildx builder (needed for multi-platform push)."""
     listing = subprocess.run(
         ["docker", "buildx", "ls", "--format", "{{.Name}}"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -158,12 +158,11 @@ def main():
         print(f"Dockerfile:  {DOCKERFILE}")
         ensure_builder()
 
-        # Registry build (attested: provenance + SBOM). Explicit -f: the default
+        # Registry build. Explicit -f: the default
         # Dockerfile in this context builds the OpenCode image.
         push_cmd = ["docker", "buildx", "build",
                     "-f", DOCKERFILE,
                     "--platform", platform,
-                    "--provenance=true", "--sbom=true",
                     "-t", version_tag,
                     "-t", local_tag]
         if not build_only:
@@ -172,8 +171,7 @@ def main():
         run(push_cmd)
         print("Built (not pushed)." if build_only else "Pushed to registry.")
 
-        # Also load into the local Docker daemon (docker exporter cannot carry
-        # attestations, so this second, cache-backed build omits provenance/SBOM).
+        # Also load into the local Docker daemon (cache-backed second build).
         if not build_only and not no_load:
             load_cmd = ["docker", "buildx", "build",
                         "-f", DOCKERFILE,

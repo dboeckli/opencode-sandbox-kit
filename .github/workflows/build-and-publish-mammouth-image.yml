@@ -124,13 +124,16 @@ jobs:
           username: ${{ vars.CLOUDSMITH_USERNAME }}
           password: ${{ secrets.CLOUDSMITH_API_KEY }}
 
-      - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
+      - name: Build and push ${{ matrix.arch }}
         uses: docker/build-push-action@v7
         with:
           context: mammouth-agent
           platforms: ${{ matrix.platform }}
-          provenance: true
-          sbom: true
+          # Keine provenance/SBOM-Attestations: die erzeugen pro Build zusaetzliche
+          # untagged Attestation-Manifeste in Cloudsmith (Package-Bloat); fuer die
+          # Tooling-Images nicht noetig.
+          provenance: false
+          sbom: false
           push: ${{ inputs.push }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
 
@@ -153,13 +156,24 @@ jobs:
         run: |
           set -euo pipefail
           image="${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_REPO}/${IMAGE_NAME}"
-          docker buildx imagetools create \
+          # Cloudsmith ist eventual-consistent: direkt nach dem per-arch Push sind Config-/Layer-
+          # Blobs kurzzeitig nicht abrufbar -> Retry mit Backoff.
+          retry() {
+            local n=0 max=6
+            until "$@"; do
+              n=$((n + 1))
+              if [ "$n" -ge "$max" ]; then return 1; fi
+              echo "retry $n/$max: $*" >&2
+              sleep $((n * 5))
+            done
+          }
+          retry docker buildx imagetools create \
             -t "${image}:${VERSION_TAG}" \
             "${image}-amd64:${VERSION_TAG}" \
             "${image}-arm64:${VERSION_TAG}"
           if [ -n "${EXTRA_TAG}" ]; then
-            docker buildx imagetools create \
+            retry docker buildx imagetools create \
               -t "${image}:${EXTRA_TAG}" \
               "${image}:${VERSION_TAG}"
           fi
-          docker buildx imagetools inspect "${image}:${VERSION_TAG}"
+          retry docker buildx imagetools inspect "${image}:${VERSION_TAG}"
