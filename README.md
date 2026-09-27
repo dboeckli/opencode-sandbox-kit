@@ -406,7 +406,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 
 - **Base-Image**: eigenes, gepinntes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:<vibe-version>` — gebaut aus
   `docker/sandbox-templates:shell-docker-0.x.0` + `uv tool install mistral-vibe==<pin>` (siehe `mistral-vibe-agent/Dockerfile`).
-  Publiziert **multi-arch (linux/amd64 + linux/arm64)** mit provenance/SBOM via
+  Publiziert **multi-arch (linux/amd64 + linux/arm64)** via
   `.github/workflows/build-and-publish-mistral-vibe-image.yml`: pro Architektur ein **nativer** Runner
   (`ubuntu-latest` / `ubuntu-24.04-arm`), Per-Arch-Image mit der Architektur im **Repo-Namen**
   (`docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe-amd64` / `-arm64`), danach Manifest-Merge zum Multi-Arch-Index unter
@@ -431,7 +431,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > Deshalb ist GLM-5.3-Flash der Default über den Z.AI-Provider; `glm` (Mistral-hosted `zai-glm-5-3`) ist die
 > key-freie Alternative.
 
-> **Image-Publish:** Das Image wird in CI gebaut/gepusht (multi-arch amd64+arm64, provenance/SBOM; native Runner + `imagetools create`). Der e2e-Workflow
+> **Image-Publish:** Das Image wird in CI gebaut/gepusht (multi-arch amd64+arm64; native Runner + `imagetools create`). Der e2e-Workflow
 > ruft den (auch manuell per `workflow_dispatch` startbaren) `build-and-publish-mistral-vibe-image.yml` als
 > `publish-image`-Job **vor** der Szenario-Matrix auf — so existiert das Image für das `mistral-vibe`-Szenario
 > bei jedem Push/PR/Nightly-Lauf. Manuell: Workflow `Publish Mistral Vibe image` → *Run workflow*.
@@ -456,9 +456,9 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > ```powershell
 > python local-test\build-and-publish-mistral-vibe-image.py --build-only
 > ```
-> Neben dem Push in die Registry wird das Image in den **lokalen Docker-Daemon** geladen (zweiter, gecachter
-> Build ohne provenance/SBOM — der Docker-Exporter kann keine Attestations laden).
-> Voraussetzung: `docker` (Docker Desktop) mit eingeloggtem Docker-Hub-Account (read/write). Der Vibe-Pin und
+> Neben dem Push in die Registry wird das Image in den **lokalen Docker-Daemon** geladen (zweiter,
+> gecachter Build).
+> Voraussetzung: `docker` (Docker Desktop) mit `docker login docker.cloudsmith.io` (Push nach Cloudsmith). Der Vibe-Pin und
 > `args.imageTag.default` in `spec.yaml` werden per Renovate (PyPI `mistral-vibe`) gemeinsam aktualisiert.
 
 > **Auth / Secret / Verifikation:** siehe [`INSTALL.md`](INSTALL.md#mistral-authentication) — `sbx secret set mistral`, Platzhalter-Check.
@@ -550,7 +550,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   alle 4 Szenarien (`local-test-kits.py opencode|claude|mammouth|mistral-vibe --ci`) mit KVM-Zugriff,
   `sbx login` (`DOCKER_USERNAME`/`DOCKER_PAT`) + Cloudsmith-Registry-Credential (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
-- **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`, provenance/SBOM)
+- **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`)
   auf Cloudsmith. Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
   via `workflow_dispatch` (Build-only möglich über den `push`-Input).
 - **`cleanup-cloudsmith.yml`** — löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx`
@@ -559,6 +559,11 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   obsolet → alle löschen), **nightly 04:25 UTC** (verwaiste Snapshots älter als `max-age-days`) und
   `workflow_dispatch` mit `dry-run` (Default an). Skript:
   `.github/workflows/scripts/cleanup-cloudsmith.py` (analog zu `spring-6-rest-mvc`).
+  Zusätzlich werden **untagged Kind-Manifeste** (Plattform/Attestation) gelöscht, die von **keinem**
+  verbleibenden Index mehr referenziert werden (echte Orphans); Live-Images (`<basever>`/`latest`)
+  bleiben unangetastet (Referenz-Check via Registry-API, fail-safe).
+  In den Image-Builds ist `provenance`/`sbom` **deaktiviert** (keine Attestation-Manifeste → weniger
+  Package-Bloat).
 
 > Die **gepinnte `sbx`-Version** (`SBX_VERSION`) wird von Renovate aktualisiert
 > (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
