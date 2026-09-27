@@ -57,6 +57,9 @@ permissions:
       - "api.github.com:443"
       - "github.com:443"
       - "*.github.com:443"
+      # Codeberg (Kit-Repo canonical + Forgejo Actions; GitHub bleibt Mirror)
+      - "codeberg.org:443"
+      - "*.codeberg.org:443"
       # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
       - "maven.pkg.github.com:443"
       - "objects.githubusercontent.com:443"

@@ -35,6 +35,9 @@ permissions:
     - github.com
     - api.github.com
     - "*.github.com"
+    # Codeberg (Kit-Repo canonical + Forgejo Actions; GitHub bleibt Mirror) — Kit-Referenzen + Doku
+    - codeberg.org
+    - "*.codeberg.org"
     # GitHub Packages Maven (Maven-Registry, Basic-Auth mit klassischem PAT, read:packages)
     - maven.pkg.github.com
     - githubusercontent.com
