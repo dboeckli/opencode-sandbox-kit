@@ -162,13 +162,24 @@ jobs:
         run: |
           set -euo pipefail
           image="${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_REPO}/${IMAGE_NAME}"
-          docker buildx imagetools create \
+          # Cloudsmith ist eventual-consistent: direkt nach dem per-arch Push sind Config-/Layer-
+          # Blobs kurzzeitig nicht abrufbar -> Retry mit Backoff.
+          retry() {
+            local n=0 max=6
+            until "$@"; do
+              n=$((n + 1))
+              if [ "$n" -ge "$max" ]; then return 1; fi
+              echo "retry $n/$max: $*" >&2
+              sleep $((n * 5))
+            done
+          }
+          retry docker buildx imagetools create \
             -t "${image}:${VERSION_TAG}" \
             "${image}-amd64:${VERSION_TAG}" \
             "${image}-arm64:${VERSION_TAG}"
           if [ -n "${EXTRA_TAG}" ]; then
-            docker buildx imagetools create \
+            retry docker buildx imagetools create \
               -t "${image}:${EXTRA_TAG}" \
               "${image}:${VERSION_TAG}"
           fi
-          docker buildx imagetools inspect "${image}:${VERSION_TAG}"
+          retry docker buildx imagetools inspect "${image}:${VERSION_TAG}"
