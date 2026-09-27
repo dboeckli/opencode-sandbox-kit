@@ -1,6 +1,6 @@
 name: Build and publish Claude tooling image
 
-# Builds and publishes `domboeckli/sbx-claude-tooling`: the official
+# Builds and publishes `docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling`: the official
 # `claude-code-docker` sandbox template with the kit tooling baked in (issue #137).
 # The `opencode-agent` mixin kit is still passed via `--kit`; the image only
 # removes the repeated `setup.install` downloads at sandbox creation time.
@@ -22,13 +22,13 @@ on:
   workflow_dispatch:
     inputs:
       push:
-        description: "Push the image to Docker Hub (off = build only)"
+        description: "Push the image to Cloudsmith (off = build only)"
         type: boolean
         default: true
   workflow_call:
     inputs:
       push:
-        description: "Push the image to Docker Hub (off = build only)"
+        description: "Push the image to Cloudsmith (off = build only)"
         type: boolean
         default: true
     outputs:
@@ -40,7 +40,9 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAMESPACE: domboeckli
+  REGISTRY: docker.cloudsmith.io
+  IMAGE_NAMESPACE: ${{ vars.CLOUDSMITH_NAMESPACE }}
+  IMAGE_REPO: ${{ vars.CLOUDSMITH_REPO }}
   IMAGE_NAME: sbx-claude-tooling
 
 jobs:
@@ -102,12 +104,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to Docker Hub
+      - name: Log in to Docker Hub (base image pulls)
         if: ${{ inputs.push }}
         uses: docker/login-action@v4
         with:
+          registry: docker.io
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Log in to Cloudsmith (image push)
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v4
+        with:
+          registry: docker.cloudsmith.io
+          username: ${{ vars.CLOUDSMITH_USERNAME }}
+          password: ${{ secrets.CLOUDSMITH_API_KEY }}
 
       - name: Build and push ${{ matrix.arch }} (provenance/SBOM)
         uses: docker/build-push-action@v7
@@ -118,18 +129,19 @@ jobs:
           provenance: true
           sbom: true
           push: ${{ inputs.push }}
-          tags: ${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
 
   merge:
     needs: [prepare, build]
     if: ${{ inputs.push }}
     runs-on: ubuntu-latest
     steps:
-      - name: Log in to Docker Hub
+      - name: Log in to Cloudsmith
         uses: docker/login-action@v4
         with:
-          username: ${{ vars.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PAT }}
+          registry: docker.cloudsmith.io
+          username: ${{ vars.CLOUDSMITH_USERNAME }}
+          password: ${{ secrets.CLOUDSMITH_API_KEY }}
 
       - name: Create multi-arch manifest list
         env:
@@ -137,7 +149,7 @@ jobs:
           EXTRA_TAG: ${{ needs.prepare.outputs.extra_tag }}
         run: |
           set -euo pipefail
-          image="${IMAGE_NAMESPACE}/${IMAGE_NAME}"
+          image="${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_REPO}/${IMAGE_NAME}"
           docker buildx imagetools create \
             -t "${image}:${VERSION_TAG}" \
             "${image}-amd64:${VERSION_TAG}" \

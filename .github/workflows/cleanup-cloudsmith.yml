@@ -1,0 +1,51 @@
+name: Cleanup Cloudsmith Feature Images
+run-name: >
+  ${{ github.workflow }}: ${{ github.event_name }} for ${{ github.ref_name }} by @${{ github.actor }}
+
+# Löscht Feature-Branch-Image-Snapshots aus dem Cloudsmith-Repo `dboeckli/sbx`.
+# Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>` (+ Moving-Tag `<slug>`).
+# Master-Images (`<basever>` + `latest`) bleiben immer erhalten.
+#
+# Auslöser:
+#   - push auf master:  Feature-Images sind nach dem Merge obsolet -> alle löschen (MAX_AGE_DAYS=0)
+#   - schedule (nightly 04:25 UTC): verwaiste Branch-Snapshots älter als MAX_AGE_DAYS löschen
+#   - workflow_dispatch: manuell, mit dry-run (Default an) + max-age-days
+# Analog zu spring-6-rest-mvc (`cleanup-cloudsmith.yml`).
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: '25 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        type: boolean
+        default: true
+        description: 'Nur auflisten, nicht löschen'
+      max-age-days:
+        type: number
+        default: 1
+        description: 'Nur älter als X Tage löschen'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: List & delete feature-branch image snapshots
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          OWNER: dboeckli
+          REPO: sbx
+          PACKAGE: sbx-
+          # push (master) = 0 (alles löschen); sonst max-age-days bzw. 1
+          MAX_AGE_DAYS: ${{ github.event_name == 'push' && '0' || (inputs.max-age-days != '' && inputs.max-age-days || 1) }}
+          # Nur manuelle Runs sind Dry-Run-fähig; schedule + push laufen scharf
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == true }}
+        run: python3 .github/workflows/scripts/cleanup-cloudsmith.py

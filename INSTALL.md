@@ -100,7 +100,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 ```
@@ -208,8 +208,11 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
 | SonarCloud | SonarCloud API-Token (optional) | `sbx secret set sonarcloud` | Web-API für CI-Ergebnis-Abfragen (Quality Gate/Issues/Measures) |
 
-Für den e2e-Test in GitHub Actions werden zusätzlich `DOCKER_USERNAME` (Repo-Variable) und
-`DOCKER_PAT` (Secret) benötigt.
+Für den e2e-Test in GitHub Actions werden benötigt: `DOCKER_USERNAME` (Repo-Variable) +
+`DOCKER_PAT` (Secret) für den **`sbx login`** (Docker-Account-Session — sbx verlangt sie zum
+Erzeugen von Sandboxes) sowie die Repo-Variablen `CLOUDSMITH_USERNAME` (`dominique-boeckli`),
+`CLOUDSMITH_NAMESPACE` (`dboeckli`), `CLOUDSMITH_REPO` (`sbx`) und das Secret
+`CLOUDSMITH_API_KEY` für das **Cloudsmith-Registry-Credential** (Image-Pulls).
 
 ### API-Keys & Billing: Konsolen-URLs
 
@@ -445,7 +448,7 @@ einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider k
 (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
 Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
 
-`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
+`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
 — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (eine zweite Deklaration führt zu
 `credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
 Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
@@ -480,7 +483,7 @@ Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günst
 zusätzlicher Provider konfiguriert (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.google`,
 DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
 
-`google` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
+`google` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
 — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
 Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
 `GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
@@ -618,14 +621,14 @@ Es läuft **kein** `sonar-scanner` in der Sandbox — nur Ergebnis-Abfrage; Scan
 # OpenCode (Home-Standard)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-claude-tooling:local `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
     --skills=off `
     --static-mcp idea
 
@@ -649,7 +652,7 @@ Projekt einbinden + Kubernetes-Support:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea `
     "C:\development\projects\dein-projekt" `

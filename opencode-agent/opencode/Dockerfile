@@ -14,7 +14,7 @@
 # native runners + imagetools merge, provenance/SBOM).
 #
 # Run:
-#   sbx run --template docker.io/domboeckli/sbx-opencode-tooling:<tag> opencode `
+#   sbx run --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:<tag> opencode `
 #       --kit ./opencode-agent/ --skills=off --static-mcp idea .
 #
 # ARG BASE_IMAGE must mirror TEMPLATE_VERSION (Renovate-managed, see .github/renovate.json).

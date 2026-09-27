@@ -14,7 +14,7 @@ Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
   - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud
     (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud — seit v0.38 ohne `-g`)
-  - Mistral-Vibe-Szenario (lokal): das Image `domboeckli/sbx-mistral-vibe:local` ist publiziert
+  - Mistral-Vibe-Szenario (lokal): das Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:local` ist publiziert
     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image` bzw. `python local-test/build-and-publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
 
@@ -147,6 +147,11 @@ OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckl
 OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
 CLAUDE_IMAGE_NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
 CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
+# Cloudsmith als OCI-Registry: vermeidet das Docker-Hub-Pull-Rate-Limit (200/h) und ist
+# anonym pullbar. Bildpfad: <registry>/<namespace>/<repo>/<image>:<tag>.
+CLOUDSMITH_REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
+CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
+CLOUDSMITH_REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
 OPENCODE_BASE_IMAGE_RE = re.compile(
     r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
@@ -521,10 +526,10 @@ def _template_image(agent):
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
     if agent == "opencode":
         tag = os.environ.get("OPENCODE_IMAGE_TAG") or "local"
-        return f"docker.io/{OPENCODE_IMAGE_NAMESPACE}/{OPENCODE_IMAGE_NAME}:{tag}"
+        return f"{CLOUDSMITH_REGISTRY}/{CLOUDSMITH_NAMESPACE}/{CLOUDSMITH_REPO}/{OPENCODE_IMAGE_NAME}:{tag}"
     if agent == "claude":
         tag = os.environ.get("CLAUDE_IMAGE_TAG") or "local"
-        return f"docker.io/{CLAUDE_IMAGE_NAMESPACE}/{CLAUDE_IMAGE_NAME}:{tag}"
+        return f"{CLOUDSMITH_REGISTRY}/{CLOUDSMITH_NAMESPACE}/{CLOUDSMITH_REPO}/{CLAUDE_IMAGE_NAME}:{tag}"
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None
@@ -763,7 +768,7 @@ def check_vibe_cli_update():
     if image_tag != pin:
         fail(
             f"mistral-vibe version (spec-Image-Tag v{image_tag} != Dockerfile-Pin v{pin})",
-            f"image in {VIBE_SPEC_FILE} auf domboeckli/sbx-mistral-vibe:{pin} setzen",
+            f"image in {VIBE_SPEC_FILE} auf docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:{pin} setzen",
         )
         return
     base = _vibe_base_image_version()
@@ -954,10 +959,10 @@ def main():
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
         # Tooling-Images (Issue #137, Tooling vorgebacken):
-        #   - opencode: docker.io/domboeckli/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
-        #   - claude:   docker.io/domboeckli/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
-        #   - mammouth: docker.io/domboeckli/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
-        #   - mistral-vibe: docker.io/domboeckli/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
+        #   - opencode: docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
+        #   - claude:   docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
+        #   - mammouth: docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
+        #   - mistral-vibe: docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
         #     alle via `--template` (Mixin) bzw. `--kit-arg imageTag` (sandbox-Kits).
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None

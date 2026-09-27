@@ -15,8 +15,8 @@
 #   docker buildx build \
 #     --platform linux/amd64 \
 #     --provenance=true --sbom=true \
-#     -t domboeckli/sbx-mistral-vibe:${VIBE_VERSION} \
-#     -t domboeckli/sbx-mistral-vibe:local \
+#     -t docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:${VIBE_VERSION} \
+#     -t docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:local \
 #     --push .
 #
 # The kit (spec.yaml `sandbox.image`, arg `imageTag`) references the version tag.
