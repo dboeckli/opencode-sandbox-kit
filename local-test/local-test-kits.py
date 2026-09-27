@@ -150,6 +150,7 @@ CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 # Cloudsmith als OCI-Registry: vermeidet das Docker-Hub-Pull-Rate-Limit (200/h) und ist
 # anonym pullbar. Bildpfad: <registry>/<namespace>/<repo>/<image>:<tag>.
 CLOUDSMITH_REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
+CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
 CLOUDSMITH_REPO = os.environ.get("CLOUDSMITH_REPO", "dboeckli-sbx-repo")
 OPENCODE_BASE_IMAGE_RE = re.compile(
     r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
@@ -525,10 +526,10 @@ def _template_image(agent):
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
     if agent == "opencode":
         tag = os.environ.get("OPENCODE_IMAGE_TAG") or "local"
-        return f"{CLOUDSMITH_REGISTRY}/{OPENCODE_IMAGE_NAMESPACE}/{CLOUDSMITH_REPO}/{OPENCODE_IMAGE_NAME}:{tag}"
+        return f"{CLOUDSMITH_REGISTRY}/{CLOUDSMITH_NAMESPACE}/{CLOUDSMITH_REPO}/{OPENCODE_IMAGE_NAME}:{tag}"
     if agent == "claude":
         tag = os.environ.get("CLAUDE_IMAGE_TAG") or "local"
-        return f"{CLOUDSMITH_REGISTRY}/{CLAUDE_IMAGE_NAMESPACE}/{CLOUDSMITH_REPO}/{CLAUDE_IMAGE_NAME}:{tag}"
+        return f"{CLOUDSMITH_REGISTRY}/{CLOUDSMITH_NAMESPACE}/{CLOUDSMITH_REPO}/{CLAUDE_IMAGE_NAME}:{tag}"
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None

@@ -42,8 +42,9 @@ LOG_FILE = os.path.join(TARGET, "build-and-publish-mistral-vibe-image.log")
 NAMESPACE = os.environ.get("VIBE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
 REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
+CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
 REPO = os.environ.get("CLOUDSMITH_REPO", "dboeckli-sbx-repo")
-IMAGE = f"{REGISTRY}/{NAMESPACE}/{REPO}/{NAME}"
+IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
 BUILDER = os.environ.get("VIBE_BUILDX_BUILDER", "sbx-vibe")
 
 
