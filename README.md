@@ -553,6 +553,10 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 - **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`, provenance/SBOM)
   auf Cloudsmith. Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
   via `workflow_dispatch` (Build-only möglich über den `push`-Input).
+- **`cleanup-cloudsmith.yml`** — löscht alte Feature-Branch-Image-Snapshots aus `dboeckli/dboeckli-sbx-repo`
+  (Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>`; Master-Images `<basever>`/`latest` bleiben).
+  `workflow_dispatch` mit `dry-run` (Default an) + `max-age-days`; nightly 04:25 UTC scharf. Skript:
+  `.github/workflows/scripts/cleanup-cloudsmith.py` (analog zu `spring-6-rest-mvc`).
 
 > Die **gepinnte `sbx`-Version** (`SBX_VERSION`) wird von Renovate aktualisiert
 > (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
