@@ -120,6 +120,20 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 6. **Verifizieren:** `validate.yml` im Actions-Tab starten; danach Build-Workflow (build-only) und
    e2e.
 
+## Dependency-Updates (Renovate)
+
+- **Dependabot entfernt** (GitHub-only, unvereinbar mit dem `--mirror`-Push).
+- **Renovate self-hosted:** `.github/workflows/renovate.yml` läuft auf **GitHub-Runnern**, aber mit
+  `RENOVATE_PLATFORM=forgejo` + `RENOVATE_ENDPOINT=https://codeberg.org` → Renovate legt seine
+  Update-PRs auf **Codeberg** an. Der GitHub-Runner ist nur die Ausführungsmaschine.
+- Config: `.github/renovate.json` — `github-actions`-Manager wieder aktiviert (ersetzt Dependabot);
+  die Pin-Manager (SBX_VERSION/TEMPLATE_VERSION) deckt jetzt `.github/workflows/` **und**
+  `.forgejo/workflows/` ab. Der `github-actions`-Manager erkennt auch `.forgejo/workflows/`
+  (inkl. `https://code.forgejo.org/...`-URLs).
+- Nötiges Secret (GitHub): `RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`).
+- Die GitHub-**Renovate-App muss deinstalliert** werden (sonst erzeugt sie GitHub-PRs, die der
+  `--mirror`-Push löscht).
+
 ## Offene Punkte / Risiken
 
 - **`local-test/local-test-kits.py` liest Pins aus `.github/workflows/`** (`SBX_VERSION`,
@@ -127,8 +141,9 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
   Entfernen der GitHub-Workflows muss das Skript auf `.forgejo/workflows/` umgestellt werden.
 - **Doppelte CI:** Solange die GitHub-Workflows bestehen und GitHub Actions aktiv sind, laufen
   Pushes (via Mirror) auch dort. Empfehlung: GitHub Actions stilllegen, sobald Codeberg grün ist.
-- **Renovate auf Codeberg/Forgejo:** kein Hosted-Renovate. Optionen: self-hosted Renovate
-  (Forgejo-Actions) oder manuelle Versionspflege; Übergangsweise auf GitHub belassen.
+- **Mirror vs. GitHub-Bots:** Der `--mirror`-Push löscht GitHub-Refs, die auf Codeberg fehlen —
+  GitHub-Bots (Dependabot/Renovate-App) und GitHub-only Tags/Releases sind damit unvereinbar.
+  Daher Renovate self-hosted gegen Codeberg; **Releases/Tags auf Codeberg anlegen**.
 - **Multi-Arch ohne arm64-Runner:** dann arm64-Matrix-Eintrag/Label entfernen (amd64-only).
 - **e2e-KVM:** zentrale Machbarkeitsfrage; ggf. e2e vorerst auf GitHub belassen.
 - **GitHub-Packages-Maven / `gh` / sbx-CLI-Download / Docker Hub**: bleiben externe GitHub-/Drittdienste.
@@ -141,6 +156,8 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - [x] `.forgejo/workflows/` vollständig portiert (validate, cleanup, build-and-publish-*, e2e)
 - [x] README-Badges/Links auf Codeberg
 - [x] Push-Mirror Codeberg → GitHub (UI, `sync_on_commit=true`, interval `8h0m0s`)
+- [x] Renovate self-hosted gegen Codeberg (`.github/workflows/renovate.yml` + `renovate.json`); Dependabot entfernt
+- [~] Renovate-Aktivierung: GitHub-Secret `RENOVATE_TOKEN` setzen + GitHub-Renovate-App deinstallieren (Host)
 - [~] Actions aktiviert + Repo-Variablen gesetzt; Secrets (`DOCKER_PAT`, `CLOUDSMITH_API_KEY`) offen
 - [ ] Codeberg-Runner/Queue klären (gehostete Runner hängen; `codeberg-*` überlastet)
 - [ ] Codeberg-`validate` wieder auf `push`/`pull_request`/`schedule` stellen (aktuell nur `workflow_dispatch`)

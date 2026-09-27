@@ -229,13 +229,15 @@ Renovate (inkl. `renovate-config-validator`) via npm global installiert. Config 
 
 Not installed in the sandbox, but documented via Context7: Dependabot — see `context7-tools.md`.
 
-## Dependabot & Renovate (Context7 required)
+## Renovate (Context7 required)
 
-This repository manages `.github/dependabot.yml` and `.github/renovate.json`.
-Whenever you create, edit, or validate these configuration files — or change
-which tools/ecosystems they cover — ALWAYS fetch the current documentation via
+This repository manages `.github/renovate.json` — self-hosted Renovate, executed
+via `.github/workflows/renovate.yml` on GitHub runners but targeting the
+canonical Codeberg repo. Dependabot is no longer used.
+Whenever you create, edit, or validate this configuration — or change which
+tools/ecosystems it covers — ALWAYS fetch the current documentation via
 Context7 first (see `context7-tools.md`) and follow it. Do not rely on training
-memory; the schemas change.
+memory; the schema changes.
 
 ## Languages / formats
 

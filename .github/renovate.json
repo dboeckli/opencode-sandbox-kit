@@ -1,9 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "github-actions": {
-    "enabled": false
-  },
   "packageRules": [
     {
       "description": "Helm v3 (Default `helm`): nur v3-Linie",
@@ -118,7 +115,7 @@
     {
       "customType": "regex",
       "description": "sbx CLI version (.github/workflows/e2e.yml, validate.yml)",
-      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
       "matchStrings": ["SBX_VERSION: v?(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sbx-releases",
       "datasourceTemplate": "github-releases",
@@ -127,7 +124,7 @@
     {
       "customType": "regex",
       "description": "Sandbox-Template-Version (.github/workflows/e2e.yml, validate.yml; TEMPLATE_VERSION gilt fuer opencode-docker + claude-code-docker; Start-Commands nutzen :local/:latest, daher keine Doku-Pins mehr)",
-      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
       "matchStrings": ["TEMPLATE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
