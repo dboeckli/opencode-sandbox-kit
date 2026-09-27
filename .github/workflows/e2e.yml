@@ -1,8 +1,9 @@
 name: Kit e2e
 
-# End-to-end test: install a real `sbx` CLI, store the Cloudsmith registry
-# credential non-interactively (repo variables CLOUDSMITH_USERNAME / CLOUDSMITH_NAMESPACE
-# / CLOUDSMITH_REPO + secret CLOUDSMITH_API_KEY),
+# End-to-end test: install a real `sbx` CLI, sign in to Docker via `sbx login`
+# (repo variable DOCKER_USERNAME / secret DOCKER_PAT — sbx needs a Docker account
+# session), store the Cloudsmith registry credential
+# (variables CLOUDSMITH_USERNAME/CLOUDSMITH_NAMESPACE/CLOUDSMITH_REPO + secret CLOUDSMITH_API_KEY),
 # register fake API-key secrets for github/github-maven/anthropic/mammouth/mistral/context7/openrouter/google,
 # and run the 4 agent scenarios (OpenCode / Claude / Mammouth / Mistral Vibe)
 # from local-test/local-test-kits.py with `--ci` (no real
@@ -178,6 +179,23 @@ jobs:
           done
           echo "Timed out waiting for org.freedesktop.secrets to register"
           exit 1
+
+      - name: Sign in to Docker via sbx
+        # sbx requires a Docker account session to create/manage sandboxes
+        # ("user is not authenticated to Docker") — independent of which registry
+        # the images come from. Separate from the Cloudsmith registry credential below.
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCKER_USERNAME}" ] || [ -z "${DOCKER_PAT}" ]; then
+            echo "DOCKER_USERNAME / DOCKER_PAT not configured; cannot run e2e."
+            exit 1
+          fi
+          USER_CLEAN=$(printf '%s' "$DOCKER_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
       - name: Store Cloudsmith registry credential (authenticated image pulls)
         # The sandbox pulls the tooling/agent image from Cloudsmith (public repo, so

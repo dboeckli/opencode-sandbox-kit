@@ -208,10 +208,11 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
 | SonarCloud | SonarCloud API-Token (optional) | `sbx secret set sonarcloud` | Web-API für CI-Ergebnis-Abfragen (Quality Gate/Issues/Measures) |
 
-Für den e2e-Test in GitHub Actions werden zusätzlich die Repo-Variablen `CLOUDSMITH_USERNAME`
-(`dominique-boeckli`), `CLOUDSMITH_NAMESPACE` (`dboeckli`), `CLOUDSMITH_REPO` (`dboeckli-sbx-repo`)
-und das Secret `CLOUDSMITH_API_KEY` benötigt (Cloudsmith als Image-Registry; der frühere
-Docker-Hub-Login für die Images entfällt).
+Für den e2e-Test in GitHub Actions werden benötigt: `DOCKER_USERNAME` (Repo-Variable) +
+`DOCKER_PAT` (Secret) für den **`sbx login`** (Docker-Account-Session — sbx verlangt sie zum
+Erzeugen von Sandboxes) sowie die Repo-Variablen `CLOUDSMITH_USERNAME` (`dominique-boeckli`),
+`CLOUDSMITH_NAMESPACE` (`dboeckli`), `CLOUDSMITH_REPO` (`dboeckli-sbx-repo`) und das Secret
+`CLOUDSMITH_API_KEY` für das **Cloudsmith-Registry-Credential** (Image-Pulls).
 
 ### API-Keys & Billing: Konsolen-URLs
 
