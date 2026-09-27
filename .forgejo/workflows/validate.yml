@@ -19,9 +19,10 @@ on:
 
 jobs:
   validate:
-    # Forgejo runner label. "docker" = shared containerized runner. If you run a
-    # self-hosted runner (needed for e2e anyway), point this at its label.
-    runs-on: docker
+    # Forgejo runner label. Default "docker" = shared/containerized runner.
+    # Für einen self-hosted Runner (für e2e ohnehin nötig) die Repo-Variable
+    # RUNNER_LABEL setzen.
+    runs-on: ${{ vars.RUNNER_LABEL || 'docker' }}
     env:
       # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
       # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins
@@ -34,8 +35,10 @@ jobs:
       - name: Install prerequisites
         run: |
           set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
           if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update -qq && sudo apt-get install -y -qq curl ca-certificates
+            $SUDO apt-get update -qq && $SUDO apt-get install -y -qq curl ca-certificates
           fi
 
       - name: Download sbx (pinned version)
@@ -54,7 +57,9 @@ jobs:
       - name: Install sbx
         run: |
           set -euo pipefail
-          sudo PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          $SUDO PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
           echo "${HOME}/.docker/sbx/bin" >> "$GITHUB_PATH"
 
       - name: Verify sbx installation

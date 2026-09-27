@@ -1,7 +1,7 @@
 # opencode-sandbox-kit
 
-[![Validate Kit](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/validate.yml)
-[![Kit e2e](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml/badge.svg)](https://github.com/dboeckli/opencode-sandbox-kit/actions/workflows/e2e.yml)
+[![Validate Kit](https://codeberg.org/dboeckli/opencode-sandbox-kit/badges/workflows/validate.yml/badge.svg)](https://codeberg.org/dboeckli/opencode-sandbox-kit/actions?workflow=validate.yml)
+[![Kit e2e](https://codeberg.org/dboeckli/opencode-sandbox-kit/badges/workflows/e2e.yml/badge.svg)](https://codeberg.org/dboeckli/opencode-sandbox-kit/actions?workflow=e2e.yml)
 
 Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich dedizierte Agent-Kits: **Mammouth Code** (`mammouth-agent/`, `kind: sandbox`, eigenes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`, entrypoint `mammouth`) und **Mistral Vibe** (`mistral-vibe-agent/`, `kind: sandbox`, eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`).
 
@@ -917,7 +917,8 @@ beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run
 
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
 - [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.45.1 — generiert aus der Release-Binary)
-- [GitHub Repo](https://github.com/dboeckli/opencode-sandbox-kit)
+- [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
+- [Codeberg-Migration (Issue #114)](docs/codeberg-migration.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)
 - [Docker Blog — AI Coding Agent Horror Stories: Security Risks](https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/)
