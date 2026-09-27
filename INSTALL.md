@@ -179,11 +179,12 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 
 ## 4. Kit-Quellen freigeben (Remote-Git-Kits)
 
-Einmalig nötig, bevor Kits direkt aus GitHub bezogen werden
-(`--kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"`):
+Einmalig nötig, bevor Kits direkt aus GitHub oder Codeberg bezogen werden
+(`--kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` bzw.
+`--kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"`):
 
 ```powershell
-sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\"]"
+sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"
 ```
 
 ## 5. Secrets registrieren
