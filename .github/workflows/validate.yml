@@ -85,7 +85,9 @@ jobs:
           CODEBERG_TOKEN: ${{ secrets.CODEBERG_STATUS_TOKEN }}
           STATE: ${{ job.status }}
           TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SHA: ${{ github.sha }}
+          # For pull_request events github.sha is the synthetic merge commit (absent on Codeberg);
+          # use the PR head SHA then, else the pushed commit.
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           if [ -z "${CODEBERG_TOKEN}" ]; then
