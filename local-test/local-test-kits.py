@@ -12,8 +12,8 @@ Szenarien:
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud
-    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud — seit v0.38 ohne `-g`)
+  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud, codeberg
+    (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud / sbx secret set codeberg — seit v0.38 ohne `-g`)
   - Mistral-Vibe-Szenario (lokal): das Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:local` ist publiziert
     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image` bzw. `python local-test/build-and-publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
@@ -170,14 +170,14 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith", "sonarcloud"),
-    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "sonarcloud"),
-    "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith", "sonarcloud"),
-    "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
 SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "zai", "context7", "openrouter", "google",
-                "stackoverflow", "cloudsmith", "sonarcloud")
+                "stackoverflow", "cloudsmith", "sonarcloud", "codeberg")
 
 
 def enable_ansi():

@@ -234,6 +234,15 @@ credentials:
         - domain: sonarcloud.io
           header: Authorization
           format: "Bearer %s"
+  - service: codeberg
+    description: "Codeberg API-Token (https://codeberg.org/user/settings/applications) — Forgejo-API (Repo/Issues/PRs); Header 'Authorization: token <TOKEN>'"
+    apiKey:
+      name: CODEBERG_TOKEN
+      proxyManaged: true
+      inject:
+        - domain: codeberg.org
+          header: Authorization
+          format: "token %s"
 
 setup:
   install:

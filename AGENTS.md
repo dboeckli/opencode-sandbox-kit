@@ -540,6 +540,34 @@ curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
   "https://sonarcloud.io/api/qualitygates/project_status?projectKey=<key>"
 ```
 
+## Codeberg Authentication
+
+Codeberg (`https://codeberg.org`) ist die **kanonische Kit-Quelle** (Forgejo; GitHub bleibt Mirror)
+und bietet eine **Forgejo-REST-API** (`https://codeberg.org/api/v1/`). Das Kit deklariert den Service
+`codeberg` (`credentials[].apiKey` mit `name: CODEBERG_TOKEN`, `proxyManaged: true`, Header
+`Authorization: token <TOKEN>`); `codeberg.org` + `*.codeberg.org` stehen in
+`permissions.network.allow`. Token anlegen unter https://codeberg.org/user/settings/applications
+(Scopes z. B. `write:repository`, `write:issue`) und als Secret registrieren — der Key liegt nie im
+Sandbox-Filesystem:
+
+```powershell
+sbx secret set codeberg
+```
+
+In der Sandbox ist `CODEBERG_TOKEN=proxy-managed` gesetzt (Platzhalter); der Agent sendet
+`Authorization: token proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests
+an `codeberg.org` (Forgejo-API). `echo $CODEBERG_TOKEN` zeigt nie den echten Key.
+
+Beispiel:
+
+```bash
+curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/user
+```
+
+> **Git über HTTPS** (Push/Clone) nutzt Basic-Auth (Username + Token) — die Proxy-Injection setzt
+> nur den `Authorization: token`-Header (Forgejo-API). Für Git-Push nach Codeberg daher auf dem Host
+> oder mit Credential-Helper arbeiten.
+
 ## Offline Dokumentation (Repsy)
 
 Die Repsy-Doku (Maven/Helm/NuGet/Npm/PyPI/Cargo/Docker auf `repo.repsy.io`) ist

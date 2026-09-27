@@ -208,6 +208,7 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
 | Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
 | SonarCloud | SonarCloud API-Token (optional) | `sbx secret set sonarcloud` | Web-API für CI-Ergebnis-Abfragen (Quality Gate/Issues/Measures) |
+| Codeberg | Codeberg API-Token (optional) | `sbx secret set codeberg` | Forgejo-API (Repo/Issues/PRs) |
 
 Für den e2e-Test in GitHub Actions werden benötigt: `DOCKER_USERNAME` (Repo-Variable) +
 `DOCKER_PAT` (Secret) für den **`sbx login`** (Docker-Account-Session — sbx verlangt sie zum
@@ -227,6 +228,7 @@ Erzeugen von Sandboxes) sowie die Repo-Variablen `CLOUDSMITH_USERNAME` (`dominiq
 | GitHub | https://github.com/settings/tokens | — || Context7 | https://context7.com/dashboard | https://context7.com/dashboard |
 | Stack Overflow | https://stackapps.com/applications | — |
 | Cloudsmith | https://cloudsmith.io/user/settings/api-keys/ | https://cloudsmith.io/user/settings/billing/ |
+| Codeberg | https://codeberg.org/user/settings/applications | — |
 
 > **Hinweis:** OpenCode Zen und Direkt-Provider (Google, Anthropic, ...) sind **getrennte Abrechnung**.
 > Die Kosten-Anzeige in OpenCode (`$ x.xx spent`) ist eine **lokale Schätzung** aus
@@ -606,6 +608,31 @@ curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
 ```
 
 Es läuft **kein** `sonar-scanner` in der Sandbox — nur Ergebnis-Abfrage; Scans bleiben in der CI.
+
+#### Codeberg API-Token (optional)
+
+Codeberg (`https://codeberg.org`) ist die **kanonische Kit-Quelle** (Forgejo; GitHub bleibt Mirror)
+und bietet eine **Forgejo-REST-API** (`https://codeberg.org/api/v1/`). Das Kit deklariert den Service
+`codeberg` (`credentials[].apiKey` mit `name: CODEBERG_TOKEN`, `proxyManaged: true`, Header
+`Authorization: token <TOKEN>`) — `codeberg.org`/`*.codeberg.org` sind in der Netzwerk-Allowlist.
+Token anlegen unter **https://codeberg.org/user/settings/applications** (Scopes z. B.
+`write:repository`, `write:issue`) und als Secret registrieren:
+
+```powershell
+sbx secret set codeberg
+```
+
+> **Wichtig:** `CODEBERG_TOKEN` ist in der Sandbox auf den Platzhalter `proxy-managed` gesetzt.
+> Der Agent sendet `Authorization: token proxy-managed`; der Proxy ersetzt den Platzhalter
+> transparent bei Outbound-Requests an `codeberg.org`. `echo $CODEBERG_TOKEN` zeigt nie den echten Key.
+
+```bash
+curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/user
+```
+
+> **Git über HTTPS** (Push/Clone) nutzt Basic-Auth (Username + Token) — die Proxy-Injection setzt
+> nur den `Authorization: token`-Header (Forgejo-API). Für Git-Push nach Codeberg daher auf dem Host
+> oder mit Credential-Helper arbeiten.
 
 ## 6. Sandbox starten
 

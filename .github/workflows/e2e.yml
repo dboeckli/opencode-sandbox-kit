@@ -241,6 +241,7 @@ jobs:
           printf '%s' 'stackoverflow-fake-ci-key' | sbx secret set stackoverflow -f
           printf '%s' 'cloudsmith-fake-ci-key' | sbx secret set cloudsmith -f
           printf '%s' 'sonar-fake-ci-key' | sbx secret set sonarcloud -f
+          printf '%s' 'codeberg-fake-ci-key' | sbx secret set codeberg -f
 
       - name: Pre-create credential bindings (third-party v2 kit)
         # Third-party schemaVersion:"2" kits require an approved credential
@@ -275,6 +276,9 @@ jobs:
             sonarcloud:
               apiKey:
                 domains: [sonarcloud.io]
+            codeberg:
+              apiKey:
+                domains: [codeberg.org]
             github-maven:
               apiKey:
                 domains: [maven.pkg.github.com]
