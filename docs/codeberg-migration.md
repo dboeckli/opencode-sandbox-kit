@@ -60,18 +60,13 @@ Sandbox liegt der GitHub-Token nur als Sentinel vor → **UI-Schritt** (oder API
   fully-qualified URLs vermeiden Mehrdeutigkeit.
 - **`vars`** ist u. a. in `runs-on` und `strategy` verfügbar (`${{ vars.X || 'default' }}`).
 
-## Portierte Workflows (`.forgejo/workflows/`)
+## Workflows (`.forgejo/workflows/`)
 
-- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; Runner: `${{ vars.RUNNER_LABEL || 'codeberg-small' }}` (Codebergs gehosteter Runner).
-- `cleanup-cloudsmith.yml` — Cloudsmith-Cleanup + Recycle-Bin-Purge (nightly/master-push/dispatch).
-- `build-and-publish-{opencode,claude,mammouth,mistral-vibe}-image.yml` — Forgejo-nativ:
-  **plain `docker`/`docker buildx`** statt der GitHub-JS-Actions (`setup-buildx`/`login`/`build-push`),
-  fully-qualified Checkout, native Multi-Arch.
-- `e2e.yml` — 4 Agent-Szenarien via `local-test/local-test-kits.py --ci`; ruft die Build-Workflows
-  per `workflow_call`/`secrets: inherit` auf.
+- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; **nur `workflow_dispatch`** (manuell).
+  Runner: `${{ vars.RUNNER_LABEL || 'codeberg-small' }}` (Codebergs gehosteter Runner).
 
-Die `.github/workflows/` bleiben vorerst bestehen (GitHub-Mirror); sie sind aber **nicht** mehr
-die kanonische CI. Die Build-Ports lesen den Template-Pin aus `.forgejo/workflows/validate.yml`.
+Sonst **keine** Forgejo-Pipelines: `e2e`, `build-and-publish-*` und `cleanup-cloudsmith` existieren
+nur unter `.github/workflows/` und laufen auf **GitHub-Runnern** (Status wird an Codeberg gemeldet).
 
 ## Runner-Anforderungen + Repo-Variablen
 
