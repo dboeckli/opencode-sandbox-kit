@@ -1,0 +1,93 @@
+name: Validate Kit
+
+# Forgejo Actions port of .github/workflows/validate.yml (issue #114).
+# Codeberg ist kanonisch (origin), GitHub nur Mirror.
+# Unterschiede vs GitHub Actions:
+#   - workflows live in .forgejo/workflows/ (Forgejo liest sonst .github/workflows/)
+#   - runs-on: Codebergs gehostete Runner-Labels (codeberg-tiny/small/medium);
+#     "ubuntu-latest" existiert nicht, Default-Image ist GitHub-kompatibel.
+#   - fully-qualified actions von https://code.forgejo.org/actions/...
+#   - permissions/continue-on-error werden ignoriert.
+#   - der sbx-Download nutzt den oeffentlichen Release -> kein GitHub-Token noetig.
+
+# ÜBERGANG: Codeberg-CI vorerst nur manuell (gehostete Runner hängen in der Queue,
+# siehe docs/codeberg-migration.md). CI läuft aktuell auf GitHub (Push-Mirror).
+# Sobald die Codeberg-Runner zuverlässig sind: push/pull_request (+ schedule) aktivieren.
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    # Forgejo runner label. Default: Codebergs gehosteter Runner (Open Alpha,
+    # kostenlos): codeberg-tiny/small/medium. WICHTIG: `codeberg-medium` hat nur
+    # Kapazität 1 -> langer Stau (tiny=3, small=2). Daher `codeberg-small`
+    # (2 CPU/4G/5 min Limit). Für einen self-hosted Runner RUNNER_LABEL setzen.
+    runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-small' }}
+    env:
+      # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
+      # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins
+      # der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate (auf Codeberg ggf. manuell,
+      # siehe docs/codeberg-migration.md).
+      TEMPLATE_VERSION: 0.7.0
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+
+      - name: Install prerequisites
+        run: |
+          set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          if command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update -qq && $SUDO apt-get install -y -qq curl ca-certificates
+          fi
+
+      - name: Download sbx (pinned version)
+        # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
+        # (customManager docker/sbx-releases). Der Release ist oeffentlich -> kein Token noetig.
+        env:
+          SBX_VERSION: v0.45.1
+        run: |
+          set -euo pipefail
+          echo "using sbx ${SBX_VERSION}"
+          curl -fsSL \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
+            -o /tmp/DockerSandboxes-linux.tar.gz
+          tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
+
+      - name: Install sbx
+        run: |
+          set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          $SUDO PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
+          echo "${HOME}/.docker/sbx/bin" >> "$GITHUB_PATH"
+
+      - name: Verify sbx installation
+        run: sbx version
+
+      - name: Validate OpenCode agent kit spec
+        run: sbx kit validate ./opencode-agent/
+
+      - name: Validate Mammouth agent kit spec
+        run: sbx kit validate ./mammouth-agent/
+
+      - name: Validate Mistral Vibe agent kit spec
+        run: sbx kit validate ./mistral-vibe-agent/
+
+      - name: Check install-script copies are in sync
+        run: |
+          set -euo pipefail
+          for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py install-apt-packages.sh; do
+            cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+            cmp "opencode-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
+          done
+
+      - name: Check Mistral Vibe image tag matches the Dockerfile pin
+        run: |
+          set -euo pipefail
+          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
+            | head -1 | cut -d= -f2)
+          default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          echo "VIBE_VERSION=${version}  spec args.imageTag.default=${default}"
+          test "$version" = "$default"

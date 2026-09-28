@@ -1,0 +1,262 @@
+name: Kit e2e
+
+# Forgejo Actions port of .github/workflows/e2e.yml (issue #114).
+# GitHub bleibt Mirror; dieses Workflow ist das Codeberg-Pendant.
+#
+# End-to-end-Test: echte `sbx` CLI installieren, per `sbx login` bei Docker
+# anmelden, Cloudsmith-Registry-Credential ablegen, Fake-API-Key-Secrets
+# registrieren und die 4 Agent-Szenarien (OpenCode/Claude/Mammouth/Mistral Vibe)
+# aus local-test/local-test-kits.py mit `--ci` fahren (keine echten API-Calls).
+#
+# RUNNER-ANFORDERUNG (kritisch): Der e2e-Job startet echte sbx-Sandboxes und
+# braucht daher **Docker** + **KVM** (`/dev/kvm`, `kernel.apparmor_restrict_unprivileged_userns=0`)
+# + das Secret-Service-Setup (gnome-keyring/dbus). Das ist auf Codeberg-Shared-Runnern
+# NICHT gegeben -> self-hosted Runner im Host-Modus, Label per Repo-Variable `RUNNER_E2E`
+# (Default `self-hosted`).
+#
+# Portierungs-Entscheidungen: fully-qualified checkout; plain `docker`-CLI in den
+# Build-Workflows; `secrets: inherit` (Forgejo unterstützt das bei `workflow_call`).
+
+# ZURZEIT INAKTIV: nur workflow_dispatch. e2e braucht Docker+KVM (self-hosted) —
+# sobald ein passender Runner steht, wieder push/pull_request/schedule aktivieren.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-publish-mistral-vibe-image:
+    # Build (and, unless it's a PR, push) the Mistral Vibe image the
+    # `mistral-vibe` scenario pulls. Reuses the standalone build-and-publish workflow
+    # so the image always matches the branch under test (multi-arch).
+    # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    uses: ./.forgejo/workflows/build-and-publish-mistral-vibe-image.yml
+    with:
+      push: true
+    secrets: inherit
+
+  build-and-publish-opencode-image:
+    # Build (and, unless it's a PR, push) the OpenCode tooling image the
+    # `opencode` scenario pulls. Reuses the standalone build-and-publish workflow (multi-arch).
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    uses: ./.forgejo/workflows/build-and-publish-opencode-image.yml
+    with:
+      push: true
+    secrets: inherit
+
+  build-and-publish-claude-image:
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    uses: ./.forgejo/workflows/build-and-publish-claude-image.yml
+    with:
+      push: true
+    secrets: inherit
+
+  build-and-publish-mammouth-image:
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    uses: ./.forgejo/workflows/build-and-publish-mammouth-image.yml
+    with:
+      push: true
+    secrets: inherit
+
+  e2e-scenario:
+    # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
+    # Docker Hub secrets, so skip those.
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image]
+    if: ${{ forgejo.event_name == 'push' || forgejo.event_name == 'schedule' || forgejo.event_name == 'workflow_dispatch' || forgejo.event.pull_request.head.repo.full_name == forgejo.repository }}
+    runs-on: ${{ vars.RUNNER_E2E || 'self-hosted' }}
+    timeout-minutes: 60
+    name: e2e (${{ matrix.scenario }})
+    strategy:
+      # Jedes Szenario ist unabhaengig: ein Fehlschlag bricht die uebrigen
+      # parallelen Jobs nicht ab.
+      fail-fast: false
+      matrix:
+        scenario: [opencode, claude, mammouth, mistral-vibe]
+    env:
+      # Sandbox-Template-Version (gepinnt) — muss mit validate.yml identisch sein; Basis der
+      # Tooling-Images und des Mammouth-spec-Images.
+      TEMPLATE_VERSION: 0.7.0
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+
+      - name: Enable KVM access
+        run: |
+          set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          $SUDO chmod 666 /dev/kvm
+          ls -la /dev/kvm
+          $SUDO sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Download sbx (pinned version)
+        # sbx-Version ist gepinnt (SBX_VERSION); der Release ist oeffentlich -> kein Token noetig.
+        env:
+          SBX_VERSION: v0.45.1
+        run: |
+          set -euo pipefail
+          echo "using sbx ${SBX_VERSION}"
+          curl -fsSL \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
+            -o /tmp/DockerSandboxes-linux.tar.gz
+          tar xzf /tmp/DockerSandboxes-linux.tar.gz -C /tmp
+
+      - name: Install sbx
+        run: |
+          set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          $SUDO PREFIX="${HOME}/.docker/sbx" /tmp/docker-sbx/install.sh
+          echo "${HOME}/.docker/sbx/bin" >> "$GITHUB_PATH"
+
+      - name: Verify sbx installation
+        run: sbx version
+
+      - name: Set up Secret Service for the sbx secret store
+        # sbx's Linux binary persists credentials/secrets via libsecret, which talks
+        # to org.freedesktop.secrets over D-Bus. Headless runner -> no Secret Service;
+        # `sbx secret set` / `sbx login` block. Mirrors the docker/sbx-kits-contrib recipe.
+        run: |
+          set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          $SUDO apt-get update -qq
+          $SUDO apt-get install -y -qq gnome-keyring dbus python3
+
+          mkdir -p "$HOME/.local/share/keyrings"
+          cat > "$HOME/.local/share/keyrings/login.keyring" <<'KEYRING'
+          [keyring]
+          display-name=login
+          ctime=1750965549
+          mtime=0
+          lock-on-idle=false
+          lock-after=false
+          KEYRING
+
+          DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --print-address --fork)
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+          export DBUS_SESSION_BUS_ADDRESS
+
+          gnome-keyring-daemon --start --components=secrets >/dev/null
+
+          for _ in $(seq 1 50); do
+            if gdbus call --session \
+                --dest org.freedesktop.DBus \
+                --object-path /org/freedesktop/DBus \
+                --method org.freedesktop.DBus.GetNameOwner \
+                org.freedesktop.secrets >/dev/null 2>&1; then
+              echo "Secret Service registered on D-Bus"
+              exit 0
+            fi
+            sleep 0.1
+          done
+          echo "Timed out waiting for org.freedesktop.secrets to register"
+          exit 1
+
+      - name: Sign in to Docker via sbx
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCKER_USERNAME}" ] || [ -z "${DOCKER_PAT}" ]; then
+            echo "DOCKER_USERNAME / DOCKER_PAT not configured; cannot run e2e."
+            exit 1
+          fi
+          USER_CLEAN=$(printf '%s' "$DOCKER_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
+
+      - name: Store Cloudsmith registry credential (authenticated image pulls)
+        env:
+          CLOUDSMITH_USERNAME: ${{ vars.CLOUDSMITH_USERNAME }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDSMITH_USERNAME}" ] || [ -z "${CLOUDSMITH_API_KEY}" ]; then
+            echo "CLOUDSMITH_USERNAME / CLOUDSMITH_API_KEY not configured; cannot run e2e."
+            exit 1
+          fi
+          USER_CLEAN=$(printf '%s' "$CLOUDSMITH_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$CLOUDSMITH_API_KEY"  | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx secret set --registry docker.cloudsmith.io \
+            --username "$USER_CLEAN" --password-stdin
+
+      - name: Register sandbox secrets (fake API keys prove proxy wiring)
+        # local-test/local-test-kits.py asserts these global services exist (`sbx secret ls`).
+        # Optional: ein echtes GitHub-PAT als Repo-Secret `GH_TOKEN` setzen, damit der
+        # `gh auth status`-Check in der Sandbox scharf läuft; ohne GH_TOKEN wird ein Fake
+        # gesetzt und der Check im --ci-Modus übersprungen (erwartet).
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh_token="${GH_TOKEN:-ghp-fake-ci-key}"
+          printf '%s' "$gh_token" | sbx secret set github
+          printf '%s' 'ghp-fake-ci-key' | sbx secret set github-maven -f
+          printf '%s' 'sk-ant-fake-ci-key' | sbx secret set anthropic -f
+          printf '%s' 'mammouth-fake-ci-key' | sbx secret set mammouth -f
+          printf '%s' 'mistral-fake-ci-key' | sbx secret set mistral -f
+          printf '%s' 'zai-fake-ci-key' | sbx secret set zai -f
+          printf '%s' 'ctx7op-fake-ci-key' | sbx secret set context7 -f
+          printf '%s' 'openrouter-fake-ci-key' | sbx secret set openrouter -f
+          printf '%s' 'google-fake-ci-key' | sbx secret set google -f
+          printf '%s' 'stackoverflow-fake-ci-key' | sbx secret set stackoverflow -f
+          printf '%s' 'cloudsmith-fake-ci-key' | sbx secret set cloudsmith -f
+          printf '%s' 'sonar-fake-ci-key' | sbx secret set sonarcloud -f
+          printf '%s' 'codeberg-fake-ci-key' | sbx secret set codeberg -f
+
+      - name: Pre-create credential bindings (third-party v2 kit)
+        # Third-party schemaVersion:"2" kits require an approved credential
+        # binding per declared service (apiKey + domains). On a fresh runner
+        # nothing has been approved interactively, so write the file first.
+        run: |
+          mkdir -p "$HOME/.config/sbx"
+          cat > "$HOME/.config/sbx/credentials.yaml" <<'EOF'
+          bindings:
+            context7:
+              apiKey:
+                domains: [context7.com]
+            deepseek:
+              apiKey:
+                domains: [api.deepseek.com]
+            mammouth:
+              apiKey:
+                domains: [api.mammouth.ai]
+            mistral:
+              apiKey:
+                domains: [api.mistral.ai]
+            zai:
+              apiKey:
+                domains: [api.z.ai]
+            stackoverflow:
+              apiKey:
+                domains: [api.stackexchange.com]
+            cloudsmith:
+              apiKey:
+                domains: [api.cloudsmith.io, upload.cloudsmith.io]
+            sonarcloud:
+              apiKey:
+                domains: [sonarcloud.io]
+            codeberg:
+              apiKey:
+                domains: [codeberg.org]
+            github-maven:
+              apiKey:
+                domains: [maven.pkg.github.com]
+          EOF
+
+      - name: Initialize global network policy (balanced)
+        # On a fresh runner the global policy is uninitialized, which makes
+        # `sbx create` fail. `balanced` = default deny with common dev sites allowed.
+        run: sbx policy init balanced
+
+      - name: Run e2e tests (${{ matrix.scenario }})
+        env:
+          VIBE_IMAGE_TAG: ${{ needs.build-and-publish-mistral-vibe-image.outputs.version_tag }}
+          MAMMOUTH_IMAGE_TAG: ${{ needs.build-and-publish-mammouth-image.outputs.version_tag }}
+          OPENCODE_IMAGE_TAG: ${{ needs.build-and-publish-opencode-image.outputs.version_tag }}
+          CLAUDE_IMAGE_TAG: ${{ needs.build-and-publish-claude-image.outputs.version_tag }}
+        run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
+
+      - name: Sign out of Docker Hub
+        if: always()
+        run: sbx logout --yes || true

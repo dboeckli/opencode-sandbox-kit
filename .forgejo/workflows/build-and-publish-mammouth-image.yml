@@ -1,0 +1,163 @@
+name: Build and publish Mammouth image
+
+# Forgejo Actions port of .github/workflows/build-and-publish-mammouth-image.yml (issue #114).
+# GitHub bleibt Mirror; dieses Workflow ist das Codeberg-Pendant.
+#
+# Baut/publiziert `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth` (Mammouth CLI + Kit-Tooling,
+# auf dem `opencode-docker`-Template; Mammouth ist ein OpenCode-Fork).
+#
+# Portierungs-Entscheidungen: siehe build-and-publish-opencode-image.yml
+# (fully-qualified checkout, plain `docker`-CLI statt GitHub-JS-Actions, native
+# Multi-Arch-Runner mit Labels `docker` (amd64) / `arm64` (arm64), `github`-Context alias).
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push the image to Cloudsmith (off = build only)"
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      push:
+        description: "Push the image to Cloudsmith (off = build only)"
+        type: boolean
+        default: true
+    outputs:
+      version_tag:
+        description: "Image version tag that was built/pushed"
+        value: ${{ jobs.prepare.outputs.version_tag }}
+
+env:
+  REGISTRY: docker.cloudsmith.io
+  IMAGE_NAMESPACE: ${{ vars.CLOUDSMITH_NAMESPACE }}
+  IMAGE_REPO: ${{ vars.CLOUDSMITH_REPO }}
+  IMAGE_NAME: sbx-mammouth
+
+jobs:
+  prepare:
+    runs-on: ${{ vars.RUNNER_LABEL || 'docker' }}
+    outputs:
+      version_tag: ${{ steps.tags.outputs.version_tag }}
+      extra_tag: ${{ steps.tags.outputs.extra_tag }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+
+      - name: Compute image tags from the Mammouth pin and the branch
+        id: tags
+        run: |
+          set -euo pipefail
+          pin=$(grep -oE 'ARG MAMMOUTH_VERSION=[0-9]+(\.[0-9]+)+' mammouth-agent/Dockerfile \
+            | head -1 | cut -d= -f2)
+          if [ -z "$pin" ]; then
+            echo "MAMMOUTH_VERSION pin not found in mammouth-agent/Dockerfile" >&2
+            exit 1
+          fi
+          spec_default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mammouth-agent/spec.yaml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          if [ "$spec_default" != "$pin" ]; then
+            echo "spec.yaml args.imageTag.default ($spec_default) != Dockerfile pin ($pin)" >&2
+            exit 1
+          fi
+          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$ref" = "master" ] || [ "$ref" = "main" ]; then
+            version_tag="$pin"
+            extra_tag="latest"
+          else
+            slug=$(printf '%s' "$ref" | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's#[^a-z0-9_.-]+#-#g; s#^-+##; s#-+$##')
+            ts=$(date -u +%Y%m%d%H%M%S)
+            version_tag="${pin}-${slug}.${ts}"
+            extra_tag="$slug"
+          fi
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "extra_tag=$extra_tag" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$version_tag extra_tag=$extra_tag"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ${{ vars.RUNNER_LABEL || 'docker' }}
+          - platform: linux/arm64
+            arch: arm64
+            runner: ${{ vars.RUNNER_ARM64 || 'arm64' }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        run: |
+          set -euo pipefail
+          docker buildx inspect sbx-builder >/dev/null 2>&1 || docker buildx create --name sbx-builder --use
+          docker buildx use sbx-builder
+          docker buildx inspect --bootstrap
+
+      - name: Log in to Docker Hub (base image pulls)
+        if: ${{ inputs.push }}
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: printf '%s' "$DOCKER_PAT" | docker login docker.io --username "$DOCKER_USERNAME" --password-stdin
+
+      - name: Log in to Cloudsmith (image push)
+        if: ${{ inputs.push }}
+        env:
+          CLOUDSMITH_USERNAME: ${{ vars.CLOUDSMITH_USERNAME }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: printf '%s' "$CLOUDSMITH_API_KEY" | docker login docker.cloudsmith.io --username "$CLOUDSMITH_USERNAME" --password-stdin
+
+      - name: Build and push ${{ matrix.arch }}
+        env:
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+        run: |
+          set -euo pipefail
+          tag="${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_REPO}/${IMAGE_NAME}-${{ matrix.arch }}:${VERSION_TAG}"
+          out=""
+          [ "${{ inputs.push }}" = "true" ] && out="--push"
+          docker buildx build \
+            --platform "${{ matrix.platform }}" \
+            --provenance=false --sbom=false \
+            -t "$tag" $out mammouth-agent
+
+  merge:
+    needs: [prepare, build]
+    if: ${{ inputs.push }}
+    runs-on: ${{ vars.RUNNER_LABEL || 'docker' }}
+    steps:
+      - name: Log in to Cloudsmith
+        env:
+          CLOUDSMITH_USERNAME: ${{ vars.CLOUDSMITH_USERNAME }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: printf '%s' "$CLOUDSMITH_API_KEY" | docker login docker.cloudsmith.io --username "$CLOUDSMITH_USERNAME" --password-stdin
+
+      - name: Create multi-arch manifest list
+        env:
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+          EXTRA_TAG: ${{ needs.prepare.outputs.extra_tag }}
+        run: |
+          set -euo pipefail
+          image="${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_REPO}/${IMAGE_NAME}"
+          retry() {
+            local n=0 max=6
+            until "$@"; do
+              n=$((n + 1))
+              if [ "$n" -ge "$max" ]; then return 1; fi
+              echo "retry $n/$max: $*" >&2
+              sleep $((n * 5))
+            done
+          }
+          retry docker buildx imagetools create \
+            -t "${image}:${VERSION_TAG}" \
+            "${image}-amd64:${VERSION_TAG}" \
+            "${image}-arm64:${VERSION_TAG}"
+          if [ -n "${EXTRA_TAG}" ]; then
+            retry docker buildx imagetools create \
+              -t "${image}:${EXTRA_TAG}" \
+              "${image}:${VERSION_TAG}"
+          fi
+          retry docker buildx imagetools inspect "${image}:${VERSION_TAG}"

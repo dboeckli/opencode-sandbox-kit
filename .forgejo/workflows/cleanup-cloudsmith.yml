@@ -1,0 +1,77 @@
+name: Cleanup Cloudsmith Feature Images
+run-name: >
+  Cleanup: ${{ forgejo.event_name }} for ${{ forgejo.ref_name }} by @${{ forgejo.actor }}
+
+# Forgejo Actions port of .github/workflows/cleanup-cloudsmith.yml (issue #114).
+# GitHub bleibt Mirror; dieses Workflow ist das Codeberg-Pendant.
+#
+# Löscht Feature-Branch-Image-Snapshots aus dem Cloudsmith-Repo `dboeckli/sbx`.
+# Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>` (+ Moving-Tag `<slug>`).
+# Master-Images (`<basever>` + `latest`) bleiben immer erhalten.
+#
+# Auslöser:
+#   - push auf master:  Feature-Images sind nach dem Merge obsolet -> alle löschen (MAX_AGE_DAYS=0)
+#   - schedule (nightly 04:25 UTC): verwaiste Branch-Snapshots älter als MAX_AGE_DAYS löschen
+#   - workflow_dispatch: manuell, mit dry-run (Default an) + max-age-days + purge-recycle-bin
+#
+# Die Skripte liegen weiterhin unter .github/workflows/scripts/ (repo-relativ, daher
+# auch aus Forgejo nutzbar); bei einem späteren Entfernen der GitHub-Workflows ggf. verschieben.
+
+# ZURZEIT INAKTIV: nur workflow_dispatch (kein Auto-Trigger). Nach Runner-Klärung
+# wieder push (master) + schedule (nightly 04:25 UTC) aktivieren.
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        type: boolean
+        default: true
+        description: 'Nur auflisten, nicht löschen'
+      max-age-days:
+        type: number
+        default: 1
+        description: 'Nur älter als X Tage löschen'
+      purge-recycle-bin:
+        type: boolean
+        default: true
+        description: 'Recycle Bin endgültig löschen (Storage freigeben)'
+
+jobs:
+  cleanup:
+    # Runner-Label: Default Codebergs gehosteter Runner (codeberg-small);
+    # für self-hosted die Repo-Variable RUNNER_LABEL setzen.
+    runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-small' }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+
+      - name: Install prerequisites
+        # Das Forgejo-Default-Image (Debian bookworm) bringt python3 nicht mit.
+        run: |
+          set -euo pipefail
+          SUDO=""
+          command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+          if command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update -qq
+            $SUDO apt-get install -y -qq python3 ca-certificates curl
+          fi
+
+      - name: List & delete feature-branch image snapshots
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          OWNER: dboeckli
+          REPO: sbx
+          PACKAGE: sbx-
+          # push (master) = 0 (alles löschen); sonst max-age-days bzw. 1
+          MAX_AGE_DAYS: ${{ forgejo.event_name == 'push' && '0' || (inputs.max-age-days != '' && inputs.max-age-days || 1) }}
+          # Nur manuelle Runs sind Dry-Run-fähig; schedule + push laufen scharf
+          DRY_RUN: ${{ forgejo.event_name == 'workflow_dispatch' && inputs.dry-run == true }}
+        run: python3 .github/workflows/scripts/cleanup-cloudsmith.py
+
+      - name: Purge recycle bin (hard delete, reclaim storage)
+        # Soft-gelöschte Packages zählen 7 Tage weiter; endgültig löschen gibt Storage frei.
+        if: ${{ forgejo.event_name != 'workflow_dispatch' || inputs.purge-recycle-bin }}
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          OWNER: dboeckli
+          REPO: sbx
+          DRY_RUN: ${{ forgejo.event_name == 'workflow_dispatch' && inputs.dry-run == true }}
+        run: python3 .github/workflows/scripts/purge-cloudsmith-recycle-bin.py

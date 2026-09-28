@@ -1,0 +1,48 @@
+name: Renovate (Codeberg)
+
+# Run Renovate on GitHub-hosted runners, but target the canonical Codeberg repo
+# (issue #114). Renovate's hosted app can only talk to GitHub, so we self-host
+# the CLI and point it at Codeberg (`RENOVATE_PLATFORM=forgejo`). Renovate opens
+# its update PRs on Codeberg; the Codeberg -> GitHub push mirror keeps GitHub in
+# sync. This replaces Dependabot (which is GitHub-only and would fight the mirror).
+#
+# Requires a repo secret:
+#   CODEBERG_FOR_RENOVATE_TOKEN = Codeberg PAT with scope `write:repository` (and `write:issue`)
+# No GitHub token is needed — Renovate only talks to Codeberg.
+#
+# Runs on a schedule (default branch = master) plus manual dispatch. Until the
+# migration branch is merged, trigger manually (Actions -> Renovate -> Run workflow,
+# select the branch).
+
+on:
+  schedule:
+    # Daily at 04:20 UTC (after validate-ish times; independent of Codeberg runners).
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Renovate against Codeberg
+        env:
+          RENOVATE_PLATFORM: forgejo
+          RENOVATE_ENDPOINT: https://codeberg.org
+          RENOVATE_TOKEN: ${{ secrets.CODEBERG_FOR_RENOVATE_TOKEN }}
+          RENOVATE_REPOSITORIES: dboeckli/opencode-sandbox-kit
+          RENOVATE_ONBOARDING: "false"
+          LOG_LEVEL: info
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -e RENOVATE_PLATFORM \
+            -e RENOVATE_ENDPOINT \
+            -e RENOVATE_TOKEN \
+            -e RENOVATE_REPOSITORIES \
+            -e RENOVATE_ONBOARDING \
+            -e LOG_LEVEL \
+            ghcr.io/renovatebot/renovate:latest
