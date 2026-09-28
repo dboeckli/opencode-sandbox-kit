@@ -26,6 +26,15 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+### Lokaler Schutz (pre-push-Hook)
+
+Zusätzlich zum Server-seitigen Schutz blockiert der versionierte Hook `.githooks/pre-push` versehentliche
+Pushes nach **GitHub** (read-only Mirror) und direkte Pushes auf `master`/`main`. Einmalig pro Clone aktivieren:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ### Feature Branch mit GitHub-Issue (Zusatzregel)
 
 Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:

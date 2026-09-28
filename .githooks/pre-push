@@ -1,0 +1,32 @@
+#!/bin/sh
+# Guard against (1) pushing to the read-only GitHub mirror and (2) pushing
+# directly to master/main. Enable once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+# Deliberate bypass (discouraged): git push --no-verify
+
+remote_name="$1"
+remote_url="$2"
+
+# 1) Never push directly to GitHub (read-only mirror; overwritten by the sync).
+case "$remote_url" in
+  *github.com*)
+    echo "pre-push: blocked push to GitHub mirror ($remote_url)." >&2
+    echo "          Push to 'origin' (Codeberg) instead." >&2
+    exit 1
+    ;;
+esac
+
+# 2) No direct pushes to master/main (use a feature branch + pull request).
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/master | refs/heads/main)
+      echo "pre-push: blocked direct push to $remote_ref." >&2
+      echo "          Use a feature branch + pull request." >&2
+      exit 1
+      ;;
+  esac
+done
+
+exit 0
