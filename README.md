@@ -3,6 +3,11 @@
 [![Validate Kit](https://codeberg.org/dboeckli/opencode-sandbox-kit/badges/workflows/validate.yml/badge.svg)](https://codeberg.org/dboeckli/opencode-sandbox-kit/actions?workflow=validate.yml)
 [![Kit e2e](https://codeberg.org/dboeckli/opencode-sandbox-kit/badges/workflows/e2e.yml/badge.svg)](https://codeberg.org/dboeckli/opencode-sandbox-kit/actions?workflow=e2e.yml)
 
+> **Canonical repository: [Codeberg](https://codeberg.org/dboeckli/opencode-sandbox-kit).** The
+> [GitHub repo](https://github.com/dboeckli/opencode-sandbox-kit) is a **read-only mirror** — direct
+> pushes/PRs there are ignored and overwritten on the next sync. Please use **Codeberg** for issues,
+> pull requests and releases.
+
 Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich dedizierte Agent-Kits: **Mammouth Code** (`mammouth-agent/`, `kind: sandbox`, eigenes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`, entrypoint `mammouth`) und **Mistral Vibe** (`mistral-vibe-agent/`, `kind: sandbox`, eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`).
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
