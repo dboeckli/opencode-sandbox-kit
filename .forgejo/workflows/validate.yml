@@ -30,7 +30,7 @@ jobs:
       # siehe docs/codeberg-migration.md).
       TEMPLATE_VERSION: 0.7.0
     steps:
-      - uses: https://code.forgejo.org/actions/checkout@v6
+      - uses: https://code.forgejo.org/actions/checkout@v7
 
       - name: Install prerequisites
         run: |
