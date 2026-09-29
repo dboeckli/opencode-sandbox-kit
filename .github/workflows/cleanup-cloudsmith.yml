@@ -10,6 +10,8 @@ run-name: >
 #   - push auf master:  Feature-Images sind nach dem Merge obsolet -> alle löschen (MAX_AGE_DAYS=0)
 #   - schedule (nightly 04:25 UTC): verwaiste Branch-Snapshots älter als MAX_AGE_DAYS löschen
 #   - workflow_dispatch: manuell, mit dry-run (Default an) + max-age-days + purge-recycle-bin
+#   - workflow_call: von e2e.yml nach Build+e2e aufgerufen (deterministisch nach dem Build,
+#     da GitHub `schedule`-Runs stark verzögert) -> läuft bei push(master)/schedule scharf.
 # Analog zu spring-6-rest-mvc (`cleanup-cloudsmith.yml`).
 #
 # Zusätzlich wird der **Recycle Bin** geleert (hard delete): soft-gelöschte Packages zählen
@@ -35,6 +37,8 @@ on:
         type: boolean
         default: true
         description: 'Recycle Bin endgültig löschen (Storage freigeben)'
+  # Reusable: wird von e2e.yml als letzter Job aufgerufen (Cleanup nach dem Build).
+  workflow_call:
 
 jobs:
   cleanup:
