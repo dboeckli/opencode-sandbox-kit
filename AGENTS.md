@@ -656,17 +656,18 @@ Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka C
 
 > Die Tooling-Installation ist in allen Kit-Specs dedupliziert: `setup.install` nutzt für die
 > **schweren Tools** `bash /home/agent/.local/bin/install-tooling.sh <tool>` — **einen Command pro Tool**
-> (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`, Default `all`), damit die `sbx run`-Konsole
+> (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`, Default `all`), damit die `sbx run`-Konsole
 > jedes Tool als eigene Zeile (Spinner → ✓) zeigt. npm/apt-Pakete sind als Inline-Commands direkt in
 > den Specs (`npm_config_bin_links=true npm install -g ctx7` usw., `apt-get update && …`). Die Skripte
 > liegen als identische Kopien in den `files/home/.local/bin/`-Bundles der Kits (kein separates
 > Kanonik-Verzeichnis). **Versionsänderungen**
-> (JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie machen, dann die anderen identisch halten
+> (Node.js, JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie machen, dann die anderen identisch halten
 > (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`, `mistral-vibe-agent/files/home/.local/bin/`) → der Validate-only-Lauf
 > (`local-test-kits-validate-only`) schlägt bei Drift fehl.
 
 | Tool | Source |
 |------|--------|
+| Node.js 24.21.0 (LTS) | nodejs.org (`/opt/node` → Symlinks in `/usr/local/bin`; npm-CLIs wie renovate ≥43) |
 | Liberica JDK 25.0.4 | GitHub Releases (bell-sw) |
 | Apache Maven 3.9.16 | dlcdn.apache.org |
 | Docker CLI 27.5.1 | download.docker.com (static binary) |

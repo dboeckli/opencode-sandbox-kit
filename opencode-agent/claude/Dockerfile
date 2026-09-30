@@ -47,6 +47,8 @@ RUN shfmt --version \
  && helm version --short \
  && helm4 version --short \
  && kafka-topics.sh --version \
+ && node --version \
+ && [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ] \
  && command -v ctx7 \
  && command -v skills \
  && command -v prettier \

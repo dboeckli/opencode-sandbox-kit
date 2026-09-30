@@ -24,6 +24,12 @@
       "allowedVersions": "/^(?:8|11|17|21|25)(?:\\.|-|$)/"
     },
     {
+      "description": "Node.js: nur LTS-Major-Linien (gerade Majors) — keine Current/Non-LTS-Releases (z. B. 25/27); install-tooling.sh NODE_VER",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["nodejs/node"],
+      "allowedVersions": "/^\\d*[02468]\\./"
+    },
+    {
       "description": "Mistral-Vibe-Pin (Dockerfile ARG VIBE_VERSION + spec-Image-Tag) gemeinsam aktualisieren",
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["mistral-vibe"],
@@ -93,6 +99,15 @@
       "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM4_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Node.js version (install-tooling.sh, alle Kit-Kopien) — npm CLIs (renovate >=43) benötigen Node ^24.11",
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "matchStrings": ["NODE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "nodejs/node",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
     },

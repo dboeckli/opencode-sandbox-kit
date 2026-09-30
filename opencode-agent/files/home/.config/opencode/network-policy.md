@@ -14,6 +14,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku)
 - **JetBrains Help + Marketplace + YouTrack**: `jetbrains.com`, `www.jetbrains.com`, `plugins.jetbrains.com`, `youtrack.jetbrains.com` (IntelliJ HTTP-Client Feature-Doku, z. B. `www.jetbrains.com/help/idea/http-response-handler-examples.html`; Plugin-Changelogs, z. B. MCP Server 26071; Issue-Recherche, z. B. IJPL MCP-Server)
 - **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`
+- **Node.js**: `nodejs.org` (Node 24 LTS Tarball — npm CLIs wie renovate >=43 benötigen Node ^24.11)
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`

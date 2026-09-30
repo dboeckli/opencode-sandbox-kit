@@ -1055,6 +1055,21 @@ def main():
                 for line in logtail.splitlines():
                     print("         " + _color("33", line))
 
+        # Node muss >= 24 sein (npm CLIs wie renovate >=43 fordern ^24.11) — der basis-Template-Node
+        # ist 22, install-tooling.sh node hebt auf 24 an. `node --version` allein würde ein fehlgeschlagenes
+        # Upgrade (Fallback auf Node 22) nicht erkennen, daher explizit die Major-Version prüfen.
+        c2, node_out = exec_sandbox(s["name"], "node --version")
+        node_m = re.match(r"v(\d+)\.", node_out.strip())
+        if c2 == 0 and node_m and int(node_m.group(1)) >= 24:
+            pass_(f"tool: node >= 24 ({node_out.strip()})")
+        else:
+            sfail("tool: node >= 24 (npm CLIs wie renovate >=43 fordern Node ^24.11)", node_out)
+            c3, logtail = exec_sandbox(s["name"], "tail -n 40 /var/log/sbx-kit-install.log 2>/dev/null")
+            if c3 == 0 and logtail:
+                print("         " + _color("31", "--- install log tail (node) ---"))
+                for line in logtail.splitlines():
+                    print("         " + _color("33", line))
+
         c2, out = exec_sandbox(s["name"], "gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1 && echo GHAPI-OK")
         if c2 == 0 and "GHAPI-OK" in out:
             pass_("gh api (authenticated call)")
