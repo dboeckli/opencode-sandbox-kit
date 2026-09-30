@@ -695,6 +695,57 @@ def check_template_update():
         pass_(f"template version up-to-date (Pin v{pin}: opencode-docker + claude-code-docker)")
 
 
+def _docker_template_node_major(image):
+    """Node-Major-Version aus einem Basis-Template-Image (best-effort via `docker run`).
+    None, wenn Docker/Image fehlt oder node nicht ausfuehrbar ist (Check wird uebersprungen)."""
+    if which("docker") is None:
+        return None
+    try:
+        insp = subprocess.run(["docker", "image", "inspect", image],
+                              capture_output=True, text=True, timeout=60)
+        if insp.returncode != 0:
+            pull = subprocess.run(["docker", "pull", image],
+                                  capture_output=True, text=True, timeout=900)
+            if pull.returncode != 0:
+                return None
+        run = subprocess.run(["docker", "run", "--rm", "--entrypoint", "node", image, "--version"],
+                             capture_output=True, text=True, timeout=120)
+        if run.returncode != 0:
+            return None
+        m = re.search(r"v(\d+)\.", (run.stdout or "") + (run.stderr or ""))
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def check_template_node_baseline():
+    """Warn-Check (Issue #138): liefern die gepinnten Basis-Templates bereits Node >= 24, kann der
+    `install-tooling.sh node`-Step (Node-24-Tarball) + der `nodejs.org`-Allowlist-Eintrag entfallen —
+    die npm-CLIs (renovate >=43) laufen dann auf dem vom Template gelieferten Node. Best-effort ueber
+    Docker (Image-Pull, gecacht); wird uebersprungen, wenn Docker oder ein Image nicht verfuegbar ist."""
+    families = ("opencode-docker", "claude-code-docker", "shell-docker")
+    if which("docker") is None:
+        print("  " + _color("33", "[SKIP] template node baseline — docker nicht im PATH"))
+        return
+    versions = {}
+    for fam in families:
+        versions[fam] = _docker_template_node_major(f"docker/sandbox-templates:{fam}-{TEMPLATE_VERSION}")
+    unknown = [f for f, m in versions.items() if m is None]
+    if unknown:
+        print("  " + _color("33", f"[SKIP] template node baseline — Image/node nicht verfuegbar: {', '.join(unknown)}"))
+        return
+    summary = ", ".join(f"{f}: v{m}" for f, m in versions.items())
+    if all(m >= 24 for m in versions.values()):
+        warn(
+            f"template node baseline >= 24 ({summary})",
+            "install-tooling.sh node-Step + nodejs.org-Allowlist entfernen (spec.yaml install-Step, "
+            "Dockerfile node-Verifikation, renovate.json NODE_VER-customManager + packageRule, Docs) — "
+            "Basis-Template liefert Node 24 nativ",
+        )
+    else:
+        pass_(f"template node baseline < 24 ({summary}) — install-tooling.sh node weiterhin noetig")
+
+
 def check_mammouth_cli_update():
     """Vergleicht die gepinnte Mammouth-CLI-Version (ARG MAMMOUTH_VERSION im Dockerfile —
     das Image backt exakt diese Version) mit der latest GitHub-Release-Version (mammouth-ai/code).
@@ -855,6 +906,9 @@ def main():
         print()
         info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
         check_template_update()
+        print()
+        info("==> Sandbox-Template Node-Baseline-Check (Node >= 24 macht install-tooling.sh node ueberfluessig)")
+        check_template_node_baseline()
         print()
         info("==> Mammouth-CLI Version Update-Check (GitHub Release)")
         check_mammouth_cli_update()
