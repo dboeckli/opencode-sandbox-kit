@@ -620,6 +620,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 
 | Tool | Version | Installiert in |
 |------|---------|---------------|
+| Node.js | 24.21.0 (LTS) | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.4 | `/usr/local/java` |
 | Apache Maven | 3.9.16 | `/opt/maven` |
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
@@ -644,7 +645,7 @@ in den `files/home/.local/bin/`-Bundles der Kits liegen (kein separates Kanonik-
 
 | Skript (opencode-agent/files/home/.local/bin/) | Nutzer | Inhalt |
 |--------|--------|--------|
-| `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm, Apache Kafka CLI |
+| `install-tooling.sh` | root | npm-CLIs, apt (jq/python3/pip/yaml), Node.js (24 LTS), shfmt, JDK, Maven, Docker CLI, Compose, kubectl, Helm, Apache Kafka CLI |
 | `install-tooling-user.sh` | uid 1000 | skills (`~/.agents/skills`), Claude statusline, Repsy-Doku-Checkout (`~/docs/repsy-docs`) |
 
 Alle Specs führen nur noch `bash /home/agent/.local/bin/install-tooling*.sh` aus. `files/home/` landet **vor**
@@ -653,12 +654,12 @@ Install-Befehle dürfen also auf gebundelte Dateien zugreifen.
 
 **Granularer Install im TUI:** Die npm/apt-Pakete stehen als eigene `setup.install`-Commands direkt in
 der Spec (`npm_config_bin_links=true npm install -g ctx7`, `apt-get update && apt-get install …`),
-die restlichen Tools rufen `install-tooling.sh <tool>` pro Tool (`shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`,
+die restlichen Tools rufen `install-tooling.sh <tool>` pro Tool (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`,
 Default `all`). Dadurch zeigt die `sbx run`-Konsole **jedes Tool einzeln** als Zeile (Spinner → ✓ mit Dauer).
 Das Script loggt pro Tool `phase=… start/done` + eine Zeile mit Wall-Clock-Timestamp nach
 `/var/log/sbx-kit-install.log` (siehe [docs/debugging-analysis-logging.md](docs/debugging-analysis-logging.md)).
 
-**Versionsänderungen** (JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie vornehmen, dann die
+**Versionsänderungen** (Node.js, JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie vornehmen, dann die
 anderen identisch halten (`opencode-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`,
 `mistral-vibe-agent/files/home/.local/bin/`).
 Der `--validate-only`-Lauf

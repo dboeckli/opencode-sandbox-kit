@@ -45,6 +45,8 @@ permissions:
     - "*.githubusercontent.com"
     - models.dev
     - registry.npmjs.org
+    # Node.js (Node 24 LTS Tarball — npm CLIs wie renovate >=43 benötigen Node ^24.11)
+    - nodejs.org
     - dlcdn.apache.org
     # Apache Camel (Doku, Dependencies)
     - camel.apache.org
@@ -224,6 +226,8 @@ credentials:
 
 setup:
   install:
+    - command: "bash /home/agent/.local/bin/install-tooling.sh node"
+      description: Install Node.js 24 LTS (npm CLIs require Node ^24.11; agents are native binaries) — source files/home/.local/bin/install-tooling.sh
     - command: "[ -x /usr/local/share/npm-global/bin/ctx7 ] || npm_config_bin_links=true npm install -g ctx7"
       description: Install ctx7 (docs-as-a-service CLI) — skip if already baked into the image
     - command: "[ -x /usr/local/share/npm-global/bin/skills ] || npm_config_bin_links=true npm install -g skills"

@@ -41,6 +41,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 | Tool | Version | Pfad |
 |------|---------|------|
+| Node.js | 24.21.0 (LTS) | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.4 | `/usr/local/java` (`JAVA_HOME`) |
 | Apache Maven | 3.9.16 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` (isolierter Daemon in der Sandbox-VM) |

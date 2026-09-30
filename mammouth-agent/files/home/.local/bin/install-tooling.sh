@@ -11,7 +11,7 @@ set -euo pipefail
 # copy, then `cp` it to the other (`mammouth-agent/files/home/.local/bin/`). Renovate
 # bumps tool versions in both copies together (validate-check fails on drift).
 #
-# Tools: `install-tooling.sh [shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all]`.
+# Tools: `install-tooling.sh [node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all]`.
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
 # at once (previous behavior). npm is inlined directly into the spec.yaml commands; apt
@@ -79,8 +79,8 @@ run_step() {
 # --- Architecture detection ---
 UNAME_M="$(uname -m)"
 case "${UNAME_M}" in
-    x86_64)  DEB_ARCH="amd64"; JDK_ARCH="amd64" ;;
-    aarch64) DEB_ARCH="arm64"; JDK_ARCH="aarch64" ;;
+    x86_64)  DEB_ARCH="amd64"; JDK_ARCH="amd64"; NODE_ARCH="x64" ;;
+    aarch64) DEB_ARCH="arm64"; JDK_ARCH="aarch64"; NODE_ARCH="arm64" ;;
     *) echo "Unsupported architecture: ${UNAME_M}"; exit 1 ;;
 esac
 
@@ -98,6 +98,31 @@ download() {
 		sleep "$(( attempt * 2 ))"
 	done
 	return "${rc}"
+}
+
+# --- Node.js (LTS) ---
+# The base templates ship Ubuntu's Node 22 (nodejs 22.x via apt), but current
+# npm CLIs (renovate >=43) require Node ^24.11.0. The agents themselves are
+# native binaries (opencode ELF, claude native), so Node is only needed for the
+# npm-global CLIs — installing Node 24 here is safe and keeps npm CLIs current.
+# Extract to /opt/node and symlink into /usr/local/bin (which precedes /usr/bin
+# on PATH), so the distro Node stays untouched as a fallback.
+run_node() {
+	NODE_VER="24.21.0"
+	if command -v node >/dev/null 2>&1 && node --version 2>/dev/null | grep -qE '^v(2[4-9]|[3-9][0-9])\.'; then
+		log_step node
+		return 0
+	fi
+	download "https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-${NODE_ARCH}.tar.gz" /tmp/node.tar.gz
+	mkdir -p /opt/node
+	tar -xzf /tmp/node.tar.gz -C /opt/node --strip-components=1
+	rm -f /tmp/node.tar.gz
+	local b
+	for b in node npm npx corepack; do
+		[ -e "/opt/node/bin/${b}" ] && ln -sf "/opt/node/bin/${b}" "/usr/local/bin/${b}"
+	done
+	node --version
+	log_step node
 }
 
 # --- shfmt ---
@@ -264,6 +289,7 @@ PHASE="${1:-all}"
 case "${PHASE}" in
 	all)
 		log_phase_start all
+		run_step node run_node
 		run_step shfmt run_shfmt
 		run_step jdk run_jdk
 		run_step maven run_maven
@@ -274,6 +300,9 @@ case "${PHASE}" in
 		run_step helm4 run_helm4
 		run_step kafka run_kafka
 		log_phase_done all
+		;;
+	node)
+		run_step node run_node
 		;;
 	shfmt)
 		run_step shfmt run_shfmt
@@ -303,7 +332,7 @@ case "${PHASE}" in
 		run_step kafka run_kafka
 		;;
 	*)
-		echo "Unknown tool: ${PHASE} (expected: shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all)" >&2
+		echo "Unknown tool: ${PHASE} (expected: node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all)" >&2
 		exit 1
 		;;
 esac
