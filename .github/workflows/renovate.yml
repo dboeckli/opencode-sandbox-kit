@@ -6,9 +6,14 @@ name: Renovate (Codeberg)
 # its update PRs on Codeberg; the Codeberg -> GitHub push mirror keeps GitHub in
 # sync. This replaces Dependabot (which is GitHub-only and would fight the mirror).
 #
-# Requires a repo secret:
+# Requires two repo secrets:
 #   CODEBERG_FOR_RENOVATE_TOKEN = Codeberg PAT with scope `write:repository` (and `write:issue`)
-# No GitHub token is needed — Renovate only talks to Codeberg.
+#   RENOVATE_GITHUB_TOKEN       = GitHub PAT (public read is enough, no scopes needed)
+# Renovate writes its PRs/dashboard to Codeberg, but the `github-releases` datasources
+# (docker/sbx-releases, helm/helm, bell-sw/Liberica, docker/compose, docker/cli,
+# mvdan/sh, mammouth-ai/code, ...) need an authenticated GitHub API — without a token
+# Renovate skips them entirely ("GitHub token is required for some dependencies"), so
+# the Dependency Dashboard (#7, our readable Mend-GUI replacement) stays incomplete.
 #
 # Runs on a schedule (default branch = master) plus manual dispatch. Until the
 # migration branch is merged, trigger manually (Actions -> Renovate -> Run workflow,
@@ -33,6 +38,8 @@ jobs:
           RENOVATE_PLATFORM: forgejo
           RENOVATE_ENDPOINT: https://codeberg.org
           RENOVATE_TOKEN: ${{ secrets.CODEBERG_FOR_RENOVATE_TOKEN }}
+          # Authenticated GitHub API for the `github-releases` datasources (see header).
+          GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_TOKEN }}
           RENOVATE_REPOSITORIES: dboeckli/opencode-sandbox-kit
           RENOVATE_ONBOARDING: "false"
           LOG_LEVEL: info
@@ -42,6 +49,7 @@ jobs:
             -e RENOVATE_PLATFORM \
             -e RENOVATE_ENDPOINT \
             -e RENOVATE_TOKEN \
+            -e GITHUB_COM_TOKEN \
             -e RENOVATE_REPOSITORIES \
             -e RENOVATE_ONBOARDING \
             -e LOG_LEVEL \

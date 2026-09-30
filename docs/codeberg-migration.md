@@ -125,7 +125,10 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
   die Pin-Manager (SBX_VERSION/TEMPLATE_VERSION) deckt jetzt `.github/workflows/` **und**
   `.forgejo/workflows/` ab. Der `github-actions`-Manager erkennt auch `.forgejo/workflows/`
   (inkl. `https://code.forgejo.org/...`-URLs).
-- Nötiges Secret (GitHub): `CODEBERG_FOR_RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`).
+- Nötige Secrets (GitHub): `CODEBERG_FOR_RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`)
+  sowie `RENOVATE_GITHUB_TOKEN` = GitHub-PAT (public read, keine Scopes nötig) für die `github-releases`-Datasources.
+  Ohne GitHub-Token überspringt Renovate alle GitHub-Dependencies (`docker/sbx-releases`, `helm/helm`, …) und das
+  Dependency Dashboard #7 (unser lesbarer Report) bleibt unvollständig.
 - Die GitHub-**Renovate-App muss deinstalliert** werden (sonst erzeugt sie GitHub-PRs, die der
   `--mirror`-Push löscht).
 
