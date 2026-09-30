@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "dependencyDashboardHeader": "**Renovate report** (readable Dependency Dashboard, ersetzt das Mend-GUI). Listet alle erkannten Dependencies und offenen Updates. Fehlen Updates für GitHub-Dependencies, im Abschnitt `Repository Problems` nachsehen (fehlender GitHub-Token).",
   "packageRules": [
     {
       "description": "Helm v3 (Default `helm`): nur v3-Linie",
