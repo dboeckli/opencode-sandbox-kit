@@ -45,7 +45,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases). Der Release ist oeffentlich -> kein Token noetig.
         env:
-          SBX_VERSION: v0.45.1
+          SBX_VERSION: v0.46.0
         run: |
           set -euo pipefail
           echo "using sbx ${SBX_VERSION}"
