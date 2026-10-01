@@ -156,7 +156,7 @@ run_jdk() {
 
 # --- Apache Maven ---
 run_maven() {
-	MAVEN_VER="3.9.16"
+	MAVEN_VER="3.10.0"
 	if command -v mvn >/dev/null 2>&1 && mvn -v 2>/dev/null | grep -qF "${MAVEN_VER}"; then
 		log_step maven
 		return 0
