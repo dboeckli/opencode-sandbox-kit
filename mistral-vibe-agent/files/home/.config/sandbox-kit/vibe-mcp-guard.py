@@ -41,6 +41,23 @@ ALLOW = (
     "validate_inspection_kts",
     "build_project",
     "open_file_in_editor",
+    # Kubernetes MCP server (read_only toolsets core/helm; configuration_view
+    # intentionally excluded: it would return the host kubeconfig incl. client
+    # certificate/key into the sandbox).
+    "events_list",
+    "helm_list",
+    "namespaces_list",
+    "nodes_log",
+    "nodes_stats_summary",
+    "nodes_top",
+    "pods_get",
+    "pods_list",
+    "pods_list_in_namespace",
+    "pods_log",
+    "pods_top",
+    "projects_list",
+    "resources_get",
+    "resources_list",
 )
 
 RUN_CONFIG_TOOL = PREFIX + "execute_run_configuration"

@@ -164,6 +164,16 @@ Connected via the sbx MCP gateway (`mcp-gateway`); the IntelliJ MCP server runs 
 
 > **Pfad-Quirk**: `projectPath`/Projektparameter IMMER im Windows-Format übergeben (`C:/development/projects/<projekt>`). Linux-Pfade (z. B. `/c/development/...`) werden vom IntelliJ MCP abgelehnt. `projectPath` immer mitgeben, sobald bekannt.
 
+## Kubernetes MCP
+
+On a sandbox started with `--static-mcp idea,k8s`, the host-side Kubernetes MCP server
+(`containers/kubernetes-mcp-server`, read-only) is exposed through the same sbx MCP gateway. Tools arrive
+as `mcp-gateway_<tool>`: `pods_list`, `pods_list_in_namespace`, `pods_get`, `pods_log`, `pods_top`,
+`events_list`, `namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `resources_list`,
+`resources_get`, `projects_list`, `helm_list`. All are read-only and on the whitelist; `configuration_view`
+is intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
+Setup: `docs/kubernetes-mcp-server.md`.
+
 ## Context7
 
 Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated via `CONTEXT7_API_KEY` (placeholder `proxy-managed`, replaced by the proxy on requests to `context7.com`) — never shows the real key.

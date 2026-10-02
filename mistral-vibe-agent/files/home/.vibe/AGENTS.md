@@ -75,8 +75,11 @@ The gateway is wired into Vibe via `~/.vibe/config.toml` (a `[[mcp_servers]]` en
 image launches Vibe with `--agent auto-approve` (all tool calls approved without prompting), the read-only policy
 is enforced by a `pre_tool` hook in `~/.vibe/hooks.toml` (`~/.config/sandbox-kit/vibe-mcp-guard.py`), not by the
 permission prompt: read-only tools (`get_*`, `list_*`, `search_*`, `read*`, `analyze_calls`, `git_status`,
-`lint_files`, …) are allowed; write/execute tools and the gateway builtins (`mcp-gateway_code-mode`,
-`mcp-gateway_mcp-exec`, `mcp-gateway_mcp-find`, …) are denied. `mcp-gateway_execute_run_configuration` is allowed
+`lint_files`, …) plus the Kubernetes read-only tools (`events_list`, `namespaces_list`, `nodes_log`,
+`nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`, `pods_list_in_namespace`, `pods_log`, `pods_top`,
+`projects_list`, `resources_get`, `resources_list`, `helm_list` — `configuration_view` is blocked) are allowed;
+write/execute tools and the gateway builtins (`mcp-gateway_code-mode`, `mcp-gateway_mcp-exec`,
+`mcp-gateway_mcp-find`, …) are denied. `mcp-gateway_execute_run_configuration` is allowed
 only for the `local-test-kits-validate-only` run configuration.
 
 Use them to interact with the IntelliJ IDE on the Windows host: navigate code, run inspections, query the database.
