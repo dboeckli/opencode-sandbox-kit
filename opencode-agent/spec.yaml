@@ -115,6 +115,7 @@ permissions:
     - api.cloudsmith.io
     - upload.cloudsmith.io
     - docker.cloudsmith.io
+    - helm.oci.cloudsmith.io
     - dl.cloudsmith.io
     # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
     - "**/*.r2.cloudflarestorage.com"

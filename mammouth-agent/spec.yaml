@@ -137,6 +137,7 @@ permissions:
       - "api.cloudsmith.io:443"
       - "upload.cloudsmith.io:443"
       - "docker.cloudsmith.io:443"
+      - "helm.oci.cloudsmith.io:443"
       - "dl.cloudsmith.io:443"
       # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
       - "**/*.r2.cloudflarestorage.com:443"
