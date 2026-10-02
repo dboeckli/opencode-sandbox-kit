@@ -33,7 +33,7 @@ cd C:\development\projects\opencode-sandbox-kit
 
 Template-Version gepinnt (`0.x.0`, siehe Hinweis unten). **OpenCode** und **Claude** nutzen eigene Tooling-Images (bauen auf `docker/sandbox-templates:opencode-docker-0.x.0` bzw. `claude-code-docker-0.x.0` auf, Tooling vorgebacken → schneller Start). Für die **lokale Entwicklung** den **lokalen Build-Tag `:local`** verwenden — vorher einmal die Run-Config `build-and-publish-opencode-image` bzw. `build-and-publish-claude-image` ausführen (baut/pusht `:local`). Der Release-Tag `<version>`/`:latest` entsteht erst beim Master-Publish. Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
-Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Entwicklungs-Stack: `$env:USERPROFILE\.kube:ro` (Host-kubeconfig → kubectl/helm im Sandbox-Cluster) und `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Mounts weglassen, wenn nicht benötigt.
+Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Mount: `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Kubernetes-Zugriff läuft über den **host-seitigen MCP-Server** (`docs/kubernetes-mcp-server.md`, `--static-mcp idea,k8s`) — **kein** kubeconfig-Mount mehr. Mounts weglassen, wenn nicht benötigt.
 
 **OpenCode:**
 
@@ -42,9 +42,8 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -55,9 +54,8 @@ sbx run claude `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -67,9 +65,8 @@ sbx run claude `
 sbx run ./mammouth-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -79,9 +76,8 @@ sbx run ./mammouth-agent/ `
 sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -111,9 +107,8 @@ sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -124,9 +119,8 @@ sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -136,9 +130,8 @@ sbx run claude `
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --kit-arg imageTag=latest `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -148,9 +141,8 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --kit-arg imageTag=latest `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     . `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 
@@ -186,7 +178,7 @@ Entwicklung** daher `:local` verwenden (siehe „Lokale Entwicklung"); für Remo
 
 ### Ubuntu-WSL
 
-Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mounts: kubeconfig `$HOME/.kube:ro` (WSL-Home; bei Windows-seitiger kubeconfig `/mnt/c/Users/<user>/.kube:ro`) und Host-Maven-Cache `/mnt/c/development/maven-repo:ro`.
+Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mount: Host-Maven-Cache `/mnt/c/development/maven-repo:ro`. Kubernetes-Zugriff läuft über den host-seitigen MCP-Server (`--static-mcp idea,k8s`) — **kein** kubeconfig-Mount mehr.
 
 ```bash
 cd /mnt/c/development/projects/spring-6-reactive
@@ -199,9 +191,8 @@ sbx run opencode \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest \
     --skills=off \
-    --static-mcp idea \
+    --static-mcp idea,k8s \
     . \
-    "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
 
@@ -212,9 +203,8 @@ sbx run claude \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest \
     --skills=off \
-    --static-mcp idea \
+    --static-mcp idea,k8s \
     . \
-    "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
 
@@ -224,9 +214,8 @@ sbx run claude \
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     --kit-arg imageTag=latest \
     --skills=off \
-    --static-mcp idea \
+    --static-mcp idea,k8s \
     . \
-    "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
 
@@ -236,9 +225,8 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
     --kit-arg imageTag=latest \
     --skills=off \
-    --static-mcp idea \
+    --static-mcp idea,k8s \
     . \
-    "$HOME/.kube:ro" \
     "/mnt/c/development/maven-repo:ro"
 ```
 

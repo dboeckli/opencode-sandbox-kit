@@ -5,18 +5,29 @@ aus der Sandbox **ohne Credentials in der Sandbox**.
 
 **Entscheid:** Der Kubernetes-Zugriff läuft über einen **Host-seitigen MCP-Server**
 ([`containers/kubernetes-mcp-server`](https://github.com/containers/kubernetes-mcp-server),
-Go, aktive Pflege) im **Streamable-HTTP**-Modus. Die Sandbox spricht ausschließlich über den
-**sbx MCP-Gateway** mit dem Server; die Host-`kubeconfig` (Client-Zertifikat/-Key) verlässt den
-Host-Prozess nie. Read-only wird zentral im MCP-Server erzwungen.
+Go, aktive Pflege) im **stdio-Modus**, den der **sbx MCP-Gateway** auf dem Host startet
+(`sbx mcp add --command`). Die Sandbox spricht ausschließlich MCP mit dem Gateway; die
+Host-`kubeconfig` (Client-Zertifikat/-Key) verlässt den Host-Prozess nie. Read-only wird zentral
+im MCP-Server erzwungen.
 
 ```
-Sandbox ── MCP ──▶ sbx MCP-Gateway (Host) ── HTTP :8080/mcp ──▶ kubernetes-mcp-server (Host)
-                                                                      │ kubeconfig (Host)
-                                                                      ▼
-                                                          kube-apiserver (Docker Desktop)
+Sandbox ── MCP ──▶ sbx MCP-Gateway (Host) ── stdio ──▶ kubernetes-mcp-server (Host, sbx-gestartet)
+                                                              │ kubeconfig (Host)
+                                                              ▼
+                                                      kube-apiserver (Docker Desktop)
 ```
 
 > Alle Befehle laufen in **PowerShell auf dem Windows-Host** (nicht in der Sandbox).
+> Es gibt **keinen** offenen Port und **keinen** manuellen Start — sbx startet/stoppt den
+> stdio-Prozess selbst.
+
+> [!WARNING]
+> **Betrieb gegen Produktions-Cluster ist ein No-Go.** Die Standard-Config verzichtet auf
+> `denied_resources` für `Secret` — sonst funktioniert das `helm`-Toolset nicht (Helm v3 legt
+> Releases als Secrets ab). Dadurch können die generischen Tools (`resources_get`/`resources_list`)
+> **Kubernetes-Secrets vollständig lesen** (`.`-`data`, base64). Für Produktion entweder diesen
+> MCP-Server nicht einsetzen oder das unten dokumentierte `denied_resources`-Block aktivieren
+> (dann fallen `helm_list`/`helm_get`/`helm_status` weg). Details: Abschnitt **Sicherheit**.
 
 ## Voraussetzungen
 
@@ -26,8 +37,20 @@ Sandbox ── MCP ──▶ sbx MCP-Gateway (Host) ── HTTP :8080/mcp ──
 
 ## 1. Server installieren (native Windows-Binary)
 
+Empfohlen über das Host-Skript im Repo (idempotent, erkennt die Architektur, prüft die Version):
+
 ```powershell
-# Zielverzeichnis
+# aus dem Repo-Root
+.\local-scripts\install-kubernetes-mcp-server.ps1                    # aktuelle Release-Version (PATH wird gesetzt)
+# oder mit Pin:
+.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.67
+# ohne PATH-Eintrag:
+.\local-scripts\install-kubernetes-mcp-server.ps1 -AddToPath:$false
+```
+
+<details><summary>Manuell (ohne Skript)</summary>
+
+```powershell
 $dir = "$env:USERPROFILE\.local\bin"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
@@ -36,15 +59,11 @@ $ver = (Invoke-RestMethod "https://api.github.com/repos/containers/kubernetes-mc
 
 $url = "https://github.com/containers/kubernetes-mcp-server/releases/download/$ver/kubernetes-mcp-server-windows-amd64.exe"
 Invoke-WebRequest -Uri $url -OutFile "$dir\kubernetes-mcp-server.exe"
-
-# Herkunfts-Markierung (SmartScreen) entfernen, falls gesetzt
 Unblock-File "$dir\kubernetes-mcp-server.exe"
-
-# Version prüfen
 & "$dir\kubernetes-mcp-server.exe" --version
 ```
 
-Optional dauerhaft in den PATH aufnehmen (neue Shells):
+Optional dauerhaft in den PATH (neue Shells):
 
 ```powershell
 [Environment]::SetEnvironmentVariable(
@@ -53,7 +72,18 @@ Optional dauerhaft in den PATH aufnehmen (neue Shells):
   "User")
 ```
 
-## 2. Konfiguration anlegen (`config.toml`)
+</details>
+
+## 2. Konfiguration anlegen (`config.toml`, stdio)
+
+Empfohlen über das Host-Skript (schreibt die TOML UTF-8 ohne BOM; **scheitert, wenn keine Installation vorhanden ist**):
+
+```powershell
+.\local-scripts\configure-kubernetes-mcp-server.ps1
+# Optionen: -ReadOnly:$false -Toolsets core,config,helm -Force
+```
+
+<details><summary>Manuell (ohne Skript)</summary>
 
 ```powershell
 $cfgDir = "$env:USERPROFILE\.config\kubernetes-mcp-server"
@@ -63,11 +93,6 @@ New-Item -ItemType Directory -Force -Path $cfgDir | Out-Null
 $kubeconfig = (Resolve-Path "$env:USERPROFILE\.kube\config").Path -replace '\\', '/'
 
 $toml = @"
-# --- HTTP (Streamable) nur lokal ---
-port = "8080"
-bind_address = "127.0.0.1"
-metrics_port = "9090"          # /healthz für den Health-Check
-
 # --- Sicherheit: nur lesende Tools ---
 read_only = true
 
@@ -78,13 +103,22 @@ toolsets = ["core", "config", "helm"]
 kubeconfig = "$kubeconfig"
 cluster_provider_strategy = "kubeconfig"
 
-# Sensible Ressourcen aussperren (z. B. Secrets)
-[[denied_resources]]
-group = ""
-version = "v1"
-kind = "Secret"
-
+# --- Logging: stdout ist im stdio-Modus für das MCP-Protokoll reserviert ---
+log_file = "stderr"
 log_level = 2
+
+# ============================================================================
+# WARNING - DEVELOPMENT / NON-PRODUCTION ONLY
+# No `denied_resources` entry: the generic tools (resources_get/resources_list)
+# can read Kubernetes Secrets IN FULL (base64 .data). Required by the helm
+# toolset, because Helm v3 stores releases as Secrets.
+# NEVER point this configuration at a production cluster.
+# For production, re-enable the block below (helm tools stop working):
+# ============================================================================
+# [[denied_resources]]
+# group = ""
+# version = "v1"
+# kind = "Secret"
 "@
 
 # UTF-8 OHNE BOM schreiben (TOML-Parser mag kein BOM)
@@ -92,38 +126,29 @@ log_level = 2
 Get-Content "$cfgDir\config.toml"
 ```
 
-## 3. Server starten + Health-Check
+> **Wichtig:** Im stdio-Modus **kein** `port`/`bind_address`/`metrics_port` setzen — sonst läuft
+> der Server als HTTP und spricht kein stdio.
+
+</details>
+
+## 3. Beim sbx MCP-Gateway registrieren (startet den Server)
+
+`--command` + `--args` registrieren den Server als **host-lokalen stdio-Server**; sbx startet den
+Prozess selbst und proxied ihn in die Sandbox.
 
 ```powershell
-Start-Process -FilePath "$dir\kubernetes-mcp-server.exe" `
-  -ArgumentList "--config", "$cfgDir\config.toml" `
-  -WindowStyle Hidden
+sbx mcp add k8s `
+  --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" `
+  --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"
 
-Start-Sleep -Seconds 2
-Invoke-RestMethod "http://127.0.0.1:9090/healthz"   # erwartet 200/OK
-```
-
-Stoppen / neu starten (nach Config-Änderungen):
-
-```powershell
-Get-Process kubernetes-mcp-server -ErrorAction SilentlyContinue | Stop-Process
-```
-
-> Autostart (optional): eine **Aufgabenplanung** (Scheduled Task) „Bei Anmeldung“ anlegen, die
-> `kubernetes-mcp-server.exe --config "$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"`
-> ausführt.
-
-## 4. Beim sbx MCP-Gateway registrieren
-
-```powershell
-sbx mcp add k8s --url http://localhost:8080/mcp --skip-ssrf-check
 sbx mcp ls
 ```
 
-> `--skip-ssrf-check` ist nötig, weil `localhost` (Loopback) sonst als SSRF-Kandidat gewarnt wird —
-> hier ist der Server vertrauenswürdig und läuft lokal.
+> `--args` ist eine **kommaseparierte** Liste (hier: `--config` + Pfad). `$env:USERPROFILE` löst
+> PowerShell automatisch zum Benutzerprofil auf — kein `<user>`-Platzhalter nötig. Das
+> Configure-Skript gibt den fertigen Befehl (mit aufgelöstem Pfad) am Ende aus.
 
-## 5. In der Sandbox verwenden
+## 4. In der Sandbox verwenden
 
 Beim Erstellen der Sandbox als statischen MCP-Server mitgeben (neben dem IntelliJ-MCP):
 
@@ -132,48 +157,90 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea `
-    --static-mcp k8s
+    --static-mcp idea,k8s
 ```
 
-`--static-mcp` akzeptiert auch Kommaseparierung (`--static-mcp idea,k8s`). In eine **laufende**
-Sandbox laden: `sbx mcp load k8s --sandbox <name>`.
+`--static-mcp` nimmt eine **kommaseparierte Liste** (`idea,k8s`); alternativ wiederholt
+(`--static-mcp idea --static-mcp k8s`) oder gemischt — alle Formen akkumulieren. In eine
+**laufende** Sandbox laden: `sbx mcp load k8s --sandbox <name>`.
+
+Vollständiges Startbeispiel mit Host-Maven-Cache (Issue #87) — der `.kube:ro`-Mount entfällt,
+der MCP-Server liest die Host-kubeconfig:
+
+```powershell
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --skills=off `
+    --static-mcp idea,k8s `
+    . `
+    "C:\development\maven-repo:ro"
+```
 
 In der Sandbox erscheinen die Tools als `mcp-gateway_*` (z. B. `mcp-gateway_pods_list`,
 `mcp-gateway_resources_get`, `mcp-gateway_helm_list`). Beispiel-Prompts: „Liste alle Pods in
-Namespace default“, „Zeig die Logs von Pod X“, „Welche Helm-Releases laufen?“.
+Namespace default", „Zeig die Logs von Pod X", „Welche Helm-Releases laufen?".
 
 > **Read-only:** Durch `read_only = true` sind nur lesende Tools sichtbar
 > (`pods_list`, `pods_log`, `resources_get`, `helm_list`, …) — keine `pods_delete`/`helm_install`.
-> `Secrets` sind zusätzlich per `denied_resources` ausgesperrt.
+>
+> [!WARNING]
+> **Secrets sind NICHT ausgesperrt.** Das ist für `helm_list`/`helm_get`/`helm_status` nötig
+> (Helm v3 legt Releases als Secrets ab: `sh.helm.release.v1.*`), bedeutet aber, dass
+> `resources_get` mit `kind=Secret` **jedes Secret inkl. `.data` (base64) lesen** kann.
+> **Gegen Produktions-Cluster ein No-Go** — erst recht, weil die Sandbox keine Credentials
+> halten soll und der Agent die Werte in seinen Kontext aufnimmt. Für Produktion das
+> `denied_resources`-Block in der Config aktivieren und auf das `helm`-Toolset verzichten.
 
-## 6. Sandbox-Permission-Whitelist (Follow-up, Kit)
+## 5. Sandbox-Permission-Whitelist (Kit)
 
 Die Kit-Whitelist ist **deny-by-default**. Die bestehenden Muster (`mcp-gateway_get_*`,
-`mcp-gateway_list_*`, `mcp-gateway_read*`, …) decken die K8s-Toolnamen **nicht** ab
-(z. B. `mcp-gateway_pods_list`, `mcp-gateway_events_list`). Für die volle Nutzung müssen die
-K8s-Read-only-Tools in den Agent-Configs freigegeben werden:
+`mcp-gateway_list_*`, `mcp-gateway_read*`, …) decken die K8s-Toolnamen **nicht** ab (die Tools
+enden auf `_list`/`_get`/`_log`/`_top`). Die **K8s-Read-only-Tools** sind daher explizit
+freigegeben (in allen vier Agent-Configs):
 
 - OpenCode/Mammouth: `permission` in `opencode.jsonc`
-- Claude Code: `permissions.allow` in `settings.json`
+- Claude Code: `permissions.allow` in `settings.json` (+ `settings.kit.json`)
 - Mistral Vibe: `pre_tool`-Guard (`vibe-mcp-guard.py`)
 
-Das ist ein eigener Kit-Schritt (siehe #40).
+Freigegeben (nur lesend, aus den Toolsets `core`/`helm`): `events_list`, `helm_list`,
+`namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`,
+`pods_list_in_namespace`, `pods_log`, `pods_top`, `projects_list`, `resources_get`,
+`resources_list`.
+
+> Die Whitelist regelt nur, **welche Tools** der Sandbox-Agent aufrufen darf — sie sagt nichts
+> über die gelesenen Ressourcen. `resources_get`/`resources_list` sind Teil der Whitelist und
+> können daher (da `Secret` serverseitig nicht mehr denied ist) Secrets lesen. Siehe Warning oben.
+
+> **`configuration_view` bewusst gesperrt:** Das `config`-Toolset liefert die Host-kubeconfig
+> inkl. Client-Zertifikat/-Key als YAML in die Sandbox und würde das Sicherheitsziel von #40
+> (keine Credentials in der Sandbox) unterlaufen.
 
 ## Betrieb
 
 | Aktion | Befehl |
 |--------|--------|
+| Update (neue Version) | laufende Sandboxes/den sbx-gestarteten Prozess beenden (Windows sperrt die `.exe`), dann `.\local-scripts\install-kubernetes-mcp-server.ps1` (Default `latest` aktualisiert automatisch; sonst bricht das Skript mit Hinweis ab) |
 | Version prüfen | `& "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --version` |
-| Server neu starten | `Get-Process kubernetes-mcp-server \| Stop-Process` (danach neu starten) |
-| kubeconfig-Rotation | Docker Desktop rotiert Zertifikate — der Server liest die Datei neu; im Zweifel neu starten |
+| Config ändern | `.\local-scripts\configure-kubernetes-mcp-server.ps1 -Force`, dann Sandbox neu starten (sbx startet den Prozess neu) |
+| Laufenden Prozess stoppen | `Get-Process kubernetes-mcp-server -ErrorAction SilentlyContinue \| Stop-Process` |
+| kubeconfig-Rotation | Docker Desktop rotiert Zertifikate → Prozess neu starten (Sandbox neu erstellen oder `sbx mcp load k8s --sandbox <name>`) |
 | Registrierung entfernen | `sbx mcp rm k8s` |
 
 ## Sicherheit (Kurz)
 
-- `port` + `bind_address = "127.0.0.1"` → Server nur lokal erreichbar, kein offener Port im LAN.
-- `read_only = true` + `disable_destructive`/`denied_resources` → nur lesende, nicht-destruktive Tools.
+- **stdio, kein Listen-Port** → der Server ist von außen nicht erreichbar; nur der sbx-Gateway spricht mit ihm.
+- `read_only = true` → nur lesende Tools, keine `pods_delete`/`helm_install`/`resources_delete`.
 - kubeconfig/Credentials bleiben **ausschließlich** im Host-Prozess; die Sandbox sieht nur MCP.
+  `configuration_view` ist in der Kit-Whitelist gesperrt (würde die kubeconfig inkl. Client-Cert/Key liefern).
+
+> [!CAUTION]
+> **Produktions-No-Go (Option A, Standard-Config):** `denied_resources` für `Secret` ist **deaktiviert**,
+> weil das `helm`-Toolset sonst nicht funktioniert (Helm v3 = Releases als Secrets). Damit kann der
+> Sandbox-Agent über `resources_get`/`resources_list` **alle Cluster-Secrets inkl. `.data` lesen**
+> (z. B. Helm-Release-Values, DB-/LDAP-/Kafka-/Registry-Passwörter). Für Produktions-Cluster ist dieser
+> Betrieb nicht zulässig — dort entweder den MCP-Server weglassen oder `denied_resources` aktivieren
+> (Helm-Tools entfallen dann).
 
 ## Referenzen (via ctx7 / GitHub)
 

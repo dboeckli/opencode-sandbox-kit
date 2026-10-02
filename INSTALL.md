@@ -52,8 +52,10 @@ installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzli
      sind nicht sichtbar.
    - Mit aktiver Einstellung: In der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen, um die
      Host-Container zu sehen/steuern (`host.docker.internal:2375` ist in der Network-Allowlist).
-2. **Kubernetes** (optional): Docker Desktop → **Settings → Kubernetes → "Enable Kubernetes"** — für kubectl/helm
-   mit dem integrierten Cluster. In der Sandbox per Host-kubeconfig (`"$env:USERPROFILE\.kube:ro"` mounten).
+2. **Kubernetes** (optional): Docker Desktop → **Settings → Kubernetes → "Enable Kubernetes"**. Zugriff aus der
+   Sandbox über den host-seitigen Kubernetes-MCP-Server (`docs/kubernetes-mcp-server.md`, Issue
+   [#40](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/40)) — `sbx mcp add k8s …`, dann
+   `--static-mcp idea,k8s`. **Kein** kubeconfig-Mount mehr nötig.
 
 ## 3. IntelliJ MCP Server aktivieren + Gateway-Registrierung
 
@@ -682,9 +684,8 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s `
     "C:\development\projects\dein-projekt" `
-    "$env:USERPROFILE\.kube:ro" `
     "C:\development\maven-repo:ro"
 ```
 

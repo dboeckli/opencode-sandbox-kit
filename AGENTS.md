@@ -114,15 +114,14 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --static-mcp idea `
       "C:\development\projects\spring-6-reactive"
   ```
-- Kubernetes-Support + Maven-Host-Cache: Host-kubeconfig und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87):
+- Kubernetes-Support + Maven-Host-Cache: Kubernetes über den host-seitigen MCP-Server (`--static-mcp idea,k8s`, kein kubeconfig-Mount) und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87):
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
       --skills=off `
-      --static-mcp idea `
+      --static-mcp idea,k8s `
       . `
-      "$env:USERPROFILE\.kube:ro" `
       "C:\development\maven-repo:ro"
   ```
 - Kubernetes-Support (Claude Code):
@@ -130,9 +129,8 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   sbx run claude `
       --kit ./opencode-agent/ `
       --skills=off `
-      --static-mcp idea `
+      --static-mcp idea,k8s `
       . `
-      "$env:USERPROFILE\.kube:ro" `
       "C:\development\maven-repo:ro"
   ```
 - Kubernetes-Support (Mammouth Code):
@@ -140,9 +138,8 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   sbx run ./mammouth-agent/ `
       --kit-arg imageTag=local `
       --skills=off `
-      --static-mcp idea `
+      --static-mcp idea,k8s `
       . `
-      "$env:USERPROFILE\.kube:ro" `
       "C:\development\maven-repo:ro"
   ```
 - Kubernetes-Support (Mistral Vibe):
@@ -150,9 +147,8 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
   sbx run ./mistral-vibe-agent/ `
       --kit-arg imageTag=local `
       --skills=off `
-      --static-mcp idea `
+      --static-mcp idea,k8s `
       . `
-      "$env:USERPROFILE\.kube:ro" `
       "C:\development\maven-repo:ro"
   ```
 - Apply kit to an existing sandbox (restarts sandbox, preserves VM state):
@@ -296,8 +292,18 @@ erlaubt. Die Config liegt je Agent-Location vor:
   `mcp-gateway_test_database_connection`, `mcp-gateway_introspect_schema`, `mcp-gateway_run_inspection_kts`,
   `mcp-gateway_validate_inspection_kts`, `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ —
   bewusst erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor —
-  bewusst erlaubt, ohne ask). Claude listet die erlaubten Tools einzeln als
-  `mcp__mcp-gateway__<tool>` in `permissions.allow`.
+  bewusst erlaubt, ohne ask) sowie die **K8s-Read-only-Tools** des host-seitigen Kubernetes-MCP-Servers
+  (`docs/kubernetes-mcp-server.md`, Issue #40): `mcp-gateway_events_list`, `mcp-gateway_helm_list`,
+  `mcp-gateway_namespaces_list`, `mcp-gateway_nodes_log`, `mcp-gateway_nodes_stats_summary`,
+  `mcp-gateway_nodes_top`, `mcp-gateway_pods_get`, `mcp-gateway_pods_list`,
+  `mcp-gateway_pods_list_in_namespace`, `mcp-gateway_pods_log`, `mcp-gateway_pods_top`,
+  `mcp-gateway_projects_list`, `mcp-gateway_resources_get`, `mcp-gateway_resources_list`
+  (`configuration_view` bewusst gesperrt — würde die kubeconfig inkl. Client-Cert/Key in die Sandbox liefern).
+  Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`.
+  > **Produktions-No-Go:** `denied_resources` für `Secret` ist in der Host-Config bewusst deaktiviert
+  > (sonst bricht das `helm`-Toolset — Helm v3 speichert Releases als Secrets). Dadurch können
+  > `resources_get`/`resources_list` **Cluster-Secrets inkl. `.data` lesen**. Nur für Entwicklungs-Cluster
+  > (Docker Desktop): `docs/kubernetes-mcp-server.md#sicherheit-kurz`.
 - **`ask`**: `mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) —
   braucht Bestätigung und wird zusätzlich durch den Run-Config-Guard auf `local-test-kits-validate-only` begrenzt.
 - **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`apply_patch`, `execute_terminal_command`,

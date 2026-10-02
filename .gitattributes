@@ -11,6 +11,9 @@
 *.sh        text eol=lf working-tree-encoding=UTF-8
 *.iml       text eol=lf working-tree-encoding=UTF-8
 
+# Windows/PowerShell - CRLF im Working Tree (Host-Skripte, local-scripts/)
+*.ps1       text eol=crlf
+
 # Binary – no conversion
 *.png       binary
 *.jpg       binary
