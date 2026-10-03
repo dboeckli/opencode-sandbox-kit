@@ -73,7 +73,6 @@ sbx mcp inspect docker
 
 ```powershell
 sbx run opencode `
-    --name sandbox-docker-mcp `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
