@@ -292,7 +292,7 @@ git -C ~/docs/repsy-docs pull --ff-only --quiet
 ## Startup checks
 
 The checks live in `~/.config/sandbox-kit/run-checks.sh` (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl,
-helm, kafka, skills, vibe). Vibe has no automatic hook that injects a report, so run it manually for the tooling
+MCP gateway/IntelliJ/Kubernetes, helm, kafka, skills, vibe). Vibe has no automatic hook that injects a report, so run it manually for the tooling
 status:
 
 ```bash

@@ -66,12 +66,17 @@ else
   report="$report docker-host:FAIL"
 fi
 
-# 6. kubectl
+# 6. kubectl (CLI present; no kubeconfig in the sandbox)
 if kubectl version --client >/dev/null 2>&1; then
   report="$report kubectl:OK"
 else
   report="$report kubectl:FAIL"
 fi
+
+# 6b. MCP servers via the sbx gateway (gateway + IntelliJ + Kubernetes). The sandbox
+# holds no kubeconfig (host-side Kubernetes MCP server, issue #40), so reachability is
+# checked via an MCP handshake. Adds mcp-gateway, mcp-idea, mcp-k8s.
+report="$report $(bash "$HOME/.local/bin/mcp-check.sh")"
 
 # 7. helm (v3 Default + v4 als helm4)
 if helm version >/dev/null 2>&1 && helm4 version >/dev/null 2>&1; then

@@ -364,12 +364,6 @@ setup:
               f.write(content)
       user: "1000"
       description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com. Wenn ein read-only Host-Maven-Cache gemountet ist (/c/Users/*/.m2/repository), wird zusaetzlich ein <repository> 'host-cache' (file://, snapshots disabled) in einem aktiven Profil ergaenzt — Maven nutzt den Host-Cache vor den echten Remotes
-    - command:
-        - python3
-        - /home/agent/.local/bin/regenerate-kubeconfig.py
-      user: "1000"
-      description: Regenerate ~/.kube/config from the read-only host kubeconfig mount (Docker Desktop Kubernetes) — idempotent, no-op without mount
-
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"

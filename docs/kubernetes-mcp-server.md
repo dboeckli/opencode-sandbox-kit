@@ -181,6 +181,14 @@ In der Sandbox erscheinen die Tools als `mcp-gateway_*` (z. B. `mcp-gateway_pods
 `mcp-gateway_resources_get`, `mcp-gateway_helm_list`). Beispiel-Prompts: „Liste alle Pods in
 Namespace default", „Zeig die Logs von Pod X", „Welche Helm-Releases laufen?".
 
+> **Health-Check:** `~/.local/bin/mcp-check.sh` macht einen MCP-Handshake gegen den sbx-Gateway
+> (`initialize` → `notifications/initialized` → `tools/list`) und meldet `mcp-gateway:OK`
+> (Gateway erreichbar), `mcp-idea:OK` (IntelliJ-Tools vorhanden) und `mcp-k8s:OK`
+> (Read-only-k8s-Tools vorhanden, erkannt an `pods_list`). Er läuft im Startup-Check
+> (`run-checks.sh`) und im TUI-Sidebar-Block „MCP & Host Systems" (`check-infra.sh`, alle 10s),
+> zusammen mit `docker-host` (externes Host-System). Er ersetzt den früheren
+> `kubectl get nodes`-Check, der ohne kubeconfig in der Sandbox nicht mehr funktioniert.
+
 > **Read-only:** Durch `read_only = true` sind nur lesende Tools sichtbar
 > (`pods_list`, `pods_log`, `resources_get`, `helm_list`, …) — keine `pods_delete`/`helm_install`.
 >

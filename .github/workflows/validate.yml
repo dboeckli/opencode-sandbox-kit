@@ -58,7 +58,7 @@ jobs:
         # anderen per cp synchronisieren; Renovate aktualisiert alle gemeinsam).
         run: |
           set -euo pipefail
-          for f in install-tooling.sh install-tooling-user.sh regenerate-kubeconfig.py install-apt-packages.sh; do
+          for f in install-tooling.sh install-tooling-user.sh mcp-check.sh install-apt-packages.sh; do
             cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
             cmp "opencode-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
           done
