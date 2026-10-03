@@ -13,7 +13,8 @@
     Configuration/start: see docs/kubernetes-mcp-server.md (Issue #40).
 
 .PARAMETER Version
-    Release tag (e.g. "v0.0.67") or "latest" (default) for the current release version.
+    Release tag (e.g. "v0.0.67"). Default: the pinned version (updated via Renovate).
+    Pass "latest" to fetch the current release from GitHub.
 
 .PARAMETER InstallDir
     Target directory. Default: %USERPROFILE%\.local\bin
@@ -36,7 +37,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = "latest",
+    [string]$Version = "v0.0.67",
     [string]$InstallDir = (Join-Path $env:USERPROFILE ".local\bin"),
     [bool]$AddToPath = $true,
     [switch]$Force

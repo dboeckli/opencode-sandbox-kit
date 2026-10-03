@@ -232,6 +232,15 @@
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Kubernetes MCP server version (local-scripts/install-kubernetes-mcp-server.ps1 host install script, pinned -Version default; not part of the sandbox image)",
+      "managerFilePatterns": ["local-scripts/install-kubernetes-mcp-server.ps1"],
+      "matchStrings": ["\\[string\\]\\$Version = \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "containers/kubernetes-mcp-server",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ]
 }

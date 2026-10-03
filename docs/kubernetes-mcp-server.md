@@ -41,9 +41,11 @@ Empfohlen über das Host-Skript im Repo (idempotent, erkennt die Architektur, pr
 
 ```powershell
 # aus dem Repo-Root
-.\local-scripts\install-kubernetes-mcp-server.ps1                    # aktuelle Release-Version (PATH wird gesetzt)
-# oder mit Pin:
+.\local-scripts\install-kubernetes-mcp-server.ps1                    # gepinnte Version (Renovate-tracked; PATH wird gesetzt)
+# oder explizit:
 .\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.67
+# immer die aktuelle Release-Version:
+.\local-scripts\install-kubernetes-mcp-server.ps1 -Version latest
 # ohne PATH-Eintrag:
 .\local-scripts\install-kubernetes-mcp-server.ps1 -AddToPath:$false
 ```
@@ -228,7 +230,7 @@ Freigegeben (nur lesend, aus den Toolsets `core`/`helm`): `events_list`, `helm_l
 
 | Aktion | Befehl |
 |--------|--------|
-| Update (neue Version) | laufende Sandboxes/den sbx-gestarteten Prozess beenden (Windows sperrt die `.exe`), dann `.\local-scripts\install-kubernetes-mcp-server.ps1` (Default `latest` aktualisiert automatisch; sonst bricht das Skript mit Hinweis ab) |
+| Update (neue Version) | Renovate PR für den `-Version`-Pin in `local-scripts/install-kubernetes-mcp-server.ps1` mergen. Dann laufende Sandboxes/den sbx-gestarteten Prozess beenden (Windows sperrt die `.exe`) und `.\local-scripts\install-kubernetes-mcp-server.ps1` ausführen (installiert die gepinnte Version). Ad-hoc: `-Version latest` |
 | Version prüfen | `& "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --version` |
 | Config ändern | `.\local-scripts\configure-kubernetes-mcp-server.ps1 -Force`, dann Sandbox neu starten (sbx startet den Prozess neu) |
 | Laufenden Prozess stoppen | `Get-Process kubernetes-mcp-server -ErrorAction SilentlyContinue \| Stop-Process` |
