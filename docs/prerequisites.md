@@ -11,6 +11,8 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342) + Firewall-Freigabe Port 64615; einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` (Gateway-Weg, Issue #57) | IntelliJ MCP (optional) |
+| **Kubernetes MCP Server** | Host-seitiger MCP-Server (`containers/kubernetes-mcp-server`, native Windows-Binary via `local-scripts/install-kubernetes-mcp-server.ps1`) + `sbx mcp add k8s …`; Details: `docs/kubernetes-mcp-server.md` (Issue #40) | Kubernetes MCP (optional) |
+| **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`mcp-server-docker==<pin>`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/docker-mcp-server.md` (Issue #165) | Host-Docker MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
 ### Secrets registrieren (`sbx secret set <service>`)

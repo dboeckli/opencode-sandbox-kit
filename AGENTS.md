@@ -67,13 +67,14 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 
 - `sbx kit validate ./opencode-agent` — validate the kit; run it after every change and report the output as evidence before committing
 - `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` — einmalig (IntelliJ MCP auf dem Host registrieren; Voraussetzung für `--static-mcp idea`, siehe Abschnitt "IntelliJ MCP")
+- `sbx mcp add k8s …` / `sbx mcp add docker …` — einmalig (host-seitigen Kubernetes- bzw. lokalen Docker-MCP-Server am sbx MCP Gateway registrieren; Voraussetzung für `--static-mcp …k8s…`/`…docker…`, siehe `docs/kubernetes-mcp-server.md` bzw. `docs/docker-mcp-server.md`)
 - Test the kit with an OpenCode sandbox (via PowerShell on Windows); eigenes Tooling-Image, **lokal gebauter Tag `:local`** (Run-Config `build-and-publish-opencode-image`; Basis-Template gepinnt auf `0.x.0`):
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
       --skills=off `
-      --static-mcp idea
+      --static-mcp idea,k8s,docker
   ```
 - Test the kit with a Claude Code sandbox (via PowerShell on Windows); eigenes Tooling-Image, **lokal gebauter Tag `:local`** (Run-Config `build-and-publish-claude-image`; Home, `api.anthropic.com`):
   ```powershell
@@ -81,21 +82,21 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --kit ./opencode-agent/ `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
       --skills=off `
-      --static-mcp idea
+      --static-mcp idea,k8s,docker
   ```
 - Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`; eigenes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`, Tooling + CLI vorgebacken — kein `--template`). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mammouth-image`); Release via `build-and-publish-mammouth-image.yml` (`workflow_dispatch`/Push auf `master`):
   ```powershell
   sbx run ./mammouth-agent/ `
       --kit-arg imageTag=local `
       --skills=off `
-      --static-mcp idea
+      --static-mcp idea,k8s,docker
   ```
 - Run the dedicated Mistral Vibe agent kit (kind: sandbox; eigenes gepinntes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:<vibe-version>`, Pin im Dockerfile + spec-Image — kein `--template` nötig). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mistral-vibe-image`, setzt zusätzlich den beweglichen Tag `:local`); Release-Image via `build-and-publish-mistral-vibe-image.yml` (`workflow_dispatch`/Push auf `master`):
   ```powershell
   sbx run ./mistral-vibe-agent/ `
       --kit-arg imageTag=local `
       --skills=off `
-      --static-mcp idea
+      --static-mcp idea,k8s,docker
   ```
 - Run from remote Git repo:
   ```powershell
@@ -103,7 +104,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
       --skills=off `
-      --static-mcp idea
+      --static-mcp idea,k8s,docker
   ```
 - Use kit with another project:
   ```powershell
@@ -111,43 +112,43 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
       --skills=off `
-      --static-mcp idea `
+      --static-mcp idea,k8s,docker `
       "C:\development\projects\spring-6-reactive"
   ```
-- Kubernetes-Support + Maven-Host-Cache: Kubernetes über den host-seitigen MCP-Server (`--static-mcp idea,k8s`, kein kubeconfig-Mount) und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87):
+- Kubernetes- + Host-Docker-Support + Maven-Host-Cache: Kubernetes über den host-seitigen Kubernetes-MCP-Server und Host-Docker über den lokalen Docker-MCP-Server (`--static-mcp idea,k8s,docker`, kein kubeconfig-Mount, kein offener `2375`-Port) und Host-Maven-Repo (read-only) mounten (kubectl/helm im Sandbox-Cluster; Maven nutzt den lokalen Cache, Issue #87):
   ```powershell
   sbx run opencode `
       --kit ./opencode-agent/ `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
       --skills=off `
-      --static-mcp idea,k8s `
+      --static-mcp idea,k8s,docker `
       . `
       "C:\development\maven-repo:ro"
   ```
-- Kubernetes-Support (Claude Code):
+- Kubernetes- + Host-Docker-Support (Claude Code):
   ```powershell
   sbx run claude `
       --kit ./opencode-agent/ `
       --skills=off `
-      --static-mcp idea,k8s `
+      --static-mcp idea,k8s,docker `
       . `
       "C:\development\maven-repo:ro"
   ```
-- Kubernetes-Support (Mammouth Code):
+- Kubernetes- + Host-Docker-Support (Mammouth Code):
   ```powershell
   sbx run ./mammouth-agent/ `
       --kit-arg imageTag=local `
       --skills=off `
-      --static-mcp idea,k8s `
+      --static-mcp idea,k8s,docker `
       . `
       "C:\development\maven-repo:ro"
   ```
-- Kubernetes-Support (Mistral Vibe):
+- Kubernetes- + Host-Docker-Support (Mistral Vibe):
   ```powershell
   sbx run ./mistral-vibe-agent/ `
       --kit-arg imageTag=local `
       --skills=off `
-      --static-mcp idea,k8s `
+      --static-mcp idea,k8s,docker `
       . `
       "C:\development\maven-repo:ro"
   ```
@@ -412,7 +413,7 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -658,25 +659,27 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 sbx run ./mammouth-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 ```
 
-Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP via **sbx MCP Gateway**
-(Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Sandbox mit
-`--static-mcp idea` erzeugen oder `sbx mcp load idea --sandbox`). Die jeweilige Config wird automatisch gelesen:
+Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und die
+Host-MCP-Server (IntelliJ / Kubernetes / Docker) via **sbx MCP Gateway**
+(Voraussetzung: einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, `sbx mcp add k8s …`
+und `sbx mcp add docker …`, Sandbox mit `--static-mcp idea,k8s,docker` erzeugen oder `sbx mcp load <name> --sandbox`).
+Die jeweilige Config wird automatisch gelesen:
 - OpenCode: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash)
 - Claude Code: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` — Modell `claude-sonnet-4-6`, zusätzlich per `ANTHROPIC_DEFAULT_SONNET_MODEL`/`ANTHROPIC_MODEL`-Env (via Kit-`environment.variables`) abgesichert. `opencode-agent/files/home/.claude/settings.json` enthält bereits alle nötigen Felder (Kit-Settings + bekannte Template-Keys wie `apiKeyHelper`), damit Claude Code die korrekten Settings liest — auch bei einer Race Condition zwischen Template-Startup und dem `setup.startup`-Hook. Das Template überschreibt die settings.json beim Start — ein `setup.startup`-Hook (Python-Merge, schneller als jq, korrekte Array-Behandlung) stellt danach alle Kit-Felder aus `opencode-agent/files/home/.claude/settings.kit.json` sicher. **Hooks + statusLine werden NICHT über diesen Merge gesetzt**, sondern liegen in `managed-settings.json` unter `/etc/claude-code/` (höchste Precedence, Template-sicher, via `setup.install`). Referenz bei Änderungen an `opencode-agent/files/home/.claude/settings.json` synchron halten (Kit-Felder in `settings.kit.json`, Template-Felder nur in `settings.json`).
 - Mammouth Code: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md` (nur Agent-Kit)
