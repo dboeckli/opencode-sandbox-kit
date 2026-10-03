@@ -305,12 +305,16 @@ Die Config liegt je Agent-Location vor:
   `mcp-gateway_nodes_top`, `mcp-gateway_pods_get`, `mcp-gateway_pods_list`,
   `mcp-gateway_pods_list_in_namespace`, `mcp-gateway_pods_log`, `mcp-gateway_pods_top`,
   `mcp-gateway_projects_list`, `mcp-gateway_resources_get`, `mcp-gateway_resources_list`
-  (`configuration_view` bewusst gesperrt — würde die kubeconfig inkl. Client-Cert/Key in die Sandbox liefern).
+  (`configuration_view` bewusst gesperrt — würde die kubeconfig inkl. Client-Cert/Key in die Sandbox liefern)
+  sowie die **Docker-MCP-Read-only-Tools** des lokalen Docker-MCP-Servers (`docs/docker-mcp-server.md`,
+  Issue #165): `mcp-gateway_list_containers`, `mcp-gateway_list_images`, `mcp-gateway_list_networks`,
+  `mcp-gateway_list_volumes`, `mcp-gateway_fetch_container_logs`.
   Der Server selbst läuft im **vollen Umfang** (`read_only = false`, alle Toolsets); diese Whitelist
   begrenzt den Agenten trotzdem. Die dokumentierten Read-only-Tools bleiben `allow`; alle übrigen
-  K8s-Tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`, `resources_delete`,
-  `resources_scale`, `helm_install`, `helm_uninstall`, `kiali_manage_istio_config`, `vm_*`, `tekton_*`, …)
-  sind bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe pro Aufruf). `configuration_view` bleibt `deny`.
+  K8s-/Docker-Write-Tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`,
+  `resources_delete`, `helm_install`, `vm_*`, `tekton_*`, `run_container`, `remove_container`,
+  `build_image`, `create_volume`, …) sind bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe pro Aufruf).
+  `configuration_view` bleibt `deny`.
   Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`, die
   K8s-Schreib-/Exec-Tools in `permissions.ask`.
   > **Produktions-No-Go:** `denied_resources` für `Secret` ist in der Host-Config bewusst deaktiviert
@@ -820,7 +824,7 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 
 ## Caveats
 
-- **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig. Optional Zugriff auf den **Windows-Host-Daemon** (Container des Hosts sehen/steuern): Docker Desktop → Settings → General → **"Expose daemon on tcp://localhost:2375 without TLS"** aktivieren und in der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen (`host.docker.internal:2375` ist in der Network-Allowlist, siehe `permissions.network.allow`).
+- **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig. Host-Docker-Zugriff (Container des Hosts sehen/steuern) läuft über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig via `sbx mcp add docker …` registriert; siehe `docs/docker-mcp-server.md`, Issue #165) — **kein offener `2375`-Port** mehr; die Permission-Whitelist gatet die Tools (read-only `allow`, Write `ask`).
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
 - **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
 - **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run --skills=off ./mammouth-agent/`).

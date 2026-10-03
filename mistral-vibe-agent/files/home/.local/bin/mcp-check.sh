@@ -2,16 +2,18 @@
 # MCP server reachability for the sandbox sidebar box "MCP & Host Systems".
 #
 # The sandbox reaches all MCP servers through the sbx MCP gateway
-# (mcp-gateway.docker.internal): the host-side IntelliJ MCP server and — when
-# registered via `--static-mcp idea,k8s` — the read-only Kubernetes MCP server
-# (containers/kubernetes-mcp-server, issue #40). A single MCP handshake
+# (mcp-gateway.docker.internal): the host-side IntelliJ MCP server, the
+# Kubernetes MCP server (containers/kubernetes-mcp-server, issue #40) and — when
+# registered via `--static-mcp idea,k8s,docker` — the local Docker MCP server
+# (mcp-server-docker, issue #165). A single MCP handshake
 # (initialize -> notifications/initialized -> tools/list) reveals which servers
 # are registered and reachable.
 #
-# Prints three space-separated tokens in the startup-checks format:
+# Prints four space-separated tokens in the startup-checks format:
 #   mcp-gateway:OK   gateway reachable (handshake succeeded)
 #   mcp-idea:OK      IntelliJ tools present (get_symbol_info)
 #   mcp-k8s:OK       Kubernetes tools present (pods_list)
+#   mcp-docker:OK    Docker tools present (list_containers)
 # Any missing step -> that token is FAIL.
 #
 # Bounded timeouts, never hangs. `mcp-gateway.docker.internal` is not in NO_PROXY,
@@ -32,6 +34,7 @@ rm -f "$mcp_hdr"
 gateway="mcp-gateway:FAIL"
 idea="mcp-idea:FAIL"
 k8s="mcp-k8s:FAIL"
+docker="mcp-docker:FAIL"
 
 if [ -n "$mcp_sid" ]; then
   gateway="mcp-gateway:OK"
@@ -50,6 +53,9 @@ if [ -n "$mcp_sid" ]; then
   case "$mcp_tools" in
     *'"name":"pods_list"'*) k8s="mcp-k8s:OK" ;;
   esac
+  case "$mcp_tools" in
+    *'"name":"list_containers"'*) docker="mcp-docker:OK" ;;
+  esac
 fi
 
-echo "$gateway $idea $k8s"
+echo "$gateway $idea $k8s $docker"

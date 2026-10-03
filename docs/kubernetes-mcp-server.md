@@ -189,8 +189,8 @@ Namespace default", „Zeig die Logs von Pod X", „Welche Helm-Releases laufen?
 > (Gateway erreichbar), `mcp-idea:OK` (IntelliJ-Tools vorhanden) und `mcp-k8s:OK`
 > (Read-only-k8s-Tools vorhanden, erkannt an `pods_list`). Er läuft im Startup-Check
 > (`run-checks.sh`) und im TUI-Sidebar-Block „MCP & Host Systems" (`check-infra.sh`, alle 10s),
-> zusammen mit `docker-host` (externes Host-System). Er ersetzt den früheren
-> `kubectl get nodes`-Check, der ohne kubeconfig in der Sandbox nicht mehr funktioniert.
+> zusammen mit `mcp-docker` (lokaler Docker-MCP-Server, erkannt an `list_containers`; Issue #165).
+> Er ersetzt den früheren `kubectl get nodes`-Check, der ohne kubeconfig in der Sandbox nicht mehr funktioniert.
 
 > **Voller Umfang (Server):** `read_only = false` + alle Toolsets — der Server bietet auch
 > schreibende/ausführende Tools an (`pods_delete`, `helm_install`, `pods_run`, …). Die

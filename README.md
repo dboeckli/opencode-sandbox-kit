@@ -305,8 +305,9 @@ im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionier
 
 > Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
-> **Host-Daemon-Zugriff (optional):** [`INSTALL.md`](INSTALL.md#2-docker-desktop-konfigurieren) — Docker Desktop
-> "Expose daemon on tcp://localhost:2375 without TLS" aktivieren und `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen.
+> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`), host-seitig
+> beim sbx MCP Gateway registriert — kein offener `2375`-Port, Zugriff gegated durch die Permission-Whitelist.
+> Siehe [`docs/docker-mcp-server.md`](docs/docker-mcp-server.md) (Issue [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165)).
 
 ### Netzwerk: Deny-by-Default mit Allow-Liste
 
@@ -587,18 +588,17 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK helm:OK kafka:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
   System-Prompt und schreibt ihn nach `~/.config/sandbox-kit/startup-checks.report`. Ein TUI-Plugin
   (Auto-Session) startet direkt im Session-View, sodass die Sidebar mit den Blöcken **Startup checks**,
   **Skills** und **MCP & Host Systems** sofort sichtbar ist – ohne ersten Prompt. Der
-  **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) zwei Gruppen:
+  **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) die
   **MCP-Server** über den sbx-Gateway (`~/.local/bin/mcp-check.sh`: ein MCP-Handshake → `mcp-gateway`, `mcp-idea`,
-  `mcp-k8s`; die Sandbox hält **keine** kubeconfig — Issue #40) und **Host-Systeme** (`docker-host`, optionaler
-  Docker-Desktop-Host-Daemon `docker -H tcp://host.docker.internal:2375 info`). MCP-Server stehen in einer Zeile,
-  Host-Systeme je Zeile untereinander. Gebounded per `timeout`.
+  `mcp-k8s`, `mcp-docker`; die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
+  (Issue #165)). MCP-Server stehen in einer Zeile. Gebounded per `timeout`.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
 - **Mistral Vibe** (Agent-Kit): Kein Auto-Hook (Vibe hat keinen Session-Hook für den Report) — die Checks laufen manuell; `check-infra.sh` ist nur der Parity wegen enthalten.

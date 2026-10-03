@@ -7,10 +7,9 @@ The startup checks run **automatically** at the start of each session:
 The actual checks live in `~/.config/sandbox-kit/run-checks.sh`. You only need to read this file or run the script manually when the automatic report is missing or a check fails.
 
 The **MCP & Host Systems** sidebar box runs `~/.config/sandbox-kit/check-infra.sh` (live from the TUI, every 10s). It stacks each entry vertically (one per line), covering two groups:
-- **MCP servers** reachable through the sbx MCP gateway via `~/.local/bin/mcp-check.sh`: `mcp-gateway` (gateway handshake succeeded), `mcp-idea` (IntelliJ tools present, detected by `get_symbol_info`) and `mcp-k8s` (Kubernetes tools present, detected by `pods_list`). Since the sandbox holds **no** kubeconfig (host-side Kubernetes MCP server, issue #40), reachability is verified with an MCP handshake (`initialize` → `notifications/initialized` → `tools/list`).
-- **Host systems**: `docker-host` (optional Docker Desktop host daemon, `docker -H tcp://host.docker.internal:2375 info`).
+- **MCP servers** reachable through the sbx MCP gateway via `~/.local/bin/mcp-check.sh`: `mcp-gateway` (gateway handshake succeeded), `mcp-idea` (IntelliJ tools present, detected by `get_symbol_info`), `mcp-k8s` (Kubernetes tools present, detected by `pods_list`) and `mcp-docker` (Docker tools present, detected by `list_containers`). Since the sandbox holds **no** kubeconfig (host-side Kubernetes MCP server, issue #40) and **no** host-Docker port (local Docker MCP server, issue #165), reachability is verified with an MCP handshake (`initialize` → `notifications/initialized` → `tools/list`).
 
-Output format: **line 1** = MCP servers (space-separated, `mcp-gateway:OK mcp-idea:OK mcp-k8s:OK`), **line 2+** = host systems, one per line (`docker-host:OK`) — each `FAIL` per component. The TUI splits all tokens on whitespace and renders each on its own line. All probes are bounded by `timeout`, so the box never hangs. The sandbox-internal Docker daemon is **not** shown here (it is part of the startup report as `docker`). Manual run:
+Output format: MCP servers space-separated (`mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK`), each `FAIL` per component. The TUI splits all tokens on whitespace and renders each on its own line. All probes are bounded by `timeout`, so the box never hangs. The sandbox-internal Docker daemon is **not** shown here (it is part of the startup report as `docker`). Manual run:
 
 ```
 bash ~/.config/sandbox-kit/check-infra.sh
@@ -36,9 +35,8 @@ bash ~/.config/sandbox-kit/run-checks.sh
 | 3 | gh CLI | `gh auth status` |
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |
-| 5b | Docker host daemon | `docker -H tcp://host.docker.internal:2375 version` (optional Docker Desktop host daemon; FAIL = "Expose daemon" nicht aktiv oder Docker Desktop down) |
 | 6 | kubectl | `kubectl version --client` (CLI only; no kubeconfig in the sandbox) |
-| 6b | MCP servers | `bash ~/.local/bin/mcp-check.sh` (one MCP handshake via the sbx gateway → `mcp-gateway:OK`, `mcp-idea:OK` when the IntelliJ tools are present, `mcp-k8s:OK` when the Kubernetes tools are present) |
+| 6b | MCP servers | `bash ~/.local/bin/mcp-check.sh` (one MCP handshake via the sbx gateway → `mcp-gateway:OK`, `mcp-idea:OK` when the IntelliJ tools are present, `mcp-k8s:OK` when the Kubernetes tools are present, `mcp-docker:OK` when the Docker tools are present) |
 | 7 | Helm | `helm version` |
 | 7b | Kafka CLI | `kafka-topics.sh --version` |
 | 8 | Skills | `skills ls -g` |
@@ -47,7 +45,7 @@ bash ~/.config/sandbox-kit/run-checks.sh
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK helm:OK kafka:OK skills:OK sonar:OK mammouth:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK skills:OK sonar:OK mammouth:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).

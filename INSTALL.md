@@ -46,12 +46,12 @@ installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzli
 > **isolierten Docker Daemon** im eigenen MicroVM (nerdbox) — kein Host-Socket-Mount nötig, Docker-Befehle
 > funktionieren direkt. Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
-1. **Daemon auf TCP freigeben** (optional, für Zugriff auf die **Host-Container** aus der Sandbox):
-   Docker Desktop → **Settings → General → "Expose daemon on tcp://localhost:2375 without TLS"** aktivieren.
-   - Ohne diese Einstellung hat die Sandbox nur ihren **isolierten Docker-Daemon** (eigene MicroVM) — Host-Container
-     sind nicht sichtbar.
-   - Mit aktiver Einstellung: In der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen, um die
-     Host-Container zu sehen/steuern (`host.docker.internal:2375` ist in der Network-Allowlist).
+1. **Host-Docker-Zugriff** (optional) über einen **lokalen Docker-MCP-Server** — kein offener `2375`-Port:
+   `uvx` installieren und den Server host-seitig registrieren
+   (`sbx mcp add docker --command "uvx" --args "mcp-server-docker"`), dann Sandbox mit `--static-mcp idea,k8s,docker`.
+   Details: [`docs/docker-mcp-server.md`](docs/docker-mcp-server.md) (Issue
+   [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165)). Ohne diesen Schritt hat die Sandbox nur
+   ihren **isolierten Docker-Daemon** (eigene MicroVM) — Host-Container sind dann nicht sichtbar.
 2. **Kubernetes** (optional): Docker Desktop → **Settings → Kubernetes → "Enable Kubernetes"**. Zugriff aus der
    Sandbox über den host-seitigen Kubernetes-MCP-Server (`docs/kubernetes-mcp-server.md`, Issue
    [#40](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/40)) — `sbx mcp add k8s …`, dann
