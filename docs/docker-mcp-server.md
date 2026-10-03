@@ -76,7 +76,9 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-toolkit:local `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 ## 5. Permission-Whitelist (Kit)
