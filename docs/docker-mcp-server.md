@@ -63,11 +63,23 @@ JSON-RPC). Mit `Ctrl+C` beenden.
 
 ## 3. Beim sbx MCP Gateway registrieren
 
+`--command` + `--args` registrieren den Server als **host-lokalen stdio-Server**; sbx startet den Prozess
+selbst. **Wichtig:** `--command` läuft im Kontext des sbx-Host-Daemons — dieser erbt **nicht** den
+Terminal-PATH, in dem `uvx` ggf. nur über einen winget-Shim auflösbar ist. Deshalb den **absoluten Pfad**
+verwenden (genau wie beim K8s-MCP):
+
 ```powershell
-sbx mcp add docker --command "uvx" --args "mcp-server-docker==0.3.0"
+(Get-Command uvx).Source
+sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"
 sbx mcp ls
 sbx mcp inspect docker
 ```
+
+> Ohne absoluten Pfad registriert `sbx mcp add docker --command "uvx" …` zwar erfolgreich (`sbx mcp ls`
+> = `ready`), aber der Gateway-Prozess findet `uvx` nicht und startet den Server nicht → in der Sandbox
+> `mcp-docker:FAIL` (siehe Troubleshooting).
+>
+> Alternativ ohne `uvx`-Shim: `--command (Get-Command uv).Source --args "tool,run,mcp-server-docker==0.3.0"`.
 
 ## 4. Sandbox mit Docker-MCP starten
 
@@ -80,6 +92,9 @@ sbx run opencode `
     . `
     "C:\development\maven-repo:ro"
 ```
+
+`--static-mcp` ist eine kommaseparierte Liste; das Set wird beim **Erstellen** der Sandbox fixiert. In eine
+**laufende** Sandbox nachladen: `sbx mcp load docker --sandbox <name>`.
 
 ## 5. Permission-Whitelist (Kit)
 
@@ -99,12 +114,34 @@ Statt `uvx` den Server als Container starten (Host-Docker via Socket-Mount):
 ```powershell
 # im geklonten Repo:
 docker build -t mcp-server-docker .
-sbx mcp add docker --command "docker" --args "run,-i,--rm,-v,/var/run/docker.sock:/var/run/docker.sock,mcp-server-docker"
+sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,/var/run/docker.sock:/var/run/docker.sock,mcp-server-docker"
 ```
+
+> Auch hier den **absoluten `docker`-Pfad** verwenden (`(Get-Command docker).Source`) — der Gateway-Daemon
+> erbt nicht den Terminal-PATH.
+
+## Troubleshooting
+
+| Symptom | Ursache / Fix |
+|---------|---------------|
+| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
+| `sbx mcp add` ok, aber keine Docker-Tools im `tools/list` | Server ist nicht Teil der `--static-mcp`-Menge der Sandbox (Set ist beim Erstellen fixiert) → `sbx mcp load docker --sandbox <name>` oder neu erstellen. |
+| Erster Check kurz `FAIL`, danach `OK` | `uvx` löst das gepinnte Paket beim ersten Start auf (Download) → kurzer Start-Timeout; erneut prüfen. |
+| Tool-Fehler „Cannot connect to the Docker daemon" | Docker Desktop läuft nicht oder der Benutzer ist nicht in `docker-users` (Host-Docker-Socket nötig). |
+
+## Betrieb
+
+| Aktion | Befehl |
+|--------|--------|
+| Update (neue Version) | Renovate-PR für `docs/docker-mcp-server.md` (`mcp-server-docker==<v>`) mergen, dann auf dem Host neu registrieren: `sbx mcp rm docker` + `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==<neu>"`; laufende Sandbox: `sbx mcp load docker --sandbox <name>` |
+| Status prüfen | `sbx mcp ls` (Status `ready`), `sbx mcp inspect docker` (Command/Args) |
+| In Sandbox prüfen | `sbx exec <name> bash -lc 'bash ~/.local/bin/mcp-check.sh'` → `mcp-docker:OK` |
+| Nachladen in laufende Sandbox | `sbx mcp load docker --sandbox <name>` |
+| Registrierung entfernen | `sbx mcp rm docker` |
 
 ## Verifikation
 
-- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (`uvx mcp-server-docker`).
+- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker==0.3.0`).
 - **Sandbox:** MCP-Handshake `tools/list` enthält die Docker-Tools; ein Read-Tool (`list_containers`)
   läuft ohne Prompt, ein Write-Tool (`run_container`) löst den `ask`-Prompt aus.
 - **Nach Phase 2:** `host.docker.internal:2375` (+ `localhost`/`127.0.0.1`) aus allen `spec.yaml` +
