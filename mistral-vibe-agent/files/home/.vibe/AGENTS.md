@@ -80,7 +80,8 @@ permission prompt: read-only tools (`get_*`, `list_*`, `search_*`, `read*`, `ana
 `projects_list`, `resources_get`, `resources_list`, `helm_list` — `configuration_view` is blocked) are allowed;
 write/execute tools and the gateway builtins (`mcp-gateway_code-mode`, `mcp-gateway_mcp-exec`,
 `mcp-gateway_mcp-find`, …) are denied. `mcp-gateway_execute_run_configuration` is allowed
-only for the `local-test-kits-validate-only` run configuration.
+only for the `local-test-kits-validate-only` run configuration. The `pre_tool` hook only supports
+`allow`/`deny` (no `ask`), so K8s write/exec tools cannot be released on the fly in Vibe.
 
 Use them to interact with the IntelliJ IDE on the Windows host: navigate code, run inspections, query the database.
 Requires IntelliJ IDEA running on the host with the MCP server plugin enabled.

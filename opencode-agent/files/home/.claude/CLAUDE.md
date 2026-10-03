@@ -167,11 +167,12 @@ Connected via the sbx MCP gateway (`mcp-gateway`, key in `~/.claude.json`); the 
 ## Kubernetes MCP
 
 On a sandbox started with `--static-mcp idea,k8s`, the host-side Kubernetes MCP server
-(`containers/kubernetes-mcp-server`, read-only) is exposed through the same sbx MCP gateway. Tools arrive
-as `mcp__mcp-gateway__<tool>`: `pods_list`, `pods_list_in_namespace`, `pods_get`, `pods_log`, `pods_top`,
-`events_list`, `namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `resources_list`,
-`resources_get`, `projects_list`, `helm_list`. All are read-only and on the whitelist; `configuration_view`
-is intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
+(`containers/kubernetes-mcp-server`, full scope: `read_only = false`, all toolsets) is exposed through the
+same sbx MCP gateway. Tools arrive as `mcp__mcp-gateway__<tool>`. The documented read-only tools are on the
+`permissions.allow` list. The K8s write/exec tools are listed in `permissions.ask`: Claude runs with
+`defaultMode: default`, so it prompts for on-the-fly approval per call (not permanently granted). As a
+consequence, other non-listed tools (e.g. `Bash`/`Edit`/`Write`) also prompt. `configuration_view` is
+intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
 Setup: `docs/kubernetes-mcp-server.md`.
 
 ## Context7

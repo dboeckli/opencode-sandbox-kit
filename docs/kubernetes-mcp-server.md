@@ -82,7 +82,8 @@ Empfohlen über das Host-Skript (schreibt die TOML UTF-8 ohne BOM; **scheitert, 
 
 ```powershell
 .\local-scripts\configure-kubernetes-mcp-server.ps1
-# Optionen: -ReadOnly:$false -Toolsets core,config,helm -Force
+# Default: voller Umfang (read-write, alle Toolsets)
+# Einschränken: -ReadOnly:$true -Toolsets core,config,helm -Force
 ```
 
 <details><summary>Manuell (ohne Skript)</summary>
@@ -95,11 +96,11 @@ New-Item -ItemType Directory -Force -Path $cfgDir | Out-Null
 $kubeconfig = (Resolve-Path "$env:USERPROFILE\.kube\config").Path -replace '\\', '/'
 
 $toml = @"
-# --- Sicherheit: nur lesende Tools ---
-read_only = true
+# --- Scope: read_only = false = voller Umfang (read-write/exec) ---
+read_only = false
 
-# --- Toolsets (core = Pods/Events/Resources, config = kubeconfig, helm = Releases) ---
-toolsets = ["core", "config", "helm"]
+# --- Toolsets (alle) ---
+toolsets = ["core", "config", "helm", "kcp", "kiali", "kubevirt", "netobserv", "tekton"]
 
 # --- Cluster-Zugriff aus der Host-kubeconfig ---
 kubeconfig = "$kubeconfig"
@@ -191,8 +192,12 @@ Namespace default", „Zeig die Logs von Pod X", „Welche Helm-Releases laufen?
 > zusammen mit `docker-host` (externes Host-System). Er ersetzt den früheren
 > `kubectl get nodes`-Check, der ohne kubeconfig in der Sandbox nicht mehr funktioniert.
 
-> **Read-only:** Durch `read_only = true` sind nur lesende Tools sichtbar
-> (`pods_list`, `pods_log`, `resources_get`, `helm_list`, …) — keine `pods_delete`/`helm_install`.
+> **Voller Umfang (Server):** `read_only = false` + alle Toolsets — der Server bietet auch
+> schreibende/ausführende Tools an (`pods_delete`, `helm_install`, `pods_run`, …). Die
+> **Sandbox-Whitelist** (Abschnitt 5) regelt, was der Agent davon aufrufen darf: die dokumentierten
+> Read-only-Tools sind `allow`, die übrigen K8s-Tools bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe
+> pro Aufruf), bei Vibe hart `deny` (kein `ask`-Prompt). Volle Schreibrechte ohne Rückfrage hätte
+> nur ein Client, der den Server direkt (ohne Sandbox-Whitelist) nutzt.
 >
 > [!WARNING]
 > **Secrets sind NICHT ausgesperrt.** Das ist für `helm_list`/`helm_get`/`helm_status` nötig
@@ -210,13 +215,28 @@ enden auf `_list`/`_get`/`_log`/`_top`). Die **K8s-Read-only-Tools** sind daher 
 freigegeben (in allen vier Agent-Configs):
 
 - OpenCode/Mammouth: `permission` in `opencode.jsonc`
-- Claude Code: `permissions.allow` in `settings.json` (+ `settings.kit.json`)
+- Claude Code: `permissions.allow` + `permissions.ask` in `settings.json` (+ `settings.kit.json`, `defaultMode: default`)
 - Mistral Vibe: `pre_tool`-Guard (`vibe-mcp-guard.py`)
 
 Freigegeben (nur lesend, aus den Toolsets `core`/`helm`): `events_list`, `helm_list`,
 `namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`,
 `pods_list_in_namespace`, `pods_log`, `pods_top`, `projects_list`, `resources_get`,
 `resources_list`.
+
+**On-the-fly-Freigabe (OpenCode/Mammouth/Claude):** Die übrigen K8s-Tools sind dort **`ask`** statt `deny`.
+Der `permission`-Block listet vor den Read-only-`allow`-Regeln Toolset-Gruppen
+(`mcp-gateway_pods_*`, `mcp-gateway_resources_*`, `mcp-gateway_helm_*`, `mcp-gateway_kiali_*`,
+`mcp-gateway_vm_*`, `mcp-gateway_tekton_*`, `mcp-gateway_netobserv_*`, `mcp-gateway_kcp_*`). Wegen der
+Auswertung „letzte passende Rule gewinnt" (`findLast`) bleiben die explizit gelisteten Read-only-Tools
+`allow`, während z. B. `mcp-gateway_pods_delete` oder `mcp-gateway_helm_install` einen interaktiven
+Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der volle Server-Umfang
+(`read_only = false`) — sonst existieren die Tools gar nicht. **Claude Code** nutzt dieselbe Logik über
+`permissions.ask`; damit `ask` greift, läuft Claude mit `defaultMode: default` (nicht mehr
+`bypassPermissions`) — dadurch prompten auch nicht-gelistete Built-in-Tools (`Bash`/`Edit`/`Write`).
+
+> **Mistral Vibe:** kein `ask` möglich — `--agent auto-approve`, dessen `pre_tool`-Hook nur `allow`/`deny`
+> kennt. Dort bleiben die K8s-Schreib-/Exec-Tools hart `deny`. `configuration_view` bleibt in allen Agenten
+> gesperrt.
 
 > Die Whitelist regelt nur, **welche Tools** der Sandbox-Agent aufrufen darf — sie sagt nichts
 > über die gelesenen Ressourcen. `resources_get`/`resources_list` sind Teil der Whitelist und
@@ -240,7 +260,10 @@ Freigegeben (nur lesend, aus den Toolsets `core`/`helm`): `events_list`, `helm_l
 ## Sicherheit (Kurz)
 
 - **stdio, kein Listen-Port** → der Server ist von außen nicht erreichbar; nur der sbx-Gateway spricht mit ihm.
-- `read_only = true` → nur lesende Tools, keine `pods_delete`/`helm_install`/`resources_delete`.
+- `read_only = false` + alle Toolsets (**voller Umfang**) → der Server bietet auch Schreib-/Exec-Tools
+  (`pods_delete`, `helm_install`, `resources_delete`, …). Die **Sandbox-Whitelist** (Abschnitt 5) regelt
+  den Zugriff: Read-only = `allow`, übrige K8s-Tools bei OpenCode/Mammouth/Claude `ask` (Freigabe pro Aufruf),
+  bei Vibe `deny`.
 - kubeconfig/Credentials bleiben **ausschließlich** im Host-Prozess; die Sandbox sieht nur MCP.
   `configuration_view` ist in der Kit-Whitelist gesperrt (würde die kubeconfig inkl. Client-Cert/Key liefern).
 

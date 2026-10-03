@@ -167,11 +167,14 @@ Connected via the sbx MCP gateway (`mcp-gateway`); the IntelliJ MCP server runs 
 ## Kubernetes MCP
 
 On a sandbox started with `--static-mcp idea,k8s`, the host-side Kubernetes MCP server
-(`containers/kubernetes-mcp-server`, read-only) is exposed through the same sbx MCP gateway. Tools arrive
-as `mcp-gateway_<tool>`: `pods_list`, `pods_list_in_namespace`, `pods_get`, `pods_log`, `pods_top`,
-`events_list`, `namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `resources_list`,
-`resources_get`, `projects_list`, `helm_list`. All are read-only and on the whitelist; `configuration_view`
-is intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
+(`containers/kubernetes-mcp-server`, full scope: `read_only = false`, all toolsets) is exposed through the
+same sbx MCP gateway. Tools arrive as `mcp-gateway_<tool>`. The documented read-only tools — `pods_list`,
+`pods_list_in_namespace`, `pods_get`, `pods_log`, `pods_top`, `events_list`, `namespaces_list`, `nodes_log`,
+`nodes_stats_summary`, `nodes_top`, `resources_list`, `resources_get`, `projects_list`, `helm_list` — are
+`allow`. All other K8s tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`,
+`resources_delete`, `resources_scale`, `helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) are **`ask`**:
+the sandbox prompts for on-the-fly approval per call (not permanently granted). `configuration_view` is
+intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
 Setup: `docs/kubernetes-mcp-server.md`.
 
 ## Context7

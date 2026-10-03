@@ -262,18 +262,25 @@ registrieren (SSRF-Guard blockt Loopback; `/stream` = Streamable HTTP, nicht `/s
 `idea_`/`mcp__idea__`-Prefix existiert nicht mehr.
 
 Der Zugriff auf die IntelliJ-MCP-Tools ist für **OpenCode (Mixin-Kit), Claude Code,
-Mammouth Code und Mistral Vibe (Agent-Kits)** per **Whitelist** eingeschränkt — Deny-by-Default, nur lesende Operationen sind
-erlaubt. Die Config liegt je Agent-Location vor:
+Mammouth Code und Mistral Vibe (Agent-Kits)** per **Whitelist** eingeschränkt — Deny-by-Default, standardmäßig
+nur lesende Operationen erlaubt (K8s-Schreib-/Exec-Tools bei OpenCode/Mammouth/Claude per `ask` freigebbar, siehe unten).
+Die Config liegt je Agent-Location vor:
 
 - **OpenCode / Mammouth** (OpenCode-Fork, nutzt dieselben `permission`-Regeln und Plugin-Hooks):
   `permission`-Block in `opencode-agent/files/home/.config/opencode/opencode.jsonc` und
   `mammouth-agent/files/home/.config/mammouth/opencode.jsonc`: breites `"mcp-gateway_*": "deny"` zuerst, danach
-  gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus (`findLast`),
-  deshalb Deny vor Allows.
-- **Claude Code**: `permissions`-Block in `opencode-agent/files/home/.claude/settings.json`. Kein Deny-by-Default wie bei
-  OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als `mcp__mcp-gateway__<tool>`), eine
-  `deny`-Blocklist für die schreibenden/ausführenden Tools. Nicht gelistete Tools fallen auf den
-  Standard-Prompt zurück. Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
+  **K8s-`ask`-Gruppen** (Toolset-Präfixe `pods_*`/`resources_*`/`helm_*`/`kiali_*`/`vm_*`/`tekton_*`/`netobserv_*`/`kcp_*`)
+  und schließlich gezielte `allow`-Regeln. **Reihenfolge zählt** — opencode wertet die letzte passende Rule aus
+  (`findLast`), deshalb Deny → Ask → Allow: ein nicht explizit erlaubtes K8s-Schreib-/Exec-Tool (z. B.
+  `pods_delete`, `helm_install`) löst einen interaktiven Prompt aus (On-the-fly-Freigabe pro Aufruf), die
+  dokumentierten Read-only-Tools bleiben `allow`.
+- **Claude Code**: `permissions`-Block in `opencode-agent/files/home/.claude/settings.json` (+ `settings.kit.json`).
+  Kein Deny-by-Default wie bei OpenCode, sondern eine explizite `allow`-Whitelist (nur-lesende MCP-Tools als
+  `mcp__mcp-gateway__<tool>`), eine `ask`-Liste (K8s-Schreib-/Exec-Tools, On-the-fly-Freigabe) und eine
+  `deny`-Blocklist für die schreibenden/ausführenden IntelliJ-Tools. Das Profil ist auf
+  `defaultMode: default` gesetzt (in `settings.kit.json` verankert, damit der `setup.startup`-Merge es nach dem
+  Template-Overwrite sichert) — **nicht** mehr `bypassPermissions`: nur so greift `permissions.ask`; dafür prompten
+  jetzt auch nicht-gelistete Built-in-Tools (`Bash`/`Edit`/`Write`). Der Run-Config-Guard läuft als **PreToolUse-Hook** (siehe unten) statt als Plugin.
   Hooks + statusLine liegen **nicht** in der user-`settings.json`, sondern in der `managed-settings.json`
   unter `/etc/claude-code/` (via `setup.install`): höchste Precedence, wird vom Template nicht überschrieben —
   umgeht die Race Condition, bei der das Template die user-`settings.json` beim Start überschreibt (siehe
@@ -299,13 +306,25 @@ erlaubt. Die Config liegt je Agent-Location vor:
   `mcp-gateway_pods_list_in_namespace`, `mcp-gateway_pods_log`, `mcp-gateway_pods_top`,
   `mcp-gateway_projects_list`, `mcp-gateway_resources_get`, `mcp-gateway_resources_list`
   (`configuration_view` bewusst gesperrt — würde die kubeconfig inkl. Client-Cert/Key in die Sandbox liefern).
-  Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`.
+  Der Server selbst läuft im **vollen Umfang** (`read_only = false`, alle Toolsets); diese Whitelist
+  begrenzt den Agenten trotzdem. Die dokumentierten Read-only-Tools bleiben `allow`; alle übrigen
+  K8s-Tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`, `resources_delete`,
+  `resources_scale`, `helm_install`, `helm_uninstall`, `kiali_manage_istio_config`, `vm_*`, `tekton_*`, …)
+  sind bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe pro Aufruf). `configuration_view` bleibt `deny`.
+  Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`, die
+  K8s-Schreib-/Exec-Tools in `permissions.ask`.
   > **Produktions-No-Go:** `denied_resources` für `Secret` ist in der Host-Config bewusst deaktiviert
   > (sonst bricht das `helm`-Toolset — Helm v3 speichert Releases als Secrets). Dadurch können
   > `resources_get`/`resources_list` **Cluster-Secrets inkl. `.data` lesen**. Nur für Entwicklungs-Cluster
   > (Docker Desktop): `docs/kubernetes-mcp-server.md#sicherheit-kurz`.
 - **`ask`**: `mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) —
   braucht Bestätigung und wird zusätzlich durch den Run-Config-Guard auf `local-test-kits-validate-only` begrenzt.
+- **On-the-fly-Freigabe (`ask`) bei OpenCode/Mammouth/Claude**: `ask` erzeugt einen interaktiven Prompt pro
+  Tool-Aufruf (das Gegenstück zur URL-Allow-Schaltung im sbx-GUI). OpenCode/Mammouth via `permission`,
+  Claude via `permissions.ask` + `defaultMode: default` (dadurch prompten auch nicht-gelistete Built-in-Tools
+  wie `Bash`/`Edit`/`Write`). **Mistral Vibe** startet mit `--agent auto-approve`, dessen `pre_tool`-Hook nur
+  `allow`/`deny` kennt (kein `ask`) — dort bleiben die K8s-Schreib-/Exec-Tools hart deny; On-the-fly ist bei
+  Vibe nur durch Ändern des Approval-Modells möglich.
 - **Versteckt (deny)**: alle schreibenden/ausführenden Tools (`apply_patch`, `execute_terminal_command`,
   `execute_tool`, `reformat_file`, `rename_refactoring`,
   Notebook-Schreibzugriffe, `xdebug_set_*`, `xdebug_run_to_line`,

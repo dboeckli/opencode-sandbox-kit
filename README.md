@@ -471,9 +471,11 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 - **Permission-Whitelist + Run-Config-Guard**: siehe Abschnitt "IntelliJ MCP Zugriff einschränken"
 
 > **Hinweis:** Das claude-code-docker-Template überschreibt `~/.claude/settings.json` beim Start (u.a. mit
-> `apiKeyHelper: echo proxy-managed`, `defaultMode: bypassPermissions`). Das Modell wird deshalb nicht nur in
-> der settings.json gesetzt, sondern zusätzlich fest über die Env-Variablen erzwungen. Nach Änderungen am
-> Kit die Sandbox neu erstellen (bzw. `sbx kit add`), damit die Env-Variablen greifen.
+> `apiKeyHelper: echo proxy-managed`, `defaultMode: bypassPermissions`). Der `setup.startup`-Merge stellt danach
+> die Kit-Felder aus `settings.kit.json` sicher — u.a. `defaultMode: default` (damit `permissions.ask` für die
+> K8s-Schreib-/Exec-Tools greift) und die Permission-Listen. Das Modell wird zusätzlich fest über die
+> Env-Variablen erzwungen. Nach Änderungen am Kit die Sandbox neu erstellen (bzw. `sbx kit add`), damit die
+> Env-Variablen greifen.
 
 Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) installiert.

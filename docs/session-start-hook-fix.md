@@ -5,7 +5,8 @@
 Das `claude-code-docker`-Template überschreibt `~/.claude/settings.json` beim Start jeder
 Session — u.a. mit `apiKeyHelper`, `defaultMode: bypassPermissions` und einem Default-Modell
 (Opus 5). Eigene Settings (Modell, MCP-Server, Permissions) müssen daher nach jedem
-Template-Overwrite erneut angewendet werden.
+Template-Overwrite erneut angewendet werden. Der Merge setzt u.a. `defaultMode: default` — das Kit
+nutzt nicht mehr `bypassPermissions`, damit `permissions.ask` (K8s-Schreib-/Exec-Tools) greift.
 
 ## Race Condition
 
