@@ -12,7 +12,7 @@ const runInfra = (): Promise<string> =>
   new Promise((resolve) => {
     exec(`bash ${INFRA_SCRIPT}`, { timeout: 15000 }, (err, stdout) => {
       const line = (stdout || "").trim()
-      if (err || !line) resolve("docker:FAIL kubernetes:FAIL")
+      if (err || !line) resolve("mcp-gateway:FAIL mcp-idea:FAIL mcp-k8s:FAIL\ndocker-host:FAIL")
       else resolve(line)
     })
   })
@@ -164,12 +164,12 @@ const tui: TuiPlugin = async (api) => {
             gap={1}
           >
             <text fg={skin.accent}>
-              <b>Docker / Kubernetes</b>
+              <b>MCP &amp; Host Systems</b>
             </text>
             {infra() === "running…" ? (
               <text fg={skin.muted}>running…</text>
             ) : (
-              <box flexDirection="row" flexWrap="wrap">
+              <box flexDirection="column">
                 {infra()
                   .trim()
                   .split(/\s+/)
@@ -177,7 +177,7 @@ const tui: TuiPlugin = async (api) => {
                   .map((t) => {
                     const status = t.split(":")[1]
                     const fg = status === "OK" ? "#5faf5f" : status === "FAIL" ? "#ff5f5f" : skin.muted
-                    return <text fg={fg}>{t} </text>
+                    return <text fg={fg}>{t}</text>
                   })}
               </box>
             )}

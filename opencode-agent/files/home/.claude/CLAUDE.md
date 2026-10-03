@@ -164,6 +164,17 @@ Connected via the sbx MCP gateway (`mcp-gateway`, key in `~/.claude.json`); the 
 
 > **Pfad-Quirk**: `projectPath`/Projektparameter IMMER im Windows-Format übergeben (`C:/development/projects/<projekt>`). Linux-Pfade (z. B. `/c/development/...`) werden vom IntelliJ MCP abgelehnt. `projectPath` immer mitgeben, sobald bekannt.
 
+## Kubernetes MCP
+
+On a sandbox started with `--static-mcp idea,k8s`, the host-side Kubernetes MCP server
+(`containers/kubernetes-mcp-server`, full scope: `read_only = false`, all toolsets) is exposed through the
+same sbx MCP gateway. Tools arrive as `mcp__mcp-gateway__<tool>`. The documented read-only tools are on the
+`permissions.allow` list. The K8s write/exec tools are listed in `permissions.ask`: Claude runs with
+`defaultMode: default`, so it prompts for on-the-fly approval per call (not permanently granted). As a
+consequence, other non-listed tools (e.g. `Bash`/`Edit`/`Write`) also prompt. `configuration_view` is
+intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
+Setup: `docs/kubernetes-mcp-server.md`.
+
 ## Context7
 
 Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated via `CONTEXT7_API_KEY` (placeholder `proxy-managed`, replaced by the proxy on requests to `context7.com`) — never shows the real key.
@@ -272,5 +283,5 @@ The list is enforced by the sandbox proxy (`mcp-gateway`, the "mcp-gateway Conne
 
 ## Startup checks
 
-A SessionStart hook runs the sandbox checks and passes a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, kafka, skills, sonar) as a system message at the start of the session. When you receive it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
+A SessionStart hook runs the sandbox checks and passes a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP gateway/IntelliJ/Kubernetes, helm, kafka, skills, sonar) as a system message at the start of the session. When you receive it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->

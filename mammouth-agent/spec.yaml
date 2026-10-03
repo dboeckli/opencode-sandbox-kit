@@ -89,10 +89,6 @@ permissions:
       - "localhost:64615"
       - "127.0.0.1:64615"
       - "host.docker.internal:64615"
-      # Docker Desktop Kubernetes (kube-apiserver, Host via Docker Desktop DNS)
-      - "localhost:6443"
-      - "127.0.0.1:6443"
-      - "host.docker.internal:6443"
       # Docker Desktop Docker Engine (Daemon-API via TCP, Host via Docker Desktop DNS; DOCKER_HOST=tcp://host.docker.internal:2375)
       - "localhost:2375"
       - "127.0.0.1:2375"
@@ -366,12 +362,6 @@ setup:
               f.write(content)
       user: "1000"
       description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com. Wenn ein read-only Host-Maven-Cache gemountet ist (/c/Users/*/.m2/repository), wird zusaetzlich ein <repository> 'host-cache' (file://, snapshots disabled) in einem aktiven Profil ergaenzt — Maven nutzt den Host-Cache vor den echten Remotes
-    - command:
-        - python3
-        - /home/agent/.local/bin/regenerate-kubeconfig.py
-      user: "1000"
-      description: Regenerate ~/.kube/config from the read-only host kubeconfig mount (Docker Desktop Kubernetes) — idempotent, no-op without mount
-
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"

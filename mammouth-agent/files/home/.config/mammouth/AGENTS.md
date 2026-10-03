@@ -70,7 +70,13 @@ Operationen erlaubt): `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_se
 `mcp-gateway_fetch_query_result`, `mcp-gateway_preview_table_data`,
 `mcp-gateway_test_database_connection`, `mcp-gateway_introspect_schema`, `mcp-gateway_run_inspection_kts`,
 `mcp-gateway_validate_inspection_kts`, `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ — bewusst
-erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor — bewusst erlaubt, ohne ask).
+erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor — bewusst erlaubt, ohne ask)
+sowie die K8s-Read-only-Tools des host-seitigen Kubernetes-MCP-Servers (`events_list`, `namespaces_list`,
+`nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`, `pods_list_in_namespace`, `pods_log`,
+`pods_top`, `projects_list`, `resources_get`, `resources_list`, `helm_list` — jeweils mit `mcp-gateway_`-Präfix;
+siehe `docs/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt). Alle übrigen K8s-Tools
+(`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`, `resources_delete`, `resources_scale`,
+`helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) sind **`ask`** — On-the-fly-Freigabe pro Aufruf.
 Schreibende/ausführende Tools (`mcp-gateway_apply_patch`,
 `mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
 `mcp-gateway_execute_sql_query`, Debugger-Steuerung, Gateway-Builtins wie `mcp-gateway_code-mode`/`mcp-gateway_mcp-exec`,
@@ -286,5 +292,5 @@ git -C ~/docs/repsy-docs pull --ff-only --quiet
 
 ## Startup checks
 
-A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, helm, kafka, skills, sonar, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
+A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP gateway/IntelliJ/Kubernetes, helm, kafka, skills, sonar, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->

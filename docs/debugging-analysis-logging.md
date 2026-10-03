@@ -115,12 +115,12 @@ python local-test\local-test-kits.py --validate-only
 
 - `opencode-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `mistral-vibe-agent/…`
 - `opencode-agent/files/home/.local/bin/install-tooling-user.sh` → dito
-- `opencode-agent/files/home/.local/bin/regenerate-kubeconfig.py` → dito
+- `opencode-agent/files/home/.local/bin/mcp-check.sh` → dito
 - `opencode-agent/files/home/.local/bin/install-apt-packages.sh` → dito
 
 ### Startup-Checks
 
-Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, Helm, Kafka, Skills, SonarCloud)
+Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP gateway/IntelliJ/Kubernetes, Helm, Kafka, Skills, SonarCloud)
 wird beim Session-Start injiziert und nach `~/.config/sandbox-kit/startup-checks.report` geschrieben.
 Manuell neu ausführen:
 
@@ -216,7 +216,6 @@ schreibt der **Dispatcher des Base-Templates** — Timestamps pro Zeile kann das
 | `001-startup-opencode/000-cmd.sh` | Base-Template (root) | `apt-get update` (Paketlisten vorwärmen, Fehler toleriert) |
 | `001-startup-opencode/001-cmd.sh` | Base-Template (agent) | `~/.config/opencode/opencode.json` schreiben → registriert den `mcp-gateway` (Proxy) als Remote-MCP-Server |
 | `002-startup-opencode-sandbox-kit/000-cmd.sh` | Kit `setup.startup` (agent) | `~/.claude/settings.json` mit `settings.kit.json` mergen (nach Template-Overwrite — Python-Merge, korrekte Array-Behandlung) |
-| `002-startup-opencode-sandbox-kit/001-cmd.sh` | Kit `setup.startup` (agent) | `regenerate-kubeconfig.py` → `~/.kube/config` aus dem read-only Host-Kubeconfig-Mount regenerieren (idempotent, No-op ohne Mount) |
 
 Das `002-…-sandbox-kit`-Verzeichnis wird vom Template aus dem `setup.startup`-Abschnitt der Kit-Spec
 generiert (`opencode-agent/spec.yaml`, `mammouth-agent/spec.yaml`, `mistral-vibe-agent/spec.yaml`); die
