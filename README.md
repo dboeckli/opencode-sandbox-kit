@@ -8,7 +8,7 @@
 > pushes/PRs there are ignored and overwritten on the next sync. Please use **Codeberg** for issues,
 > pull requests and releases.
 
-Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7, IntelliJ MCP, Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich dedizierte Agent-Kits: **Mammouth Code** (`mammouth-agent/`, `kind: sandbox`, eigenes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`, entrypoint `mammouth`) und **Mistral Vibe** (`mistral-vibe-agent/`, `kind: sandbox`, eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`).
+Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7, IntelliJ/Kubernetes/Host-Docker MCP (via sbx MCP Gateway), Java, Maven, Docker CLI, kubectl, Helm, and Apache Kafka CLI. Enthält zusätzlich dedizierte Agent-Kits: **Mammouth Code** (`mammouth-agent/`, `kind: sandbox`, eigenes Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`, entrypoint `mammouth`) und **Mistral Vibe** (`mistral-vibe-agent/`, `kind: sandbox`, eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`).
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
 
@@ -33,7 +33,7 @@ cd C:\development\projects\opencode-sandbox-kit
 
 Template-Version gepinnt (`0.x.0`, siehe Hinweis unten). **OpenCode** und **Claude** nutzen eigene Tooling-Images (bauen auf `docker/sandbox-templates:opencode-docker-0.x.0` bzw. `claude-code-docker-0.x.0` auf, Tooling vorgebacken → schneller Start). Für die **lokale Entwicklung** den **lokalen Build-Tag `:local`** verwenden — vorher einmal die Run-Config `build-and-publish-opencode-image` bzw. `build-and-publish-claude-image` ausführen (baut/pusht `:local`). Der Release-Tag `<version>`/`:latest` entsteht erst beim Master-Publish. Mammouth und Mistral Vibe (`kind: sandbox`) brauchen kein `--template` — die Template-Version steckt im spec-Image (`mammouth-agent/spec.yaml` bzw. `mistral-vibe-agent/Dockerfile`).
 
-Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Mount: `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Kubernetes-Zugriff läuft über den **host-seitigen MCP-Server** (`docs/kubernetes-mcp-server.md`, `--static-mcp idea,k8s`) — **kein** kubeconfig-Mount mehr. Mounts weglassen, wenn nicht benötigt.
+Das aktuelle Verzeichnis (per `cd`) wird als Workspace gemountet. **Wichtig:** bei zusätzlichen read-only Mounts muss `.` als **erster** Workspace stehen — sbx verlangt den Primary-Workspace read/write (sonst: `ERROR: primary workspace must be read/write`). Typischer Mount: `C:\development\maven-repo:ro` (Host-Maven-Cache → Maven nutzt den lokal gefüllten Cache statt Neu-Download; Issue #87). Kubernetes-Zugriff läuft über den **host-seitigen Kubernetes-MCP-Server** (`docs/kubernetes-mcp-server.md`) und Host-Docker-Zugriff über den **lokalen Docker-MCP-Server** (`docs/docker-mcp-server.md`) — beide via `--static-mcp idea,k8s,docker`, **kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr. Mounts weglassen, wenn nicht benötigt.
 
 **OpenCode:**
 
@@ -42,7 +42,7 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -54,7 +54,7 @@ sbx run claude `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -65,7 +65,7 @@ sbx run claude `
 sbx run ./mammouth-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -76,7 +76,7 @@ sbx run ./mammouth-agent/ `
 sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -107,7 +107,7 @@ sbx run opencode `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -119,7 +119,7 @@ sbx run claude `
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -130,7 +130,7 @@ sbx run claude `
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --kit-arg imageTag=latest `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -141,7 +141,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --kit-arg imageTag=latest `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -178,7 +178,7 @@ Entwicklung** daher `:local` verwenden (siehe „Lokale Entwicklung"); für Remo
 
 ### Ubuntu-WSL
 
-Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mount: Host-Maven-Cache `/mnt/c/development/maven-repo:ro`. Kubernetes-Zugriff läuft über den host-seitigen MCP-Server (`--static-mcp idea,k8s`) — **kein** kubeconfig-Mount mehr.
+Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mount: Host-Maven-Cache `/mnt/c/development/maven-repo:ro`. Kubernetes-Zugriff läuft über den host-seitigen Kubernetes-MCP-Server und Host-Docker-Zugriff über den lokalen Docker-MCP-Server (`--static-mcp idea,k8s,docker`) — **kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr.
 
 ```bash
 cd /mnt/c/development/projects/spring-6-reactive
@@ -191,7 +191,7 @@ sbx run opencode \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest \
     --skills=off \
-    --static-mcp idea,k8s \
+    --static-mcp idea,k8s,docker \
     . \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -203,7 +203,7 @@ sbx run claude \
     --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest \
     --skills=off \
-    --static-mcp idea,k8s \
+    --static-mcp idea,k8s,docker \
     . \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -214,7 +214,7 @@ sbx run claude \
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     --kit-arg imageTag=latest \
     --skills=off \
-    --static-mcp idea,k8s \
+    --static-mcp idea,k8s,docker \
     . \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -225,7 +225,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
     --kit-arg imageTag=latest \
     --skills=off \
-    --static-mcp idea,k8s \
+    --static-mcp idea,k8s,docker \
     . \
     "/mnt/c/development/maven-repo:ro"
 ```
@@ -262,6 +262,7 @@ flowchart TB
         IDE["IntelliJ IDEA\nMCP Server :64615"]
         WS["📁 Workspace\nC:\\development\\projects\\..."]
         K8SMCP["☸️ Kubernetes MCP Server (read-only)\nHost-seitig, keine Sandbox-Credentials"]
+        DOCKERMCP["🐳 Docker MCP Server\nHost-Docker (read-only allow, write ask)"]
         M2["📦 maven-repo (read-only)\nHost-Maven-Cache"]
         Secrets["🔑 Secrets Store\n(OS Keychain)"]
         Hub["🐳 Cloudsmith\ndocker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe"]
@@ -282,6 +283,7 @@ flowchart TB
 
             Proxy -->|"forward"| IDE
             Proxy -->|"MCP (read-only k8s)"| K8SMCP
+            Proxy -->|"MCP (Host-Docker)"| DOCKERMCP
         end
     end
 
@@ -305,8 +307,9 @@ im eigenen MicroVM – kein Host-Socket-Mount nötig. Docker-Befehle funktionier
 
 > Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
-> **Host-Daemon-Zugriff (optional):** [`INSTALL.md`](INSTALL.md#2-docker-desktop-konfigurieren) — Docker Desktop
-> "Expose daemon on tcp://localhost:2375 without TLS" aktivieren und `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen.
+> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`), host-seitig
+> beim sbx MCP Gateway registriert — kein offener `2375`-Port, Zugriff gegated durch die Permission-Whitelist.
+> Siehe [`docs/docker-mcp-server.md`](docs/docker-mcp-server.md) (Issue [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165)).
 
 ### Netzwerk: Deny-by-Default mit Allow-Liste
 
@@ -344,9 +347,12 @@ sondern vom Template bzw. dem Kit-Image beim `sbx run`:
 
 Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 
-> **IntelliJ MCP via sbx MCP Gateway:** Einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
-> (Host-Loopback, SSRF-Guard umgehen), dann `--static-mcp idea` beim Erzeugen oder `sbx mcp load idea --sandbox <name>`.
-> Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und den IntelliJ MCP über den Gateway
+> **Host-MCP-Server via sbx MCP Gateway:** IntelliJ MCP einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
+> (Host-Loopback, SSRF-Guard umgehen); Kubernetes und Host-Docker via `sbx mcp add k8s …`/`sbx mcp add docker …`
+> (`docs/kubernetes-mcp-server.md`, `docs/docker-mcp-server.md`). Dann `--static-mcp idea,k8s,docker` beim Erzeugen
+> oder `sbx mcp load <name> --sandbox <sandbox-name>`.
+> Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und die
+> Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
 
@@ -587,18 +593,17 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK docker-host:FAIL kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK helm:OK kafka:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
   System-Prompt und schreibt ihn nach `~/.config/sandbox-kit/startup-checks.report`. Ein TUI-Plugin
   (Auto-Session) startet direkt im Session-View, sodass die Sidebar mit den Blöcken **Startup checks**,
   **Skills** und **MCP & Host Systems** sofort sichtbar ist – ohne ersten Prompt. Der
-  **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) zwei Gruppen:
+  **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) die
   **MCP-Server** über den sbx-Gateway (`~/.local/bin/mcp-check.sh`: ein MCP-Handshake → `mcp-gateway`, `mcp-idea`,
-  `mcp-k8s`; die Sandbox hält **keine** kubeconfig — Issue #40) und **Host-Systeme** (`docker-host`, optionaler
-  Docker-Desktop-Host-Daemon `docker -H tcp://host.docker.internal:2375 info`). MCP-Server stehen in einer Zeile,
-  Host-Systeme je Zeile untereinander. Gebounded per `timeout`.
+  `mcp-k8s`, `mcp-docker`; die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
+  (Issue #165)). MCP-Server stehen in einer Zeile. Gebounded per `timeout`.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
 - **Mistral Vibe** (Agent-Kit): Kein Auto-Hook (Vibe hat keinen Session-Hook für den Report) — die Checks laufen manuell; `check-infra.sh` ist nur der Parity wegen enthalten.

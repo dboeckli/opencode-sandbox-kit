@@ -77,6 +77,10 @@ sowie die K8s-Read-only-Tools des host-seitigen Kubernetes-MCP-Servers (`events_
 siehe `docs/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt). Alle übrigen K8s-Tools
 (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`, `resources_delete`, `resources_scale`,
 `helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) sind **`ask`** — On-the-fly-Freigabe pro Aufruf.
+Für den lokalen Docker-MCP-Server (`docs/docker-mcp-server.md`, Issue #165) sind die Read-only-Tools
+(`mcp-gateway_list_containers`/`list_images`/`list_networks`/`list_volumes`, `mcp-gateway_fetch_container_logs`)
+`allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
+`mcp-gateway_create_volume`, …) **`ask`**.
 Schreibende/ausführende Tools (`mcp-gateway_apply_patch`,
 `mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
 `mcp-gateway_execute_sql_query`, Debugger-Steuerung, Gateway-Builtins wie `mcp-gateway_code-mode`/`mcp-gateway_mcp-exec`,
@@ -130,10 +134,10 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
 
-> **Host-Daemon-Zugriff (optional):** Um Container auf dem Windows-Host zu sehen/steuern, in Docker Desktop
-> Settings → General → **"Expose daemon on tcp://localhost:2375 without TLS"** aktivieren und in der Sandbox
-> `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen (`host.docker.internal:2375` ist in der
-> Network-Allowlist).
+> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig
+> beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
+> durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/docker-mcp-server.md`
+> (Issue #165).
 
 Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 Docs: `npx ctx7 docs /docker/docs <query>` (e.g. `/docker/docs` for the Docker docs, `/docker/compose`, `/dockerfile`).

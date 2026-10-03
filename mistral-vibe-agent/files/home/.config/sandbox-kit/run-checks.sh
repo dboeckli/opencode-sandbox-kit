@@ -59,13 +59,6 @@ else
   report="$report docker:FAIL"
 fi
 
-# 5b. Docker Desktop host daemon (optional; DOCKER_HOST=tcp://host.docker.internal:2375)
-if docker -H tcp://host.docker.internal:2375 version >/dev/null 2>&1; then
-  report="$report docker-host:OK"
-else
-  report="$report docker-host:FAIL"
-fi
-
 # 6. kubectl (CLI present; no kubeconfig in the sandbox)
 if kubectl version --client >/dev/null 2>&1; then
   report="$report kubectl:OK"
@@ -73,9 +66,10 @@ else
   report="$report kubectl:FAIL"
 fi
 
-# 6b. MCP servers via the sbx gateway (gateway + IntelliJ + Kubernetes). The sandbox
-# holds no kubeconfig (host-side Kubernetes MCP server, issue #40), so reachability is
-# checked via an MCP handshake. Adds mcp-gateway, mcp-idea, mcp-k8s.
+# 6b. MCP servers via the sbx gateway (gateway + IntelliJ + Kubernetes + Docker). The
+# sandbox holds no kubeconfig and no host-Docker port (host-side Kubernetes MCP server
+# #40, local Docker MCP server #165), so reachability is checked via an MCP handshake.
+# Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker.
 report="$report $(bash "$HOME/.local/bin/mcp-check.sh")"
 
 # 7. helm (v3 Default + v4 als helm4)

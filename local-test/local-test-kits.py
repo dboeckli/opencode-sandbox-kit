@@ -134,6 +134,13 @@ VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
 VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
+# Lokaler Docker-MCP-Server (Issue #165): Pin im Doku-Command (`uvx mcp-server-docker==<v>`,
+# docs/docker-mcp-server.md); Update-Check gegen die latest PyPI-Version (mcp-server-docker),
+# warnt (gelb). Reiner Host-Server (nicht Teil des Sandbox-Images).
+DOCKER_MCP_DOC = "docs/docker-mcp-server.md"
+DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker==(?P<v>[0-9]+(?:\.[0-9]+)+)")
+DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
+
 # Tooling-Images (Issue #137): eigene Custom-Template-Builds des opencode-agent-Mixin-Kits
 # mit vorgebackenem Tooling — opencode-agent/opencode/Dockerfile (Basis opencode-docker) und
 # opencode-agent/claude/Dockerfile (Basis claude-code-docker). Die opencode-/claude-Szenarien
@@ -848,6 +855,41 @@ def check_vibe_cli_update():
         pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")
 
 
+def _docker_mcp_pin():
+    path = os.path.join(ROOT, DOCKER_MCP_DOC)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = DOCKER_MCP_PIN_RE.search(f.read())
+    return m.group("v") if m else None
+
+
+def check_docker_mcp_update():
+    """Vergleicht den Pin des lokalen Docker-MCP-Servers (`uvx mcp-server-docker==<v>`,
+    docs/docker-mcp-server.md) mit der latest PyPI-Version; warnt (gelb) bei neuerer Version.
+    Der Server laeuft host-seitig (nicht Teil des Sandbox-Images)."""
+    pin = _docker_mcp_pin()
+    if not pin:
+        fail("mcp-server-docker version (Pin `mcp-server-docker==<v>` nicht in "
+             f"{DOCKER_MCP_DOC} gefunden)")
+        return
+    try:
+        data = json.loads(_http_get(DOCKER_MCP_PYPI_URL))
+        latest = str(data["info"]["version"])
+    except Exception as e:
+        fail("mcp-server-docker version (PyPI latest nicht abrufbar)", str(e))
+        return
+    if _version_newer(latest, pin):
+        warn(
+            f"mcp-server-docker update available (Pin v{pin}, PyPI latest v{latest})",
+            f"Pin in {DOCKER_MCP_DOC} auf v{latest} heben; auf dem Host neu registrieren "
+            f"(`sbx mcp rm docker` + `sbx mcp add docker --command \"uvx\" "
+            f"--args \"mcp-server-docker=={latest}\"`)",
+        )
+    else:
+        pass_(f"mcp-server-docker version up-to-date (Pin v{pin}, PyPI latest v{latest})")
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -915,6 +957,9 @@ def main():
         print()
         info("==> Mistral-Vibe Version Update-Check (PyPI + Image-Tag + Basis-Template)")
         check_vibe_cli_update()
+        print()
+        info("==> Docker-MCP-Server Version Update-Check (PyPI)")
+        check_docker_mcp_update()
         print()
         if not failed:
             print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))

@@ -46,16 +46,16 @@ installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzli
 > **isolierten Docker Daemon** im eigenen MicroVM (nerdbox) — kein Host-Socket-Mount nötig, Docker-Befehle
 > funktionieren direkt. Der Docker Socket kann nur beim **Erstellen** der Sandbox gemountet werden, nicht nachträglich.
 
-1. **Daemon auf TCP freigeben** (optional, für Zugriff auf die **Host-Container** aus der Sandbox):
-   Docker Desktop → **Settings → General → "Expose daemon on tcp://localhost:2375 without TLS"** aktivieren.
-   - Ohne diese Einstellung hat die Sandbox nur ihren **isolierten Docker-Daemon** (eigene MicroVM) — Host-Container
-     sind nicht sichtbar.
-   - Mit aktiver Einstellung: In der Sandbox `export DOCKER_HOST=tcp://host.docker.internal:2375` setzen, um die
-     Host-Container zu sehen/steuern (`host.docker.internal:2375` ist in der Network-Allowlist).
+1. **Host-Docker-Zugriff** (optional) über einen **lokalen Docker-MCP-Server** — kein offener `2375`-Port:
+   `uvx` installieren und den Server host-seitig registrieren
+   (`sbx mcp add docker --command "uvx" --args "mcp-server-docker"`), dann Sandbox mit `--static-mcp idea,k8s,docker`.
+   Details: [`docs/docker-mcp-server.md`](docs/docker-mcp-server.md) (Issue
+   [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165)). Ohne diesen Schritt hat die Sandbox nur
+   ihren **isolierten Docker-Daemon** (eigene MicroVM) — Host-Container sind dann nicht sichtbar.
 2. **Kubernetes** (optional): Docker Desktop → **Settings → Kubernetes → "Enable Kubernetes"**. Zugriff aus der
    Sandbox über den host-seitigen Kubernetes-MCP-Server (`docs/kubernetes-mcp-server.md`, Issue
    [#40](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/40)) — `sbx mcp add k8s …`, dann
-   `--static-mcp idea,k8s`. **Kein** kubeconfig-Mount mehr nötig.
+   `--static-mcp idea,k8s,docker`. **Kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr nötig.
 
 ## 3. IntelliJ MCP Server aktivieren + Gateway-Registrierung
 
@@ -286,7 +286,7 @@ Um den lokal gefüllten Maven-Cache des Hosts zu nutzen (statt Neu-Download je S
 sbx run opencode `
     --kit ./opencode-agent/ `
     --skills=off `
-    --static-mcp idea `
+    --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
@@ -638,9 +638,10 @@ curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/us
 
 ## 6. Sandbox starten
 
-> **IntelliJ MCP vorab registrieren** (einmalig, siehe Abschnitt 3): `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
-> — dann `--static-mcp idea` in den `sbx run`-Kommandos verwenden (bzw. `sbx mcp load idea --sandbox <name>`
-> für bereits laufende Sandboxes).
+> **Host-MCP-Server vorab registrieren** (einmalig): IntelliJ (Abschnitt 3) `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`,
+> Kubernetes (`docs/kubernetes-mcp-server.md`) und Host-Docker (`docs/docker-mcp-server.md`) via `sbx mcp add k8s …`/`sbx mcp add docker …`.
+> — dann `--static-mcp idea,k8s,docker` in den `sbx run`-Kommandos verwenden (bzw. `sbx mcp load <name> --sandbox <name>`
+> für bereits laufende Sandboxes; die `--static-mcp`-Menge ist beim Erstellen fixiert).
 
 ```powershell
 # Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version). OpenCode/Claude nutzen eigene
@@ -653,38 +654,38 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 
 # Mammouth Code (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
 # (vorher Run-Config build-and-publish-mammouth-image); Release-Image via Workflow build-and-publish-mammouth-image.yml
 sbx run ./mammouth-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 
 # Mistral Vibe (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
 # (vorher Run-Config build-and-publish-mistral-vibe-image); Release-Image via Workflow build-and-publish-mistral-vibe-image.yml
 sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
-    --static-mcp idea
+    --static-mcp idea,k8s,docker
 ```
 
-Projekt einbinden + Kubernetes-Support:
+Projekt einbinden + Kubernetes-/Host-Docker-Support:
 
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea,k8s `
+    --static-mcp idea,k8s,docker `
     "C:\development\projects\dein-projekt" `
     "C:\development\maven-repo:ro"
 ```

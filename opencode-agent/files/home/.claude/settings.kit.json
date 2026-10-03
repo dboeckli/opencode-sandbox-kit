@@ -59,7 +59,12 @@
       "mcp__mcp-gateway__xdebug_get_stack",
       "mcp__mcp-gateway__xdebug_get_threads",
       "mcp__mcp-gateway__xdebug_get_value_by_path",
-      "mcp__mcp-gateway__xdebug_list_breakpoints"
+      "mcp__mcp-gateway__xdebug_list_breakpoints",
+      "mcp__mcp-gateway__fetch_container_logs",
+      "mcp__mcp-gateway__list_containers",
+      "mcp__mcp-gateway__list_images",
+      "mcp__mcp-gateway__list_networks",
+      "mcp__mcp-gateway__list_volumes"
     ],
     "ask": [
       "mcp__mcp-gateway__execute_run_configuration",
@@ -79,7 +84,21 @@
       "mcp__mcp-gateway__vm_clone",
       "mcp__mcp-gateway__vm_create",
       "mcp__mcp-gateway__vm_create_from_template",
-      "mcp__mcp-gateway__vm_lifecycle"
+      "mcp__mcp-gateway__vm_lifecycle",
+      "mcp__mcp-gateway__build_image",
+      "mcp__mcp-gateway__create_container",
+      "mcp__mcp-gateway__create_network",
+      "mcp__mcp-gateway__create_volume",
+      "mcp__mcp-gateway__pull_image",
+      "mcp__mcp-gateway__push_image",
+      "mcp__mcp-gateway__recreate_container",
+      "mcp__mcp-gateway__remove_container",
+      "mcp__mcp-gateway__remove_image",
+      "mcp__mcp-gateway__remove_network",
+      "mcp__mcp-gateway__remove_volume",
+      "mcp__mcp-gateway__run_container",
+      "mcp__mcp-gateway__start_container",
+      "mcp__mcp-gateway__stop_container"
     ],
     "deny": [
       "mcp__mcp-gateway__apply_patch",

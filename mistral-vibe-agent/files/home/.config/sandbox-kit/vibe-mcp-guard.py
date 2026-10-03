@@ -58,6 +58,10 @@ ALLOW = (
     "projects_list",
     "resources_get",
     "resources_list",
+    # Docker MCP server (local Docker, issue #165): read-only tools. `list_*`
+    # above already covers list_containers/images/networks/volumes; write tools
+    # (create_/run_/remove_* image/network/volume, …) stay denied (no `ask`).
+    "fetch_container_logs",
 )
 
 RUN_CONFIG_TOOL = PREFIX + "execute_run_configuration"
