@@ -18,7 +18,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
 - **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
-- **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API), `upload.cloudsmith.io` (Package-Upload), `docker.cloudsmith.io` (OCI-Registry), `helm.oci.cloudsmith.io` (Helm-OCI-Registry), `dl.cloudsmith.io` (OCI-Blob-Download/CDN); API-Doku via Context7 (`npx ctx7 docs /cloudsmith-io/cloudsmith-api <query>`, z. B. FilesApi/Upload)
+- **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API), `upload.cloudsmith.io` (Package-Upload), `docker.cloudsmith.io` (OCI-Registry), `helm.oci.cloudsmith.io` (Helm-OCI-Registry), `dl.cloudsmith.io` (OCI-Blob-Download/CDN), `docs.cloudsmith.com` (Doku-Website); API-Doku via Context7 (`npx ctx7 docs /cloudsmith-io/cloudsmith-api <query>`, z. B. FilesApi/Upload)
 - **Cloudflare R2**: `**/*.r2.cloudflarestorage.com` (Object Storage; Multi-Level-Wildcard — Blob-Host ist z. B. `docker-registry-production.<hash>.r2.cloudflarestorage.com`)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
 - **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)

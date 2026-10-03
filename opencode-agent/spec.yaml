@@ -111,12 +111,13 @@ permissions:
     - jitpack.io
     - artifacts.cibseven.org
     - packages.scm-manager.org
-    # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry)
+    # Cloudsmith (Artifact-Hosting API + Package-Upload + Helm-OCI-Registry + Doku-Website)
     - api.cloudsmith.io
     - upload.cloudsmith.io
     - docker.cloudsmith.io
     - helm.oci.cloudsmith.io
     - dl.cloudsmith.io
+    - docs.cloudsmith.com
     # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
     - "**/*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)
