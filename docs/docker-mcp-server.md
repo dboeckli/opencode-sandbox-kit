@@ -50,16 +50,21 @@ uvx --version
 ## 2. Server-Starttest
 
 ```powershell
-uvx mcp-server-docker
+uvx mcp-server-docker==0.3.0
 ```
 
 Erststart lädt das Paket aus PyPI; danach startet der **stdio-MCP-Server** (keine Ausgabe, wartet auf
 JSON-RPC). Mit `Ctrl+C` beenden.
 
+> **Version pinnen** (empfohlen): Der Server ist ein Drittanbieter-Paket (Community, Solo-Maintainer) →
+> reproduzierbare Version `mcp-server-docker==<v>` statt „latest". Der Pin wird via Renovate
+> (`.github/renovate.json`, PyPI) getrackt und im Validate-Check (`local-test-kits.py`) gegen die
+> latest PyPI-Version geprüft.
+
 ## 3. Beim sbx MCP Gateway registrieren
 
 ```powershell
-sbx mcp add docker --command "uvx" --args "mcp-server-docker"
+sbx mcp add docker --command "uvx" --args "mcp-server-docker==0.3.0"
 sbx mcp ls
 sbx mcp inspect docker
 ```

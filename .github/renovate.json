@@ -241,6 +241,14 @@
       "depNameTemplate": "containers/kubernetes-mcp-server",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Lokaler Docker-MCP-Server (mcp-server-docker, Drittanbieter) Pin im Doku-Command (docs/docker-mcp-server.md, Issue #165; host-seitig via uvx registriert)",
+      "managerFilePatterns": ["docs/docker-mcp-server.md"],
+      "matchStrings": ["mcp-server-docker==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "mcp-server-docker",
+      "datasourceTemplate": "pypi"
     }
   ]
 }
