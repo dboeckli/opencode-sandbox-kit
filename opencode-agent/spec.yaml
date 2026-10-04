@@ -118,6 +118,8 @@ permissions:
     - helm.oci.cloudsmith.io
     - dl.cloudsmith.io
     - docs.cloudsmith.com
+    - cloudsmith.com
+    - www.cloudsmith.com
     # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
     - "**/*.r2.cloudflarestorage.com"
     # Liberica JDK (Renovate Versions-API)

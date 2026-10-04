@@ -146,6 +146,8 @@ permissions:
       - "helm.oci.cloudsmith.io:443"
       - "dl.cloudsmith.io:443"
       - "docs.cloudsmith.com:443"
+      - "cloudsmith.com:443"
+      - "www.cloudsmith.com:443"
       # Cloudflare R2 (Object Storage; Multi-Level-Wildcard für Blob-Hosts wie docker-registry-production.<hash>.r2.cloudflarestorage.com)
       - "**/*.r2.cloudflarestorage.com:443"
       # Liberica JDK (Renovate Versions-API)
