@@ -77,15 +77,71 @@ jobs:
       push: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
     secrets: inherit
 
+  image-cache:
+    # Hält die Tooling-/Agent-Images als tar.gz im GitHub Container Registry (GHCR) vor.
+    # Reiner Pull-Cache, keyed by Cloudsmith-Digest: Cloudsmith bleibt Build-/Publish-Heimat.
+    # Zweck: die Cloudsmith-Bandwidth-Entitlement schonen (e2e zieht sonst bei jedem Lauf
+    # 4 Multi-Arch-Images). Fork-PRs: keine Secrets -> ausgenommen.
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image]
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { scenario: opencode,     image: sbx-opencode-tooling, tag: "${{ needs.build-and-publish-opencode-image.outputs.version_tag }}" }
+          - { scenario: claude,       image: sbx-claude-tooling,   tag: "${{ needs.build-and-publish-claude-image.outputs.version_tag }}" }
+          - { scenario: mammouth,     image: sbx-mammouth,         tag: "${{ needs.build-and-publish-mammouth-image.outputs.version_tag }}" }
+          - { scenario: mistral-vibe, image: sbx-mistral-vibe,     tag: "${{ needs.build-and-publish-mistral-vibe-image.outputs.version_tag }}" }
+    env:
+      CLOUDSMITH_REGISTRY: docker.cloudsmith.io
+      CLOUDSMITH_NAMESPACE: ${{ vars.CLOUDSMITH_NAMESPACE }}
+      CLOUDSMITH_REPO: ${{ vars.CLOUDSMITH_REPO }}
+    steps:
+      - name: Resolve tag (release tag on master/schedule, else latest)
+        id: t
+        run: |
+          set -euo pipefail
+          if { [ "${GITHUB_EVENT_NAME}" = "schedule" ] || { [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/master" ]; }; } && [ -n "${{ matrix.tag }}" ]; then
+            echo "tag=${{ matrix.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
+      - name: Ensure GHCR cache (pull from Cloudsmith on miss only)
+        env:
+          CLOUDSMITH_USERNAME: ${{ vars.CLOUDSMITH_USERNAME }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SRC="${CLOUDSMITH_REGISTRY}/${CLOUDSMITH_NAMESPACE:-dboeckli}/${CLOUDSMITH_REPO:-sbx}/${{ matrix.image }}:${{ steps.t.outputs.tag }}"
+          echo "$GITHUB_TOKEN" | oras login ghcr.io -u "${{ github.actor }}" --password-stdin
+          DIGEST=$(oras manifest fetch --descriptor "$SRC" | jq -r .digest)
+          CACHE="ghcr.io/${{ github.repository_owner }}/sbx-cache-${{ matrix.scenario }}:${DIGEST/:/-}"
+          if oras manifest fetch "$CACHE" >/dev/null 2>&1; then
+            echo "GHCR cache hit: $CACHE"; exit 0
+          fi
+          echo "$CLOUDSMITH_API_KEY" | docker login docker.cloudsmith.io -u "$CLOUDSMITH_USERNAME" --password-stdin
+          docker pull "$SRC"
+          docker save "$SRC" -o image.tar
+          gzip -f image.tar
+          oras push "$CACHE" image.tar.gz:application/gzip
+
   e2e-scenario:
     # Scheduled runs (nightly cron) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
-    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image]
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image, image-cache]
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
+      packages: read
     name: e2e (${{ matrix.scenario }})
     strategy:
       # Jedes Szenario ist unabhaengig: ein Fehlschlag bricht die uebrigen
@@ -98,6 +154,17 @@ jobs:
       # Tooling-Images (opencode-agent/{opencode,claude}/Dockerfile ARG BASE_IMAGE) und des
       # Mammouth-spec-Images. Updates via Renovate (customManager docker/sandbox-templates).
       TEMPLATE_VERSION: 0.7.0
+      CLOUDSMITH_REGISTRY: docker.cloudsmith.io
+      CLOUDSMITH_NAMESPACE: ${{ vars.CLOUDSMITH_NAMESPACE }}
+      CLOUDSMITH_REPO: ${{ vars.CLOUDSMITH_REPO }}
+      # Images werden nur bei push auf master / schedule gepusht; bei PR/Branch-Builds
+      # (push: false) nutzt e2e das veröffentlichte `latest`-Master-Image.
+      OPENCODE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-opencode-image.outputs.version_tag || 'latest' }}
+      CLAUDE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-claude-image.outputs.version_tag || 'latest' }}
+      MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || 'latest' }}
+      VIBE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mistral-vibe-image.outputs.version_tag || 'latest' }}
+      # Image wurde vom image-cache-Job vorab geladen (sbx template load) → kein Registry-Pull.
+      SBX_PULL: never
     steps:
       - uses: actions/checkout@v7
 
@@ -294,14 +361,32 @@ jobs:
         # list.
         run: sbx policy init balanced
 
-      - name: Run e2e tests (${{ matrix.scenario }})
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Load image from GHCR cache into sbx
+        # Cloudsmith bleibt Build-/Publish-Heimat. Das Image wird aus dem GHCR-tar-Cache
+        # (keyed by Cloudsmith-Digest, siehe image-cache-Job) geladen und via
+        # `sbx template load` in den Runtime-Store gelegt; `SBX_PULL=never` verhindert den Pull.
         env:
-          # Images werden nur bei push auf master / schedule gepusht; bei PR/Branch-Builds
-          # (push: false) nutzt e2e das veröffentlichte `latest`-Master-Image.
-          VIBE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mistral-vibe-image.outputs.version_tag || 'latest' }}
-          MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || 'latest' }}
-          OPENCODE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-opencode-image.outputs.version_tag || 'latest' }}
-          CLAUDE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-claude-image.outputs.version_tag || 'latest' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          case "${{ matrix.scenario }}" in
+            opencode)     IMG=sbx-opencode-tooling; TAG="$OPENCODE_IMAGE_TAG";;
+            claude)       IMG=sbx-claude-tooling;   TAG="$CLAUDE_IMAGE_TAG";;
+            mammouth)     IMG=sbx-mammouth;         TAG="$MAMMOUTH_IMAGE_TAG";;
+            mistral-vibe) IMG=sbx-mistral-vibe;     TAG="$VIBE_IMAGE_TAG";;
+          esac
+          SRC="${CLOUDSMITH_REGISTRY}/${CLOUDSMITH_NAMESPACE:-dboeckli}/${CLOUDSMITH_REPO:-sbx}/${IMG}:${TAG}"
+          echo "$GITHUB_TOKEN" | oras login ghcr.io -u "${{ github.actor }}" --password-stdin
+          DIGEST=$(oras manifest fetch --descriptor "$SRC" | jq -r .digest)
+          CACHE="ghcr.io/${{ github.repository_owner }}/sbx-cache-${{ matrix.scenario }}:${DIGEST/:/-}"
+          oras pull "$CACHE" -o .
+          gunzip -f image.tar.gz
+          sbx template load image.tar
+
+      - name: Run e2e tests (${{ matrix.scenario }})
         run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub

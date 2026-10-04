@@ -1094,6 +1094,9 @@ def main():
             create_cmd += ["--template", template_image]
             info(f"  Template gepinnt: {template_image}")
         create_cmd += ["--skills=off"]
+        # Image pull policy (sbx default: always). CI lädt das Image vorab via `sbx template load`
+        # und erzwingt `SBX_PULL=never` (kein Cloudsmith-Pull); lokal bleibt der Default `always`.
+        create_cmd += ["--pull", os.environ.get("SBX_PULL") or "always"]
         # IntelliJ MCP via sbx MCP Gateway (Issue #57): `--static-mcp idea` nur setzen, wenn der Server auf dem
         # Host registriert ist — sonst schlägt `sbx create` fehl (jeder static-mcp-Name muss registriert sein).
         # CI hat kein `idea` registriert → Sandbox ohne static-mcp; der Config-Check prüft dann nur die Whitelist,
