@@ -1,4 +1,4 @@
-name: Build and publish to Docker Hub (backup)
+name: Backup images to Docker Hub
 
 # Manueller (workflow_dispatch) Build/Publish der Kit-Images nach Docker Hub.
 # Dient als Backup/Mirror, wenn die Cloudsmith-Quote (HTTP 402) klemmt. Kein

@@ -95,7 +95,7 @@ curl -s "https://hub.docker.com/v2/repositories/$DH/sbx-mistral-vibe/tags/?page_
 ## Alternative: CI-Publish nach Docker Hub (multi-arch)
 
 Für **amd64+arm64** statt manuellem amd64-Build:
-`.github/workflows/build-and-publish-dockerhub-image.yml` (manueller Trigger) mit Auswahl
+`.github/workflows/backup-images-dockerhub.yml` (manueller Trigger) mit Auswahl
 
 - `image`: `opencode` | `claude` | `mammouth` | `mistral-vibe` | `all`
 - `arch`: `amd64` | `arm64` | `both`
@@ -105,6 +105,54 @@ Für **amd64+arm64** statt manuellem amd64-Build:
 Baut auf **nativen** Runnern (`ubuntu-latest` / `ubuntu-24.04-arm`) und mergt bei `both`
 per `docker buildx imagetools create` zu `<namespace>/sbx-<name>:<tag>`. Kein Cloudsmith
 nötig. Credentials: repo-Variable `DOCKER_USERNAME` + repo-Secret `DOCKER_PAT`.
+
+## Verwendung der Backup-Images (sbx run)
+
+Drop-in für das jeweilige Tooling-Template. `<tag>` = Backup-Tag (z. B. `0.7.0`).
+
+**OpenCode** (Mixin-Kit):
+
+```powershell
+sbx run opencode `
+    --kit ./opencode-agent/ `
+    --template domboeckli/sbx-opencode-tooling:<tag> `
+    --skills=off `
+    --static-mcp idea,k8s,docker
+```
+
+**Claude Code** (Mixin-Kit):
+
+```powershell
+sbx run claude `
+    --kit ./opencode-agent/ `
+    --template domboeckli/sbx-claude-tooling:<tag> `
+    --skills=off `
+    --static-mcp idea,k8s,docker
+```
+
+**Mammouth Code** (`kind: sandbox`):
+
+```powershell
+sbx run ./mammouth-agent/ `
+    --template domboeckli/sbx-mammouth:<tag> `
+    --skills=off `
+    --static-mcp idea,k8s,docker
+```
+
+**Mistral Vibe** (`kind: sandbox`):
+
+```powershell
+sbx run ./mistral-vibe-agent/ `
+    --template domboeckli/sbx-mistral-vibe:<tag> `
+    --skills=off `
+    --static-mcp idea,k8s,docker
+```
+
+> Bei den `kind: sandbox`-Kits (Mammouth/Mistral) steht das Image zusätzlich in der spec
+> (`sandbox.image`). `--template` auf der CLI sollte es überschreiben; falls sbx die
+> Spec-Angabe bevorzugt, muss die Image-Referenz in der spec auf Docker Hub umgestellt
+> (dann statt `--template` dort eintragen) werden.
+> Immer `--skills=off` setzen; das `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
 
 ## Hinweise
 
