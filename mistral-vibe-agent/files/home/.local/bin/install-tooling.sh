@@ -108,7 +108,7 @@ download() {
 # Extract to /opt/node and symlink into /usr/local/bin (which precedes /usr/bin
 # on PATH), so the distro Node stays untouched as a fallback.
 run_node() {
-	NODE_VER="24.21.0"
+	NODE_VER="26.11.1"
 	if command -v node >/dev/null 2>&1 && node --version 2>/dev/null | grep -qE '^v(2[4-9]|[3-9][0-9])\.'; then
 		log_step node
 		return 0
