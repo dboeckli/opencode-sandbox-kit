@@ -194,6 +194,8 @@ Gesetzt wird er an drei Stellen (identischer Wert, Pfad-Komposition ist registry
 3. **Sandbox-Kits** — `--kit-arg imagePrefix=<prefix>` (`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`
    → `args.imagePrefix`, Default Cloudsmith); CI/e2e/local-test übergeben ihn automatisch.
 
+Fertige `sbx run`-Kommandos für die Docker-Hub-Images (4 lokal + 4 remote): [`docs/dockerhub-images.md`](docs/dockerhub-images.md).
+
 **Zurück zu Cloudsmith** = Repo-Variable `IMAGE_PREFIX` löschen/auf den Default setzen (lokale Env unset) — die
 Defaults in den Workflows/Specs bleiben Cloudsmith. `cleanup-cloudsmith.yml` läuft nur im Cloudsmith-Modus.
 Der Cloudsmith-**API**-Service (`api.cloudsmith.io`, Helm-OCI) ist davon unberührt.
