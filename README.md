@@ -198,6 +198,29 @@ Gesetzt wird er an drei Stellen (identischer Wert, Pfad-Komposition ist registry
 Defaults in den Workflows/Specs bleiben Cloudsmith. `cleanup-cloudsmith.yml` läuft nur im Cloudsmith-Modus.
 Der Cloudsmith-**API**-Service (`api.cloudsmith.io`, Helm-OCI) ist davon unberührt.
 
+#### Zurück nach Cloudsmith (Prozedur)
+
+Cloudsmith nur zurückwechseln, wenn die OSS-Quote wieder frei ist (Bandwidth = 100 % ⇒ Downloads liefern `HTTP 402`).
+
+```bash
+# 1. Quota prüfen (RESET des 30-Tage-Fensters abwarten; angezeigt unter /v1/quota/oss/dboeckli/)
+curl -s -H "X-Api-Key: $CLOUDSMITH_API_KEY" https://api.cloudsmith.io/v1/quota/oss/dboeckli/
+#    -> bandwidth percentage_used < 100 (inkl. Puffer für den nächsten e2e-Lauf)
+
+# 2. Umschalter zurück (Repo-Variable löschen -> Cloudsmith-Default; oder explizit setzen)
+gh variable delete IMAGE_PREFIX --repo dboeckli/opencode-sandbox-kit
+# gh variable set IMAGE_PREFIX --body "docker.cloudsmith.io/dboeckli/sbx" --repo dboeckli/opencode-sandbox-kit
+```
+
+3. **Cloudsmith-Images auffrischen** — Merge/`workflow_dispatch` auf `master`: die 4 `build-and-publish-*` pushen
+   `<pin>` + `latest` wieder nach Cloudsmith (die alten Cloudsmith-Images sind vom Stand vor dem Switch).
+4. **Lokal/Ad-hoc:** ein evtl. gesetztes `IMAGE_PREFIX=docker.io/...` unset; manuelle
+   `sbx run --template domboeckli/sbx-...` → zurück auf `docker.cloudsmith.io/dboeckli/sbx/sbx-...`.
+5. **Docker-Hub-Images:** können liegen bleiben (kein Cleanup-Workflow; optional manuell löschen).
+
+Automatisch wieder aktiv: Cloudsmith-Registry-Credential im e2e (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`) und
+`cleanup-cloudsmith.yml`.
+
 ### Ubuntu-WSL
 
 Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mount: Host-Maven-Cache `/mnt/c/development/maven-repo:ro`. Kubernetes-Zugriff läuft über den host-seitigen Kubernetes-MCP-Server und Host-Docker-Zugriff über den lokalen Docker-MCP-Server (`--static-mcp idea,k8s,docker`) — **kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr.

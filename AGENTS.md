@@ -189,6 +189,11 @@ und `local-test/build-and-publish-<name>-image.py` (`<name>` = `opencode`/`claud
 Repo-Variable/Env setzen; **zurück** = Default (Variable löschen). Der Cloudsmith-Login/-Registry-Secret sowie
 `cleanup-cloudsmith.yml` greifen nur im Cloudsmith-Modus (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`).
 
+**Rück-Switch nach Cloudsmith** (Details/Commands: README → „Registry umschalten → Zurück nach Cloudsmith"):
+erst Cloudsmith-Quote prüfen (`curl -H "X-Api-Key: $CLOUDSMITH_API_KEY" https://api.cloudsmith.io/v1/quota/oss/dboeckli/`
+→ bandwidth `percentage_used` < 100, sonst `HTTP 402`), dann `IMAGE_PREFIX`-Repo-Variable/Env löschen, danach
+master-Publish zum Auffrischen der Cloudsmith-Images; lokale `IMAGE_PREFIX`-Env unset.
+
 | Kontext | Auslöser | Tag(s) |
 |---------|----------|--------|
 | Lokal | Run-Config `build-and-publish-<name>-image` | `<basever>-<slug>.<ts>` + `:local` |
