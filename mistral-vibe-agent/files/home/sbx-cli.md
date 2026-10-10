@@ -1,7 +1,7 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.45.1**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.47.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
 (nur teilweise abgedeckt — die CLI selbst ist NICHT in Context7). Kit-Grammatik v2:
@@ -207,7 +207,7 @@ Available Commands:
 Flags:
       --allow-network strings       Network pattern to allow for cloud sandbox egress (cloud only; can be specified multiple times)
       --clone                       Run the agent on a private in-container clone of the host Git repository (mounted read-only) instead of bind-mounting the workspace; the agent's commits are accessible via the sandbox-<name> git remote on the host
-      --cpus int                    Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs)
+      --cpus int                    Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs, at most 16 on Linux arm64)
       --deny-network strings        Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the new sandbox and can be listed or removed later with 'sbx policy ls <NAME>' or 'sbx policy rm network --sandbox <NAME> --resource <HOST>'. Safe under centralized governance because a local deny can only narrow, never widen, egress.
   -e, --env stringArray             Set an environment variable in the sandbox (can be repeated): KEY=VALUE, or a bare KEY to take the value from the current environment
       --env-file stringArray        Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an earlier one
@@ -218,13 +218,13 @@ Flags:
       --kit-args-file stringArray   (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
   -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
       --name string                 Name for the sandbox (defaults to <agent>-<workdir>; at least two characters, starting with a letter or number, containing only letters, numbers, hyphens and periods (periods are rejected with --cloud); 'default' is reserved)
-      --on-timeout string           What happens when --ttl lapses: 'delete' (default) tombstones the sandbox, or 'stop' stops it in place so it can be started again later (cloud only; 'stop' requires your account to be entitled to it).
-      --platform string             Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform.
+      --on-timeout string           What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Omit the flag and the server stops the sandbox when it can be started again later, and deletes it otherwise. With 'restart' a supplied --ttl must be at least 1h (cloud only).
+      --platform string             Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform. With a sandbox kit, the kit's template is built for this platform and cached apart from other platforms; omitting it keeps the server's choice.
       --profile string              Governance profile to assign to the sandbox
   -p, --publish stringArray         Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]
       --pull string                 Image pull policy (always|missing|never) (default "always")
   -q, --quiet                       Suppress verbose output
-      --skills string               Shared skills store mode: off, readonly, or readwrite (mounted at the agent's skills directory, e.g. ~/.claude/skills). Default: readonly, or the configured skills.defaultMode setting.
+      --skills string               Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in read-only, directory stays writable), or readwrite (store mounted over it, writes are shared). Default: readonly, or the configured skills.defaultMode setting.
       --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. The set is chosen once at creation time. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
   -t, --template string             Container image to use for the sandbox (default: agent-specific image)
       --ttl duration                Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only; default: server-side)
@@ -330,10 +330,12 @@ What does not travel:
   - Volumes and environment variables attached to a cloud sandbox, when
     moving to local. A local sandbox's environment is part of its image
     and travels to the cloud.
-  - Network policies. Moving to cloud uses cloud policies; moving to local
-    starts with the host's default policy. Active local L7 (HTTP) rules
-    prompt before a move to cloud; --force skips the prompt but keeps
-    the warning.
+  - Network rules you added locally. The sandbox's kit network rules do
+    travel: moving to cloud applies them, as 'sbx create --cloud' does. If
+    the kit can't be resolved, move warns and the account's cloud policy
+    applies. Moving to local starts with the host's default policy. Active
+    local L7 (HTTP) rules prompt before a move to cloud; --force skips the
+    prompt but keeps the warning.
   - Cloud URLs and host port bindings. Moving to cloud republishes TCP
     ports under new cloud URLs; a port the cloud refuses is skipped with a
     warning. Moving to local saves the published TCP ports and binds them
@@ -374,7 +376,7 @@ Flags:
   -f, --force               Skip the move confirmation prompt
   -h, --help                help for move
       --name string         Name for the destination sandbox (default: 'moved-' + the source name; a cloud destination always adds a short unique suffix, a local one only when that name is already taken)
-      --on-timeout string   What happens to the destination cloud sandbox when its TTL lapses: 'hibernate' stops it in place so it can be started again later; not every account or sandbox supports it, and an explicit request the server refuses fails the move. 'delete' removes it. Default: hibernate when the account and sandbox support it, else the server default (delete). Only with --to cloud
+      --on-timeout string   What happens to the destination cloud sandbox when its TTL lapses: 'stop' stops it in place so it can be started again later, or 'delete' removes it. Not every sandbox supports 'stop', and an explicit request the server refuses fails the move. Default: stop when the sandbox supports it, else the server default (delete). Only with --to cloud
       --to string           Destination of the move: 'local' (cloud to local) or 'cloud' (local to cloud)
       --ttl duration        Time-to-live for the destination cloud sandbox (15s to 24h, e.g. 30m, 2h; only with --to cloud; default: server-side)
 
@@ -621,7 +623,7 @@ Examples:
 Flags:
       --allow-network strings       Network pattern to allow for cloud sandbox egress (cloud only; can be specified multiple times)
       --clone                       Run the agent on a private in-container clone of the host Git repository; must be set at sandbox creation time (no-op when re-attaching to an existing clone-mode sandbox)
-      --cpus int                    Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs)
+      --cpus int                    Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs, at most 16 on Linux arm64)
       --deny-network strings        Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the new sandbox and can be listed or removed later with 'sbx policy ls <NAME>' or 'sbx policy rm network --sandbox <NAME> --resource <HOST>'. Safe under centralized governance because a local deny can only narrow, never widen, egress.
       --detach-keys string          Override the detach gesture that leaves the session running (Docker-style, e.g. "ctrl-\", "ctrl-x,ctrl-d"). Default: Ctrl-\. Use this when the default collides with an agent's keymap (cloud only).
   -d, --detached                    Start the sandbox and print its ID without opening an agent session
@@ -635,12 +637,13 @@ Flags:
   -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
       --name string                 Name for the sandbox (default: <agent>-<workdir>)
       --new                         Always create a new cloud sandbox instead of prompting to reuse an existing one (cloud only)
-      --on-timeout string           What happens when --ttl lapses: 'delete' (default) tombstones the sandbox, or 'stop' stops it in place so it can be started again later (cloud only; 'stop' requires your account to be entitled to it).
-      --platform string             Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform.
+      --on-timeout string           What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Omit the flag and the server stops the sandbox when it can be started again later, and deletes it otherwise. With 'restart' a supplied --ttl must be at least 1h (cloud only).
+      --platform string             Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform. With a sandbox kit, the kit's template is built for this platform and cached apart from other platforms; omitting it keeps the server's choice.
       --profile string              Governance profile to assign to the sandbox
   -p, --publish stringArray         Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]. Applied when the sandbox is created; ignored when re-attaching (use "sbx ports")
       --pull string                 Image pull policy (always|missing|never) (default "always")
-      --skills string               Shared skills store mode: off, readonly, or readwrite (mounted at the agent's skills directory, e.g. ~/.claude/skills). Default: readonly, or the configured skills.defaultMode setting. Can only be used when creating a new sandbox.
+      --rm                          Remove the sandbox after the agent session exits
+      --skills string               Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in read-only, directory stays writable), or readwrite (store mounted over it, writes are shared). Default: readonly, or the configured skills.defaultMode setting. Can only be used when creating a new sandbox.
       --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. The set is chosen once at creation time and cannot be changed when re-attaching to an existing sandbox. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
   -t, --template string             Container image to use for the sandbox (default: agent-specific image)
       --ttl duration                Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only; default: server-side)
@@ -869,6 +872,9 @@ REGISTRY SECRETS (e.g. "ghcr.io", "myregistry.azurecr.io")
 Usage:
   sbx secret COMMAND
 
+Aliases:
+  secret, secrets
+
 Available Commands:
   import      Import secrets detected in host environment variables
   ls          List stored secrets
@@ -1011,6 +1017,16 @@ A secret with `command` or `ref` can set `snapshot: true` to resolve on
 the host after approval and store the result as a literal. This works locally
 and with --cloud. Snapshots do not refresh; recreate the environment to rotate
 them. A snapshot cannot set refresh or noVerify.
+
+Command secrets run from a fresh temporary directory on the host during
+verification and refresh. The host temporary directory must be absolute and must
+remain outside writable sandbox mounts. Relative references such as ./helper or
+cat token no longer resolve against the project or daemon working directory. Use an absolute
+helper path outside shared workspaces. sbx does not copy helpers, inspect their
+dependencies, or confine their execution. Helpers and any code or configuration
+they load must remain outside writable sandbox mounts. Explicit paths into shared
+workspaces and broad mounts exposing host configuration or the host temporary
+directory remain unsafe, including mounts added later with sbx mount.
 
   secrets:
     github:
@@ -1294,9 +1310,15 @@ EXPERIMENTAL: this command may change or be removed in future releases.
 
 Manage skills available to agents in Docker Sandboxes.
 
-Skills are shared across sandboxes by default, mounted read-only. Use
---skills=off when creating a sandbox to opt out, or --skills=readwrite to
-mount the store read-write.
+Skills are shared across sandboxes by default: the store's entries are linked
+into the agent's skills directory read-only, which stays writable so kits can
+install skills beside them. Linking happens at container start, so editing an
+existing skill is live through the link, while adding a store entry reaches a
+running sandbox only on its next start. Removing one takes effect immediately:
+the link in a running sandbox stops resolving at once, and the next start is
+what clears the stale link away. Use --skills=off when creating a sandbox to
+opt out, or --skills=readwrite to mount the store over that directory so the
+sandbox's own writes are shared.
 
 Usage:
   sbx skills COMMAND

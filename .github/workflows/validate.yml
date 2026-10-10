@@ -16,6 +16,12 @@ jobs:
       # tragen. Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
       TEMPLATE_VERSION: 0.7.0
+      # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
+      # session ("not signed in to Docker"); that session needs a Secret Service
+      # on the headless runner (see the setup step below). Fork PRs get no
+      # secrets, so validation is skipped there rather than failed on a secret
+      # a contributor cannot be given (mirrors docker/sbx-kits-contrib).
+      CAN_VALIDATE: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v7
 
@@ -23,7 +29,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases in .github/renovate.json).
         env:
-          SBX_VERSION: v0.45.1
+          SBX_VERSION: v0.47.0
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
@@ -43,14 +49,80 @@ jobs:
       - name: Verify sbx installation
         run: sbx version
 
+      - name: Set up Secret Service for the sbx secret store
+        # sbx's Linux binary persists credentials/secrets via libsecret, which talks
+        # to org.freedesktop.secrets over D-Bus. GHA's ubuntu-latest is headless,
+        # so no Secret Service is running and `sbx login` blocks. Same recipe as
+        # e2e.yml (adapted from docker/sbx-kits-contrib).
+        if: env.CAN_VALIDATE == 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gnome-keyring dbus
+
+          mkdir -p "$HOME/.local/share/keyrings"
+          cat > "$HOME/.local/share/keyrings/login.keyring" <<'KEYRING'
+          [keyring]
+          display-name=login
+          ctime=1750965549
+          mtime=0
+          lock-on-idle=false
+          lock-after=false
+          KEYRING
+
+          DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --print-address --fork)
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+          export DBUS_SESSION_BUS_ADDRESS
+
+          gnome-keyring-daemon --start --components=secrets >/dev/null
+
+          for _ in $(seq 1 50); do
+            if gdbus call --session \
+                --dest org.freedesktop.DBus \
+                --object-path /org/freedesktop/DBus \
+                --method org.freedesktop.DBus.GetNameOwner \
+                org.freedesktop.secrets >/dev/null 2>&1; then
+              echo "Secret Service registered on D-Bus"
+              exit 0
+            fi
+            sleep 0.1
+          done
+          echo "Timed out waiting for org.freedesktop.secrets to register"
+          exit 1
+
+      - name: Sign in to Docker via sbx
+        # sbx v0.47.0+ requires a Docker account session for `sbx kit validate`
+        # ("not signed in to Docker"), independent of which registry images come
+        # from. Distinct from the registry credential used by the e2e scenarios.
+        if: env.CAN_VALIDATE == 'true'
+        env:
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCKER_USERNAME}" ] || [ -z "${DOCKER_PAT}" ]; then
+            echo "DOCKER_USERNAME / DOCKER_PAT not configured; cannot validate."
+            exit 1
+          fi
+          USER_CLEAN=$(printf '%s' "$DOCKER_USERNAME" | tr -d '[:space:]')
+          TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
+          printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
+
       - name: Validate OpenCode agent kit spec
+        if: env.CAN_VALIDATE == 'true'
         run: sbx kit validate ./opencode-agent/
 
       - name: Validate Mammouth agent kit spec
+        if: env.CAN_VALIDATE == 'true'
         run: sbx kit validate ./mammouth-agent/
 
       - name: Validate Mistral Vibe agent kit spec
+        if: env.CAN_VALIDATE == 'true'
         run: sbx kit validate ./mistral-vibe-agent/
+
+      - name: Sign out of Docker Hub via sbx
+        if: always() && env.CAN_VALIDATE == 'true'
+        run: sbx logout --yes || true
 
       - name: Check install-script copies are in sync
         # setup.install konsumiert die Skripte aus files/home/.local/bin/ (alle Kits);
