@@ -58,6 +58,7 @@ jobs:
       version_tag: ${{ steps.tags.outputs.version_tag }}
       extra_tag: ${{ steps.tags.outputs.extra_tag }}
       image_prefix: ${{ steps.tags.outputs.image_prefix }}
+      pin: ${{ steps.tags.outputs.pin }}
     steps:
       - uses: actions/checkout@v7
 
@@ -91,6 +92,7 @@ jobs:
           fi
           echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
           echo "extra_tag=$extra_tag" >> "$GITHUB_OUTPUT"
+          echo "pin=$pin" >> "$GITHUB_OUTPUT"
           echo "version_tag=$version_tag extra_tag=$extra_tag"
 
   build:
@@ -138,7 +140,30 @@ jobs:
           provenance: false
           sbom: false
           push: ${{ inputs.push }}
+          # Branch/PR builds (push: false) laden das Image in den lokalen Daemon, damit der
+          # Verify-Step unten die eingebackene Version pruefen kann (einzelne Plattform je
+          # Matrix-Eintrag -> --load erlaubt; bei push: true nicht kombinierbar).
+          load: ${{ ! inputs.push }}
           tags: ${{ needs.prepare.outputs.image_prefix }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
+
+      - name: Verify baked Mammouth CLI version (${{ matrix.arch }})
+        # Auf Branches/PRs (push: false) ist dies der einzige Ort, an dem das *frisch gebaute*
+        # Image geprueft wird: der e2e-Szenario-Job zieht auf Branches nur das publizierte
+        # Master-Image (`latest`), nicht das Branch-Image. Die Pin-Assertion gehoert daher zum
+        # Artefakt. Auf master/schedule prueft der e2e-Szenario-Job das `<pin>`-Image.
+        if: ${{ ! inputs.push }}
+        env:
+          PIN: ${{ needs.prepare.outputs.pin }}
+          IMAGE: ${{ needs.prepare.outputs.image_prefix }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
+        run: |
+          set -euo pipefail
+          installed=$(docker run --rm --entrypoint mammouth "$IMAGE" --version \
+            | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)
+          echo "image=$IMAGE installed=$installed pin=$PIN"
+          if [ "$installed" != "$PIN" ]; then
+            echo "baked Mammouth CLI version ($installed) != pin ($PIN)" >&2
+            exit 1
+          fi
 
   merge:
     needs: [prepare, build]

@@ -1355,11 +1355,21 @@ def main():
             if s["agent"] == "mammouth":
                 # Installierte Mammouth-CLI-Version gegen den Pin im Dockerfile (ARG MAMMOUTH_VERSION)
                 # pruefen — das Image backt exakt diese Version.
+                # Der Abgleich ist nur aussagekraeftig, wenn das getestete Image aus diesem
+                # Checkout stammt (Tag == Pin [Release-Build] oder `local` [lokal gebaut]). Bei
+                # Tag `latest` (CI-Branch-Push) ist es das publizierte Master-Image: ein
+                # Renovate-Pin-Bump waere sonst ein Fehlalarm (Image-Tag != Pin, aber das neue
+                # Image wird auf dem Branch gar nicht gebaut/gepusht).
+                mam_tag = os.environ.get("MAMMOUTH_IMAGE_TAG") or "local"
                 mammouth_ver_cmd = "mammouth --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
                 c2, out = exec_sandbox(s["name"], mammouth_ver_cmd)
                 installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
                 pin = _mammouth_cli_pin_version()
-                if installed and pin and installed == pin:
+                if mam_tag == "latest":
+                    print("  " + _color("33", "[SKIP] mammouth CLI version installed — Image-Tag "
+                                              "'latest' (publiziertes Master-Image, nicht aus diesem "
+                                              "Checkout); Pin-Abgleich nicht aussagekraeftig"))
+                elif installed and pin and installed == pin:
                     pass_(f"mammouth CLI version installed (v{installed} == Pin v{pin})")
                 elif installed and pin and _version_newer(installed, pin):
                     sfail(f"mammouth CLI version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
@@ -1388,11 +1398,20 @@ def main():
             elif s["agent"] == "mistral-vibe":
                 # Installierte Vibe-Version gegen den Dockerfile-Pin pruefen — das Image
                 # bakt exakt diese Version (ARG VIBE_VERSION).
+                # Nur aussagekraeftig, wenn das getestete Image aus diesem Checkout stammt
+                # (Tag == Pin [Release-Build] oder `local` [lokal gebaut]). Bei Tag `latest`
+                # (CI-Branch-Push) ist es das publizierte Master-Image; ein Renovate-Pin-Bump
+                # waere sonst ein Fehlalarm.
+                vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
                 vibe_ver_cmd = "vibe --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
                 c2, out = exec_sandbox(s["name"], vibe_ver_cmd)
                 installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
                 pin = _vibe_dockerfile_pin()
-                if installed and pin and installed == pin:
+                if vibe_tag == "latest":
+                    print("  " + _color("33", "[SKIP] mistral-vibe version installed — Image-Tag "
+                                              "'latest' (publiziertes Master-Image, nicht aus diesem "
+                                              "Checkout); Pin-Abgleich nicht aussagekraeftig"))
+                elif installed and pin and installed == pin:
                     pass_(f"mistral-vibe version installed (v{installed} == Pin v{pin})")
                 elif installed and pin and _version_newer(installed, pin):
                     sfail(f"mistral-vibe version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
