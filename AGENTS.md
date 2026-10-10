@@ -206,7 +206,10 @@ Verwendung:
 - `:local` → `local-test-kits-{opencode,claude,mammouth,mistral-vibe}` (Default von `OPENCODE_IMAGE_TAG`,
   `CLAUDE_IMAGE_TAG`, `MAMMOUTH_IMAGE_TAG`, `VIBE_IMAGE_TAG`).
 - Release-Tag `<basever>` bzw. Remote `:latest` (README/AGENTS-Startcommands, z. B. `…:0.7.0`).
-- e2e zieht exakt den Branch-Build: `<AGENT>_IMAGE_TAG` = `version_tag`-Output des jeweiligen Publish-Jobs →
+- e2e-Szenario (`<AGENT>_IMAGE_TAG`): auf `master`/`schedule` der Release-Tag `<basever>` (= `version_tag`-Output
+  des Publish-Jobs), auf **Branches/PRs das publizierte Master-`:latest`** (Branch-Images werden nicht gepusht).
+  Das frisch gebaute Branch-Image prüft stattdessen der Build-Job selbst auf den Pin (`load` +
+  `docker run --entrypoint <tool> <img> --version` == Pin, nur `push: false`). Übergabe je
   `--template <IMAGE_PREFIX>/sbx-<name>-tooling:<tag>` (opencode/claude) bzw. `--kit-arg imageTag=<tag>` +
   `--kit-arg imagePrefix=<IMAGE_PREFIX>` (mammouth/mistral-vibe).
 
