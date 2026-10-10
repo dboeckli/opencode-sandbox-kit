@@ -477,15 +477,18 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 > Deshalb ist GLM-5.3-Flash der Default über den Z.AI-Provider; `glm` (Mistral-hosted `zai-glm-5-3`) ist die
 > key-freie Alternative.
 
-> **Image-Publish:** Das Image wird in CI gebaut/gepusht (multi-arch amd64+arm64; native Runner + `imagetools create`). Der e2e-Workflow
+> **Image-Publish:** Das Image wird in CI gebaut (multi-arch amd64+arm64; native Runner + `imagetools create`). Der e2e-Workflow
 > ruft den (auch manuell per `workflow_dispatch` startbaren) `build-and-publish-mistral-vibe-image.yml` als
-> `publish-image`-Job **vor** der Szenario-Matrix auf — so existiert das Image für das `mistral-vibe`-Szenario
-> bei jedem Push/PR/Nightly-Lauf. Manuell: Workflow `Publish Mistral Vibe image` → *Run workflow*.
+> `publish-image`-Job **vor** der Szenario-Matrix auf. Gepusht wird nur auf `master`/`main`/Nightly (`push: true`);
+> auf Branches/PRs läuft der Build nur (`push: false`) — der `e2e`-Job zieht dann das publizierte Master-`:latest`.
+> Das **frisch gebaute Branch-Image** prüft der Build-Job selbst: er lädt es (`load`) und vergleicht `vibe --version`
+> im Image mit `ARG VIBE_VERSION` (`docker run --entrypoint vibe <img> --version`). Manuell: Workflow
+> `Publish Mistral Vibe image` → *Run workflow*.
 >
-> **Tags:** `master`/`main` → `<pin>` (z. B. `2.25.5`) **und** `latest`. Feature-Branch/PR → semver-Prerelease
-> `<pin>-<branch-slug>.<YYYYMMDDHHMMSS>` (z. B. `2.25.5-feature-116-mistral-vibe-agent.20260920055746`)
-> plus beweglicher Tag `<branch-slug>`. Das e2e reicht den Feature-Tag per `--kit-arg imageTag=<tag>` an das
-> Kit durch (`spec.yaml` → `args.imageTag`), testet also genau den Branch-Build.
+> **Tags:** `master`/`main` → `<pin>` (z. B. `2.25.5`) **und** `latest`. Feature-Branch/PR (nur gebaut, nicht
+> gepusht) würde semver-Prerelease `<pin>-<branch-slug>.<YYYYMMDDHHMMSS>` plus beweglicher Tag `<branch-slug>`
+> tragen. Das `e2e`-Szenario nutzt auf `master`/Nightly den Release-Tag `<pin>` (per `--kit-arg imageTag=<tag>`,
+> `spec.yaml` → `args.imageTag`), auf Branches/PRs das Master-`:latest`.
 >
 > **Lokal (Windows-Host):** IntelliJ-Run-Config **`build-and-publish-mistral-vibe-image`** (baut + pusht) — Tag wie beim
 > Feature-Branch-Build (`<pin>-<branch-slug>.<timestamp>`, semver) **plus** beweglicher Tag `local`.
@@ -583,7 +586,7 @@ python .\local-test\local-test-kits.py --validate-only
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
 globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `mammouth`, `mistral`, `context7`).
-Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IMAGE_PREFIX>/sbx-mistral-vibe:local`, Default Cloudsmith, gesetzt von der Run-Config `build-and-publish-mistral-vibe-image`) — also vorher einmal `python local-test\build-and-publish-mistral-vibe-image.py` ausführen. CI/e2e übergibt stattdessen den Feature-Tag (`VIBE_IMAGE_TAG`).
+Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IMAGE_PREFIX>/sbx-mistral-vibe:local`, Default Cloudsmith, gesetzt von der Run-Config `build-and-publish-mistral-vibe-image`) — also vorher einmal `python local-test\build-and-publish-mistral-vibe-image.py` ausführen. CI/e2e nutzt dagegen `VIBE_IMAGE_TAG`: auf `master`/Nightly den Release-Tag `<pin>`, auf Branches/PRs das publizierte Master-`:latest` (das Branch-Image wird stattdessen im Build-Job auf den Pin geprüft).
 
 ### GitHub Actions (CI)
 
@@ -602,7 +605,8 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   Fork-PRs laufen nicht (keine Secrets-Exposition).
 - **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`)
   unter `<IMAGE_PREFIX>` (Default Cloudsmith; Docker Hub via Repo-Variable `IMAGE_PREFIX` — siehe „Registry umschalten"). Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
-  via `workflow_dispatch` (Build-only möglich über den `push`-Input).
+  via `workflow_dispatch` (Build-only möglich über den `push`-Input). Bei `push: false` (Branch/PR) lädt der Build das Image (`load`) und ein Verify-Step prüft die eingebackene Vibe-Version gegen `ARG VIBE_VERSION`
+  (`docker run --entrypoint vibe <img> --version`); analog prüft `build-and-publish-mammouth-image.yml` die Mammouth-CLI-Version gegen `ARG MAMMOUTH_VERSION`.
 - **`cleanup-cloudsmith.yml`** — **nur Cloudsmith-Modus** (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`); löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx`
   (Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>` + Moving-Tag `<slug>`; Master-Images
   `<basever>`/`latest` bleiben). Auslöser: **push auf `master`** (Feature-Images nach dem Merge
