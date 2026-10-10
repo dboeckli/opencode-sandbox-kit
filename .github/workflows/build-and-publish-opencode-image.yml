@@ -22,13 +22,13 @@ on:
   workflow_dispatch:
     inputs:
       push:
-        description: "Push the image to Cloudsmith (off = build only)"
+        description: "Push the image to the configured registry (off = build only)"
         type: boolean
         default: true
   workflow_call:
     inputs:
       push:
-        description: "Push the image to Cloudsmith (off = build only)"
+        description: "Push the image to the configured registry (off = build only)"
         type: boolean
         default: true
     outputs:
@@ -39,10 +39,12 @@ on:
 permissions:
   contents: read
 
+# Zentraler Registry-Umschalter: Repo-Variable IMAGE_PREFIX (voller Prefix ohne Image-Namen).
+#   Cloudsmith (Default): docker.cloudsmith.io/dboeckli/sbx
+#   Docker Hub:           docker.io/<dockerhub-user>   (z. B. docker.io/domboeckli)
+# Umschalten = Repo-Variable IMAGE_PREFIX setzen; zurueck = Variable loeschen (Default).
 env:
-  REGISTRY: docker.cloudsmith.io
-  IMAGE_NAMESPACE: ${{ vars.CLOUDSMITH_NAMESPACE }}
-  IMAGE_REPO: ${{ vars.CLOUDSMITH_REPO }}
+  IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx' }}
   IMAGE_NAME: sbx-opencode-tooling
 
 jobs:
@@ -51,6 +53,7 @@ jobs:
     outputs:
       version_tag: ${{ steps.tags.outputs.version_tag }}
       extra_tag: ${{ steps.tags.outputs.extra_tag }}
+      image_prefix: ${{ steps.tags.outputs.image_prefix }}
     steps:
       - uses: actions/checkout@v7
 
@@ -58,6 +61,7 @@ jobs:
         id: tags
         run: |
           set -euo pipefail
+          echo "image_prefix=${IMAGE_PREFIX}" >> "$GITHUB_OUTPUT"
           pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-[0-9]+(\.[0-9]+)+' \
             opencode-agent/opencode/Dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
           if [ -z "$pin" ]; then
@@ -104,7 +108,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to Docker Hub (base image pulls)
+      - name: Log in to Docker Hub (base image pulls / Docker Hub push)
         if: ${{ inputs.push }}
         uses: docker/login-action@v4
         with:
@@ -113,7 +117,7 @@ jobs:
           password: ${{ secrets.DOCKER_PAT }}
 
       - name: Log in to Cloudsmith (image push)
-        if: ${{ inputs.push }}
+        if: ${{ inputs.push && startsWith(env.IMAGE_PREFIX, 'docker.cloudsmith.io') }}
         uses: docker/login-action@v4
         with:
           registry: docker.cloudsmith.io
@@ -127,19 +131,27 @@ jobs:
           file: opencode-agent/opencode/Dockerfile
           platforms: ${{ matrix.platform }}
           # Keine provenance/SBOM-Attestations: die erzeugen pro Build zusaetzliche
-          # untagged Attestation-Manifeste in Cloudsmith (Package-Bloat); fuer die
-          # Tooling-Images nicht noetig.
+          # untagged Attestation-Manifeste (Package-Bloat); fuer die Tooling-Images nicht noetig.
           provenance: false
           sbom: false
           push: ${{ inputs.push }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
+          tags: ${{ needs.prepare.outputs.image_prefix }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
 
   merge:
     needs: [prepare, build]
     if: ${{ inputs.push }}
     runs-on: ubuntu-latest
     steps:
-      - name: Log in to Cloudsmith
+      - name: Log in to Docker Hub (Docker Hub push)
+        if: ${{ !startsWith(env.IMAGE_PREFIX, 'docker.cloudsmith.io') }}
+        uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Log in to Cloudsmith (image push)
+        if: ${{ startsWith(env.IMAGE_PREFIX, 'docker.cloudsmith.io') }}
         uses: docker/login-action@v4
         with:
           registry: docker.cloudsmith.io
@@ -152,7 +164,7 @@ jobs:
           EXTRA_TAG: ${{ needs.prepare.outputs.extra_tag }}
         run: |
           set -euo pipefail
-          image="${REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_REPO}/${IMAGE_NAME}"
+          image="${{ needs.prepare.outputs.image_prefix }}/${{ env.IMAGE_NAME }}"
           # Cloudsmith ist eventual-consistent: direkt nach dem per-arch Push sind Config-/Layer-
           # Blobs kurzzeitig nicht abrufbar -> Retry mit Backoff.
           retry() {

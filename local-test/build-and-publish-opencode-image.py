@@ -7,8 +7,8 @@ the tag is derived from the base template pin (TEMPLATE_VERSION). The tag scheme
 the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
 moving `local` tag:
 
-    <namespace>/sbx-opencode-tooling:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
-    <namespace>/sbx-opencode-tooling:local
+    <IMAGE_PREFIX>/sbx-opencode-tooling:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <IMAGE_PREFIX>/sbx-opencode-tooling:local
 
 Run via the IntelliJ run config `build-and-publish-opencode-image` (or directly):
     python local-test/build-and-publish-opencode-image.py            # build + push + load locally (linux/amd64)
@@ -23,10 +23,10 @@ the docker/buildx output) is additionally written to
 `target/build-and-publish-opencode-image.log` (gitignored) for later inspection.
 
 `local-test-kits.py opencode` uses the moving `local` tag by default
-(`--template docker.io/<namespace>/sbx-opencode-tooling:local`), so a local run after
+(`--template <IMAGE_PREFIX>/sbx-opencode-tooling:local`), so a local run after
 this script tests exactly this build. CI passes a feature tag via `OPENCODE_IMAGE_TAG`.
 
-Environment overrides: OPENCODE_IMAGE_NAMESPACE, OPENCODE_IMAGE_NAME, OPENCODE_BUILDX_BUILDER.
+Environment overrides: IMAGE_PREFIX, OPENCODE_IMAGE_NAME, OPENCODE_BUILDX_BUILDER.
 Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
 """
 
@@ -42,12 +42,10 @@ CONTEXT = os.path.join(ROOT, "opencode-agent")
 DOCKERFILE = os.path.join(CONTEXT, "opencode", "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-opencode-image.log")
-NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
-REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
-CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
-IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Cloudsmith (Default) oder Docker Hub.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.cloudsmith.io/dboeckli/sbx")
+IMAGE = f"{IMAGE_PREFIX}/{NAME}"
 BUILDER = os.environ.get("OPENCODE_BUILDX_BUILDER", "sbx-opencode")
 
 

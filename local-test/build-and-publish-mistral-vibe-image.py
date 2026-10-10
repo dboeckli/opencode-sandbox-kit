@@ -5,8 +5,8 @@ Local counterpart of .github/workflows/build-and-publish-mistral-vibe-image.yml.
 scheme mirrors the feature-branch CI build (semver prerelease + timestamp) and
 additionally sets the moving `local` tag:
 
-    <namespace>/sbx-mistral-vibe:<pin>-<branch-slug>.<YYYYMMDDHHMMSS>
-    <namespace>/sbx-mistral-vibe:local
+    <IMAGE_PREFIX>/sbx-mistral-vibe:<pin>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <IMAGE_PREFIX>/sbx-mistral-vibe:local
 
 Run via the IntelliJ run config `build-and-publish-mistral-vibe-image` (or directly):
     python local-test/build-and-publish-mistral-vibe-image.py            # build + push + load locally (linux/amd64)
@@ -23,7 +23,7 @@ the docker/buildx output) is additionally written to
 Note: arm64 cannot be built from an amd64 host via QEMU (`uv tool install`
 fails under emulation). CI builds multi-arch with native runners instead.
 
-Environment overrides: VIBE_IMAGE_NAMESPACE, VIBE_IMAGE_NAME, VIBE_BUILDX_BUILDER.
+Environment overrides: IMAGE_PREFIX, VIBE_IMAGE_NAME, VIBE_BUILDX_BUILDER.
 Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
 """
 
@@ -39,12 +39,10 @@ CONTEXT = os.path.join(ROOT, "mistral-vibe-agent")
 DOCKERFILE = os.path.join(CONTEXT, "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-mistral-vibe-image.log")
-NAMESPACE = os.environ.get("VIBE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
-REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
-CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
-IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Cloudsmith (Default) oder Docker Hub.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.cloudsmith.io/dboeckli/sbx")
+IMAGE = f"{IMAGE_PREFIX}/{NAME}"
 BUILDER = os.environ.get("VIBE_BUILDX_BUILDER", "sbx-vibe")
 
 

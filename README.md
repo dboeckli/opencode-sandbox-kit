@@ -176,6 +176,28 @@ Die Images müssen vor dem ersten Start **publiziert** sein — CI via `.github/
 Entwicklung** daher `:local` verwenden (siehe „Lokale Entwicklung"); für Remote-Bezug `:latest`. Details: `AGENTS.md`
 → "Image-Versionierung (Tooling-/Agent-Images)".
 
+### Registry umschalten (Cloudsmith ↔ Docker Hub)
+
+Der Image-Prefix (Registry + Namespace [+ Repo]) ist **zentral** über `IMAGE_PREFIX` steuerbar — ein Umschalter, um
+z. B. bei erschöpfter Cloudsmith-Quote temporär nach Docker Hub zu wechseln (`<IMAGE_PREFIX>/sbx-<name>:<tag>`):
+
+| Registry | `IMAGE_PREFIX` |
+|----------|----------------|
+| Cloudsmith (**Default**) | `docker.cloudsmith.io/dboeckli/sbx` |
+| Docker Hub | `docker.io/<dockerhub-user>` (z. B. `docker.io/domboeckli`) |
+
+Gesetzt wird er an drei Stellen (identischer Wert, Pfad-Komposition ist registry-unabhängig):
+
+1. **CI** — GitHub-**Repo-Variable** `IMAGE_PREFIX` (`.github/workflows/build-and-publish-*-image.yml` + `e2e.yml`
+   lesen `vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx'`). Fehlt sie → Cloudsmith-Default.
+2. **Lokal/e2e-Runner** — Env `IMAGE_PREFIX` (`local-test/local-test-kits.py`, `local-test/build-and-publish-*.py`).
+3. **Sandbox-Kits** — `--kit-arg imagePrefix=<prefix>` (`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`
+   → `args.imagePrefix`, Default Cloudsmith); CI/e2e/local-test übergeben ihn automatisch.
+
+**Zurück zu Cloudsmith** = Repo-Variable `IMAGE_PREFIX` löschen/auf den Default setzen (lokale Env unset) — die
+Defaults in den Workflows/Specs bleiben Cloudsmith. `cleanup-cloudsmith.yml` läuft nur im Cloudsmith-Modus.
+Der Cloudsmith-**API**-Service (`api.cloudsmith.io`, Helm-OCI) ist davon unberührt.
+
 ### Ubuntu-WSL
 
 Windows-Dateipfad im WSL-Format (`/mnt/c/...`) verwenden; Template gepinnt via `--template` (Mammouth: Pin im spec-Image). Ins Projekt wechseln (wird als Workspace gemountet; `.` als erster, read/write Workspace vor den `:ro`-Mounts); Mount: Host-Maven-Cache `/mnt/c/development/maven-repo:ro`. Kubernetes-Zugriff läuft über den host-seitigen Kubernetes-MCP-Server und Host-Docker-Zugriff über den lokalen Docker-MCP-Server (`--static-mcp idea,k8s,docker`) — **kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr.
@@ -536,7 +558,7 @@ python .\local-test\local-test-kits.py --validate-only
 
 Voraussetzungen: Docker läuft (auf Windows nativ oder im Ubuntu-WSL-Setup), `sbx` im PATH,
 globale Secrets gesetzt (`github`, `github-maven`, `anthropic`, `mammouth`, `mistral`, `context7`).
-Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:local`, gesetzt von der Run-Config `build-and-publish-mistral-vibe-image`) — also vorher einmal `python local-test\build-and-publish-mistral-vibe-image.py` ausführen. CI/e2e übergibt stattdessen den Feature-Tag (`VIBE_IMAGE_TAG`).
+Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IMAGE_PREFIX>/sbx-mistral-vibe:local`, Default Cloudsmith, gesetzt von der Run-Config `build-and-publish-mistral-vibe-image`) — also vorher einmal `python local-test\build-and-publish-mistral-vibe-image.py` ausführen. CI/e2e übergibt stattdessen den Feature-Tag (`VIBE_IMAGE_TAG`).
 
 ### GitHub Actions (CI)
 
@@ -547,14 +569,14 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   `./mammouth-agent/`, `./mistral-vibe-agent/`) und prüft, dass die Install-Skript-Kopien
   (`files/home/.local/bin/`) in allen Kits identisch sind, sowie dass der Vibe-Image-Tag in
   `mistral-vibe-agent/spec.yaml` zum `ARG VIBE_VERSION` im Dockerfile passt.
-- **`e2e.yml`** — bei jedem Push/PR + nightly (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
+- **`e2e.yml`** — bei jedem Push/PR + wöchentlich Montag (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
   alle 4 Szenarien (`local-test-kits.py opencode|claude|mammouth|mistral-vibe --ci`) mit KVM-Zugriff,
-  `sbx login` (`DOCKER_USERNAME`/`DOCKER_PAT`) + Cloudsmith-Registry-Credential (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
+  `sbx login` (`DOCKER_USERNAME`/`DOCKER_PAT`) + Cloudsmith-Registry-Credential (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`, nur wenn `IMAGE_PREFIX` auf Cloudsmith zeigt) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
 - **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`)
-  auf Cloudsmith. Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
+  unter `<IMAGE_PREFIX>` (Default Cloudsmith; Docker Hub via Repo-Variable `IMAGE_PREFIX` — siehe „Registry umschalten"). Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
   via `workflow_dispatch` (Build-only möglich über den `push`-Input).
-- **`cleanup-cloudsmith.yml`** — löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx`
+- **`cleanup-cloudsmith.yml`** — **nur Cloudsmith-Modus** (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`); löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx`
   (Tag-Muster `<basever>-<branch-slug>.<YYYYMMDDHHMMSS>` + Moving-Tag `<slug>`; Master-Images
   `<basever>`/`latest` bleiben). Auslöser: **push auf `master`** (Feature-Images nach dem Merge
   obsolet → alle löschen), **nightly 04:25 UTC** (verwaiste Snapshots älter als `max-age-days`) und
