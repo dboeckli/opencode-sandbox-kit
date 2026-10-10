@@ -81,12 +81,12 @@ cp opencode-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\fi
 
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
-Alle `--help`-Outputs der v0.45.1-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
+Alle `--help`-Outputs der v0.47.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
 `opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — die sbx CLI selbst ist **nicht** in
 Context7. Detaillierte Hintergrunddoku (Kits, Policy, Proxy): `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus
-`.github/workflows/validate.yml`, ggf. `v0.45.1` übergeben — die Doku muss den Renovate-verwalteten
+`.github/workflows/validate.yml`, ggf. `v0.47.0` übergeben — die Doku muss den Renovate-verwalteten
 Pin spiegeln, nicht das neueste Release). Der Validate-only-Lauf (`local-test-kits.py --validate-only`)
 vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 (Hinweis aufs Regen-Skript).
@@ -101,6 +101,12 @@ sbx kit validate ./mammouth-agent             # Mammouth Agent-Kit
 sbx kit validate ./mistral-vibe-agent         # Mistral Vibe Agent-Kit
 sbx kit inspect ./opencode-agent --json | jq '.warnings'   # erwartet: []
 ```
+
+> **Docker-Session nötig:** Ab sbx **v0.47.0** verlangt `sbx kit validate` eine Docker-Account-Session
+> (`sbx login`); ohne sie bricht der Befehl mit `error: not signed in to Docker` ab. Auf dem Host (Docker
+> Desktop) ist man in der Regel eingeloggt. In der CI richtet `.github/workflows/validate.yml` dafür — wie
+> das e2e — einen Secret Service (`gnome-keyring` + `dbus`) ein und ruft `sbx login`
+> (`DOCKER_USERNAME`/`DOCKER_PAT`) vor der Validierung auf; Fork-PRs überspringen die Validierung (keine Secrets).
 
 Automatisiert via `local-test-kits.py` bzw. IntelliJ-Config `local-test-kits-validate-only`:
 
