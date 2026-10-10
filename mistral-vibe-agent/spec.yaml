@@ -8,16 +8,22 @@ args:
   imageTag:
     default: "2.26.1"
     description: >-
-      Tag of docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe to run. Default = release tag (= Vibe version).
+      Tag of the Mistral Vibe image (sbx-mistral-vibe) to run. Default = release tag (= Vibe version).
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build.
+  imagePrefix:
+    default: "docker.cloudsmith.io/dboeckli/sbx"
+    description: >-
+      Image prefix (registry + namespace [+ repo]) without the image name — central switch between
+      registries. Cloudsmith (default): docker.cloudsmith.io/dboeckli/sbx. Docker Hub: docker.io/<user>.
+      Passed by CI/e2e/local-test via `--kit-arg imagePrefix=...`.
 
 sandbox:
   # Gepinntes, selbst gebautes Image (siehe Dockerfile): Basis docker/sandbox-templates:shell-docker-0.x.0
   # + mistral-vibe<version>. Build/Publish multi-arch (amd64+arm64, native Runner + imagetools merge)
   # via docker buildx (provenance/SBOM).
   # Renovate trackt den Vibe-Pin (PyPI); der Image-Tag ist ueber args.imageTag parametrisierbar
-  # (Feature-Branches: <pin>-<branch>.<timestamp>, master: <pin>).
-  image: "docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:${{ kit.args.imageTag }}"
+  # (Feature-Branches: <pin>-<branch>.<timestamp>, master: <pin>). Registry via args.imagePrefix.
+  image: "${{ kit.args.imagePrefix }}/sbx-mistral-vibe:${{ kit.args.imageTag }}"
   # Vibe explizit als Entrypoint: ohne diesen startet sbx fuer kind:sandbox die Default-Shell
   # (Dockerfile-CMD wird fuer den Sandbox-Start nicht herangezogen).
   entrypoint: [vibe, "--agent", "auto-approve"]

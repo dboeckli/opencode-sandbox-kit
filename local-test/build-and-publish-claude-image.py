@@ -7,8 +7,8 @@ the tag is derived from the base template pin (TEMPLATE_VERSION). The tag scheme
 the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
 moving `local` tag:
 
-    <namespace>/sbx-claude-tooling:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
-    <namespace>/sbx-claude-tooling:local
+    <IMAGE_PREFIX>/sbx-claude-tooling:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <IMAGE_PREFIX>/sbx-claude-tooling:local
 
 Run via the IntelliJ run config `build-and-publish-claude-image` (or directly):
     python local-test/build-and-publish-claude-image.py            # build + push + load locally (linux/amd64)
@@ -23,10 +23,10 @@ the docker/buildx output) is additionally written to
 `target/build-and-publish-claude-image.log` (gitignored) for later inspection.
 
 `local-test-kits.py claude` uses the moving `local` tag by default
-(`--template docker.io/<namespace>/sbx-claude-tooling:local`), so a local run after
+(`--template <IMAGE_PREFIX>/sbx-claude-tooling:local`), so a local run after
 this script tests exactly this build. CI passes a feature tag via `CLAUDE_IMAGE_TAG`.
 
-Environment overrides: CLAUDE_IMAGE_NAMESPACE, CLAUDE_IMAGE_NAME, CLAUDE_BUILDX_BUILDER.
+Environment overrides: IMAGE_PREFIX, CLAUDE_IMAGE_NAME, CLAUDE_BUILDX_BUILDER.
 Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
 """
 
@@ -42,12 +42,10 @@ CONTEXT = os.path.join(ROOT, "opencode-agent")
 DOCKERFILE = os.path.join(CONTEXT, "claude", "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-claude-image.log")
-NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
-REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
-CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
-IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Cloudsmith (Default) oder Docker Hub.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.cloudsmith.io/dboeckli/sbx")
+IMAGE = f"{IMAGE_PREFIX}/{NAME}"
 BUILDER = os.environ.get("CLAUDE_BUILDX_BUILDER", "sbx-claude")
 
 
