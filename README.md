@@ -973,7 +973,7 @@ beim Test muss die Sandbox neu erstellt werden (`sbx template rm ...` + `sbx run
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
 - [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.47.0 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
-- [Codeberg-Migration (Issue #114)](docs/codeberg-migration.md)
+- [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
 - [Kit Spec Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/)
 - [Docker Blog — AI Coding Agent Horror Stories: Security Risks](https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/)

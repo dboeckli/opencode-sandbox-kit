@@ -1,22 +1,10 @@
-# Migration nach Codeberg (Issue #114)
+# Codeberg (Forgejo) — Betriebshinweise
 
-Arbeits-/Entscheidungsdokument für den Umzug des Kits nach Codeberg (Forgejo).
+Codeberg (`codeberg.org/dboeckli/opencode-sandbox-kit`) ist die kanonische Quelle; GitHub ist ein
+Push-Mirror. Dieses Dokument sammelt die weiterhin relevanten Codeberg-/Forgejo-Betriebsdetails
+(Netzwerk, Actions/Workflows, Runner, Variablen/Secrets, Renovate).
 
-## Entscheidungen
-
-- **Codeberg ist kanonisch:** `codeberg.org/dboeckli/opencode-sandbox-kit` ist die
-  **Schreib-Quelle** (`origin`).
-- **GitHub ist Mirror:** das GitHub-Repo bleibt als **Push-Mirror** bestehen → die
-  bestehenden Kit-Referenzen (`git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=…`)
-  in allen onboardeten Projekten bleiben gültig; keine Cross-Repo-Massenänderung nötig.
-- **CI:** voller Forgejo-Actions-Umzug. `validate`/`cleanup` sind portiert; `build-and-publish-*`
-  und `e2e` ebenfalls (Runner-Verifikation offen).
-- **Netzwerk:** `codeberg.org` + `*.codeberg.org` in `permissions.network.allow` und den
-  `network-policy.md` der Kits (bereits gemerged, PR #143).
-
-## Wichtig: Sandbox erreicht Codeberg (Korrektur)
-
-Die frühere Annahme („Sandbox kann Codeberg nicht erreichen") ist **überholt**:
+## Sandbox erreicht Codeberg
 
 - `codeberg.org` ist in der Network-Allowlist (PR #143).
 - Der Sandbox-Proxy injiziert den Codeberg-Token **unabhängig vom gesendeten Auth-Header** —
@@ -25,22 +13,7 @@ Die frühere Annahme („Sandbox kann Codeberg nicht erreichen") ist **überholt
   Git über HTTPS nutzt zwar Basic-Auth, der Proxy überschreibt den `Authorization`-Header
   jedoch mit `token <codeberg-pat>`.
 
-Daraus folgt: Die frühere Begründung für „GitHub als Schreib-Target" entfällt; Codeberg ist
-jetzt primär.
-
-## Git-Remotes (lokal)
-
-```
-origin  https://codeberg.org/dboeckli/opencode-sandbox-kit.git   (kanonisch, push)
-github  https://github.com/dboeckli/opencode-sandbox-kit.git     (Mirror, push)
-```
-
-Der Mirror wird **auf Codeberg** konfiguriert (Push-Mirror → GitHub). Per API ist das nur mit
-dem **echten** GitHub-PAT möglich (`POST /repos/{owner}/{repo}/push_mirrors`, siehe
-`CreatePushMirrorOption`: `remote_address`, `remote_username`, `remote_password`); in der
-Sandbox liegt der GitHub-Token nur als Sentinel vor → **UI-Schritt** (oder API mit echtem PAT).
-
-## Forgejo Actions — bekannte Unterschiede (verifiziert)
+## Forgejo Actions — Unterschiede (verifiziert)
 
 | GitHub Actions | Forgejo Actions |
 |----------------|-----------------|
@@ -102,28 +75,14 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
   `gh auth status`-Check im e2e scharf läuft — ohne GH_TOKEN wird ein Fake genutzt und der Check im
   `--ci`-Modus übersprungen). Die Kit-e2e-Fake-Secrets werden im Workflow selbst gesetzt.
 
-## Host-Schritte auf Codeberg (konkret)
-
-1. **Repo-Import:** erledigt (Migrate von GitHub; Issues/Labels/Milestones/Releases/Branches übernommen).
-2. **Push-Mirror nach GitHub:** Repo → *Settings → Repository → Mirror Settings* → **Push-Mirror**
-   auf `https://github.com/dboeckli/opencode-sandbox-kit.git` (Intervall z. B. 1 h) mit einem
-   GitHub-PAT (`repo`-Scope). Alternativ API `POST /repos/dboeckli/opencode-sandbox-kit/push_mirrors`.
-3. **Actions aktivieren:** Repo → *Settings → Actions* (Unit/Workflows) einschalten.
-4. **Variablen/Secrets** setzen (siehe oben).
-5. **Runner:** für `validate`/`cleanup` nichts zu tun — Codebergs gehosteter Runner
-   (`codeberg-medium`) genügt. Nur für `build-and-publish-*` (Docker) und `e2e` (Docker+KVM)
-   einen self-hosted Runner registrieren (oder diese vorerst auf GitHub lassen).
-6. **Verifizieren:** `validate.yml` im Actions-Tab starten; danach Build-Workflow (build-only) und
-   e2e.
-
 ## Dependency-Updates (Renovate)
 
 - **Dependabot entfernt** (GitHub-only, unvereinbar mit dem `--mirror`-Push).
 - **Renovate self-hosted:** `.github/workflows/renovate.yml` läuft auf **GitHub-Runnern**, aber mit
   `RENOVATE_PLATFORM=forgejo` + `RENOVATE_ENDPOINT=https://codeberg.org` → Renovate legt seine
   Update-PRs auf **Codeberg** an. Der GitHub-Runner ist nur die Ausführungsmaschine.
-- Config: `.github/renovate.json` — `github-actions`-Manager wieder aktiviert (ersetzt Dependabot);
-  die Pin-Manager (SBX_VERSION/TEMPLATE_VERSION) deckt jetzt `.github/workflows/` **und**
+- Config: `.github/renovate.json` — `github-actions`-Manager aktiviert (ersetzt Dependabot);
+  die Pin-Manager (SBX_VERSION/TEMPLATE_VERSION) decken `.github/workflows/` **und**
   `.forgejo/workflows/` ab. Der `github-actions`-Manager erkennt auch `.forgejo/workflows/`
   (inkl. `https://code.forgejo.org/...`-URLs).
 - Nötige Secrets (GitHub): `CODEBERG_FOR_RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`)
@@ -146,24 +105,6 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - **Multi-Arch ohne arm64-Runner:** dann arm64-Matrix-Eintrag/Label entfernen (amd64-only).
 - **e2e-KVM:** zentrale Machbarkeitsfrage; ggf. e2e vorerst auf GitHub belassen.
 - **GitHub-Packages-Maven / `gh` / sbx-CLI-Download / Docker Hub**: bleiben externe GitHub-/Drittdienste.
-
-## Checkliste (aus #114)
-
-- [x] Netzwerk-Allowlist + Doku (`codeberg.org`)
-- [x] Codeberg-Konto/Repo + Import (Issues/Labels/Releases/Branches)
-- [x] Git-Remotes: `origin` → Codeberg, `github` → Mirror-Remote
-- [x] `.forgejo/workflows/` vollständig portiert (validate, cleanup, build-and-publish-*, e2e)
-- [x] README-Badges/Links auf Codeberg
-- [x] Push-Mirror Codeberg → GitHub (UI, `sync_on_commit=true`, interval `8h0m0s`)
-- [x] Renovate self-hosted gegen Codeberg (`.github/workflows/renovate.yml` + `renovate.json`); Dependabot entfernt
-- [~] Renovate-Aktivierung: GitHub-Secret `CODEBERG_FOR_RENOVATE_TOKEN` setzen + GitHub-Renovate-App deinstallieren (Host)
-- [~] Actions aktiviert + Repo-Variablen gesetzt; Secrets (`DOCKER_PAT`, `CLOUDSMITH_API_KEY`) offen
-- [ ] Codeberg-Runner/Queue klären (gehostete Runner hängen; `codeberg-*` überlastet)
-- [ ] Codeberg-`validate` wieder auf `push`/`pull_request`/`schedule` stellen (aktuell nur `workflow_dispatch`)
-- [ ] `build-and-publish`/`e2e` auf Codeberg (self-hosted Runner: Docker/arm64/KVM)
-- [ ] CI-Pipeline (`validate` + `e2e`) läuft grün auf Codeberg
-- [ ] GitHub Actions stilllegen (nach grünem Codeberg-CI)
-- [ ] „Mindestens ein Projekt zieht das Kit von Codeberg" verifizieren
 
 > **Aktueller Stand (Übergang):** CI läuft auf **GitHub** (via Push-Mirror). Alle
 > `.forgejo/workflows` sind vorerst auf **`workflow_dispatch`** (kein Auto-Trigger), damit die
