@@ -11,7 +11,7 @@ name: Validate Kit
 #   - der sbx-Download nutzt den oeffentlichen Release -> kein GitHub-Token noetig.
 
 # ÜBERGANG: Codeberg-CI vorerst nur manuell (gehostete Runner hängen in der Queue,
-# siehe docs/codeberg-migration.md). CI läuft aktuell auf GitHub (Push-Mirror).
+# siehe docs/codeberg-forgejo.md). CI läuft aktuell auf GitHub (Push-Mirror).
 # Sobald die Codeberg-Runner zuverlässig sind: push/pull_request (+ schedule) aktivieren.
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
       # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
       # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins
       # der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate (auf Codeberg ggf. manuell,
-      # siehe docs/codeberg-migration.md).
+      # siehe docs/codeberg-forgejo.md).
       TEMPLATE_VERSION: 0.7.0
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
