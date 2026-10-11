@@ -90,7 +90,7 @@ sbx run ./mistral-vibe-agent/ `
 > (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
 > Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 
-### Kit direkt aus GitHub (ohne Clone)
+### Kit direkt aus Codeberg (ohne Clone)
 
 Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). Remote nutzen OpenCode/Claude das bewegliche Release-Image `:latest` via `--template` (`docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest` bzw. `docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest`; Mammouth: Pin im spec-Image).
 
@@ -104,7 +104,7 @@ cd C:\development\projects\mein-projekt
 
 ```powershell
 sbx run opencode `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
@@ -116,7 +116,7 @@ sbx run opencode `
 
 ```powershell
 sbx run claude `
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
@@ -127,7 +127,7 @@ sbx run claude `
 **Mammouth Code:**
 
 ```powershell
-sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --kit-arg imageTag=latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
@@ -138,7 +138,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 **Mistral Vibe:**
 
 ```powershell
-sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --kit-arg imageTag=latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
@@ -235,7 +235,7 @@ cd /mnt/c/development/projects/spring-6-reactive
 
 ```bash
 sbx run opencode \
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
+    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
@@ -247,7 +247,7 @@ sbx run opencode \
 
 ```bash
 sbx run claude \
-    --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
+    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
     --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
@@ -258,7 +258,7 @@ sbx run claude \
 **Mammouth Code:**
 
 ```bash
-sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
     --kit-arg imageTag=latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
@@ -269,7 +269,7 @@ sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-a
 **Mistral Vibe:**
 
 ```bash
-sbx run "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" \
     --kit-arg imageTag=latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
@@ -283,17 +283,17 @@ Restartet die Sandbox, VM-State bleibt — OpenCode/Claude nutzen das `opencode-
 
 ```powershell
 sbx kit add <sandbox-name> `
-    "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+    "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
 ```
 
 ```powershell
 sbx kit add <sandbox-name> `
-    "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
+    "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent"
 ```
 
 ```powershell
 sbx kit add <sandbox-name> `
-    "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent"
+    "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent"
 ```
 
 Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. Der IntelliJ-MCP-Server läuft auf dem Host (`localhost:64615`, Port 64615 seit IDEA 2026.2.2) und wird über den **sbx MCP Gateway** (`mcp-gateway.docker.internal`, host-seitig registriert via `sbx mcp add`) in die Sandbox geliefert.

@@ -1,7 +1,7 @@
 # opencode-sandbox-kit
 
 Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7 and IntelliJ MCP.
-Repo: https://github.com/dboeckli/opencode-sandbox-kit
+Repo: https://codeberg.org/dboeckli/opencode-sandbox-kit (kanonisch) — GitHub-Mirror: https://github.com/dboeckli/opencode-sandbox-kit
 
 ## Environment (wichtig!)
 
@@ -101,7 +101,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Run from remote Git repo:
   ```powershell
   sbx run opencode `
-      --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+      --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
       --skills=off `
       --static-mcp idea,k8s,docker
@@ -109,7 +109,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Use kit with another project:
   ```powershell
   sbx run opencode `
-      --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+      --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
       --skills=off `
       --static-mcp idea,k8s,docker `
@@ -155,7 +155,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Apply kit to an existing sandbox (restarts sandbox, preserves VM state):
   ```powershell
   sbx kit add <sandbox-name> `
-      "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+      "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
   ```
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"` — allow GitHub and Codeberg as kit source (required once before remote Git)
 - `--skills=off` gehört in **jedes** `sbx run`/`sbx create`: der Host-Shared-Skills-Store wird nicht gemountet (Trust Boundary); die Kit-Skills kommen aus `dboeckli/ai-agent-skills`, nicht vom Host. Nur bei Sandbox-Erstellung wirksam — bestehende Sandbox neu erstellen. Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
