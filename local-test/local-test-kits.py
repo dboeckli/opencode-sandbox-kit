@@ -749,7 +749,7 @@ def check_template_node_baseline():
         warn(
             f"template node baseline >= 24 ({summary})",
             "install-tooling.sh node-Step + nodejs.org-Allowlist entfernen (spec.yaml install-Step, "
-            "Dockerfile node-Verifikation, renovate.json NODE_VER-customManager + packageRule, Docs) — "
+            "Dockerfile node-Verifikation, renovate.json NODE_VER-customManager, Docs) — "
             "Basis-Template liefert Node 24 nativ",
         )
     else:
