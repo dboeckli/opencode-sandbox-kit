@@ -633,9 +633,10 @@ sbx secret set codeberg
 curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/user
 ```
 
-> **Git über HTTPS** (Push/Clone) nutzt Basic-Auth (Username + Token) — die Proxy-Injection setzt
-> nur den `Authorization: token`-Header (Forgejo-API). Für Git-Push nach Codeberg daher auf dem Host
-> oder mit Credential-Helper arbeiten.
+> **Git über HTTPS** (Clone/Push) funktioniert **direkt aus der Sandbox**: Der Proxy überschreibt den
+> `Authorization`-Header bei Requests an `codeberg.org` unabhängig davon, was Git sendet (auch anonyme
+> bzw. Basic-Auth-Requests werden zum Token-Owner authentifiziert). Kein Credential-Helper nötig
+> (verifiziert: `git ls-remote` + Push aus der Sandbox). `CODEBERG_TOKEN=proxy-managed` genügt.
 
 ## 6. Sandbox starten
 
