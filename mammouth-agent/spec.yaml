@@ -8,16 +8,22 @@ args:
   imageTag:
     default: "1.18.31.1"
     description: >-
-      Tag of docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth to run. Default = release tag (= Mammouth CLI version).
+      Tag of the Mammouth image (sbx-mammouth) to run. Default = release tag (= Mammouth CLI version).
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build;
       lokal `--kit-arg imageTag=local`.
+  imagePrefix:
+    default: "docker.cloudsmith.io/dboeckli/sbx"
+    description: >-
+      Image prefix (registry + namespace [+ repo]) without the image name — central switch between
+      registries. Cloudsmith (default): docker.cloudsmith.io/dboeckli/sbx. Docker Hub: docker.io/<user>.
+      Passed by CI/e2e/local-test via `--kit-arg imagePrefix=...`.
 
 sandbox:
   # Eigenes, gepinntes Image (siehe mammouth-agent/Dockerfile): Basis
   # docker/sandbox-templates:opencode-docker-0.x.0 (Mammouth ist ein OpenCode-Fork) + Kit-Tooling
   # + Mammouth-CLI. Build/Publish via .github/workflows/build-and-publish-mammouth-image.yml
   # (Renovate trackt den Base-Pin ARG BASE_IMAGE + ARG MAMMOUTH_VERSION).
-  image: "docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth:${{ kit.args.imageTag }}"
+  image: "${{ kit.args.imagePrefix }}/sbx-mammouth:${{ kit.args.imageTag }}"
   entrypoint: [mammouth]
 
 agentInstructions:

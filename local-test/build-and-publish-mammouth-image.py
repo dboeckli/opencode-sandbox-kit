@@ -7,8 +7,8 @@ template; the tag is derived from the Mammouth CLI pin. The tag scheme mirrors t
 feature-branch CI build (semver prerelease + timestamp) and additionally sets the moving
 `local` tag:
 
-    <namespace>/sbx-mammouth:<pin>-<branch-slug>.<YYYYMMDDHHMMSS>
-    <namespace>/sbx-mammouth:local
+    <IMAGE_PREFIX>/sbx-mammouth:<pin>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <IMAGE_PREFIX>/sbx-mammouth:local
 
 Run via the IntelliJ run config `build-and-publish-mammouth-image` (or directly):
     python local-test/build-and-publish-mammouth-image.py            # build + push + load locally (linux/amd64)
@@ -26,7 +26,7 @@ the docker/buildx output) is additionally written to
 (`--kit-arg imageTag=local`), so a local run after this script tests exactly this build.
 CI passes a feature tag via `MAMMOUTH_IMAGE_TAG`.
 
-Environment overrides: MAMMOUTH_IMAGE_NAMESPACE, MAMMOUTH_IMAGE_NAME, MAMMOUTH_BUILDX_BUILDER.
+Environment overrides: IMAGE_PREFIX, MAMMOUTH_IMAGE_NAME, MAMMOUTH_BUILDX_BUILDER.
 Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
 """
 
@@ -42,12 +42,10 @@ CONTEXT = os.path.join(ROOT, "mammouth-agent")
 DOCKERFILE = os.path.join(CONTEXT, "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-mammouth-image.log")
-NAMESPACE = os.environ.get("MAMMOUTH_IMAGE_NAMESPACE", "domboeckli")
 NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
-REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
-CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
-IMAGE = f"{REGISTRY}/{CLOUDSMITH_NAMESPACE}/{REPO}/{NAME}"
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Cloudsmith (Default) oder Docker Hub.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.cloudsmith.io/dboeckli/sbx")
+IMAGE = f"{IMAGE_PREFIX}/{NAME}"
 BUILDER = os.environ.get("MAMMOUTH_BUILDX_BUILDER", "sbx-mammouth")
 
 

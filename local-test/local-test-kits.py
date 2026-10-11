@@ -14,7 +14,7 @@ Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
   - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud, codeberg
     (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud / sbx secret set codeberg — seit v0.38 ohne `-g`)
-  - Mistral-Vibe-Szenario (lokal): das Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:local` ist publiziert
+  - Mistral-Vibe-Szenario (lokal): das Image `<IMAGE_PREFIX>/sbx-mistral-vibe:local` ist publiziert
     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image` bzw. `python local-test/build-and-publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
 
@@ -154,11 +154,14 @@ OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckl
 OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
 CLAUDE_IMAGE_NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
 CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
-# Cloudsmith als OCI-Registry: vermeidet das Docker-Hub-Pull-Rate-Limit (200/h) und ist
-# anonym pullbar. Bildpfad: <registry>/<namespace>/<repo>/<image>:<tag>.
-CLOUDSMITH_REGISTRY = os.environ.get("CLOUDSMITH_REGISTRY", "docker.cloudsmith.io")
-CLOUDSMITH_NAMESPACE = os.environ.get("CLOUDSMITH_NAMESPACE", "dboeckli")
-CLOUDSMITH_REPO = os.environ.get("CLOUDSMITH_REPO", "sbx")
+# Zentraler Registry-Umschalter: vollstaendiger Image-Prefix (Registry + Namespace [+ Repo])
+# ohne Image-Namen. Default Cloudsmith (vermeidet das Docker-Hub-Pull-Rate-Limit und ist anonym
+# pullbar). Umschalten (z. B. bei erschoepfter Cloudsmith-Quote) per Env `IMAGE_PREFIX`:
+#   Cloudsmith (Default): docker.cloudsmith.io/dboeckli/sbx
+#   Docker Hub:           docker.io/<dockerhub-user>   (z. B. docker.io/domboeckli)
+# Der Image-Name wird jeweils angehaengt: "<IMAGE_PREFIX>/sbx-<name>:<tag>".
+DEFAULT_IMAGE_PREFIX = "docker.cloudsmith.io/dboeckli/sbx"
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX") or DEFAULT_IMAGE_PREFIX
 OPENCODE_BASE_IMAGE_RE = re.compile(
     r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
@@ -533,10 +536,10 @@ def _template_image(agent):
     None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
     if agent == "opencode":
         tag = os.environ.get("OPENCODE_IMAGE_TAG") or "local"
-        return f"{CLOUDSMITH_REGISTRY}/{CLOUDSMITH_NAMESPACE}/{CLOUDSMITH_REPO}/{OPENCODE_IMAGE_NAME}:{tag}"
+        return f"{IMAGE_PREFIX}/{OPENCODE_IMAGE_NAME}:{tag}"
     if agent == "claude":
         tag = os.environ.get("CLAUDE_IMAGE_TAG") or "local"
-        return f"{CLOUDSMITH_REGISTRY}/{CLOUDSMITH_NAMESPACE}/{CLOUDSMITH_REPO}/{CLAUDE_IMAGE_NAME}:{tag}"
+        return f"{IMAGE_PREFIX}/{CLAUDE_IMAGE_NAME}:{tag}"
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None
@@ -826,7 +829,7 @@ def check_vibe_cli_update():
     if image_tag != pin:
         fail(
             f"mistral-vibe version (spec-Image-Tag v{image_tag} != Dockerfile-Pin v{pin})",
-            f"image in {VIBE_SPEC_FILE} auf docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:{pin} setzen",
+            f"args.imageTag.default in {VIBE_SPEC_FILE} auf {pin} setzen (Image via args.imagePrefix + args.imageTag)",
         )
         return
     base = _vibe_base_image_version()
@@ -1057,12 +1060,13 @@ def main():
 
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
-        # Tooling-Images (Issue #137, Tooling vorgebacken):
-        #   - opencode: docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
-        #   - claude:   docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
-        #   - mammouth: docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
-        #   - mistral-vibe: docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
-        #     alle via `--template` (Mixin) bzw. `--kit-arg imageTag` (sandbox-Kits).
+        # Tooling-Images (Issue #137, Tooling vorgebacken), alle unter IMAGE_PREFIX
+        # (Default Cloudsmith `docker.cloudsmith.io/dboeckli/sbx`, per `IMAGE_PREFIX`-Env umschaltbar):
+        #   - opencode: <IMAGE_PREFIX>/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
+        #   - claude:   <IMAGE_PREFIX>/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
+        #   - mammouth: <IMAGE_PREFIX>/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
+        #   - mistral-vibe: <IMAGE_PREFIX>/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
+        #     alle via `--template` (Mixin) bzw. `--kit-arg imageTag`/`imagePrefix` (sandbox-Kits).
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
         if template_fam and not template_image:
@@ -1081,12 +1085,16 @@ def main():
         #     damit der e2e genau diesen Branch-Build testet.
         if s["agent"] == "mistral-vibe":
             vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
-            create_cmd += ["--kit-arg", f"imageTag={vibe_tag}"]
+            create_cmd += ["--kit-arg", f"imageTag={vibe_tag}",
+                           "--kit-arg", f"imagePrefix={IMAGE_PREFIX}"]
             info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
+            info(f"  Image-Prefix (--kit-arg imagePrefix): {IMAGE_PREFIX}")
         if s["agent"] == "mammouth":
             mam_tag = os.environ.get("MAMMOUTH_IMAGE_TAG") or "local"
-            create_cmd += ["--kit-arg", f"imageTag={mam_tag}"]
+            create_cmd += ["--kit-arg", f"imageTag={mam_tag}",
+                           "--kit-arg", f"imagePrefix={IMAGE_PREFIX}"]
             info(f"  Mammouth-Image-Tag (--kit-arg imageTag): {mam_tag}")
+            info(f"  Image-Prefix (--kit-arg imagePrefix): {IMAGE_PREFIX}")
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.
@@ -1347,11 +1355,21 @@ def main():
             if s["agent"] == "mammouth":
                 # Installierte Mammouth-CLI-Version gegen den Pin im Dockerfile (ARG MAMMOUTH_VERSION)
                 # pruefen — das Image backt exakt diese Version.
+                # Der Abgleich ist nur aussagekraeftig, wenn das getestete Image aus diesem
+                # Checkout stammt (Tag == Pin [Release-Build] oder `local` [lokal gebaut]). Bei
+                # Tag `latest` (CI-Branch-Push) ist es das publizierte Master-Image: ein
+                # Renovate-Pin-Bump waere sonst ein Fehlalarm (Image-Tag != Pin, aber das neue
+                # Image wird auf dem Branch gar nicht gebaut/gepusht).
+                mam_tag = os.environ.get("MAMMOUTH_IMAGE_TAG") or "local"
                 mammouth_ver_cmd = "mammouth --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
                 c2, out = exec_sandbox(s["name"], mammouth_ver_cmd)
                 installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
                 pin = _mammouth_cli_pin_version()
-                if installed and pin and installed == pin:
+                if mam_tag == "latest":
+                    print("  " + _color("33", "[SKIP] mammouth CLI version installed — Image-Tag "
+                                              "'latest' (publiziertes Master-Image, nicht aus diesem "
+                                              "Checkout); Pin-Abgleich nicht aussagekraeftig"))
+                elif installed and pin and installed == pin:
                     pass_(f"mammouth CLI version installed (v{installed} == Pin v{pin})")
                 elif installed and pin and _version_newer(installed, pin):
                     sfail(f"mammouth CLI version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",
@@ -1380,11 +1398,20 @@ def main():
             elif s["agent"] == "mistral-vibe":
                 # Installierte Vibe-Version gegen den Dockerfile-Pin pruefen — das Image
                 # bakt exakt diese Version (ARG VIBE_VERSION).
+                # Nur aussagekraeftig, wenn das getestete Image aus diesem Checkout stammt
+                # (Tag == Pin [Release-Build] oder `local` [lokal gebaut]). Bei Tag `latest`
+                # (CI-Branch-Push) ist es das publizierte Master-Image; ein Renovate-Pin-Bump
+                # waere sonst ein Fehlalarm.
+                vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
                 vibe_ver_cmd = "vibe --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
                 c2, out = exec_sandbox(s["name"], vibe_ver_cmd)
                 installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
                 pin = _vibe_dockerfile_pin()
-                if installed and pin and installed == pin:
+                if vibe_tag == "latest":
+                    print("  " + _color("33", "[SKIP] mistral-vibe version installed — Image-Tag "
+                                              "'latest' (publiziertes Master-Image, nicht aus diesem "
+                                              "Checkout); Pin-Abgleich nicht aussagekraeftig"))
+                elif installed and pin and installed == pin:
                     pass_(f"mistral-vibe version installed (v{installed} == Pin v{pin})")
                 elif installed and pin and _version_newer(installed, pin):
                     sfail(f"mistral-vibe version installed (v{installed} > Pin v{pin}, Pin nicht angewendet?)",

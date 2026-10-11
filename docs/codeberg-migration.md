@@ -95,9 +95,10 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 
 ## Secrets/Variablen auf Codeberg
 
-- **Variablen:** `DOCKER_USERNAME`, `CLOUDSMITH_USERNAME`, `CLOUDSMITH_NAMESPACE`, `CLOUDSMITH_REPO`,
+- **Variablen:** `DOCKER_USERNAME`, `IMAGE_PREFIX` (Default `docker.cloudsmith.io/dboeckli/sbx`),
+  `CLOUDSMITH_USERNAME` (nur Cloudsmith-Modus),
   optional `RUNNER_LABEL`/`RUNNER_ARM64`/`RUNNER_E2E`.
-- **Secrets:** `DOCKER_PAT`, `CLOUDSMITH_API_KEY`; optional `GH_TOKEN` (echtes GitHub-PAT, damit der
+- **Secrets:** `DOCKER_PAT`, `CLOUDSMITH_API_KEY` (nur Cloudsmith-Modus); optional `GH_TOKEN` (echtes GitHub-PAT, damit der
   `gh auth status`-Check im e2e scharf läuft — ohne GH_TOKEN wird ein Fake genutzt und der Check im
   `--ci`-Modus übersprungen). Die Kit-e2e-Fake-Secrets werden im Workflow selbst gesetzt.
 
