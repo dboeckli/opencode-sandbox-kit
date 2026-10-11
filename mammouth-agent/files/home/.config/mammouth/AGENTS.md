@@ -247,7 +247,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt; der Agent sendet
 `api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload) – der Key liegt
 nie im Sandbox-Filesystem.
 
-> **Helm-OCI-Pull aus Cloudsmith:** `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
+> **Helm-OCI-Pull aus Cloudsmith:** `helm.oci.cloudsmith.io` + `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
 > Netzwerk-Allowlist — Helm-Pull von `oci://docker.cloudsmith.io/…` (z. B. rest-mvc-Subcharts)
 > funktioniert (Blob-Download via `dl.cloudsmith.io`). Ein `helm registry login`
 > für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection

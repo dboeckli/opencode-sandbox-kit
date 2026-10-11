@@ -1,7 +1,7 @@
 # opencode-sandbox-kit
 
 Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe with ctx7 and IntelliJ MCP.
-Repo: https://github.com/dboeckli/opencode-sandbox-kit
+Repo: https://codeberg.org/dboeckli/opencode-sandbox-kit (kanonisch) — GitHub-Mirror: https://github.com/dboeckli/opencode-sandbox-kit
 
 ## Environment (wichtig!)
 
@@ -101,7 +101,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Run from remote Git repo:
   ```powershell
   sbx run opencode `
-      --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+      --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
       --skills=off `
       --static-mcp idea,k8s,docker
@@ -109,7 +109,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Use kit with another project:
   ```powershell
   sbx run opencode `
-      --kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
+      --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
       --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:latest `
       --skills=off `
       --static-mcp idea,k8s,docker `
@@ -155,7 +155,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - Apply kit to an existing sandbox (restarts sandbox, preserves VM state):
   ```powershell
   sbx kit add <sandbox-name> `
-      "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
+      "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
   ```
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"` — allow GitHub and Codeberg as kit source (required once before remote Git)
 - `--skills=off` gehört in **jedes** `sbx run`/`sbx create`: der Host-Shared-Skills-Store wird nicht gemountet (Trust Boundary); die Kit-Skills kommen aus `dboeckli/ai-agent-skills`, nicht vom Host. Nur bei Sandbox-Erstellung wirksam — bestehende Sandbox neu erstellen. Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
@@ -570,7 +570,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 `api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload).
 `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
 
-> **Helm-OCI-Pull aus Cloudsmith:** `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
+> **Helm-OCI-Pull aus Cloudsmith:** `helm.oci.cloudsmith.io` + `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
 > Netzwerk-Allowlist (`permissions.network.allow`) enthalten — Helm-Pull von
 > `oci://docker.cloudsmith.io/…` (z. B. rest-mvc-Subcharts) funktioniert in der Sandbox
 > (Blob-Download via `dl.cloudsmith.io`). Ein `helm registry login`
@@ -626,9 +626,10 @@ Beispiel:
 curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/user
 ```
 
-> **Git über HTTPS** (Push/Clone) nutzt Basic-Auth (Username + Token) — die Proxy-Injection setzt
-> nur den `Authorization: token`-Header (Forgejo-API). Für Git-Push nach Codeberg daher auf dem Host
-> oder mit Credential-Helper arbeiten.
+> **Git über HTTPS** (Clone/Push) funktioniert **direkt aus der Sandbox**: Der Proxy überschreibt den
+> `Authorization`-Header bei Requests an `codeberg.org` unabhängig davon, was Git sendet (auch anonyme
+> bzw. Basic-Auth-Requests werden zum Token-Owner authentifiziert). Kein Credential-Helper nötig
+> (verifiziert: `git ls-remote` + Push aus der Sandbox). `CODEBERG_TOKEN=proxy-managed` genügt.
 
 ## Offline Dokumentation (Repsy)
 

@@ -114,6 +114,7 @@ run_node() {
 		return 0
 	fi
 	download "https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-${NODE_ARCH}.tar.gz" /tmp/node.tar.gz
+	rm -rf /opt/node
 	mkdir -p /opt/node
 	tar -xzf /tmp/node.tar.gz -C /opt/node --strip-components=1
 	rm -f /tmp/node.tar.gz
@@ -147,6 +148,7 @@ run_jdk() {
 		return 0
 	fi
 	download "https://github.com/bell-sw/Liberica/releases/download/${LIBERICA_VER}/bellsoft-jdk${LIBERICA_VER}-linux-${JDK_ARCH}.tar.gz" /tmp/jdk.tar.gz
+	rm -rf /usr/local/java
 	mkdir -p /usr/local/java
 	tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1
 	ln -sf /usr/local/java/bin/java /usr/local/bin/java
@@ -162,6 +164,7 @@ run_maven() {
 		return 0
 	fi
 	download "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" /tmp/maven.tar.gz
+	rm -rf /opt/maven
 	mkdir -p /opt/maven
 	tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1
 	rm -f /tmp/maven.tar.gz
@@ -271,6 +274,7 @@ run_kafka() {
 		return 0
 	fi
 	download "https://dlcdn.apache.org/kafka/${KAFKA_VER}/kafka_${KAFKA_SCALA_VER}-${KAFKA_VER}.tgz" /tmp/kafka.tgz
+	rm -rf /opt/kafka
 	mkdir -p /opt/kafka
 	tar -xzf /tmp/kafka.tgz -C /opt/kafka --strip-components=1
 	rm -f /tmp/kafka.tgz

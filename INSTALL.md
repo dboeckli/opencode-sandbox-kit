@@ -181,9 +181,8 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 
 ## 4. Kit-Quellen freigeben (Remote-Git-Kits)
 
-Einmalig nötig, bevor Kits direkt aus GitHub oder Codeberg bezogen werden
-(`--kit "git+https://github.com/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"` bzw.
-`--kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"`):
+Einmalig nötig, bevor Kits direkt aus Codeberg (kanonisch; GitHub-Mirror ebenfalls erlaubt) bezogen werden
+(`--kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"`):
 
 ```powershell
 sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"
@@ -581,7 +580,7 @@ In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt (Platzhalter); der
 `api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload).
 `echo $CLOUDSMITH_API_KEY` zeigt nie den echten Key.
 
-> **Helm-OCI-Pull aus Cloudsmith:** `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
+> **Helm-OCI-Pull aus Cloudsmith:** `helm.oci.cloudsmith.io` + `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
 > Netzwerk-Allowlist (`permissions.network.allow`) enthalten — Helm-Pull von
 > `oci://docker.cloudsmith.io/…` (z. B. rest-mvc-Subcharts) funktioniert in der Sandbox
 > (Blob-Download via `dl.cloudsmith.io`). Ein `helm registry login`
@@ -634,9 +633,10 @@ sbx secret set codeberg
 curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/user
 ```
 
-> **Git über HTTPS** (Push/Clone) nutzt Basic-Auth (Username + Token) — die Proxy-Injection setzt
-> nur den `Authorization: token`-Header (Forgejo-API). Für Git-Push nach Codeberg daher auf dem Host
-> oder mit Credential-Helper arbeiten.
+> **Git über HTTPS** (Clone/Push) funktioniert **direkt aus der Sandbox**: Der Proxy überschreibt den
+> `Authorization`-Header bei Requests an `codeberg.org` unabhängig davon, was Git sendet (auch anonyme
+> bzw. Basic-Auth-Requests werden zum Token-Owner authentifiziert). Kein Credential-Helper nötig
+> (verifiziert: `git ls-remote` + Push aus der Sandbox). `CODEBERG_TOKEN=proxy-managed` genügt.
 
 ## 6. Sandbox starten
 
