@@ -177,7 +177,7 @@ Host-Servers:
 sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
 ```
 
-Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten + Gateway-Verifikation: README → Troubleshooting.
+Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten + Gateway-Verifikation: [`troubleshooting.md`](troubleshooting.md).
 
 ### IntelliJ MCP über die Permission-Whitelist
 

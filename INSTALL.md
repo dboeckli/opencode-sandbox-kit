@@ -57,7 +57,7 @@ installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzli
    [#40](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/40)) — `sbx mcp add k8s …`, dann
    `--static-mcp idea,k8s,docker`. **Kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr nötig.
 
-## 3. IntelliJ MCP Server aktivieren + Gateway-Registrierung
+## 3. IntelliJ MCP Server aktivieren und Gateway-Registrierung
 
 Damit der Agent die IntelliJ-MCP-Tools nutzen kann, muss auf dem Windows-Host die IDE als
 MCP-Server laufen:
