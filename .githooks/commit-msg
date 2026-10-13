@@ -1,0 +1,22 @@
+#!/bin/sh
+# Strip co-authoring / AI-attribution trailers from the commit message.
+#
+# Versioned in the kit repo (.githooks) and installed globally in sandboxes
+# (~/.config/git/hooks via core.hooksPath) so agent-created commits are sanitized.
+#
+# Removed: any `Co-authored-by:`/`Assisted-by:` trailer, "Generated with …"
+# AI footers (Claude/opencode/Cursor/Codex/Copilot/…), robot-emoji lines.
+#
+# Enable the repo copy once per clone:  git config core.hooksPath .githooks
+
+msg_file="$1"
+[ -n "$msg_file" ] && [ -f "$msg_file" ] || exit 0
+
+tmp="$(mktemp)"
+grep -v -iE '^[[:space:]]*(co-authored-by|co-authored by|assisted-by|assisted by)[[:space:]]*:' "$msg_file" \
+	| grep -v -iE 'generated with .*(claude|opencode|cursor|codex|copilot|chatgpt|aider|gemini|windsurf|zed|gpt)' \
+	| grep -v -E '^[[:space:]]*🤖' > "$tmp" || true
+cat "$tmp" > "$msg_file"
+rm -f "$tmp"
+
+exit 0

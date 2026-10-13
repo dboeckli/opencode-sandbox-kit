@@ -1,6 +1,7 @@
 #!/bin/sh
-# Guard against (1) pushing to the read-only GitHub mirror and (2) pushing
-# directly to master/main. Enable once per clone:
+# Guard against (1) pushing to the read-only GitHub mirror, (2) pushing
+# directly to master/main, and (3) co-authoring / AI-attribution trailers in
+# outgoing commit messages. Enable once per clone:
 #
 #   git config core.hooksPath .githooks
 #
@@ -19,6 +20,8 @@ case "$remote_url" in
 esac
 
 # 2) No direct pushes to master/main (use a feature branch + pull request).
+# 3) No co-authoring / AI-attribution trailers in outgoing commit messages.
+zero=0000000000000000000000000000000000000000
 while read -r local_ref local_sha remote_ref remote_sha; do
   case "$remote_ref" in
     refs/heads/master | refs/heads/main)
@@ -27,6 +30,25 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       exit 1
       ;;
   esac
+
+  # Skip branch deletions.
+  [ "$local_sha" = "$zero" ] && continue
+
+  # Only inspect the commits actually being pushed (new-branch safe: do NOT
+  # scan the whole history, which may legitimately contain old trailers).
+  if [ "$remote_sha" = "$zero" ]; then
+    commits="$(git rev-list "$local_sha" --not --remotes 2>/dev/null || true)"
+  else
+    commits="$(git rev-list "${remote_sha}..${local_sha}" 2>/dev/null || true)"
+  fi
+  [ -n "$commits" ] || continue
+
+  if printf '%s\n' $commits | git log --no-walk --stdin --format='%B' 2>/dev/null | grep -qiE \
+      '^[[:space:]]*(co-authored-by|co-authored by|assisted-by|assisted by)[[:space:]]*:|generated with .*(claude|opencode|cursor|codex|copilot|chatgpt|aider|gemini|windsurf|zed|gpt)'; then
+    echo "pre-push: blocked - outgoing commit message(s) contain co-authoring/AI attribution." >&2
+    echo "          Rewrite the message(s); the commit-msg hook strips it on new commits." >&2
+    exit 1
+  fi
 done
 
 exit 0
