@@ -21,6 +21,15 @@ z. B. `C:/development/projects/opencode-sandbox-kit`), damit der User nicht dana
 Bei mehreren geänderten Dateien alle öffnen. Hinweis: `open_file_in_editor` zeigt die **Datei**,
 keinen Diff — den Diff-View gibt es im Git-/Commit-Fenster (kein Diff-Tool im MCP-Toolset).
 
+## Diff-Review in IntelliJ (Pflicht)
+
+Nach Änderungen den Diff als **Patch-Datei** bereitstellen, damit der User ihn im IntelliJ-Diff-Viewer sieht
+(der MCP-Server hat kein Diff-Tool; `open_file_in_editor` auf eine `.patch`-Datei liefert den Diff-View):
+
+- Verzeichnis `.review/` (gitignored; Eintrag `.review/` in `.gitignore`).
+- `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
+- Danach `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
+
 ## Git commits (Nachfragen-Pflicht)
 
 Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen

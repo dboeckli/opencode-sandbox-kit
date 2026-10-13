@@ -22,6 +22,15 @@ z. B. `C:/development/projects/<projekt>`) — bei mehreren geänderten Dateien 
 IntelliJ-MCP verfügbar ist. Hinweis: `open_file_in_editor` zeigt die **Datei**, keinen Diff — den
 Diff-View gibt es im Git-/Commit-Fenster.
 
+## Diff-Review in IntelliJ (Pflicht)
+
+Nach Änderungen den Diff als **Patch-Datei** bereitstellen, damit der User ihn im IntelliJ-Diff-Viewer sieht
+(der MCP-Server hat kein Diff-Tool; `mcp-gateway_open_file_in_editor` auf eine `.patch`-Datei liefert den Diff-View):
+
+- Verzeichnis `.review/` im Projekt (gitignored; im Projekt-`.gitignore` ergaenzen: `.review/`).
+- `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
+- Danach `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` oeffnen.
+
 ## Git commits (Nachfragen-Pflicht)
 
 Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen, ob ein Commit erstellt werden soll.
