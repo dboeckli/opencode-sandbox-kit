@@ -18,7 +18,8 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 Nach **jeder** Dateiänderung (anlegen, bearbeiten, verschieben) die geänderten Dateien direkt im
 IntelliJ-Editor öffnen (`mcp-gateway_open_file_in_editor`, `projectPath` im Windows-Format,
 z. B. `C:/development/projects/opencode-sandbox-kit`), damit der User nicht danach suchen muss.
-Bei mehreren geänderten Dateien alle öffnen.
+Bei mehreren geänderten Dateien alle öffnen. Hinweis: `open_file_in_editor` zeigt die **Datei**,
+keinen Diff — den Diff-View gibt es im Git-/Commit-Fenster (kein Diff-Tool im MCP-Toolset).
 
 ## Git commits (Nachfragen-Pflicht)
 

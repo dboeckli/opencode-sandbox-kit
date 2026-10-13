@@ -14,6 +14,14 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 5. Answer using the fetched docs
 <!-- context7 -->
 
+## Datei-Edits in IntelliJ öffnen (Pflicht)
+
+Nach **jeder** Dateiänderung (anlegen, bearbeiten, verschieben) die geänderten Dateien direkt im
+IntelliJ-Editor öffnen (`mcp-gateway_open_file_in_editor`, `projectPath` im Windows-Format,
+z. B. `C:/development/projects/<projekt>`) — bei mehreren geänderten Dateien alle. Nur wenn das
+IntelliJ-MCP verfügbar ist. Hinweis: `open_file_in_editor` zeigt die **Datei**, keinen Diff — den
+Diff-View gibt es im Git-/Commit-Fenster.
+
 ## Git commits (Nachfragen-Pflicht)
 
 Mache **niemals unaufgefordert Commits**: `git commit`, `git push`, PR-Erstellung und ähnliche Git-Operationen nur mit expliziter Zustimmung des Users ausführen. Ansonsten Änderungen stehen lassen und am Ende den User fragen, ob ein Commit erstellt werden soll.
