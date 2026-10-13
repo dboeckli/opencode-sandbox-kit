@@ -14,6 +14,15 @@ set -euo pipefail
 
 export PATH="/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
 
+# --- git: global commit-msg hook (strip co-authoring / AI attribution) ---
+# The hook is bundled at ~/.config/git/hooks/commit-msg; make it the global hooks
+# dir so agent-created commits are sanitized in every repo of the sandbox.
+HOOKDIR="${HOME}/.config/git/hooks"
+if [ -d "${HOOKDIR}" ]; then
+	chmod +x "${HOOKDIR}/commit-msg" 2>/dev/null || true
+	git config --global core.hooksPath "${HOOKDIR}"
+fi
+
 # Idempotenz-Guard: bereits vollständig provisioniert (vorgebackenes Custom-Template-Image)
 # → kein Netzwerk-Refetch (skills/clone) beim Sandbox-Start.
 if [ -d "${HOME}/.agents/skills" ] && [ -n "$(ls -A "${HOME}/.agents/skills" 2>/dev/null)" ] \
