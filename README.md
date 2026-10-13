@@ -82,15 +82,6 @@ sbx run ./mistral-vibe-agent/ `
     "C:\development\maven-repo:ro"
 ```
 
-> **`--skills=off` (Pflicht):** Alle Sandboxes werden mit `--skills=off` erstellt — der
-> Host-übergreifende **Shared-Skills-Store** (`…/DockerSandboxes/sandboxes/state/agent-skills`) wird
-> **nicht** eingebunden. Seit sbx v0.43 ist der Default `readonly` (Store read-only gemountet); `off`
-> schaltet ihn ganz ab. Die Sandbox bleibt damit außerhalb der geteilten Trust-Boundary;
-> die Kit-Skills kommen ausschließlich aus `github.com/dboeckli/ai-agent-skills` (via
-> `install-tooling-user.sh`), **nicht** vom Host. Das Flag wirkt nur bei der Sandbox-Erstellung
-> (`sbx run`/`sbx create`) — bestehende Sandboxes müssen neu erstellt werden.
-> Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
-
 ### Kit direkt aus Codeberg (ohne Clone)
 
 Einmalig `kit.allowedSources` setzen (siehe INSTALL.md). OpenCode/Claude nutzen das Release-Image `:latest` via `--template`.
