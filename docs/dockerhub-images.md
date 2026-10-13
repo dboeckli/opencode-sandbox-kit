@@ -27,40 +27,48 @@ PowerShell; der bewegliche `latest`-Tag zeigt auf den letzten `master`-Publish.
 
 ```powershell
 sbx run opencode `
-    --kit ./opencode-agent/ `
+    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.io/domboeckli/sbx-opencode-tooling:latest `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 **2) Claude Code** (Mixin-Kit, Home)
 
 ```powershell
 sbx run claude `
-    --kit ./opencode-agent/ `
+    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
     --template docker.io/domboeckli/sbx-claude-tooling:latest `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 **3) Mammouth Code** (`kind: sandbox`, eigenes Image)
 
 ```powershell
-sbx run ./mammouth-agent/ `
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
     --kit-arg imageTag=latest `
     --kit-arg imagePrefix=docker.io/domboeckli `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 **4) Mistral Vibe** (`kind: sandbox`, eigenes Image)
 
 ```powershell
-sbx run ./mistral-vibe-agent/ `
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
     --kit-arg imageTag=latest `
     --kit-arg imagePrefix=docker.io/domboeckli `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 ## Lokal — lokal gebaute/gepushte `:local`-Images
@@ -84,7 +92,9 @@ sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 **2) Claude Code**
@@ -94,7 +104,9 @@ sbx run claude `
     --kit ./opencode-agent/ `
     --template docker.io/domboeckli/sbx-claude-tooling:local `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 **3) Mammouth Code**
@@ -104,7 +116,9 @@ sbx run ./mammouth-agent/ `
     --kit-arg imageTag=local `
     --kit-arg imagePrefix=docker.io/domboeckli `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 **4) Mistral Vibe**
@@ -114,11 +128,17 @@ sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --kit-arg imagePrefix=docker.io/domboeckli `
     --skills=off `
-    --static-mcp idea,k8s,docker
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
 ```
 
 ## Hinweise
 
+- Die **Remote**-Kommandos beziehen das Kit per Git-Quelle
+  (`git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=…`) und laufen daher aus **jedem**
+  Verzeichnis; der Maven-Cache-Mount (`"C:\development\maven-repo:ro"`) ist optional/das Beispiel —
+  Projektpfad bzw. Workspace wie gewohnt mitgeben.
 - Die Registry-Kurzform `domboeckli/sbx-…` ist gleichwertig zu `docker.io/domboeckli/sbx-…`
   (Docker Hub = Default-Registry); hier bewusst mit `docker.io/`-Präfix (= Wert von `IMAGE_PREFIX`).
 - Kein Host-Registry-Login nötig (öffentliche Images); bei Docker-Hub-Rate-Limit ggf.
