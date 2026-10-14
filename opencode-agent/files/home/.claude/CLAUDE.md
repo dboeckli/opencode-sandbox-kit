@@ -14,6 +14,23 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 5. Answer using the fetched docs
 <!-- context7 -->
 
+## Datei-Edits in IntelliJ öffnen (Pflicht)
+
+Nach **jeder** Dateiänderung (anlegen, bearbeiten, verschieben) die geänderten Dateien direkt im
+IntelliJ-Editor öffnen (`mcp__mcp-gateway__open_file_in_editor`, `projectPath` im Windows-Format,
+z. B. `C:/development/projects/<projekt>`) — bei mehreren geänderten Dateien alle. Nur wenn das
+IntelliJ-MCP verfügbar ist. Hinweis: `open_file_in_editor` zeigt die **Datei**, keinen Diff — den
+Diff-View gibt es im Git-/Commit-Fenster.
+
+## Diff-Review in IntelliJ (Pflicht)
+
+Nach Änderungen den Diff als **Patch-Datei** bereitstellen, damit der User ihn im IntelliJ-Diff-Viewer sieht
+(der MCP-Server hat kein Diff-Tool; `mcp__mcp-gateway__open_file_in_editor` auf eine `.patch`-Datei liefert den Diff-View):
+
+- Verzeichnis `.review/` im Projekt (gitignored; im Projekt-`.gitignore` ergaenzen: `.review/`).
+- `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
+- Danach `.review/changes.patch` mit `mcp__mcp-gateway__open_file_in_editor` oeffnen.
+
 ## Context7 tools reference
 
 The full inventory of tools documented via Context7 — with their ctx7 library IDs and GitHub/docs URLs — lives in `context7-tools.md` (in this directory). Tool-specific library IDs are no longer repeated inline below.
