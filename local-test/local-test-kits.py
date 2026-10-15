@@ -48,6 +48,7 @@ import ssl
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from shutil import which
 
@@ -140,6 +141,18 @@ VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 DOCKER_MCP_DOC = "docs/docker-mcp-server.md"
 DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker==(?P<v>[0-9]+(?:\.[0-9]+)+)")
 DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
+
+# Apache Kafka-Distribution: install-tooling.sh laedt den Tarball von dlcdn
+# (haelt nur die aktuellen Releases) mit Fallback auf archive.apache.org (alle
+# Releases). Der Validate-Check stellt sicher, dass KAFKA_VER als Tarball
+# existiert (dlcdn ODER archive) — faengt einen Renovate-Bump auf eine in Maven
+# Central verfuegbare, aber noch nicht als Distro veroeffentlichte Version ab,
+# bevor der Image-Build bricht (fail-closed Verify: kafka-topics.sh fehlt -> exit 127).
+KAFKA_INSTALL_SCRIPT = "opencode-agent/files/home/.local/bin/install-tooling.sh"
+KAFKA_VER_RE = re.compile(r'KAFKA_VER="(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"')
+KAFKA_SCALA_VER_RE = re.compile(r'KAFKA_SCALA_VER="(?P<v>[0-9]+\.[0-9]+)"')
+KAFKA_CDN_URL = "https://dlcdn.apache.org/kafka/{ver}/kafka_{scala}-{ver}.tgz"
+KAFKA_ARCHIVE_URL = "https://archive.apache.org/dist/kafka/{ver}/kafka_{scala}-{ver}.tgz"
 
 # Tooling-Images (Issue #137): eigene Custom-Template-Builds des opencode-agent-Mixin-Kits
 # mit vorgebackenem Tooling — opencode-agent/opencode/Dockerfile (Basis opencode-docker) und
@@ -474,6 +487,28 @@ def _http_get(url):
                 return resp.read().decode("utf-8", "replace")
     except Exception as e:
         raise RuntimeError(str(e))
+
+
+def _http_status(url):
+    """HTTP-Statuscode eines HEAD-Requests (TLS-Fallback). None bei Netzwerkfehler.
+    Liefert auch 4xx/5xx (HTTPError.code) zurueck, damit Aufrufer 404 vs. OK unterscheiden."""
+    def _head(ctx):
+        req = urllib.request.Request(url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+            return resp.status
+
+    try:
+        try:
+            return _head(ssl.create_default_context())
+        except urllib.error.HTTPError as e:
+            return e.code
+        except Exception:
+            try:
+                return _head(ssl._create_unverified_context())
+            except urllib.error.HTTPError as e:
+                return e.code
+    except Exception:
+        return None
 
 
 def _version_key(v):
@@ -893,6 +928,49 @@ def check_docker_mcp_update():
         pass_(f"mcp-server-docker version up-to-date (Pin v{pin}, PyPI latest v{latest})")
 
 
+def _kafka_pin():
+    """(KAFKA_VER, KAFKA_SCALA_VER) aus install-tooling.sh, oder (None, None)."""
+    path = os.path.join(ROOT, KAFKA_INSTALL_SCRIPT)
+    if not os.path.isfile(path):
+        return None, None
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+    mv = KAFKA_VER_RE.search(content)
+    ms = KAFKA_SCALA_VER_RE.search(content)
+    if not mv or not ms:
+        return None, None
+    return mv.group("v"), ms.group("v")
+
+
+def check_kafka_distro_availability():
+    """KAFKA_VER (install-tooling.sh) muss als Binary-Tarball existieren — auf dlcdn
+    (aktuelle Releases) ODER archive.apache.org (aeltere, von dlcdn entfernte).
+    Faengt einen Renovate-Bump auf eine Maven-verfuegbare, aber noch nicht
+    veroeffentlichte Distro ab, bevor der Image-Build bricht."""
+    ver, scala = _kafka_pin()
+    if not ver or not scala:
+        fail("kafka distro (KAFKA_VER/KAFKA_SCALA_VER nicht in "
+             f"{KAFKA_INSTALL_SCRIPT} gefunden)")
+        return
+    cdn_status = _http_status(KAFKA_CDN_URL.format(ver=ver, scala=scala))
+    arch_status = _http_status(KAFKA_ARCHIVE_URL.format(ver=ver, scala=scala))
+    if cdn_status == 200:
+        pass_(f"kafka distro v{ver} available (dlcdn; archive HTTP {arch_status})")
+    elif arch_status == 200:
+        warn(
+            f"kafka distro v{ver} not on dlcdn (HTTP {cdn_status}) — nur im Apache-Archiv",
+            "install-tooling.sh faellt auf archive.apache.org zurueck; sobald die Version "
+            "aus beiden Quellen verschwindet, bricht der Image-Build",
+        )
+    else:
+        fail(
+            f"kafka distro v{ver} not available "
+            f"(dlcdn HTTP {cdn_status}, archive HTTP {arch_status})",
+            "KAFKA_VER auf eine veroeffentlichte Distro setzen "
+            "(https://dlcdn.apache.org/kafka/)",
+        )
+
+
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -963,6 +1041,9 @@ def main():
         print()
         info("==> Docker-MCP-Server Version Update-Check (PyPI)")
         check_docker_mcp_update()
+        print()
+        info("==> Apache-Kafka-Distro Verfuegbarkeit (Tarball auf dlcdn ODER archive.apache.org)")
+        check_kafka_distro_availability()
         print()
         if not failed:
             print(_color("32", f"VALIDIERUNG OK ({len(passed)} Checks)"))

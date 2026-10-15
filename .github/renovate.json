@@ -115,11 +115,13 @@
     },
     {
       "customType": "regex",
-      "description": "Apache Kafka distribution version (install-tooling.sh, alle Kit-Kopien; Version = Maven-Central-Artifact org.apache.kafka:kafka_2.13)",
+      "description": "Apache Kafka distribution version (install-tooling.sh, alle Kit-Kopien). Quelle = die distro-Verzeichnisliste auf dlcdn (custom Datasource `custom.apache-kafka`), NICHT Maven Central: die Maven-Artifacts (org.apache.kafka:kafka_2.13) werden publiziert, bevor der Binary-Tarball auf den Apache-Mirrors liegt — ein Maven-Bump auf eine noch nicht veröffentlichte Distro bricht den Image-Build.",
       "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["KAFKA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
-      "depNameTemplate": "org.apache.kafka:kafka_2.13",
-      "datasourceTemplate": "maven"
+      "depNameTemplate": "apache/kafka",
+      "datasourceTemplate": "custom.apache-kafka",
+      "extractVersionTemplate": "^(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)/?$",
+      "versioningTemplate": "loose"
     },
     {
       "customType": "regex",
@@ -243,5 +245,11 @@
       "depNameTemplate": "mcp-server-docker",
       "datasourceTemplate": "pypi"
     }
-  ]
+  ],
+  "customDatasources": {
+    "apache-kafka": {
+      "defaultRegistryUrlTemplate": "https://dlcdn.apache.org/kafka/",
+      "format": "html"
+    }
+  }
 }

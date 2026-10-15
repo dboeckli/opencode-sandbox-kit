@@ -273,7 +273,12 @@ run_kafka() {
 		log_step kafka
 		return 0
 	fi
-	download "https://dlcdn.apache.org/kafka/${KAFKA_VER}/kafka_${KAFKA_SCALA_VER}-${KAFKA_VER}.tgz" /tmp/kafka.tgz
+	# dlcdn hält nur die aktuellen Releases; ein gepinntes älteres KAFKA_VER liegt
+	# nach dem Rollover nur noch im Apache-Archiv. Erst CDN, dann archive.apache.org.
+	local kafka_tgz="kafka_${KAFKA_SCALA_VER}-${KAFKA_VER}.tgz"
+	if ! download "https://dlcdn.apache.org/kafka/${KAFKA_VER}/${kafka_tgz}" /tmp/kafka.tgz; then
+		download "https://archive.apache.org/dist/kafka/${KAFKA_VER}/${kafka_tgz}" /tmp/kafka.tgz
+	fi
 	rm -rf /opt/kafka
 	mkdir -p /opt/kafka
 	tar -xzf /tmp/kafka.tgz -C /opt/kafka --strip-components=1
