@@ -750,7 +750,7 @@ Die jeweilige Config wird automatisch gelesen:
 | Docker Compose 5.4.0 (Plugin) | GitHub Releases (docker/compose) |
 | kubectl (latest stable) | dl.k8s.io |
 | Helm 3.22.0 (v3, Default) + 4.3.0 (v4) | get.helm.sh |
-| Apache Kafka CLI 4.3.1 (Scala 2.13) | dlcdn.apache.org (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |
+| Apache Kafka CLI 4.3.1 (Scala 2.13) | dlcdn.apache.org (Fallback archive.apache.org) (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |
 | ctx7 | npm |
 | skills | npm (vercel-labs) |
 | prettier | npm |
@@ -768,8 +768,14 @@ Die jeweilige Config wird automatisch gelesen:
 
 > **Apache Kafka CLI:** Die Kafka-Distribution liegt unter `/opt/kafka`; `install-tooling.sh` legt für jedes
 > `bin/*.sh` einen Wrapper in `/usr/local/bin` an, der das Skript per absolutem Pfad ausführt (die Skripte
-> lösen ihr `base_dir` über `$(dirname $0)/..` auf — ein Symlink würde das brechen). `dlcdn.apache.org`
-> ist in der Network-Allowlist. Renovate trackt `KAFKA_VER` gegen `org.apache.kafka:kafka_2.13` (Maven).
+> lösen ihr `base_dir` über `$(dirname $0)/..` auf — ein Symlink würde das brechen). `dlcdn.apache.org` +
+> `archive.apache.org` (Fallback für ältere, von dlcdn entfernte Releases) sind in der Network-Allowlist.
+> Der Tarball wird erst von dlcdn, bei Fehler von `archive.apache.org` geladen (`run_kafka`). Renovate trackt
+> `KAFKA_VER` NICHT gegen `org.apache.kafka:kafka_2.13` (Maven), sondern gegen die Binary-Distro auf dlcdn
+> (custom Datasource `custom.apache-kafka`, `format: html`) — Maven-Artifacts werden publiziert, bevor der
+> Tarball auf den Apache-Mirrors liegt; ein Maven-Bump auf eine noch nicht veröffentlichte Distro bricht den
+> Image-Build (`kafka-topics.sh` fehlt → fail-closed Verify, exit 127). Zusätzlich prüft
+> `local-test-kits.py --validate-only` die Tarball-Verfügbarkeit (dlcdn ODER archive).
 
 ## Mammouth Authentication
 

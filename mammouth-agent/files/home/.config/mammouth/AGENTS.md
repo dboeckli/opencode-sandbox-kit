@@ -173,7 +173,7 @@ Docs: `npx ctx7 docs /helm/helm-www <query>` (Kubernetes package manager, charts
 
 ## Kafka CLI
 
-Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` ist in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
+Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` + `archive.apache.org` (Fallback für ältere, von dlcdn entfernte Releases) sind in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
 Docs: `npx ctx7 docs /apache/kafka <query>`.
 
 ## Runtime tools / CLIs (docs via ctx7)

@@ -76,6 +76,8 @@ permissions:
       # Node.js (Node 24 LTS Tarball — npm CLIs wie renovate >=43 benötigen Node ^24.11)
       - "nodejs.org:443"
       - "dlcdn.apache.org:443"
+      # Apache-Archiv (alte, von dlcdn entfernte Releases — Kafka-Tarball-Fallback in install-tooling.sh)
+      - "archive.apache.org:443"
       # Apache Camel (Doku, Dependencies)
       - "camel.apache.org:443"
       - "*.camel.apache.org:443"
