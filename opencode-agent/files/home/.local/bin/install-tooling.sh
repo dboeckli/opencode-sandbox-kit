@@ -241,7 +241,7 @@ install_helm() {
 }
 
 run_helm() {
-	HELM_VER="3.22.0"
+	HELM_VER="3.22.1"
 	if command -v helm >/dev/null 2>&1 && helm version --short 2>/dev/null | grep -qF "v${HELM_VER}"; then
 		log_step helm
 		return 0
