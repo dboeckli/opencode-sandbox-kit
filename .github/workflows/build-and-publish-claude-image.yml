@@ -44,7 +44,7 @@ permissions:
 #   Docker Hub:           docker.io/<dockerhub-user>   (z. B. docker.io/domboeckli)
 # Umschalten = Repo-Variable IMAGE_PREFIX setzen; zurueck = Variable loeschen (Default).
 env:
-  IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx' }}
+  IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.io/domboeckli' }}
   IMAGE_NAME: sbx-claude-tooling
 
 jobs:

@@ -168,48 +168,48 @@ Die Images müssen vor dem ersten Start **publiziert** sein — CI via `.github/
 Entwicklung** daher `:local` verwenden (siehe „Lokale Entwicklung"); für Remote-Bezug `:latest`. Details: `AGENTS.md`
 → "Image-Versionierung (Tooling-/Agent-Images)".
 
-### Registry umschalten (Cloudsmith ↔ Docker Hub)
+### Registry umschalten (Docker Hub ↔ Cloudsmith)
 
-Der Image-Prefix (Registry + Namespace [+ Repo]) ist **zentral** über `IMAGE_PREFIX` steuerbar — ein Umschalter, um
-z. B. bei erschöpfter Cloudsmith-Quote temporär nach Docker Hub zu wechseln (`<IMAGE_PREFIX>/sbx-<name>:<tag>`):
+Der Image-Prefix (Registry + Namespace [+ Repo]) ist **zentral** über `IMAGE_PREFIX` steuerbar
+(`<IMAGE_PREFIX>/sbx-<name>:<tag>`):
 
 | Registry | `IMAGE_PREFIX` |
 |----------|----------------|
-| Cloudsmith (**Default**) | `docker.cloudsmith.io/dboeckli/sbx` |
-| Docker Hub | `docker.io/<dockerhub-user>` (z. B. `docker.io/domboeckli`) |
+| Docker Hub (**Default**) | `docker.io/domboeckli` |
+| Cloudsmith (Ausweich) | `docker.cloudsmith.io/dboeckli/sbx` |
 
 Gesetzt wird er an drei Stellen (identischer Wert, Pfad-Komposition ist registry-unabhängig):
 
 1. **CI** — GitHub-**Repo-Variable** `IMAGE_PREFIX` (`.github/workflows/build-and-publish-*-image.yml` + `e2e.yml`
-   lesen `vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx'`). Fehlt sie → Cloudsmith-Default.
-2. **Lokal/e2e-Runner** — Env `IMAGE_PREFIX` (`local-test/local-test-kits.py`, `local-test/build-and-publish-*.py`).
+   lesen `vars.IMAGE_PREFIX || 'docker.io/domboeckli'`). Fehlt sie → Docker-Hub-Default.
+2. **Lokal/e2e-Runner** — Env `IMAGE_PREFIX` (`local-test/local-test-kits.py`, `local-test/build-and-publish-*.py`;
+   zusätzlich in allen IntelliJ-Run-Configs gesetzt).
 3. **Sandbox-Kits** — `--kit-arg imagePrefix=<prefix>` (`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`
    → `args.imagePrefix`, Default Docker Hub); CI/e2e/local-test übergeben ihn automatisch.
 
 Fertige `sbx run`-Kommandos für die Docker-Hub-Images (4 lokal + 4 remote): [`docs/dockerhub-images.md`](docs/dockerhub-images.md).
 
-**Zurück zu Cloudsmith** = Repo-Variable `IMAGE_PREFIX` löschen/auf den Default setzen (lokale Env unset) — die
-Defaults in den Workflows/Specs bleiben Cloudsmith. `cleanup-cloudsmith.yml` läuft nur im Cloudsmith-Modus.
+**Wechsel zu Cloudsmith** = Repo-Variable/Env explizit auf `docker.cloudsmith.io/dboeckli/sbx` setzen — die
+Defaults in Workflows/Specs bleiben Docker Hub. `cleanup-cloudsmith.yml` läuft nur im Cloudsmith-Modus.
 Der Cloudsmith-**API**-Service (`api.cloudsmith.io`, Helm-OCI) ist davon unberührt.
 
-#### Zurück nach Cloudsmith (Prozedur)
+#### Nach Cloudsmith wechseln (Prozedur)
 
-Cloudsmith nur zurückwechseln, wenn die OSS-Quote wieder frei ist (Bandwidth = 100 % ⇒ Downloads liefern `HTTP 402`).
+Cloudsmith nur als Ausweich nutzen, wenn die OSS-Quote frei ist (Bandwidth = 100 % ⇒ Downloads liefern `HTTP 402`).
 
 ```bash
 # 1. Quota prüfen (RESET des 30-Tage-Fensters abwarten; angezeigt unter /v1/quota/oss/dboeckli/)
 curl -s -H "X-Api-Key: $CLOUDSMITH_API_KEY" https://api.cloudsmith.io/v1/quota/oss/dboeckli/
 #    -> bandwidth percentage_used < 100 (inkl. Puffer für den nächsten e2e-Lauf)
 
-# 2. Umschalter zurück (Repo-Variable löschen -> Cloudsmith-Default; oder explizit setzen)
-gh variable delete IMAGE_PREFIX --repo dboeckli/opencode-sandbox-kit
-# gh variable set IMAGE_PREFIX --body "docker.cloudsmith.io/dboeckli/sbx" --repo dboeckli/opencode-sandbox-kit
+# 2. Umschalter umstellen (explizit auf Cloudsmith; Löschen der Variable -> Docker-Hub-Default)
+gh variable set IMAGE_PREFIX --body "docker.cloudsmith.io/dboeckli/sbx" --repo dboeckli/opencode-sandbox-kit
 ```
 
 3. **Cloudsmith-Images auffrischen** — Merge/`workflow_dispatch` auf `master`: die 4 `build-and-publish-*` pushen
-   `<pin>` + `latest` wieder nach Cloudsmith (die alten Cloudsmith-Images sind vom Stand vor dem Switch).
-4. **Lokal/Ad-hoc:** ein evtl. gesetztes `IMAGE_PREFIX=docker.io/...` unset; manuelle
-   `sbx run --template domboeckli/sbx-...` → zurück auf `docker.cloudsmith.io/dboeckli/sbx/sbx-...`.
+   `<pin>` + `latest` nach Cloudsmith (die alten Cloudsmith-Images sind vom Stand vor dem Switch).
+4. **Lokal/Ad-hoc:** `IMAGE_PREFIX=docker.cloudsmith.io/dboeckli/sbx` setzen (unset → Docker-Hub-Default);
+   manuelle `sbx run --template docker.cloudsmith.io/dboeckli/sbx/sbx-...`.
 5. **Docker-Hub-Images:** können liegen bleiben (kein Cleanup-Workflow; optional manuell löschen).
 
 Automatisch wieder aktiv: Cloudsmith-Registry-Credential im e2e (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`) und
@@ -593,7 +593,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   `sbx login` (`DOCKER_USERNAME`/`DOCKER_PAT`) + Cloudsmith-Registry-Credential (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`, nur wenn `IMAGE_PREFIX` auf Cloudsmith zeigt) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
 - **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`)
-  unter `<IMAGE_PREFIX>` (Repo-Variable `IMAGE_PREFIX`, aktuell `docker.io/domboeckli`; Fallback im Workflow: Cloudsmith — siehe „Registry umschalten"). Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
+  unter `<IMAGE_PREFIX>` (Repo-Variable `IMAGE_PREFIX`, Default `docker.io/domboeckli` — siehe „Registry umschalten"). Wird vom `e2e`-Workflow als `publish-image`-Job vor der Matrix aufgerufen; zusätzlich manuell
   via `workflow_dispatch` (Build-only möglich über den `push`-Input). Bei `push: false` (Branch/PR) lädt der Build das Image (`load`) und ein Verify-Step prüft die eingebackene Vibe-Version gegen `ARG VIBE_VERSION`
   (`docker run --entrypoint vibe <img> --version`); analog prüft `build-and-publish-mammouth-image.yml` die Mammouth-CLI-Version gegen `ARG MAMMOUTH_VERSION`.
 - **`cleanup-cloudsmith.yml`** — **nur Cloudsmith-Modus** (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`); löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx`

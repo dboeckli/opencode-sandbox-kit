@@ -165,9 +165,9 @@ sbx run ./mistral-vibe-agent/ `
   Maven, Node, PyPI/uv, Mammouth `install.sh`) kommen aus öffentlichen Quellen, der
   Push geht nach Docker Hub.
 - Als **Notfall-Pull-Quelle** lassen sich die Images anschließend wie folgt referenzieren
-  (Registry-Ref umbiegen). Bevorzugt: den **zentralen Umschalter** `IMAGE_PREFIX` verwenden
-  (siehe README „Registry umschalten"); dann ziehen alle Szenarien automatisch aus Docker Hub:
-  - `IMAGE_PREFIX=docker.io/<dockerhub-user>` (Env bzw. Repo-Variable) — `local-test/local-test-kits.py`
+  (Registry-Ref umbiegen). Docker Hub ist der **Default**; der **zentrale Umschalter** `IMAGE_PREFIX`
+  (siehe README „Registry umschalten") lässt alle Szenarien automatisch aus Docker Hub ziehen:
+  - `IMAGE_PREFIX=docker.io/domboeckli` (Env bzw. Repo-Variable) — `local-test/local-test-kits.py`
     komponiert `<IMAGE_PREFIX>/sbx-<name>:<tag>` und übergibt `--kit-arg imagePrefix=…` an die
     Sandbox-Kits (Mammouth/Mistral).
   - Alternativ gezielt: `OPENCODE_IMAGE_TAG`/`CLAUDE_IMAGE_TAG` (Mixin) bzw. `--template`/`imagePrefix`.

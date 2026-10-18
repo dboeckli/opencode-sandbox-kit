@@ -214,8 +214,8 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 Für den e2e-Test in GitHub Actions werden benötigt: `DOCKER_USERNAME` (Repo-Variable) +
 `DOCKER_PAT` (Secret) für den **`sbx login`** (Docker-Account-Session — sbx verlangt sie zum
 Erzeugen von Sandboxes). Für die Images wird eine **Repo-Variable `IMAGE_PREFIX`** (voller
-Registry-Prefix ohne Image-Namen) gelesen — Default `docker.cloudsmith.io/dboeckli/sbx`
-(Cloudsmith), für Docker Hub z. B. `docker.io/<dockerhub-user>`. Nur im Cloudsmith-Modus
+Registry-Prefix ohne Image-Namen) gelesen — Default `docker.io/domboeckli`
+(Docker Hub), für Cloudsmith `docker.cloudsmith.io/dboeckli/sbx`. Nur im Cloudsmith-Modus
 zusätzlich `CLOUDSMITH_USERNAME` (Repo-Variable) + `CLOUDSMITH_API_KEY` (Secret) für das
 **Cloudsmith-Registry-Credential** (Image-Pulls); im Docker-Hub-Modus entfällt das.
 
