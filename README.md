@@ -664,7 +664,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
 | Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` |
-| Helm | 4.3.0 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
+| Helm | 4.3.1 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
 | Apache Kafka CLI | 4.3.1 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |

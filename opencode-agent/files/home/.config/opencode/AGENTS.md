@@ -241,7 +241,7 @@ Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-p
 
 ## Helm
 
-Helm 4.3.0 at `/usr/local/bin/helm`; `helm4` ist ein Symlink auf dasselbe Binary. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist.
+Helm 4.3.1 at `/usr/local/bin/helm`; `helm4` ist ein Symlink auf dasselbe Binary. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist.
 
 ## Kafka CLI
 

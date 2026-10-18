@@ -743,7 +743,7 @@ Die jeweilige Config wird automatisch gelesen:
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
 | Docker Compose 5.4.0 (Plugin) | GitHub Releases (docker/compose) |
 | kubectl (latest stable) | dl.k8s.io |
-| Helm 4.3.0 | get.helm.sh |
+| Helm 4.3.1 | get.helm.sh |
 | Apache Kafka CLI 4.3.1 (Scala 2.13) | dlcdn.apache.org (Fallback archive.apache.org) (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |
 | ctx7 | npm |
 | skills | npm (vercel-labs) |
@@ -758,7 +758,7 @@ Die jeweilige Config wird automatisch gelesen:
 > `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig (redundant).**
 > Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
-> **Helm 4:** `helm` und `helm4` zeigen beide auf Helm 4.3.0 (`/usr/local/bin/helm`; `helm4` ist ein Symlink darauf). Renovate trackt die Version über `HELM_VER`.
+> **Helm 4:** `helm` und `helm4` zeigen beide auf Helm 4.3.1 (`/usr/local/bin/helm`; `helm4` ist ein Symlink darauf). Renovate trackt die Version über `HELM_VER`.
 
 > **Apache Kafka CLI:** Die Kafka-Distribution liegt unter `/opt/kafka`; `install-tooling.sh` legt für jedes
 > `bin/*.sh` einen Wrapper in `/usr/local/bin` an, der das Skript per absolutem Pfad ausführt (die Skripte
