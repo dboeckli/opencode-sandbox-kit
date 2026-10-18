@@ -13,22 +13,15 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 - **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
-## Datei-Edits in IntelliJ öffnen (Pflicht)
-
-Nach **jeder** Dateiänderung (anlegen, bearbeiten, verschieben) die geänderten Dateien direkt im
-IntelliJ-Editor öffnen (`mcp-gateway_open_file_in_editor`, `projectPath` im Windows-Format,
-z. B. `C:/development/projects/opencode-sandbox-kit`), damit der User nicht danach suchen muss.
-Bei mehreren geänderten Dateien alle öffnen. Hinweis: `open_file_in_editor` zeigt die **Datei**,
-keinen Diff — den Diff-View gibt es im Git-/Commit-Fenster (kein Diff-Tool im MCP-Toolset).
-
 ## Diff-Review in IntelliJ (Pflicht)
 
-Nach Änderungen den Diff als **Patch-Datei** bereitstellen, damit der User ihn im IntelliJ-Diff-Viewer sieht
-(der MCP-Server hat kein Diff-Tool; `open_file_in_editor` auf eine `.patch`-Datei liefert den Diff-View):
+Nach Änderungen **nur** den Diff als **Patch-Datei** in IntelliJ öffnen — die einzelnen geänderten Dateien
+werden nicht mehr zusätzlich geöffnet (der MCP-Server hat kein Diff-Tool; `open_file_in_editor` auf eine
+`.patch`-Datei liefert den Diff-View):
 
 - Verzeichnis `.review/` (gitignored; Eintrag `.review/` in `.gitignore`).
 - `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
-- Danach `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
+- Danach **nur** `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
 
 ## Git commits (Nachfragen-Pflicht)
 
