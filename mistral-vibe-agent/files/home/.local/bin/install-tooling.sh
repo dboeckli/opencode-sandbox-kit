@@ -267,7 +267,7 @@ run_helm4() {
 # /usr/local/bin würde das brechen. Deshalb pro Skript ein kleiner Wrapper, der das
 # echte Skript per absolutem Pfad ausführt ($0 bleibt dort der echte Pfad).
 run_kafka() {
-	KAFKA_VER="4.3.1"
+	KAFKA_VER="4.4.0"
 	KAFKA_SCALA_VER="2.13"
 	if [ -x /opt/kafka/bin/kafka-topics.sh ] && command -v kafka-topics.sh >/dev/null 2>&1 && kafka-topics.sh --version 2>/dev/null | grep -qF "${KAFKA_VER}"; then
 		log_step kafka
