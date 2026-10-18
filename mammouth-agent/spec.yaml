@@ -12,10 +12,10 @@ args:
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build;
       lokal `--kit-arg imageTag=local`.
   imagePrefix:
-    default: "docker.cloudsmith.io/dboeckli/sbx"
+    default: "docker.io/domboeckli"
     description: >-
       Image prefix (registry + namespace [+ repo]) without the image name — central switch between
-      registries. Cloudsmith (default): docker.cloudsmith.io/dboeckli/sbx. Docker Hub: docker.io/<user>.
+      registries. Docker Hub (default): docker.io/domboeckli. Cloudsmith: docker.cloudsmith.io/dboeckli/sbx.
       Passed by CI/e2e/local-test via `--kit-arg imagePrefix=...`.
 
 sandbox:

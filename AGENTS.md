@@ -202,9 +202,10 @@ Basis-Version `<basever>`:
 und `local-test/build-and-publish-<name>-image.py` (`<name>` = `opencode`/`claude`/`mammouth`/`mistral-vibe`).
 
 **Registry (zentraler Umschalter):** Alle Images liegen unter dem Prefix `IMAGE_PREFIX` (Registry + Namespace
-[+ Repo] ohne Image-Namen; Image = `<IMAGE_PREFIX>/sbx-<name>:<tag>`). Default Cloudsmith
-`docker.cloudsmith.io/dboeckli/sbx`; für Docker Hub `docker.io/<dockerhub-user>`. Quelle: GitHub-Repo-Variable
-`vars.IMAGE_PREFIX` (CI, Fallback = Default), Env `IMAGE_PREFIX` (`local-test-kits.py` + `local-test/build-and-publish-*.py`),
+[+ Repo] ohne Image-Namen; Image = `<IMAGE_PREFIX>/sbx-<name>:<tag>`). Default Docker Hub
+`docker.io/domboeckli` (in CI über die Repo-Variable, lokal über Env/Run-Config gesetzt); Cloudsmith
+`docker.cloudsmith.io/dboeckli/sbx` ist der Ausweich-Registry. Quelle: GitHub-Repo-Variable
+`vars.IMAGE_PREFIX` (CI, Fallback im Workflow = Cloudsmith), Env `IMAGE_PREFIX` (`local-test-kits.py` + `local-test/build-and-publish-*.py`),
 `args.imagePrefix` (`mammouth-agent`/`mistral-vibe-agent` spec, via `--kit-arg imagePrefix=…`). Umschalten =
 Repo-Variable/Env setzen; **zurück** = Default (Variable löschen). Der Cloudsmith-Login/-Registry-Secret sowie
 `cleanup-cloudsmith.yml` greifen nur im Cloudsmith-Modus (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`).

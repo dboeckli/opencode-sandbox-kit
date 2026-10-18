@@ -43,8 +43,8 @@ DOCKERFILE = os.path.join(CONTEXT, "claude", "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-claude-image.log")
 NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
-# Zentraler Registry-Umschalter (siehe local-test-kits.py): Cloudsmith (Default) oder Docker Hub.
-IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.cloudsmith.io/dboeckli/sbx")
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
 IMAGE = f"{IMAGE_PREFIX}/{NAME}"
 BUILDER = os.environ.get("CLAUDE_BUILDX_BUILDER", "sbx-claude")
 

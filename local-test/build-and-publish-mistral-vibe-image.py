@@ -40,8 +40,8 @@ DOCKERFILE = os.path.join(CONTEXT, "Dockerfile")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-mistral-vibe-image.log")
 NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
-# Zentraler Registry-Umschalter (siehe local-test-kits.py): Cloudsmith (Default) oder Docker Hub.
-IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.cloudsmith.io/dboeckli/sbx")
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
 IMAGE = f"{IMAGE_PREFIX}/{NAME}"
 BUILDER = os.environ.get("VIBE_BUILDX_BUILDER", "sbx-vibe")
 
