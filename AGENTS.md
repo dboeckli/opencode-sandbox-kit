@@ -13,22 +13,15 @@ Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **W
 - **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
-## Datei-Edits in IntelliJ öffnen (Pflicht)
-
-Nach **jeder** Dateiänderung (anlegen, bearbeiten, verschieben) die geänderten Dateien direkt im
-IntelliJ-Editor öffnen (`mcp-gateway_open_file_in_editor`, `projectPath` im Windows-Format,
-z. B. `C:/development/projects/opencode-sandbox-kit`), damit der User nicht danach suchen muss.
-Bei mehreren geänderten Dateien alle öffnen. Hinweis: `open_file_in_editor` zeigt die **Datei**,
-keinen Diff — den Diff-View gibt es im Git-/Commit-Fenster (kein Diff-Tool im MCP-Toolset).
-
 ## Diff-Review in IntelliJ (Pflicht)
 
-Nach Änderungen den Diff als **Patch-Datei** bereitstellen, damit der User ihn im IntelliJ-Diff-Viewer sieht
-(der MCP-Server hat kein Diff-Tool; `open_file_in_editor` auf eine `.patch`-Datei liefert den Diff-View):
+Nach Änderungen **nur** den Diff als **Patch-Datei** in IntelliJ öffnen — die einzelnen geänderten Dateien
+werden nicht mehr zusätzlich geöffnet (der MCP-Server hat kein Diff-Tool; `open_file_in_editor` auf eine
+`.patch`-Datei liefert den Diff-View):
 
 - Verzeichnis `.review/` (gitignored; Eintrag `.review/` in `.gitignore`).
 - `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
-- Danach `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
+- Danach **nur** `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
 
 ## Git commits (Nachfragen-Pflicht)
 
@@ -185,7 +178,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth/mistral API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (all kits), no secrets check and no sandbox start (default is starting the sandboxes); includes the Stack Exchange + sbx CLI offline-doc update checks, the install-script sync check, the **Sandbox-Template-Version check** (explizite `TEMPLATE_VERSION`-Konstante in `local-test-kits.py` gegen `validate.yml`/`e2e.yml` + Mammouth-spec-Image-Drift + Docker-Hub-Tags, alle Kits), den **Mammouth-CLI-Versions-Check** (Pin vs. latest GitHub-Release `mammouth-ai/code`), den **Mistral-Vibe-Versions-Check** (Dockerfile-Pin + spec-Image-Tag + shell-Basis-Template vs. latest PyPI `mistral-vibe`), den **Docker-MCP-Server-Versions-Check** (Pin `mcp-server-docker==<v>` in `docs/docker-mcp-server.md` vs. latest PyPI `mcp-server-docker`, Issue #165) und den **Node-Baseline-Check** (Issue #138: prüft per Docker best-effort die Node-Version der gepinnten Templates `opencode-docker`/`claude-code-docker`/`shell-docker`; warnt, sobald sie ≥ 24 sind → dann `install-tooling.sh node` + `nodejs.org`-Allowlist entfernen)
 - `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `opencode-agent/files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync all three kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
-- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/build-and-publish-mistral-vibe-image.yml` + `.github/workflows/build-and-publish-opencode-image.yml` + `.github/workflows/build-and-publish-claude-image.yml` + `.github/workflows/build-and-publish-mammouth-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.48.0`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Version** (env `TEMPLATE_VERSION` in beiden Workflows + explizite Konstante in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`); e2e **und validate** signs in to Docker via `sbx login` (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`; sbx >= v0.47.0 braucht eine Docker-Session für `sbx kit validate`, Secret-Service-Setup wie im e2e) and stores the Cloudsmith registry credential **only when `IMAGE_PREFIX` starts with `docker.cloudsmith.io`** (variable `CLOUDSMITH_USERNAME` + secret `CLOUDSMITH_API_KEY`; im Docker-Hub-Modus entfällt das Registry-Secret, `sbx login` genügt), registers fake sandbox secrets, runs `local-test-kits.py --ci`. **Registry zentral via Repo-Variable `IMAGE_PREFIX`** (Default `docker.cloudsmith.io/dboeckli/sbx`; Docker Hub `docker.io/<dockerhub-user>`), gelesen von allen `build-and-publish-*-image.yml` + `e2e.yml` (`vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx'`). `build-and-publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt Tag + Registry per `--kit-arg imageTag=…` / `--kit-arg imagePrefix=…` (`*-agent/spec.yaml` `args.imageTag`/`args.imagePrefix`)
+- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/build-and-publish-mistral-vibe-image.yml` + `.github/workflows/build-and-publish-opencode-image.yml` + `.github/workflows/build-and-publish-claude-image.yml` + `.github/workflows/build-and-publish-mammouth-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.48.0`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Version** (env `TEMPLATE_VERSION` in beiden Workflows + explizite Konstante in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`); e2e **und validate** signs in to Docker via `sbx login` (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`; sbx >= v0.47.0 braucht eine Docker-Session für `sbx kit validate`, Secret-Service-Setup wie im e2e) and stores the Cloudsmith registry credential **only when `IMAGE_PREFIX` starts with `docker.cloudsmith.io`** (variable `CLOUDSMITH_USERNAME` + secret `CLOUDSMITH_API_KEY`; im Docker-Hub-Modus entfällt das Registry-Secret, `sbx login` genügt), registers fake sandbox secrets, runs `local-test-kits.py --ci`. **Registry zentral via Repo-Variable `IMAGE_PREFIX`** (Default `docker.io/domboeckli`; Cloudsmith `docker.cloudsmith.io/dboeckli/sbx`), gelesen von allen `build-and-publish-*-image.yml` + `e2e.yml` (`vars.IMAGE_PREFIX || 'docker.io/domboeckli'`). `build-and-publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt Tag + Registry per `--kit-arg imageTag=…` / `--kit-arg imagePrefix=…` (`*-agent/spec.yaml` `args.imageTag`/`args.imagePrefix`)
 
 - **Cleanup (Cloudsmith-only):** `.github/workflows/cleanup-cloudsmith.yml` löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx` (Tag-Muster `<basever>-<slug>.<YYYYMMDDHHMMSS>` + Moving-Tag `<slug>`; Master-Images `<basever>`/`latest` bleiben). Läuft nur im Cloudsmith-Modus (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`); im Docker-Hub-Modus übersprungen. Auslöser: **push auf `master`** (alle Feature-Images, da nach Merge obsolet), **nightly 04:25 UTC** (verwaiste Snapshot älter als `max-age-days`) und `workflow_dispatch` (`dry-run` Default an). Skript: `.github/workflows/scripts/cleanup-cloudsmith.py` (optional `SLUG`; child-aware: löscht auch untagged Orphans, die von keinem verbleibenden Index referenziert werden, fail-safe). Zusätzlich leert die Pipeline den **Recycle Bin** (hard delete, `purge-cloudsmith-recycle-bin.py`), da soft-gelöschte Packages 7 Tage weiter gegen das Storage-Kontingent zählen (`purge-recycle-bin`, Default an).
 
@@ -202,17 +195,18 @@ Basis-Version `<basever>`:
 und `local-test/build-and-publish-<name>-image.py` (`<name>` = `opencode`/`claude`/`mammouth`/`mistral-vibe`).
 
 **Registry (zentraler Umschalter):** Alle Images liegen unter dem Prefix `IMAGE_PREFIX` (Registry + Namespace
-[+ Repo] ohne Image-Namen; Image = `<IMAGE_PREFIX>/sbx-<name>:<tag>`). Default Cloudsmith
-`docker.cloudsmith.io/dboeckli/sbx`; für Docker Hub `docker.io/<dockerhub-user>`. Quelle: GitHub-Repo-Variable
-`vars.IMAGE_PREFIX` (CI, Fallback = Default), Env `IMAGE_PREFIX` (`local-test-kits.py` + `local-test/build-and-publish-*.py`),
+[+ Repo] ohne Image-Namen; Image = `<IMAGE_PREFIX>/sbx-<name>:<tag>`). Default Docker Hub
+`docker.io/domboeckli` (in CI über die Repo-Variable, lokal über Env/Run-Config gesetzt); Cloudsmith
+`docker.cloudsmith.io/dboeckli/sbx` ist der Ausweich-Registry. Quelle: GitHub-Repo-Variable
+`vars.IMAGE_PREFIX` (CI, Fallback im Workflow = Docker Hub), Env `IMAGE_PREFIX` (`local-test-kits.py` + `local-test/build-and-publish-*.py`),
 `args.imagePrefix` (`mammouth-agent`/`mistral-vibe-agent` spec, via `--kit-arg imagePrefix=…`). Umschalten =
 Repo-Variable/Env setzen; **zurück** = Default (Variable löschen). Der Cloudsmith-Login/-Registry-Secret sowie
 `cleanup-cloudsmith.yml` greifen nur im Cloudsmith-Modus (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`).
 
-**Rück-Switch nach Cloudsmith** (Details/Commands: README → „Registry umschalten → Zurück nach Cloudsmith"):
+**Wechsel nach Cloudsmith** (Details/Commands: README → „Registry umschalten → Nach Cloudsmith wechseln"):
 erst Cloudsmith-Quote prüfen (`curl -H "X-Api-Key: $CLOUDSMITH_API_KEY" https://api.cloudsmith.io/v1/quota/oss/dboeckli/`
-→ bandwidth `percentage_used` < 100, sonst `HTTP 402`), dann `IMAGE_PREFIX`-Repo-Variable/Env löschen, danach
-master-Publish zum Auffrischen der Cloudsmith-Images; lokale `IMAGE_PREFIX`-Env unset.
+→ bandwidth `percentage_used` < 100, sonst `HTTP 402`), dann `IMAGE_PREFIX` (Repo-Variable/Env) explizit auf
+`docker.cloudsmith.io/dboeckli/sbx` setzen, danach master-Publish zum Auffrischen der Cloudsmith-Images.
 
 | Kontext | Auslöser | Tag(s) |
 |---------|----------|--------|
@@ -355,7 +349,7 @@ Die Config liegt je Agent-Location vor:
   Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`, die
   K8s-Schreib-/Exec-Tools in `permissions.ask`.
   > **Produktions-No-Go:** `denied_resources` für `Secret` ist in der Host-Config bewusst deaktiviert
-  > (sonst bricht das `helm`-Toolset — Helm v3 speichert Releases als Secrets). Dadurch können
+  > (sonst bricht das `helm`-Toolset — Helm speichert Releases als Secrets). Dadurch können
   > `resources_get`/`resources_list` **Cluster-Secrets inkl. `.data` lesen**. Nur für Entwicklungs-Cluster
   > (Docker Desktop): `docs/kubernetes-mcp-server.md#sicherheit-kurz`.
 - **`ask`**: `mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) —
@@ -732,7 +726,7 @@ Die jeweilige Config wird automatisch gelesen:
 
 > Die Tooling-Installation ist in allen Kit-Specs dedupliziert: `setup.install` nutzt für die
 > **schweren Tools** `bash /home/agent/.local/bin/install-tooling.sh <tool>` — **einen Command pro Tool**
-> (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`, Default `all`), damit die `sbx run`-Konsole
+> (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka`, Default `all`), damit die `sbx run`-Konsole
 > jedes Tool als eigene Zeile (Spinner → ✓) zeigt. npm/apt-Pakete sind als Inline-Commands direkt in
 > den Specs (`npm_config_bin_links=true npm install -g ctx7` usw., `apt-get update && …`). Die Skripte
 > liegen als identische Kopien in den `files/home/.local/bin/`-Bundles der Kits (kein separates
@@ -749,7 +743,7 @@ Die jeweilige Config wird automatisch gelesen:
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
 | Docker Compose 5.4.0 (Plugin) | GitHub Releases (docker/compose) |
 | kubectl (latest stable) | dl.k8s.io |
-| Helm 3.22.0 (v3, Default) + 4.3.0 (v4) | get.helm.sh |
+| Helm 4.3.1 | get.helm.sh |
 | Apache Kafka CLI 4.3.1 (Scala 2.13) | dlcdn.apache.org (Fallback archive.apache.org) (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |
 | ctx7 | npm |
 | skills | npm (vercel-labs) |
@@ -764,7 +758,7 @@ Die jeweilige Config wird automatisch gelesen:
 > `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig (redundant).**
 > Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
-> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.22.0); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.3.0) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm 4:** `helm` und `helm4` zeigen beide auf Helm 4.3.1 (`/usr/local/bin/helm`; `helm4` ist ein Symlink darauf). Renovate trackt die Version über `HELM_VER`.
 
 > **Apache Kafka CLI:** Die Kafka-Distribution liegt unter `/opt/kafka`; `install-tooling.sh` legt für jedes
 > `bin/*.sh` einen Wrapper in `/usr/local/bin` an, der das Skript per absolutem Pfad ausführt (die Skripte

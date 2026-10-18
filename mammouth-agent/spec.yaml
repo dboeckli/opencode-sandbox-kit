@@ -12,10 +12,10 @@ args:
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build;
       lokal `--kit-arg imageTag=local`.
   imagePrefix:
-    default: "docker.cloudsmith.io/dboeckli/sbx"
+    default: "docker.io/domboeckli"
     description: >-
       Image prefix (registry + namespace [+ repo]) without the image name — central switch between
-      registries. Cloudsmith (default): docker.cloudsmith.io/dboeckli/sbx. Docker Hub: docker.io/<user>.
+      registries. Docker Hub (default): docker.io/domboeckli. Cloudsmith: docker.cloudsmith.io/dboeckli/sbx.
       Passed by CI/e2e/local-test via `--kit-arg imagePrefix=...`.
 
 sandbox:
@@ -277,9 +277,7 @@ setup:
     - command: "bash /home/agent/.local/bin/install-tooling.sh kubectl"
       description: Install kubectl — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh helm"
-      description: Install Helm v3 — source files/home/.local/bin/install-tooling.sh
-    - command: "bash /home/agent/.local/bin/install-tooling.sh helm4"
-      description: Install Helm v4 (as helm4) — source files/home/.local/bin/install-tooling.sh
+      description: Install Helm 4 (`helm` + `helm4` symlink) — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh kafka"
       description: Install Apache Kafka CLI (bin/*.sh wrappers in /usr/local/bin) — source files/home/.local/bin/install-tooling.sh
     - command: "bash /home/agent/.local/bin/install-tooling-user.sh"

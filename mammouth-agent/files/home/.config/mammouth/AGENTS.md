@@ -14,22 +14,15 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 5. Answer using the fetched docs
 <!-- context7 -->
 
-## Datei-Edits in IntelliJ öffnen (Pflicht)
-
-Nach **jeder** Dateiänderung (anlegen, bearbeiten, verschieben) die geänderten Dateien direkt im
-IntelliJ-Editor öffnen (`mcp-gateway_open_file_in_editor`, `projectPath` im Windows-Format,
-z. B. `C:/development/projects/<projekt>`) — bei mehreren geänderten Dateien alle. Nur wenn das
-IntelliJ-MCP verfügbar ist. Hinweis: `open_file_in_editor` zeigt die **Datei**, keinen Diff — den
-Diff-View gibt es im Git-/Commit-Fenster.
-
 ## Diff-Review in IntelliJ (Pflicht)
 
-Nach Änderungen den Diff als **Patch-Datei** bereitstellen, damit der User ihn im IntelliJ-Diff-Viewer sieht
-(der MCP-Server hat kein Diff-Tool; `mcp-gateway_open_file_in_editor` auf eine `.patch`-Datei liefert den Diff-View):
+Nach Änderungen **nur** den Diff als **Patch-Datei** in IntelliJ öffnen — die einzelnen geänderten Dateien
+werden nicht mehr zusätzlich geöffnet (der MCP-Server hat kein Diff-Tool; `mcp-gateway_open_file_in_editor`
+auf eine `.patch`-Datei liefert den Diff-View):
 
 - Verzeichnis `.review/` im Projekt (gitignored; im Projekt-`.gitignore` ergaenzen: `.review/`).
 - `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
-- Danach `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` oeffnen.
+- Danach **nur** `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` oeffnen.
 
 ## Git commits (Nachfragen-Pflicht)
 
@@ -168,7 +161,7 @@ Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
 
 ## Helm
 
-`helm` 3.22.0 (v3) at `/usr/local/bin/helm`, `helm4` 4.3.0 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
+`helm` 4.3.1 at `/usr/local/bin/helm` (`helm4` ist ein Symlink auf dasselbe Binary). Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist.
 Docs: `npx ctx7 docs /helm/helm-www <query>` (Kubernetes package manager, charts).
 
 ## Kafka CLI

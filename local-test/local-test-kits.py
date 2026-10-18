@@ -168,12 +168,13 @@ OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-toolin
 CLAUDE_IMAGE_NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
 CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 # Zentraler Registry-Umschalter: vollstaendiger Image-Prefix (Registry + Namespace [+ Repo])
-# ohne Image-Namen. Default Cloudsmith (vermeidet das Docker-Hub-Pull-Rate-Limit und ist anonym
-# pullbar). Umschalten (z. B. bei erschoepfter Cloudsmith-Quote) per Env `IMAGE_PREFIX`:
-#   Cloudsmith (Default): docker.cloudsmith.io/dboeckli/sbx
-#   Docker Hub:           docker.io/<dockerhub-user>   (z. B. docker.io/domboeckli)
+# ohne Image-Namen. Default Docker Hub (wie die CI, Repo-Variable `IMAGE_PREFIX`); Cloudsmith
+# ist der Ausweich-Registry. Umschalten per Env `IMAGE_PREFIX` (auch in den IntelliJ-Run-Configs
+# gesetzt):
+#   Docker Hub (Default): docker.io/domboeckli
+#   Cloudsmith:           docker.cloudsmith.io/dboeckli/sbx
 # Der Image-Name wird jeweils angehaengt: "<IMAGE_PREFIX>/sbx-<name>:<tag>".
-DEFAULT_IMAGE_PREFIX = "docker.cloudsmith.io/dboeckli/sbx"
+DEFAULT_IMAGE_PREFIX = "docker.io/domboeckli"
 IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX") or DEFAULT_IMAGE_PREFIX
 OPENCODE_BASE_IMAGE_RE = re.compile(
     r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
@@ -276,11 +277,83 @@ def run_sbx(args, stream=False):
     return proc.returncode, out.strip()
 
 
+def run_sbx_stdout(args):
+    """`sbx` starten und stdout/stderr getrennt zurueckgeben.
+
+    `run_sbx()` mischt beide Streams fuer Diagnose-Ausgaben. Seit sbx v0.48 gehen
+    Warnungen/Hinweise nach stderr und Ergebnisse nach stdout — strukturierte
+    Ausgabe (`--json`, `-q`) darf deshalb nur aus stdout geparst werden.
+    """
+    if which("sbx") is None:
+        print(_color("31", "sbx CLI nicht gefunden (PATH?)"))
+        sys.exit(1)
+    proc = subprocess.run(
+        ["sbx"] + args,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return proc.returncode, (proc.stdout or "").strip(), (proc.stderr or "").strip()
+
+
+def run_sbx_json(args):
+    """`sbx ... --json` ausfuehren und das geparste Dokument zurueckgeben.
+
+    `None` bedeutet: Aufruf fehlgeschlagen oder Ausgabe ist kein JSON (aeltere
+    sbx-Version, Sign-in-Fehler, ...). Aufrufer fallen dann auf den Parser fuer
+    die menschlich lesbare Ausgabe zurueck.
+    """
+    code, out, _err = run_sbx_stdout(list(args) + ["--json"])
+    if code != 0 or not out:
+        return None
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError:
+        return None
+
+
+def sbx_names(args):
+    """Namen aus `sbx ... -q` als Set, oder `None` wenn der Aufruf scheitert.
+
+    `-q` gibt nur Namen aus (ein Name pro Zeile oder leerzeichengetrennt) und ist
+    damit unabhaengig vom Tabellen-Layout. `-q` und `--json` schliessen sich aus.
+    """
+    code, out, _err = run_sbx_stdout(list(args) + ["-q"])
+    if code != 0:
+        return None
+    return set(out.split())
+
+
 def exec_sandbox(name, cmd):
     return run_sbx(["exec", name, "bash", "-c", cmd])
 
 
+def _policy_entry_line(entry):
+    if not isinstance(entry, dict):
+        return str(entry)
+    parts = []
+    for key in ("host", "count", "proxy_type", "rule", "reason", "first_seen", "last_seen"):
+        value = entry.get(key)
+        if value in (None, "", 0, []):
+            continue
+        parts.append(f"{key}={value}")
+    return " ".join(parts) or json.dumps(entry, ensure_ascii=False)
+
+
 def blocked_requests(name):
+    # Seit sbx v0.48: {updated_at, allowed: [...], blocked: [...]}
+    data = run_sbx_json(["policy", "log", name])
+    if isinstance(data, dict) and isinstance(data.get("blocked"), list):
+        blocked = data["blocked"]
+        if not blocked:
+            info(f"  sbx policy log {name}: keine Blocked requests")
+            return 0
+        info(f"  sbx policy log {name} (Blocked requests, {len(blocked)}):")
+        for entry in blocked:
+            print("         " + _policy_entry_line(entry))
+        return 0
+    # Fallback: menschlich lesbare Tabelle (sbx < v0.48)
     code, out = run_sbx(["policy", "log", name])
     if code != 0:
         info(f"  sbx policy log {name}:")
@@ -312,8 +385,13 @@ def dump_policy_log(name):
     fuer die Credential-Injection sind die PROXY-Spalte (forward vs.
     transparent/forward-bypass) und die Injection-Entscheidung relevant.
     """
-    code, out = run_sbx(["policy", "log", name])
     info(f"  sbx policy log {name} (vollstaendig):")
+    data = run_sbx_json(["policy", "log", name])
+    if data is not None:
+        for line in json.dumps(data, indent=2, ensure_ascii=False).splitlines():
+            print("         " + line)
+        return
+    code, out = run_sbx(["policy", "log", name])
     if code != 0 or not out.strip():
         print("         " + (out or "(kein Output / Fehler beim Aufruf)"))
         return
@@ -1058,6 +1136,10 @@ def main():
     _, secret_out = run_sbx(["secret", "ls"])
     for line in secret_out.splitlines():
         print("      " + line)
+    # Seit sbx v0.48: `-q` liefert nur die Namen (layout-unabhaengig). Die
+    # Tabellen-Ausgabe oben bleibt reine Diagnose; geprueft wird gegen das Set.
+    # Fallback auf die Tabelle, falls `-q` nicht verfuegbar ist (aeltere Version).
+    global_secrets = sbx_names(["secret", "ls", "-g"])
 
     # Nur Secrets prüfen, die ein ausgewähltes Szenario (Kit) tatsächlich benötigt —
     # Fehlermeldungen nennen das betroffene Kit/Szenario.
@@ -1070,7 +1152,12 @@ def main():
     for sname in SECRET_ORDER:
         if not any(sname in SCENARIO_SECRETS[sc] for sc in selected):
             continue
-        ok = re.search(rf"^\(global\)\s+service\s+{sname}\s+\(stored\)$", secret_out, re.M)
+        if global_secrets is not None:
+            ok = sname in global_secrets
+        else:
+            ok = re.search(
+                rf"^\(global\)\s+service\s+{re.escape(sname)}\s+\(stored\)$", secret_out, re.M
+            ) is not None
         if ok:
             pass_(f"secret: {sname}")
         else:
@@ -1142,7 +1229,7 @@ def main():
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
         # Tooling-Images (Issue #137, Tooling vorgebacken), alle unter IMAGE_PREFIX
-        # (Default Cloudsmith `docker.cloudsmith.io/dboeckli/sbx`, per `IMAGE_PREFIX`-Env umschaltbar):
+        # (Default Docker Hub `docker.io/domboeckli`, per `IMAGE_PREFIX`-Env umschaltbar):
         #   - opencode: <IMAGE_PREFIX>/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
         #   - claude:   <IMAGE_PREFIX>/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
         #   - mammouth: <IMAGE_PREFIX>/sbx-mammouth:<tag>         (MAMMOUTH_IMAGE_TAG, default `local`)
@@ -1187,15 +1274,22 @@ def main():
         # Host registriert ist — sonst schlägt `sbx create` fehl (jeder static-mcp-Name muss registriert sein).
         # CI hat kein `idea` registriert → Sandbox ohne static-mcp; der Config-Check prüft dann nur die Whitelist,
         # der Gateway-Weg wird lokal mit registriertem `idea` getestet.
-        c_mcp, out_mcp = run_sbx(["mcp", "ls"])
-        if c_mcp == 0 and re.search(r"^\s*idea\s+", out_mcp, re.M):
+        # Seit sbx v0.48: `-q` liefert nur die Namen (layout-unabhaengig);
+        # Fallback auf die Tabelle, falls `-q` nicht verfuegbar ist (aeltere Version).
+        mcp_names = sbx_names(["mcp", "ls"])
+        if mcp_names is not None:
+            has_idea = "idea" in mcp_names
+        else:
+            c_mcp, out_mcp = run_sbx(["mcp", "ls"])
+            has_idea = c_mcp == 0 and re.search(r"^\s*idea\s+", out_mcp, re.M) is not None
+        if has_idea:
             create_cmd += ["--static-mcp", "idea"]
             info("  IntelliJ MCP: idea registriert → --static-mcp idea")
         else:
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
                                       "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
         info("  setup.install laeuft jetzt (npm-CLIs, apt, JDK, Maven, Docker CLI, Compose, "
-             "kubectl, Helm v3/v4, Kafka, Skills). Mit vorgebackenem Image (opencode) in Sekunden; "
+             "kubectl, Helm 4, Kafka, Skills). Mit vorgebackenem Image (opencode) in Sekunden; "
              "sonst mehrere Minuten ohne Zwischenausgabe (sbx buffert die Install-Ausgabe bei "
              "gepipetem stdout).")
         code, create_out = run_sbx(create_cmd, stream=True)

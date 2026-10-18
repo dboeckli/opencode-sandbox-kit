@@ -21,7 +21,7 @@ Sandbox.
 ### Install-Log-Format (`/var/log/sbx-kit-install.log`)
 
 Der `setup.install` ruft npm/apt als **Inline-Commands** und die restlichen Tools **einzeln pro Tool**
-(`install-tooling.sh shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`) auf — so zeigt die
+(`install-tooling.sh shfmt|jdk|maven|docker|compose|kubectl|helm|kafka`) auf — so zeigt die
 `sbx run`-Konsole jedes Tool als eigene Zeile (Spinner beim Start → ✓ beim Abschluss). Jeder Lauf
 loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
 
@@ -33,7 +33,7 @@ loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
 [install-tooling] 2026-08-19T10:24:57+02:00 step=jdk elapsed=29s total=30s
 [install-tooling] 2026-08-19T10:24:57+02:00 phase=jdk done total=30s
 ...
-[install-tooling] 2026-08-19T10:26:01+02:00 phase=helm4 done total=99s
+[install-tooling] 2026-08-19T10:26:01+02:00 phase=helm done total=99s
 ```
 
 - `elapsed` = Dauer des letzten Schritts, `total` = Zeit seit Tool-Start, Timestamp = Wall-Clock.

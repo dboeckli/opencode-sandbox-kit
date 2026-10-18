@@ -1,17 +1,17 @@
-# Docker-Hub-Images nutzen (statt Cloudsmith)
+# Images von Docker Hub (Default)
 
 Kurzreferenz: `sbx run`-Kommandos für die **4 Kits**, die die Images aus **Docker Hub**
-(`docker.io/domboeckli/sbx-…`) statt aus Cloudsmith ziehen. Hintergrund und Umschalter:
-README → „Registry umschalten (Cloudsmith ↔ Docker Hub)".
+(`docker.io/domboeckli/sbx-…`) ziehen — dem Default-Registry. Hintergrund und Umschalter:
+README → „Registry umschalten (Docker Hub ↔ Cloudsmith)".
 
 Es gibt **4 lokale** Kommandos (Tag `:local`, zuvor lokal gebaut/gepusht) und **4 remote**
 Kommandos (publizierte Images, Tag `:latest`).
 
 ## Voraussetzungen
 
-- Aktueller Umschalter: `IMAGE_PREFIX=docker.io/domboeckli`
+- Registry-Default: `IMAGE_PREFIX=docker.io/domboeckli` (muss nicht gesetzt werden)
   - CI: Repo-Variable `IMAGE_PREFIX` (`gh variable set IMAGE_PREFIX --body "docker.io/domboeckli" --repo dboeckli/opencode-sandbox-kit`)
-  - Lokal: `$env:IMAGE_PREFIX = "docker.io/domboeckli"`
+  - Lokal: nur nötig, um vom Default abzuweichen (`$env:IMAGE_PREFIX = "docker.io/domboeckli"`)
 - Images auf Docker Hub (öffentlich, anonym pullbar):
   `domboeckli/sbx-opencode-tooling`, `domboeckli/sbx-claude-tooling`, `domboeckli/sbx-mammouth`, `domboeckli/sbx-mistral-vibe`
 - `--skills=off` gehört in **jedes** Kommando (Trust Boundary).
@@ -143,4 +143,4 @@ sbx run ./mistral-vibe-agent/ `
   (Docker Hub = Default-Registry); hier bewusst mit `docker.io/`-Präfix (= Wert von `IMAGE_PREFIX`).
 - Kein Host-Registry-Login nötig (öffentliche Images); bei Docker-Hub-Rate-Limit ggf.
   `docker login` / `sbx login` (Konto `domboeckli`, 200 Pulls/h).
-- Zurück zu Cloudsmith: README → „Registry umschalten → Zurück nach Cloudsmith (Prozedur)".
+- Cloudsmith statt Docker Hub: README → „Registry umschalten → Nach Cloudsmith wechseln (Prozedur)".

@@ -39,7 +39,7 @@ permissions:
 # Docker Hub: docker.io/<dockerhub-user>. Bestimmt, welche Images die Szenarien ziehen
 # und ob das Cloudsmith-Registry-Credential gesetzt wird.
 env:
-  IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx' }}
+  IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.io/domboeckli' }}
 
 jobs:
   build-and-publish-mistral-vibe-image:
@@ -306,7 +306,7 @@ jobs:
       - name: Run e2e tests (${{ matrix.scenario }})
         env:
           # Zentraler Registry-Umschalter — muss zu den build-and-publish-Jobs passen.
-          IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx' }}
+          IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.io/domboeckli' }}
           # Images werden nur bei push auf master / schedule gepusht; bei PR/Branch-Builds
           # (push: false) nutzt e2e das veröffentlichte `latest`-Master-Image.
           VIBE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mistral-vibe-image.outputs.version_tag || 'latest' }}
@@ -357,6 +357,6 @@ jobs:
     # UND nur für Cloudsmith (IMAGE_PREFIX) — Docker Hub hat keinen Feature-Image-Cleanup;
     # läuft auch, wenn die Szenarien fehlschlagen (always), damit Storage frei wird.
     needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image, e2e-scenario]
-    if: ${{ always() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && startsWith(vars.IMAGE_PREFIX || 'docker.cloudsmith.io/dboeckli/sbx', 'docker.cloudsmith.io') }}
+    if: ${{ always() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && startsWith(vars.IMAGE_PREFIX || 'docker.io/domboeckli', 'docker.cloudsmith.io') }}
     uses: ./.github/workflows/cleanup-cloudsmith.yml
     secrets: inherit

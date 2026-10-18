@@ -72,7 +72,7 @@ fi
 # Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker.
 report="$report $(bash "$HOME/.local/bin/mcp-check.sh")"
 
-# 7. helm (v3 Default + v4 als helm4)
+# 7. helm (Helm 4; `helm4` ist ein Symlink auf dasselbe Binary)
 if helm version >/dev/null 2>&1 && helm4 version >/dev/null 2>&1; then
   report="$report helm:OK"
 else
