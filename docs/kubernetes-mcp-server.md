@@ -23,7 +23,7 @@ Sandbox ── MCP ──▶ sbx MCP-Gateway (Host) ── stdio ──▶ kuber
 
 > [!WARNING]
 > **Betrieb gegen Produktions-Cluster ist ein No-Go.** Die Standard-Config verzichtet auf
-> `denied_resources` für `Secret` — sonst funktioniert das `helm`-Toolset nicht (Helm v3 legt
+> `denied_resources` für `Secret` — sonst funktioniert das `helm`-Toolset nicht (Helm legt
 > Releases als Secrets ab). Dadurch können die generischen Tools (`resources_get`/`resources_list`)
 > **Kubernetes-Secrets vollständig lesen** (`.`-`data`, base64). Für Produktion entweder diesen
 > MCP-Server nicht einsetzen oder das unten dokumentierte `denied_resources`-Block aktivieren
@@ -114,7 +114,7 @@ log_level = 2
 # WARNING - DEVELOPMENT / NON-PRODUCTION ONLY
 # No `denied_resources` entry: the generic tools (resources_get/resources_list)
 # can read Kubernetes Secrets IN FULL (base64 .data). Required by the helm
-# toolset, because Helm v3 stores releases as Secrets.
+# toolset, because Helm stores releases as Secrets.
 # NEVER point this configuration at a production cluster.
 # For production, re-enable the block below (helm tools stop working):
 # ============================================================================
@@ -201,7 +201,7 @@ Namespace default", „Zeig die Logs von Pod X", „Welche Helm-Releases laufen?
 >
 > [!WARNING]
 > **Secrets sind NICHT ausgesperrt.** Das ist für `helm_list`/`helm_get`/`helm_status` nötig
-> (Helm v3 legt Releases als Secrets ab: `sh.helm.release.v1.*`), bedeutet aber, dass
+> (Helm legt Releases als Secrets ab: `sh.helm.release.v1.*`), bedeutet aber, dass
 > `resources_get` mit `kind=Secret` **jedes Secret inkl. `.data` (base64) lesen** kann.
 > **Gegen Produktions-Cluster ein No-Go** — erst recht, weil die Sandbox keine Credentials
 > halten soll und der Agent die Werte in seinen Kontext aufnimmt. Für Produktion das
@@ -269,7 +269,7 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
 
 > [!CAUTION]
 > **Produktions-No-Go (Option A, Standard-Config):** `denied_resources` für `Secret` ist **deaktiviert**,
-> weil das `helm`-Toolset sonst nicht funktioniert (Helm v3 = Releases als Secrets). Damit kann der
+> weil das `helm`-Toolset sonst nicht funktioniert (Helm = Releases als Secrets). Damit kann der
 > Sandbox-Agent über `resources_get`/`resources_list` **alle Cluster-Secrets inkl. `.data` lesen**
 > (z. B. Helm-Release-Values, DB-/LDAP-/Kafka-/Registry-Passwörter). Für Produktions-Cluster ist dieser
 > Betrieb nicht zulässig — dort entweder den MCP-Server weglassen oder `denied_resources` aktivieren

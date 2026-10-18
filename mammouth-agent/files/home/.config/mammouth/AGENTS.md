@@ -168,7 +168,7 @@ Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/kubernetes/kubectl`.
 
 ## Helm
 
-`helm` 3.22.0 (v3) at `/usr/local/bin/helm`, `helm4` 4.3.0 (v4) at `/usr/local/bin/helm4`. Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist. v3 ist der Default auf dem PATH; v4 liegt als `helm4` parallel und kann explizit aufgerufen werden.
+`helm` 4.3.0 at `/usr/local/bin/helm` (`helm4` ist ein Symlink auf dasselbe Binary). Downloads charts from OCI registries (`helm pull`, `helm push`, `helm upgrade --install`). `get.helm.sh` ist in der Network-Allowlist.
 Docs: `npx ctx7 docs /helm/helm-www <query>` (Kubernetes package manager, charts).
 
 ## Kafka CLI

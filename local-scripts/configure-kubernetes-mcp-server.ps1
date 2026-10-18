@@ -10,7 +10,7 @@
     default (read-write, all toolsets), host kubeconfig. The sandbox-side Kit
     permission whitelist still limits the agent to read-only tools (docs/kubernetes-mcp-server.md).
     Secrets are deliberately NOT denied (required by the helm toolset, because
-    Helm v3 stores releases as Secrets) - the generic tools can therefore read
+    Helm stores releases as Secrets) - the generic tools can therefore read
     Kubernetes Secrets in full. DEVELOPMENT / NON-PRODUCTION ONLY.
     UTF-8 without BOM (the TOML parser rejects a BOM).
 
@@ -102,7 +102,7 @@ log_level = 2
 # WARNING - DEVELOPMENT / NON-PRODUCTION ONLY
 # No `denied_resources` entry: the generic tools (resources_get/resources_list)
 # can read Kubernetes Secrets IN FULL (base64-encoded .data). This is required
-# by the helm toolset, because Helm v3 stores releases as Secrets - denying the
+# by the helm toolset, because Helm stores releases as Secrets - denying the
 # Secret kind breaks helm_list/helm_get/helm_status.
 # NEVER point this configuration at a production cluster. For production,
 # re-enable the block below (accepting that the helm toolset will no longer work).

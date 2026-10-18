@@ -1289,7 +1289,7 @@ def main():
             print("  " + _color("33", "  [SKIP] --static-mcp idea — 'idea' nicht auf dem Host registriert "
                                       "(sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check)"))
         info("  setup.install laeuft jetzt (npm-CLIs, apt, JDK, Maven, Docker CLI, Compose, "
-             "kubectl, Helm v3/v4, Kafka, Skills). Mit vorgebackenem Image (opencode) in Sekunden; "
+             "kubectl, Helm 4, Kafka, Skills). Mit vorgebackenem Image (opencode) in Sekunden; "
              "sonst mehrere Minuten ohne Zwischenausgabe (sbx buffert die Install-Ausgabe bei "
              "gepipetem stdout).")
         code, create_out = run_sbx(create_cmd, stream=True)

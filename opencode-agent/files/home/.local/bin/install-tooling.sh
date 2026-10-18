@@ -11,7 +11,7 @@ set -euo pipefail
 # copy, then `cp` it to the other (`mammouth-agent/files/home/.local/bin/`). Renovate
 # bumps tool versions in both copies together (validate-check fails on drift).
 #
-# Tools: `install-tooling.sh [node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all]`.
+# Tools: `install-tooling.sh [node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka|all]`.
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
 # at once (previous behavior). npm is inlined directly into the spec.yaml commands; apt
@@ -228,7 +228,7 @@ run_kubectl() {
 	log_step kubectl
 }
 
-# --- Helm (v3 as `helm`, v4 as `helm4`: v3 bleibt der Default, v4 liegt als helm4 parallel) ---
+# --- Helm 4 (`helm`, plus `helm4` as a symlink to the same binary) ---
 install_helm() {
 	local ver="$1" dest="$2"
 	download "https://get.helm.sh/helm-v${ver}-linux-${DEB_ARCH}.tar.gz" /tmp/helm.tar.gz
@@ -241,25 +241,18 @@ install_helm() {
 }
 
 run_helm() {
-	HELM_VER="3.22.0"
-	if command -v helm >/dev/null 2>&1 && helm version --short 2>/dev/null | grep -qF "v${HELM_VER}"; then
+	HELM_VER="4.3.0"
+	if command -v helm >/dev/null 2>&1 && helm version --short 2>/dev/null | grep -qF "v${HELM_VER}" \
+		&& [ "$(readlink -f /usr/local/bin/helm4 2>/dev/null)" = "$(readlink -f /usr/local/bin/helm)" ]; then
 		log_step helm
 		return 0
 	fi
 	install_helm "${HELM_VER}" /usr/local/bin/helm
+	# `helm4` bleibt als Alias erhalten — beide Namen zeigen auf Helm 4.
+	ln -sf /usr/local/bin/helm /usr/local/bin/helm4
 	helm version
+	helm4 version --short >/dev/null
 	log_step helm
-}
-
-run_helm4() {
-	HELM4_VER="4.3.0"
-	if command -v helm4 >/dev/null 2>&1 && helm4 version --short 2>/dev/null | grep -qF "v${HELM4_VER}"; then
-		log_step helm4
-		return 0
-	fi
-	install_helm "${HELM4_VER}" /usr/local/bin/helm4
-	helm4 version
-	log_step helm4
 }
 
 # --- Apache Kafka CLI (bin/*.sh) ---
@@ -306,7 +299,6 @@ case "${PHASE}" in
 		run_step compose run_compose
 		run_step kubectl run_kubectl
 		run_step helm run_helm
-		run_step helm4 run_helm4
 		run_step kafka run_kafka
 		log_phase_done all
 		;;
@@ -334,14 +326,11 @@ case "${PHASE}" in
 	helm)
 		run_step helm run_helm
 		;;
-	helm4)
-		run_step helm4 run_helm4
-		;;
 	kafka)
 		run_step kafka run_kafka
 		;;
 	*)
-		echo "Unknown tool: ${PHASE} (expected: node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka|all)" >&2
+		echo "Unknown tool: ${PHASE} (expected: node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka|all)" >&2
 		exit 1
 		;;
 esac

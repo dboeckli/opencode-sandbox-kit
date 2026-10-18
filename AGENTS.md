@@ -356,7 +356,7 @@ Die Config liegt je Agent-Location vor:
   Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`, die
   K8s-Schreib-/Exec-Tools in `permissions.ask`.
   > **Produktions-No-Go:** `denied_resources` für `Secret` ist in der Host-Config bewusst deaktiviert
-  > (sonst bricht das `helm`-Toolset — Helm v3 speichert Releases als Secrets). Dadurch können
+  > (sonst bricht das `helm`-Toolset — Helm speichert Releases als Secrets). Dadurch können
   > `resources_get`/`resources_list` **Cluster-Secrets inkl. `.data` lesen**. Nur für Entwicklungs-Cluster
   > (Docker Desktop): `docs/kubernetes-mcp-server.md#sicherheit-kurz`.
 - **`ask`**: `mcp-gateway_execute_run_configuration` (Claude: `mcp__mcp-gateway__execute_run_configuration`) —
@@ -733,7 +733,7 @@ Die jeweilige Config wird automatisch gelesen:
 
 > Die Tooling-Installation ist in allen Kit-Specs dedupliziert: `setup.install` nutzt für die
 > **schweren Tools** `bash /home/agent/.local/bin/install-tooling.sh <tool>` — **einen Command pro Tool**
-> (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|helm4|kafka`, Default `all`), damit die `sbx run`-Konsole
+> (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka`, Default `all`), damit die `sbx run`-Konsole
 > jedes Tool als eigene Zeile (Spinner → ✓) zeigt. npm/apt-Pakete sind als Inline-Commands direkt in
 > den Specs (`npm_config_bin_links=true npm install -g ctx7` usw., `apt-get update && …`). Die Skripte
 > liegen als identische Kopien in den `files/home/.local/bin/`-Bundles der Kits (kein separates
@@ -750,7 +750,7 @@ Die jeweilige Config wird automatisch gelesen:
 | Docker CLI 27.5.1 | download.docker.com (static binary) |
 | Docker Compose 5.4.0 (Plugin) | GitHub Releases (docker/compose) |
 | kubectl (latest stable) | dl.k8s.io |
-| Helm 3.22.0 (v3, Default) + 4.3.0 (v4) | get.helm.sh |
+| Helm 4.3.0 | get.helm.sh |
 | Apache Kafka CLI 4.3.1 (Scala 2.13) | dlcdn.apache.org (Fallback archive.apache.org) (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |
 | ctx7 | npm |
 | skills | npm (vercel-labs) |
@@ -765,7 +765,7 @@ Die jeweilige Config wird automatisch gelesen:
 > `export npm_config_bin_links=...` vor npm- oder Build-Kommandos nötig (redundant).**
 > Siehe dazu auch `README.md` → "npm bin-links: Install vs. Laufzeit".
 
-> **Helm v3 vs. v4 — beide installiert:** **v3 ist der Default auf dem PATH** (`/usr/local/bin/helm`, gepinnt auf 3.22.0); **v4 liegt parallel** als `/usr/local/bin/helm4` (4.3.0) und kann explizit aufgerufen werden. Renovate trackt beide Versionen getrennt (`HELM_VER` → v3, `HELM4_VER` → v4).
+> **Helm 4:** `helm` und `helm4` zeigen beide auf Helm 4.3.0 (`/usr/local/bin/helm`; `helm4` ist ein Symlink darauf). Renovate trackt die Version über `HELM_VER`.
 
 > **Apache Kafka CLI:** Die Kafka-Distribution liegt unter `/opt/kafka`; `install-tooling.sh` legt für jedes
 > `bin/*.sh` einen Wrapper in `/usr/local/bin` an, der das Skript per absolutem Pfad ausführt (die Skripte

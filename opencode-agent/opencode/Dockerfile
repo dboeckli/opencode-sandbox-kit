@@ -3,7 +3,7 @@
 # Custom sandbox template for the `opencode-agent` mixin kit (issue #137).
 #
 # Bakes the heavy tooling (Liberica JDK, Maven, Docker CLI, Compose, kubectl,
-# Helm/Helm4, shfmt, Kafka CLI, apt packages, npm CLIs) into the image so the
+# Helm 4, shfmt, Kafka CLI, apt packages, npm CLIs) into the image so the
 # kit's `setup.install` no longer downloads it on every `sbx create`.
 #
 # Base = the official sandbox template (agent `opencode`, default user `agent`,
