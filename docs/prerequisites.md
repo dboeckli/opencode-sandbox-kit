@@ -56,6 +56,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | skills | latest | npm global (vercel-labs) |
 | prettier | latest | npm global |
 | renovate | latest | npm global |
+| Bruno CLI (`bru`) | 4.2.1 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
 | jq, python3, pip, python3-yaml | distro | apt |
 
 ### Agent-User-Tooling (`install-tooling-user.sh`, user 1000)

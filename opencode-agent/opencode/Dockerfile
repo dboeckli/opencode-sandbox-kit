@@ -36,7 +36,7 @@ RUN chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-tooling.sh all
 
 # npm-global CLIs (NPM_CONFIG_PREFIX=/usr/local/share/npm-global inherited from the base).
-RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate
+RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.2.1
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
 RUN shfmt --version \
@@ -53,7 +53,8 @@ RUN shfmt --version \
  && command -v ctx7 \
  && command -v skills \
  && command -v prettier \
- && command -v renovate
+ && command -v renovate \
+ && bru --version
 
 # Agent-user tooling (skills, Claude statusline, repsy docs) as uid 1000 / `agent`.
 RUN runuser -u agent -- env HOME=/home/agent bash /tmp/kit/install-tooling-user.sh

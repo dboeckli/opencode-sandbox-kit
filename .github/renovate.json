@@ -228,6 +228,14 @@
       "matchStrings": ["mcp-server-docker==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "mcp-server-docker",
       "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "description": "Bruno CLI (@usebruno/cli) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #257 im spring-6-gateway-Repo",
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile"],
+      "matchStrings": ["@usebruno/cli@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@usebruno/cli",
+      "datasourceTemplate": "npm"
     }
   ],
   "customDatasources": {

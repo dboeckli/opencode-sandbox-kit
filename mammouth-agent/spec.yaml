@@ -262,6 +262,8 @@ setup:
       description: Install prettier — skip if already baked into the image
     - command: "[ -x /usr/local/share/npm-global/bin/renovate ] || npm_config_bin_links=true npm install -g renovate"
       description: Install renovate — skip if already baked into the image
+    - command: "[ -x /usr/local/share/npm-global/bin/bru ] || npm_config_bin_links=true npm install -g @usebruno/cli@4.2.1"
+      description: Install Bruno CLI (`bru`, pinned; Renovate tracks @usebruno/cli) — skip if already baked into the image
     - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
       description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"
