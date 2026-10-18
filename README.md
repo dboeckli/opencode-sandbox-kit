@@ -387,7 +387,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > (Host-Loopback, SSRF-Guard umgehen); Kubernetes und Host-Docker via `sbx mcp add k8s …`/`sbx mcp add docker …`
 > (`docs/kubernetes-mcp-server.md`, `docs/docker-mcp-server.md`). Dann `--static-mcp idea,k8s,docker` beim Erzeugen
 > oder `sbx mcp load <name> --sandbox <sandbox-name>`.
-> Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Skills, ctx7) und die
+> Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, Skills, ctx7) und die
 > Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
@@ -408,7 +408,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 - **Entrypoint**: `mammouth` (direkt, ohne Template-Umweg)
 - **Auth**: `credentials[].apiKey` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
   `inject` als `Authorization: Bearer`) — kit-spec v2
-- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, ctx7, Skills)
+- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, ctx7, Skills)
 - **Config**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
@@ -458,7 +458,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 - **Config**: `~/.vibe/config.toml` (MCP-Gateway auf `http://mcp-gateway.docker.internal/mcp` + GLM-Provider/-Modelle),
   `~/.vibe/hooks.toml` + `~/.config/sandbox-kit/vibe-mcp-guard.py` (Read-only-Guard für die IntelliJ-MCP-Tools,
   da `auto-approve` das Permission-System umgeht) und `~/.vibe/AGENTS.md`.
-- **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, ctx7, Skills).
+- **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, ctx7, Skills).
 
 > **Modell-Verfügbarkeit (wichtig):** **GLM-5.3-Flash** (`glm-5.3-flash`) gibt es **nur direkt bei Z.AI**
 > (`api.z.ai`, Provider `zai`, `ZAI_API_KEY`, `sbx secret set zai`) — **nicht über Mistral**. Über Mistral
@@ -626,16 +626,17 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
 > und die **Mistral-Vibe-Pin** (`ARG VIBE_VERSION` im Dockerfile, Image-Tag in der spec, shell-Basis-Template)
 > gegen die latest PyPI-Version (`mistral-vibe`) — alle **warnen** (gelb), sobald eine neuere Version
-> existiert (Renovate-Tracking, s. o.).
+> existiert (Renovate-Tracking, s. o.). Die **Bruno-CLI-Pin** (`@usebruno/cli@<v>` in allen drei Specs +
+> Tooling-Dockerfiles) wird auf Drift geprüft (fail) und gegen die latest npm-Version verglichen (warn).
 
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP-Gateway/IntelliJ/Kubernetes, Helm, Kafka, Skills, SonarCloud) und zeigt den
+(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP-Gateway/IntelliJ/Kubernetes, Helm, Kafka, Bruno, Skills, SonarCloud) und zeigt den
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -669,6 +670,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
+| Bruno CLI (`bru`) | 4.2.1 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über

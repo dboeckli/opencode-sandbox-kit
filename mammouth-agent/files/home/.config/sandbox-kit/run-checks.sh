@@ -86,6 +86,13 @@ else
   report="$report kafka:FAIL"
 fi
 
+# 7c. Bruno CLI (`bru`, pinned @usebruno/cli; API-collection runner for restRequests)
+if bru --version >/dev/null 2>&1; then
+  report="$report bruno:OK"
+else
+  report="$report bruno:FAIL"
+fi
+
 # 8. Skills
 if skills ls -g >/dev/null 2>&1; then
   report="$report skills:OK"

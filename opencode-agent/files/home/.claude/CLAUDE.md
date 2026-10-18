@@ -245,6 +245,10 @@ Helm 4.3.1 at `/usr/local/bin/helm`; `helm4` ist ein Symlink auf dasselbe Binary
 
 Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` + `archive.apache.org` (Fallback für ältere, von dlcdn entfernte Releases) sind in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
 
+## Bruno CLI
+
+Bruno CLI (`bru`, `@usebruno/cli` 4.2.1, npm global) runs Bruno API collections headlessly: from the collection root (the dir with `bruno.json`) `bru run` runs everything, `bru run <folder>` a subfolder (e.g. `bru run reactive/beer-flow-patch --env local`). `bru import openapi --source <file-or-url> --output <dir>` converts OpenAPI specs (default output format `opencollection`; `--collection-format bru` for `.bru`). Collections are plain-text (git-friendly); keep secrets in environment variables/environment files, not in the collection. `registry.npmjs.org` is allow-listed (install/update) — the API endpoints you call must be allow-listed as well.
+
 ## Runtime tools / CLIs
 
 Installed runtime CLIs — Node.js, npm, Git, jq, Go, pip, curl, GNU Make — see `context7-tools.md`.

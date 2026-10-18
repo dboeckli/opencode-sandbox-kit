@@ -45,13 +45,14 @@ each `FAIL` per component. All probes are bounded by `timeout`, so the check nev
 | 6b | MCP servers | `bash ~/.local/bin/mcp-check.sh` (one MCP handshake via the sbx gateway → `mcp-gateway:OK`, `mcp-idea:OK` when the IntelliJ tools are present, `mcp-k8s:OK` when the Kubernetes tools are present, `mcp-docker:OK` when the Docker tools are present) |
 | 7 | Helm | `helm version` |
 | 7b | Kafka CLI | `kafka-topics.sh --version` |
+| 7c | Bruno CLI | `bru --version` (pinned `@usebruno/cli`) |
 | 8 | Skills | `skills ls -g` |
 | 9 | Mistral Vibe | `command -v vibe` |
 
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK skills:OK sonar:OK vibe:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK vibe:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).
