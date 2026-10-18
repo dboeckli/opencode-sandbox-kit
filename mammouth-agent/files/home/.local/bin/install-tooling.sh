@@ -252,7 +252,7 @@ run_helm() {
 }
 
 run_helm4() {
-	HELM4_VER="4.3.0"
+	HELM4_VER="4.3.1"
 	if command -v helm4 >/dev/null 2>&1 && helm4 version --short 2>/dev/null | grep -qF "v${HELM4_VER}"; then
 		log_step helm4
 		return 0
