@@ -142,7 +142,7 @@ run_shfmt() {
 
 # --- Liberica JDK (LTS) ---
 run_jdk() {
-	LIBERICA_VER="25.0.4+9"
+	LIBERICA_VER="25.0.5+11"
 	if [ -x /usr/local/java/bin/java ] && /usr/local/java/bin/java -version 2>&1 | grep -qF "25.0.4"; then
 		log_step jdk
 		return 0
