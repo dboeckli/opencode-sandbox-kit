@@ -102,7 +102,7 @@ sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 ```
@@ -454,7 +454,7 @@ einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider k
 (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
 Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
 
-`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
+`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.io/domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
 — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (eine zweite Deklaration führt zu
 `credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
 Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
@@ -489,7 +489,7 @@ Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günst
 zusätzlicher Provider konfiguriert (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.google`,
 DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
 
-`google` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
+`google` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.io/domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
 — das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
 Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
 `GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
@@ -654,14 +654,14 @@ curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/us
 # OpenCode (Home-Standard)
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling:local `
+    --template docker.io/domboeckli/sbx-claude-tooling:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 
@@ -685,7 +685,7 @@ Projekt einbinden + Kubernetes-/Host-Docker-Support:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea,k8s,docker `
     "C:\development\projects\dein-projekt" `

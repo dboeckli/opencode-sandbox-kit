@@ -158,7 +158,7 @@ Beim Erstellen der Sandbox als statischen MCP-Server mitgeben (neben dem Intelli
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea,k8s
 ```
@@ -173,7 +173,7 @@ der MCP-Server liest die Host-kubeconfig:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea,k8s `
     . `

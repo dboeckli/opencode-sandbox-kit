@@ -75,7 +75,7 @@ Sandbox mit dem MCP-Gateway erzeugen:
 ```powershell
 sbx run opencode `
     --kit ./opencode-agent/ `
-    --template docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local `
+    --template docker.io/domboeckli/sbx-opencode-tooling:local `
     --skills=off `
     --static-mcp idea
 ```
@@ -174,7 +174,7 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 ### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
-`sbx run --skills=off ./mammouth-agent/`) betrieben; das eigene Image `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`
+`sbx run --skills=off ./mammouth-agent/`) betrieben; das eigene Image `docker.io/domboeckli/sbx-mammouth`
 backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.1** via `ARG MAMMOUTH_VERSION` +
 Symlink; Pin via Renovate). Das
 `opencode-agent/`-Kit (`sbx run --skills=off opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
@@ -184,13 +184,13 @@ Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
 
 Mistral Vibe wird über das **dedizierte Agent-Kit** (`mistral-vibe-agent/`,
 `sbx run --skills=off ./mistral-vibe-agent/`) betrieben. Das Kit nutzt ein eigenes, gepinntes Image
-(`docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe:<vibe-version>`), das Vibe beim Image-Build installiert — es gibt keinen
+(`docker.io/domboeckli/sbx-mistral-vibe:<vibe-version>`), das Vibe beim Image-Build installiert — es gibt keinen
 `setup.install`-Schritt für Vibe. Das Image muss vor dem ersten Start publiziert sein
 (`build-and-publish-mistral-vibe-image.yml`, `workflow_dispatch`).
 
 ### Pre-installed Tools im Base Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`; für OpenCode gebacken in `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:0.x.0`) enthält eine eigene OpenCode CLI
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`; für OpenCode gebacken in `docker.io/domboeckli/sbx-opencode-tooling:0.x.0`) enthält eine eigene OpenCode CLI
 (aktuell `1.17.11` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
 bei `1.18.11` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
 vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:
