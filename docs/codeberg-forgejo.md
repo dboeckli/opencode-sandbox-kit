@@ -68,7 +68,7 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 
 ## Secrets/Variablen auf Codeberg
 
-- **Variablen:** `DOCKER_USERNAME`, `IMAGE_PREFIX` (Default `docker.cloudsmith.io/dboeckli/sbx`),
+- **Variablen:** `DOCKER_USERNAME`, `IMAGE_PREFIX` (Default `docker.io/domboeckli`),
   `CLOUDSMITH_USERNAME` (nur Cloudsmith-Modus),
   optional `RUNNER_LABEL`/`RUNNER_ARM64`/`RUNNER_E2E`.
 - **Secrets:** `DOCKER_PAT`, `CLOUDSMITH_API_KEY` (nur Cloudsmith-Modus); optional `GH_TOKEN` (echtes GitHub-PAT, damit der
