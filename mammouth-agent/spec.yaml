@@ -6,7 +6,7 @@ description: "Mammouth Code Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker
 
 args:
   imageTag:
-    default: "1.18.31.1"
+    default: "1.18.31.2"
     description: >-
       Tag of the Mammouth image (sbx-mammouth) to run. Default = release tag (= Mammouth CLI version).
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build;
