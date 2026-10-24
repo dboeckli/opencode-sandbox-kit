@@ -154,9 +154,11 @@ VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
 # Lokaler Docker-MCP-Server (Issue #165): Pin im Doku-Command (`uvx mcp-server-docker==<v>`,
-# docs/docker-mcp-server.md); Update-Check gegen die latest PyPI-Version (mcp-server-docker),
-# warnt (gelb). Reiner Host-Server (nicht Teil des Sandbox-Images).
+# docs/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
+# (mcp-server-docker), warnt (gelb), Drift zwischen den Dateien = fail.
+# Reiner Host-Server (nicht Teil des Sandbox-Images).
 DOCKER_MCP_DOC = "docs/docker-mcp-server.md"
+DOCKER_MCP_FILES = (DOCKER_MCP_DOC, "README.md")
 DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker==(?P<v>[0-9]+(?:\.[0-9]+)+)")
 DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
 
@@ -1026,24 +1028,39 @@ def check_vibe_cli_update():
         pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")
 
 
-def _docker_mcp_pin():
-    path = os.path.join(ROOT, DOCKER_MCP_DOC)
-    if not os.path.isfile(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        m = DOCKER_MCP_PIN_RE.search(f.read())
-    return m.group("v") if m else None
+def _docker_mcp_pins():
+    """Liest den `mcp-server-docker==<v>`-Pin aus allen Doku-/README-Dateien."""
+    pins = {}
+    for rel in DOCKER_MCP_FILES:
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path):
+            return None, f"{rel} fehlt"
+        with open(path, encoding="utf-8") as f:
+            m = DOCKER_MCP_PIN_RE.search(f.read())
+        if not m:
+            return None, f"Pin `mcp-server-docker==<v>` nicht in {rel} gefunden"
+        pins[rel] = m.group("v")
+    return pins, None
 
 
 def check_docker_mcp_update():
-    """Vergleicht den Pin des lokalen Docker-MCP-Servers (`uvx mcp-server-docker==<v>`,
-    docs/docker-mcp-server.md) mit der latest PyPI-Version; warnt (gelb) bei neuerer Version.
+    """Prueft den Pin des lokalen Docker-MCP-Servers (`uvx mcp-server-docker==<v>`,
+    docs/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit der
+    latest PyPI-Version. Drift zwischen den Dateien = fail; neueres Release = warn (gelb).
     Der Server laeuft host-seitig (nicht Teil des Sandbox-Images)."""
-    pin = _docker_mcp_pin()
-    if not pin:
-        fail("mcp-server-docker version (Pin `mcp-server-docker==<v>` nicht in "
-             f"{DOCKER_MCP_DOC} gefunden)")
+    pins, err = _docker_mcp_pins()
+    if err:
+        fail(f"mcp-server-docker version ({err})")
         return
+    unique = sorted(set(pins.values()))
+    if len(unique) != 1:
+        detail = ", ".join(f"{rel}={v}" for rel, v in pins.items())
+        fail(
+            f"mcp-server-docker pin drift ({detail})",
+            "alle Vorkommen (docs/docker-mcp-server.md + README.md) auf dieselbe Version setzen",
+        )
+        return
+    pin = unique[0]
     try:
         data = json.loads(_http_get(DOCKER_MCP_PYPI_URL))
         latest = str(data["info"]["version"])
@@ -1053,7 +1070,7 @@ def check_docker_mcp_update():
     if _version_newer(latest, pin):
         warn(
             f"mcp-server-docker update available (Pin v{pin}, PyPI latest v{latest})",
-            f"Pin in {DOCKER_MCP_DOC} auf v{latest} heben; auf dem Host neu registrieren "
+            f"Pin in {DOCKER_MCP_DOC} + README.md auf v{latest} heben; auf dem Host neu registrieren "
             f"(`sbx mcp rm docker` + `sbx mcp add docker --command \"uvx\" "
             f"--args \"mcp-server-docker=={latest}\"`)",
         )
