@@ -29,7 +29,7 @@ jobs:
       # --template-Pins der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate
       # (auf Codeberg ggf. manuell, siehe docs/codeberg-forgejo.md).
       TEMPLATE_VERSION_OPENCODE: 0.7.0
-      TEMPLATE_VERSION_CLAUDE: 0.7.0
+      TEMPLATE_VERSION_CLAUDE: 0.10.0
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
 
