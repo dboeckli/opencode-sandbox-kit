@@ -45,6 +45,45 @@
       "matchDatasources": ["docker"],
       "matchDepNames": ["sandbox-templates-shell"],
       "groupName": "sandbox-templates-shell"
+    },
+    {
+      "description": "Kubernetes MCP server: host-side install instructions in the PR body (binary is installed on the Windows host, not part of the sandbox image)",
+      "matchDatasources": ["github-releases"],
+      "matchDepNames": ["containers/kubernetes-mcp-server"],
+      "prBodyNotes": [
+        "### Host installation required",
+        "This update only changes the default of `local-scripts/install-kubernetes-mcp-server.ps1`; the binary is installed on the Windows host.",
+        "",
+        "1. Switch the kit checkout locally to this PR's branch (the new default only exists there until merge):",
+        "   ```powershell",
+        "   git fetch origin && git switch renovate/containers-kubernetes-mcp-server-0.x",
+        "   ```",
+        "2. Stop the running server (Windows locks the `.exe`): `Get-Process kubernetes-mcp-server -ErrorAction SilentlyContinue | Stop-Process`",
+        "3. Install: `.\\local-scripts\\install-kubernetes-mcp-server.ps1`",
+        "4. Verify: `& \"$env:USERPROFILE\\.local\\bin\\kubernetes-mcp-server.exe\" --version` -> `v{{{newValue}}}`",
+        "5. Restart the sandbox/session so the sbx MCP gateway spawns the new binary, then `git switch master`.",
+        "",
+        "Alternative without switching branches: run the script on `master` with `-Version v{{{newValue}}}`."
+      ]
+    },
+    {
+      "description": "Docker MCP server: host-side re-registration instructions in the PR body (runs on the Windows host via uvx, not part of the sandbox image)",
+      "matchDatasources": ["pypi"],
+      "matchDepNames": ["mcp-server-docker"],
+      "prBodyNotes": [
+        "### Host re-registration required",
+        "This pin only changes the documented/registered version; the server runs on the Windows host via `uvx`.",
+        "",
+        "1. Re-register the server on the host (PowerShell):",
+        "   ```powershell",
+        "   sbx mcp rm docker",
+        "   sbx mcp add docker --command (Get-Command uvx).Source --args \"mcp-server-docker=={{{newValue}}}\"",
+        "   ```",
+        "2. Running sandboxes: `sbx mcp load docker --sandbox <name>` (or recreate the sandbox).",
+        "3. Verify: `sbx mcp ls` / `sbx mcp inspect docker` shows `mcp-server-docker=={{{newValue}}}`.",
+        "",
+        "`uvx` downloads the pinned version on first start; there is no local install script for this server."
+      ]
     }
   ],
   "customManagers": [
@@ -263,8 +302,8 @@
     },
     {
       "customType": "regex",
-      "description": "Lokaler Docker-MCP-Server (mcp-server-docker, Drittanbieter) Pin im Doku-Command (docs/docker-mcp-server.md, Issue #165; host-seitig via uvx registriert)",
-      "managerFilePatterns": ["docs/docker-mcp-server.md"],
+      "description": "Lokaler Docker-MCP-Server (mcp-server-docker, Drittanbieter) Pin in Doku + README (docs/docker-mcp-server.md, README.md, Issue #165; host-seitig via uvx registriert)",
+      "managerFilePatterns": ["docs/docker-mcp-server.md", "README.md"],
       "matchStrings": ["mcp-server-docker==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "mcp-server-docker",
       "datasourceTemplate": "pypi"
