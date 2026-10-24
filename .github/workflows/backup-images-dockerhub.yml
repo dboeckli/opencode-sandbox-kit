@@ -9,7 +9,7 @@ name: Backup images to Docker Hub
 #   - image: opencode | claude | mammouth | mistral-vibe | all
 #   - arch:  amd64 | arm64 | both   (both = native Runner + imagetools-Merge)
 #   - push:  true/false (Build-only)
-#   - tag:   Override; Default = Basis-Pin (TEMPLATE_VERSION) bzw. VIBE_VERSION
+#   - tag:   Override; Default = Basis-Pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE) bzw. VIBE_VERSION
 #
 # Native Runner je Architektur:
 #   amd64 -> ubuntu-latest   |   arm64 -> ubuntu-24.04-arm

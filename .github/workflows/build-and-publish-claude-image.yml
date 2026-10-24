@@ -11,8 +11,8 @@ name: Build and publish Claude tooling image
 #
 # Tags (a Docker tag must stay valid, so the timestamp is a semver prerelease
 # identifier, not build metadata — `+` is not allowed in a tag):
-#   - master / main: `<TEMPLATE_VERSION>` plus the moving `latest`
-#   - feature/PR:    `<TEMPLATE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
+#   - master / main: `<TEMPLATE_VERSION_CLAUDE>` plus the moving `latest`
+#   - feature/PR:    `<TEMPLATE_VERSION_CLAUDE>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
 #
 # Multi-arch (linux/amd64 + linux/arm64) via NATIVE runners; the arch is part of
 # the repository NAME (`<name>-amd64` / `<name>-arm64`), merged into one manifest
@@ -68,10 +68,10 @@ jobs:
             echo "claude-code-docker base pin not found in opencode-agent/claude/Dockerfile" >&2
             exit 1
           fi
-          wf_pin=$(grep -oE 'TEMPLATE_VERSION: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
+          wf_pin=$(grep -oE 'TEMPLATE_VERSION_CLAUDE: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
           if [ "$wf_pin" != "$pin" ]; then
-            echo "claude Dockerfile base pin ($pin) != TEMPLATE_VERSION in validate.yml ($wf_pin)" >&2
+            echo "claude Dockerfile base pin ($pin) != TEMPLATE_VERSION_CLAUDE in validate.yml ($wf_pin)" >&2
             exit 1
           fi
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"

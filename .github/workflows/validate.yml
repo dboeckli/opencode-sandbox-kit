@@ -11,11 +11,13 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     env:
-      # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
-      # Mammouth) und claude-code-docker (Claude Home), die in Lockstep gleiche Versionsnummern
-      # tragen. Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
+      # Sandbox-Template-Versionen (gepinnt, je Docker-Hub-Familie getrennt — Issue #202):
+      # opencode-docker (OpenCode + Mammouth) und claude-code-docker (Claude Home) werden von
+      # Docker nicht mehr in Lockstep veroeffentlicht, daher zwei unabhaengige Pins.
+      # Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
-      TEMPLATE_VERSION: 0.7.0
+      TEMPLATE_VERSION_OPENCODE: 0.7.0
+      TEMPLATE_VERSION_CLAUDE: 0.7.0
       # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
       # session ("not signed in to Docker"); that session needs a Secret Service
       # on the headless runner (see the setup step below). Fork PRs get no
