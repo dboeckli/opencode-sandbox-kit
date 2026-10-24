@@ -36,6 +36,14 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+### Kein Push auf `master`/`main` (Pflicht)
+
+Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvor allgemein Commits/Pushes
+freigegeben wurden. Ausnahme ausschließlich: Der User verlangt den Push auf `master`/`main` **explizit** in
+derselben Anweisung (z. B. „push auf master"). Standard ist immer der Feature Branch + Frage nach einem PR.
+Der `.githooks/pre-push`-Hook blockt solche Pushes zusätzlich; ein Bypass (`git push --no-verify`) nur nach
+ausdrücklicher User-Anweisung.
+
 ### Lokaler Schutz (pre-push-Hook)
 
 Zusätzlich zum Server-seitigen Schutz blockiert der versionierte Hook `.githooks/pre-push` versehentliche
