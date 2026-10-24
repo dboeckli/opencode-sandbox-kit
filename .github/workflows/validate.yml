@@ -17,7 +17,7 @@ jobs:
       # Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
       TEMPLATE_VERSION_OPENCODE: 0.7.0
-      TEMPLATE_VERSION_CLAUDE: 0.7.0
+      TEMPLATE_VERSION_CLAUDE: 0.10.0
       # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
       # session ("not signed in to Docker"); that session needs a Secret Service
       # on the headless runner (see the setup step below). Fork PRs get no

@@ -18,7 +18,7 @@
 #
 # ARG BASE_IMAGE must mirror TEMPLATE_VERSION (Renovate-managed, see .github/renovate.json).
 
-ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-0.7.0
+ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-0.10.0
 FROM ${BASE_IMAGE}
 
 # The base image runs as the unprivileged `agent` user; installs need root.
