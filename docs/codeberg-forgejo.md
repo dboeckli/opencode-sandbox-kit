@@ -82,7 +82,7 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
   `RENOVATE_PLATFORM=forgejo` + `RENOVATE_ENDPOINT=https://codeberg.org` → Renovate legt seine
   Update-PRs auf **Codeberg** an. Der GitHub-Runner ist nur die Ausführungsmaschine.
 - Config: `.github/renovate.json` — `github-actions`-Manager aktiviert (ersetzt Dependabot);
-  die Pin-Manager (SBX_VERSION/TEMPLATE_VERSION) decken `.github/workflows/` **und**
+  die Pin-Manager (SBX_VERSION, TEMPLATE_VERSION_OPENCODE/_CLAUDE) decken `.github/workflows/` **und**
   `.forgejo/workflows/` ab. Der `github-actions`-Manager erkennt auch `.forgejo/workflows/`
   (inkl. `https://code.forgejo.org/...`-URLs).
 - Nötige Secrets (GitHub): `CODEBERG_FOR_RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`)
@@ -95,7 +95,7 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 ## Offene Punkte / Risiken
 
 - **`local-test/local-test-kits.py` liest Pins aus `.github/workflows/`** (`SBX_VERSION`,
-  `TEMPLATE_VERSION`). Solange `.github/workflows/` (Mirror) existiert, passt das; bei einem
+  `TEMPLATE_VERSION_OPENCODE`/`_CLAUDE`). Solange `.github/workflows/` (Mirror) existiert, passt das; bei einem
   Entfernen der GitHub-Workflows muss das Skript auf `.forgejo/workflows/` umgestellt werden.
 - **Doppelte CI:** Solange die GitHub-Workflows bestehen und GitHub Actions aktiv sind, laufen
   Pushes (via Mirror) auch dort. Empfehlung: GitHub Actions stilllegen, sobald Codeberg grün ist.
