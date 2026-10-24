@@ -35,7 +35,7 @@ RUN chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-tooling.sh all
 
 # npm-global CLIs (NPM_CONFIG_PREFIX=/usr/local/share/npm-global inherited from the base).
-RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.2.1
+RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
 RUN shfmt --version \

@@ -6,7 +6,7 @@ description: "Mammouth Code Agent mit Context7, IntelliJ MCP, JDK, Maven, Docker
 
 args:
   imageTag:
-    default: "1.18.31.1"
+    default: "1.18.31.2"
     description: >-
       Tag of the Mammouth image (sbx-mammouth) to run. Default = release tag (= Mammouth CLI version).
       CI passes a feature tag (semver prerelease + timestamp) so e2e tests the branch build;
@@ -262,7 +262,7 @@ setup:
       description: Install prettier — skip if already baked into the image
     - command: "[ -x /usr/local/share/npm-global/bin/renovate ] || npm_config_bin_links=true npm install -g renovate"
       description: Install renovate — skip if already baked into the image
-    - command: "[ -x /usr/local/share/npm-global/bin/bru ] || npm_config_bin_links=true npm install -g @usebruno/cli@4.2.1"
+    - command: "[ -x /usr/local/share/npm-global/bin/bru ] || npm_config_bin_links=true npm install -g @usebruno/cli@4.3.0"
       description: Install Bruno CLI (`bru`, pinned; Renovate tracks @usebruno/cli) — skip if already baked into the image
     - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
       description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
