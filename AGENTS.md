@@ -44,6 +44,16 @@ derselben Anweisung (z. B. „push auf master"). Standard ist immer der Feature 
 Der `.githooks/pre-push`-Hook blockt solche Pushes zusätzlich; ein Bypass (`git push --no-verify`) nur nach
 ausdrücklicher User-Anweisung.
 
+### Kein Push ohne vorherige Nachfrage (Pflicht)
+
+Jeder `git push` — auch auf einen Feature Branch — erfolgt **nur nach vorheriger, expliziter Zustimmung** des
+Users (pro Push, nicht pauschal für die Session). Nach dem Commit den User fragen, ob gepusht werden soll; ohne
+Antwort kein Push. Force-Push und `git push --no-verify` sind ebenfalls zustimmungspflichtig.
+
+**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p .review && git diff <base> > .review/changes.patch`)
+und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des
+Diffs wird gepusht.
+
 ### Lokaler Schutz (pre-push-Hook)
 
 Zusätzlich zum Server-seitigen Schutz blockiert der versionierte Hook `.githooks/pre-push` versehentliche
