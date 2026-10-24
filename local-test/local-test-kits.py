@@ -97,24 +97,42 @@ INSTALL_SCRIPT_PAIRS = (
      "mistral-vibe-agent/files/home/.local/bin/install-apt-packages.sh"),
 )
 
-# Sandbox-Template-Version (beide Kits, eine Version fuer beide Template-Familien):
-#   - Expliziter Pin der lokalen Tests (dieses Script): TEMPLATE_VERSION-Konstante, Renovate-managed.
-#   - Muss identisch sein mit `TEMPLATE_VERSION` in .github/workflows/validate.yml + e2e.yml und dem
-#     Mammouth-spec-Image (mammouth-agent/spec.yaml) — Drift-Check in check_template_update().
-#   - opencode-docker (OpenCode + Mammouth) / claude-code-docker (Claude Home, Mixin-Kit).
-# Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag.
-TEMPLATE_VERSION = "0.7.0"
+# Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
+#   - Explizite Pins der lokalen Tests (dieses Script), Renovate-managed:
+#     TEMPLATE_VERSION_OPENCODE (opencode-docker) und TEMPLATE_VERSION_CLAUDE (claude-code-docker).
+#   - Muessen identisch sein mit TEMPLATE_VERSION_OPENCODE/_CLAUDE in
+#     .github/workflows/validate.yml + e2e.yml sowie den jeweiligen Dockerfile-BASE_IMAGE-Pins
+#     (Mammouth + OpenCode: opencode-docker, Claude: claude-code-docker) — Drift-Check in
+#     check_template_update().
+#   - Getrennte Pins, weil Docker die Familien nicht mehr in Lockstep veroeffentlicht
+#     (claude-code-docker 0.10.0 existiert, opencode-docker 0.10.0 noch nicht).
+# Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag je Familie.
+TEMPLATE_VERSION_OPENCODE = "0.7.0"
+TEMPLATE_VERSION_CLAUDE = "0.7.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
-TEMPLATE_VERSION_RE = re.compile(r"TEMPLATE_VERSION:\s*([0-9]+\.[0-9]+\.[0-9]+)")
-TEMPLATE_TAG_RE = re.compile(r"^(?P<fam>opencode-docker|claude-code-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$")
+# Pin je Template-Familie + Name der Workflow-Variable (fuer Fehlermeldungen).
+TEMPLATE_PINS = {
+    "opencode-docker": TEMPLATE_VERSION_OPENCODE,
+    "claude-code-docker": TEMPLATE_VERSION_CLAUDE,
+}
+TEMPLATE_WORKFLOW_VARS = {
+    "opencode-docker": "TEMPLATE_VERSION_OPENCODE",
+    "claude-code-docker": "TEMPLATE_VERSION_CLAUDE",
+}
+TEMPLATE_CFG_RE = re.compile(
+    r"TEMPLATE_VERSION_(?P<fam>OPENCODE|CLAUDE):\s*(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+)
+TEMPLATE_TAG_RE = re.compile(
+    r"^(?P<fam>opencode-docker|claude-code-docker|shell-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$"
+)
 DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
 # Template-Familie je Agent. Mammouth (kind:sandbox) fehlt bewusst: dort pinnt das spec-Image.
 AGENT_TEMPLATES = {"opencode": "opencode-docker", "claude": "claude-code-docker"}
 
 # Mammouth (Issue #137): eigenes Image (mammouth-agent/Dockerfile) — Basis opencode-docker + Kit-Tooling
-# + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG BASE_IMAGE muss TEMPLATE_VERSION
-# spiegeln. Update-Check des CLI-Pins gegen das latest GitHub-Release (mammouth-ai/code, Tag v<ver>);
-# warnt (gelb) bei neuerem Release.
+# + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG BASE_IMAGE muss
+# TEMPLATE_VERSION_OPENCODE spiegeln. Update-Check des CLI-Pins gegen das latest GitHub-Release
+# (mammouth-ai/code, Tag v<ver>); warnt (gelb) bei neuerem Release.
 MAMMOUTH_DOCKERFILE = "mammouth-agent/Dockerfile"
 MAMMOUTH_IMAGE_NAMESPACE = os.environ.get("MAMMOUTH_IMAGE_NAMESPACE", "domboeckli")
 MAMMOUTH_IMAGE_NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
@@ -126,8 +144,8 @@ MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/la
 
 # Mistral Vibe: Pin im Dockerfile (ARG VIBE_VERSION) — die spec.yaml referenziert das Image
 # mit demselben Tag. Update-Check gegen die latest PyPI-Version (mistral-vibe); warnt (gelb)
-# bei neuerer Version. Das Basis-Image pinnt die shell-Template-Version
-# (docker/sandbox-templates:shell-docker-<TEMPLATE_VERSION>), die mit TEMPLATE_VERSION uebereinstimmen muss.
+# bei neuerer Version. Die shell-Basis (docker/sandbox-templates:shell-docker-<v>) ist ein
+# eigener Pin im Dockerfile (Renovate-managed) und wird nur gegen Docker Hub geprueft.
 VIBE_DOCKERFILE = "mistral-vibe-agent/Dockerfile"
 VIBE_SPEC_FILE = "mistral-vibe-agent/spec.yaml"
 VIBE_VERSION_RE = re.compile(r"ARG VIBE_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
@@ -617,23 +635,25 @@ def _version_newer(a, b):
     return len(ka) > len(kb)
 
 
-def _template_workflow_version():
-    """`TEMPLATE_VERSION` aus validate.yml/e2e.yml (Renovate-managed) — muss mit der
-    TEMPLATE_VERSION-Konstante dieses Scripts uebereinstimmen (Drift-Check)."""
+def _template_workflow_version(fam):
+    """`TEMPLATE_VERSION_<OPENCODE|CLAUDE>` aus validate.yml/e2e.yml (Renovate-managed) — muss mit
+    der jeweiligen Konstante dieses Scripts uebereinstimmen (Drift-Check, je Template-Familie)."""
+    env_name = TEMPLATE_WORKFLOW_VARS.get(fam)
+    if not env_name:
+        return None
     for rel in TEMPLATE_CFG_FILES:
         path = os.path.join(ROOT, rel)
         if not os.path.isfile(path):
             continue
         with open(path, encoding="utf-8") as f:
-            content = f.read()
-        m = TEMPLATE_VERSION_RE.search(content)
-        if m:
-            return m.group(1)
+            for m in TEMPLATE_CFG_RE.finditer(f.read()):
+                if "TEMPLATE_VERSION_" + m.group("fam") == env_name:
+                    return m.group("v")
     return None
 
 
 def _mammouth_base_image_version():
-    """opencode-docker-Basis-Tag im Mammouth-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    """opencode-docker-Basis-Tag im Mammouth-Dockerfile (Mirror von TEMPLATE_VERSION_OPENCODE)."""
     return _dockerfile_base_version(MAMMOUTH_DOCKERFILE, MAMMOUTH_BASE_IMAGE_RE)
 
 
@@ -648,12 +668,12 @@ def _dockerfile_base_version(rel_path, regex):
 
 
 def _opencode_base_image_version():
-    """opencode-docker-Basis-Tag im OpenCode-Tooling-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    """opencode-docker-Basis-Tag im OpenCode-Tooling-Dockerfile (Mirror von TEMPLATE_VERSION_OPENCODE)."""
     return _dockerfile_base_version(OPENCODE_DOCKERFILE, OPENCODE_BASE_IMAGE_RE)
 
 
 def _claude_base_image_version():
-    """claude-code-docker-Basis-Tag im Claude-Tooling-Dockerfile (Mirror der TEMPLATE_VERSION-Konstante)."""
+    """claude-code-docker-Basis-Tag im Claude-Tooling-Dockerfile (Mirror von TEMPLATE_VERSION_CLAUDE)."""
     return _dockerfile_base_version(CLAUDE_DOCKERFILE, CLAUDE_BASE_IMAGE_RE)
 
 
@@ -671,7 +691,10 @@ def _template_image(agent):
     fam = AGENT_TEMPLATES.get(agent)
     if not fam:
         return None
-    return f"docker/sandbox-templates:{fam}-{TEMPLATE_VERSION}"
+    pin = TEMPLATE_PINS.get(fam)
+    if not pin:
+        return None
+    return f"docker/sandbox-templates:{fam}-{pin}"
 
 
 KIT_KIND_RE = re.compile(r"^kind:\s*(?P<v>\S+)", re.M)
@@ -750,62 +773,59 @@ def check_image_dockerfiles_sync():
 
 
 def check_template_update():
-    """Vergleicht den expliziten Template-Pin der lokalen Tests (TEMPLATE_VERSION-Konstante dieses
-    Scripts — gilt fuer beide Kits: opencode-docker fuer OpenCode+Mammouth, claude-code-docker
-    fuer Claude Home) mit .github/workflows/validate.yml/e2e.yml, dem Mammouth-spec-Image und
-    den Docker-Hub-Tags von docker/sandbox-templates. Warnt (gelb), wenn ein neuerer Versions-Tag
-    (opencode-docker ODER claude-code-docker) existiert als der Pin — der Check soll bei einem Update
-    nur hinweisen, nicht fehlschlagen. Fehlschlag nur bei echten Fehlern: Pin nicht gefunden, Tags
-    nicht abrufbar, Drift (Konstante != validate.yml/e2e.yml bzw. Mammouth-Dockerfile-Base), oder ein
-    Pin-Tag ist nicht auf Docker Hub publiziert."""
-    pin = TEMPLATE_VERSION
-    wf_ver = _template_workflow_version()
-    if wf_ver is None:
-        fail("template version (TEMPLATE_VERSION nicht in validate.yml/e2e.yml gefunden)")
-        return
-    if wf_ver != pin:
-        fail(
-            f"template version (TEMPLATE_VERSION-Konstante v{pin} != validate.yml/e2e.yml v{wf_ver})",
-            f"TEMPLATE_VERSION in .github/workflows/validate.yml + e2e.yml auf v{pin} setzen"
-            f" (Pin der lokalen Tests ist die Konstante in {os.path.relpath(__file__, ROOT)})",
-        )
-        return
-    mam_ver = _mammouth_base_image_version()
-    if not mam_ver:
-        fail("template version (mammouth-agent/Dockerfile BASE_IMAGE nicht gepinnt)",
-             f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
-        return
-    if mam_ver != pin:
-        fail(
-            f"template version (Mammouth Dockerfile BASE_IMAGE v{mam_ver} != Pin v{pin})",
-            f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
-            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
-        )
-        return
-    oc_ver = _opencode_base_image_version()
-    if not oc_ver:
-        fail("template version (opencode-agent/opencode/Dockerfile BASE_IMAGE nicht gepinnt)",
-             f"ARG BASE_IMAGE in {OPENCODE_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} setzen")
-        return
-    if oc_ver != pin:
-        fail(
-            f"template version (opencode Dockerfile BASE_IMAGE v{oc_ver} != Pin v{pin})",
-            f"ARG BASE_IMAGE in {OPENCODE_DOCKERFILE} auf docker/sandbox-templates:opencode-docker-{pin} anheben"
-            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
-        )
-        return
+    """Prueft die getrennten Template-Pins je Docker-Hub-Familie (Issue #202):
+    TEMPLATE_VERSION_OPENCODE (opencode-docker: OpenCode + Mammouth) und
+    TEMPLATE_VERSION_CLAUDE (claude-code-docker: Claude Home).
+
+    Fehlschlag nur bei echten Fehlern: Pin-Konstante fehlt, Workflow-Variable weicht ab,
+    Dockerfile-BASE_IMAGE weicht ab, Docker-Hub-Tags nicht abrufbar oder ein Pin-Tag ist
+    nicht publiziert. Warnt (gelb) nur, wenn eine Familie einen neueren Tag hat — die
+    Familien werden von Docker nicht mehr in Lockstep veroeffentlicht."""
+    for fam, pin in TEMPLATE_PINS.items():
+        var = TEMPLATE_WORKFLOW_VARS[fam]
+        wf_ver = _template_workflow_version(fam)
+        if wf_ver is None:
+            fail(f"template version ({var} nicht in validate.yml/e2e.yml gefunden)")
+            return
+        if wf_ver != pin:
+            fail(
+                f"template version ({var}-Konstante v{pin} != validate.yml/e2e.yml v{wf_ver})",
+                f"{var} in .github/workflows/validate.yml + e2e.yml auf v{pin} setzen"
+                f" (Pin der lokalen Tests ist die Konstante in {os.path.relpath(__file__, ROOT)})",
+            )
+            return
+
+    pin_open = TEMPLATE_VERSION_OPENCODE
+    for label, rel, cur in (
+        ("Mammouth", MAMMOUTH_DOCKERFILE, _mammouth_base_image_version()),
+        ("opencode", OPENCODE_DOCKERFILE, _opencode_base_image_version()),
+    ):
+        if not cur:
+            fail(f"template version ({rel} BASE_IMAGE nicht gepinnt)",
+                 f"ARG BASE_IMAGE in {rel} auf docker/sandbox-templates:opencode-docker-{pin_open} setzen")
+            return
+        if cur != pin_open:
+            fail(
+                f"template version ({label} Dockerfile BASE_IMAGE v{cur} != TEMPLATE_VERSION_OPENCODE v{pin_open})",
+                f"ARG BASE_IMAGE in {rel} auf docker/sandbox-templates:opencode-docker-{pin_open} anheben"
+                f" (Pin: TEMPLATE_VERSION_OPENCODE in local-test-kits.py + validate.yml/e2e.yml)",
+            )
+            return
+
+    pin_claude = TEMPLATE_VERSION_CLAUDE
     cc_ver = _claude_base_image_version()
     if not cc_ver:
-        fail("template version (opencode-agent/claude/Dockerfile BASE_IMAGE nicht gepinnt)",
-             f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin} setzen")
+        fail(f"template version ({CLAUDE_DOCKERFILE} BASE_IMAGE nicht gepinnt)",
+             f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin_claude} setzen")
         return
-    if cc_ver != pin:
+    if cc_ver != pin_claude:
         fail(
-            f"template version (claude Dockerfile BASE_IMAGE v{cc_ver} != Pin v{pin})",
-            f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin} anheben"
-            f" (Pin: TEMPLATE_VERSION-Konstante in local-test-kits.py + validate.yml/e2e.yml)",
+            f"template version (claude Dockerfile BASE_IMAGE v{cc_ver} != TEMPLATE_VERSION_CLAUDE v{pin_claude})",
+            f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin_claude} anheben"
+            f" (Pin: TEMPLATE_VERSION_CLAUDE in local-test-kits.py + validate.yml/e2e.yml)",
         )
         return
+
     try:
         latest = _template_latest_per_family()
     except Exception as e:
@@ -813,7 +833,7 @@ def check_template_update():
         return
     updates = []
     problems = []
-    for fam in ("opencode-docker", "claude-code-docker"):
+    for fam, pin in TEMPLATE_PINS.items():
         latest_ver = latest.get(fam)
         if not latest_ver:
             problems.append(f"{fam}: kein Versions-Tag auf Docker Hub")
@@ -823,14 +843,15 @@ def check_template_update():
             problems.append(f"{fam}: Pin-Tag {fam}-{pin} nicht publiziert (letzter Tag v{latest_ver})")
     if updates:
         warn(
-            f"template version update available (Pin v{pin}, Docker Hub: {'; '.join(updates)})",
-            f"Optional: TEMPLATE_VERSION-Konstante in local-test-kits.py + .github/workflows/*.yml erhoehen"
-            f" (Renovate), Mammouth-spec-Image + Start-Commands/README/AGENTS --template-Pins synchronisieren",
+            f"template version update available ({'; '.join(updates)})",
+            "Optional: TEMPLATE_VERSION_OPENCODE/_CLAUDE in local-test-kits.py + .github/workflows/*.yml "
+            "je Familie erhoehen (Renovate), Dockerfile-BASE_IMAGE-Pins synchronisieren",
         )
     for p in problems:
-        fail(f"template version (Pin v{pin}, Docker Hub: {p})")
+        fail(f"template version (Docker Hub: {p})")
     if not updates and not problems:
-        pass_(f"template version up-to-date (Pin v{pin}: opencode-docker + claude-code-docker)")
+        pins = ", ".join(f"{fam} v{pin}" for fam, pin in TEMPLATE_PINS.items())
+        pass_(f"template version up-to-date (getrennte Pins: {pins})")
 
 
 def _docker_template_node_major(image):
@@ -861,13 +882,17 @@ def check_template_node_baseline():
     `install-tooling.sh node`-Step (Node-24-Tarball) + der `nodejs.org`-Allowlist-Eintrag entfallen —
     die npm-CLIs (renovate >=43) laufen dann auf dem vom Template gelieferten Node. Best-effort ueber
     Docker (Image-Pull, gecacht); wird uebersprungen, wenn Docker oder ein Image nicht verfuegbar ist."""
-    families = ("opencode-docker", "claude-code-docker", "shell-docker")
+    pins = dict(TEMPLATE_PINS)
+    pins["shell-docker"] = _vibe_base_image_version()
     if which("docker") is None:
         print("  " + _color("33", "[SKIP] template node baseline — docker nicht im PATH"))
         return
     versions = {}
-    for fam in families:
-        versions[fam] = _docker_template_node_major(f"docker/sandbox-templates:{fam}-{TEMPLATE_VERSION}")
+    for fam, pin in pins.items():
+        if not pin:
+            versions[fam] = None
+            continue
+        versions[fam] = _docker_template_node_major(f"docker/sandbox-templates:{fam}-{pin}")
     unknown = [f for f, m in versions.items() if m is None]
     if unknown:
         print("  " + _color("33", f"[SKIP] template node baseline — Image/node nicht verfuegbar: {', '.join(unknown)}"))
@@ -945,7 +970,8 @@ def check_vibe_cli_update():
     """Vergleicht den Vibe-Pin (ARG VIBE_VERSION im Dockerfile — das Image installiert
     exakt diese Version) mit der latest PyPI-Version (mistral-vibe) und prueft, dass die
     spec.yaml dasselbe Image-Tag referenziert sowie das shell-Basis-Image der
-    TEMPLATE_VERSION entspricht. Warnt (gelb) bei neuerer PyPI-Version."""
+    shell-Basis-Pin im Dockerfile ist eigenstaendig (geprueft gegen Docker Hub).
+    Warnt (gelb) bei neuerer PyPI-Version."""
     pin = _vibe_dockerfile_pin()
     if not pin:
         fail("mistral-vibe version (VIBE_VERSION nicht in mistral-vibe-agent/Dockerfile gefunden)")
@@ -964,10 +990,24 @@ def check_vibe_cli_update():
     if base is None:
         fail("mistral-vibe base image (shell-Basis-Image nicht in mistral-vibe-agent/Dockerfile gefunden)")
         return
-    if base != TEMPLATE_VERSION:
+    try:
+        shell_latest = _template_latest_per_family().get("shell-docker")
+    except Exception as e:
+        fail("mistral-vibe base image (Docker-Hub-Tags nicht abrufbar)", str(e))
+        return
+    if not shell_latest:
+        fail("mistral-vibe base image (shell-docker: kein Versions-Tag auf Docker Hub)")
+        return
+    if _version_newer(shell_latest, base):
+        warn(
+            f"mistral-vibe base image update available (shell-{base}, Docker Hub v{shell_latest})",
+            f"Optional: ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-"
+            f"{shell_latest} heben, Image neu publizieren (build-and-publish-mistral-vibe-image.yml)",
+        )
+    elif shell_latest != base:
         fail(
-            f"mistral-vibe base image (shell-{base} != TEMPLATE_VERSION v{TEMPLATE_VERSION})",
-            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-{TEMPLATE_VERSION} setzen",
+            f"mistral-vibe base image (shell-{base} nicht publiziert, letzter Tag v{shell_latest})",
+            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-{shell_latest} setzen",
         )
         return
     try:
@@ -1297,7 +1337,7 @@ def main():
         template_fam = AGENT_TEMPLATES.get(s["agent"])
         template_image = _template_image(s["agent"]) if template_fam else None
         if template_fam and not template_image:
-            sfail("template pin (TEMPLATE_VERSION-Konstante fehlt)")
+            sfail("template pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE-Konstante fehlt)")
             continue
         if _kit_kind(s["kit"]) == "sandbox":
             # Sandbox-Kit (kind:sandbox) definiert den Agenten selbst → Kit als erstes

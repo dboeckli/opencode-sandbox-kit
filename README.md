@@ -140,21 +140,25 @@ sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-
 
 ### Template-Version & Tooling-Image-Tags (gepinnt, Renovate-managed)
 
-Alle Kits nutzen die Template-Version **`0.x.0`** (`TEMPLATE_VERSION`, Renovate-managed):
+Alle Kits nutzen gepinnte Sandbox-Template-Versionen — **`TEMPLATE_VERSION_OPENCODE`** (opencode-docker) und
+**`TEMPLATE_VERSION_CLAUDE`** (claude-code-docker), Renovate-managed und bewusst **getrennt** (Docker veröffentlicht
+die Familien nicht mehr in Lockstep, Issue #202):
 
 - **OpenCode**: `docker.io/domboeckli/sbx-opencode-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling vorgebacken, Issue #137)
 - **Claude (Home)**: `docker.io/domboeckli/sbx-claude-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:claude-code-docker-0.x.0` auf (Issue #137)
 - **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken, Issue #137)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
 
-Die Base-Version `0.x.0` ist mehrfach gepinnt und wird auf Konsistenz geprüft: als Konstante in `local-test/local-test-kits.py`
-(Renovate-managed), als `TEMPLATE_VERSION` in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed),
-als `ARG BASE_IMAGE` in `opencode-agent/opencode/Dockerfile`, `opencode-agent/claude/Dockerfile` und
-`mammouth-agent/Dockerfile`.
+Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
+`TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
+gleichnamige Variablen in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed) sowie als `ARG BASE_IMAGE`
+in `opencode-agent/opencode/Dockerfile` + `mammouth-agent/Dockerfile` (opencode-docker) bzw.
+`opencode-agent/claude/Dockerfile` (claude-code-docker); Mistral Vibe pinnt `shell-docker` im eigenen Dockerfile.
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
 bei Drift fehl.
 
-**Image-Tags** — Schema für alle Tooling-/Agent-Images; `<version>` = `TEMPLATE_VERSION` (OpenCode/Claude/Mammouth)
+**Image-Tags** — Schema für alle Tooling-/Agent-Images; `<version>` = `TEMPLATE_VERSION_OPENCODE` (OpenCode/Mammouth)
+bzw. `TEMPLATE_VERSION_CLAUDE` (Claude)
 bzw. die Agent-Version (Mistral Vibe), `<branch-slug>` = Branch-Name (lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
 
 | Kontext | Tag(s) |
@@ -582,7 +586,7 @@ Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IM
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.48.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
+  (`SBX_VERSION`, aktuell `v0.49.2`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
   übersprungen, da keine Secrets), validiert alle Kits (`sbx kit validate ./opencode-agent/`,
   `./mammouth-agent/`, `./mistral-vibe-agent/`) und prüft, dass die Install-Skript-Kopien
@@ -620,9 +624,10 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 > (inkl. Hinweis aufs Regen-Skript).
 >
-> `--validate-only` prüft zusätzlich die **Template-Pin** (explizite `TEMPLATE_VERSION`-Konstante in
-> `local-test-kits.py`, Drift-Check gegen `TEMPLATE_VERSION` in `.github/workflows/validate.yml`/`e2e.yml`
-> und das Mammouth-spec-Image) gegen die Docker-Hub-Tags (`docker/sandbox-templates`), die
+> `--validate-only` prüft zusätzlich die **Template-Pins je Familie** (`TEMPLATE_VERSION_OPENCODE`/`_CLAUDE` als
+> Konstanten in `local-test-kits.py`, Drift-Check gegen die gleichnamigen Variablen in
+> `.github/workflows/validate.yml`/`e2e.yml` und die Dockerfile-Base-Pins) gegen die Docker-Hub-Tags
+> (`docker/sandbox-templates`), die
 > **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
 > und die **Mistral-Vibe-Pin** (`ARG VIBE_VERSION` im Dockerfile, Image-Tag in der spec, shell-Basis-Template)
 > gegen die latest PyPI-Version (`mistral-vibe`) — alle **warnen** (gelb), sobald eine neuere Version
@@ -697,7 +702,7 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [Docker-MCP-Server (Host)](docs/docker-mcp-server.md)
 - [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
-- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.48.0 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.49.2 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
 - [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)

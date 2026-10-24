@@ -142,7 +142,7 @@ run_shfmt() {
 
 # --- Liberica JDK (LTS) ---
 run_jdk() {
-	LIBERICA_VER="25.0.4+9"
+	LIBERICA_VER="25.0.5+11"
 	if [ -x /usr/local/java/bin/java ] && /usr/local/java/bin/java -version 2>&1 | grep -qF "25.0.4"; then
 		log_step jdk
 		return 0
@@ -193,7 +193,7 @@ run_docker() {
 # --- Docker Compose (CLI plugin) ---
 run_compose() {
 	# Compose release assets use x86_64/aarch64, not amd64/arm64
-	COMPOSE_VER="5.6.0"
+	COMPOSE_VER="5.6.1"
 	if [ -x /usr/local/lib/docker/cli-plugins/docker-compose ] && docker compose version 2>/dev/null | grep -qF "${COMPOSE_VER}"; then
 		log_step compose
 		return 0

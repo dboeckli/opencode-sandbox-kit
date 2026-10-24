@@ -102,10 +102,12 @@ jobs:
       matrix:
         scenario: [opencode, claude, mammouth, mistral-vibe]
     env:
-      # Sandbox-Template-Version (gepinnt) — muss mit validate.yml identisch sein; Basis der
-      # Tooling-Images (opencode-agent/{opencode,claude}/Dockerfile ARG BASE_IMAGE) und des
-      # Mammouth-spec-Images. Updates via Renovate (customManager docker/sandbox-templates).
-      TEMPLATE_VERSION: 0.7.0
+      # Sandbox-Template-Versionen (gepinnt, je Familie getrennt — Issue #202) — muessen mit
+      # validate.yml identisch sein; Basis der Tooling-Images (opencode-agent/{opencode,claude}/
+      # Dockerfile ARG BASE_IMAGE) und des Mammouth-spec-Images. Updates via Renovate
+      # (customManager docker/sandbox-templates).
+      TEMPLATE_VERSION_OPENCODE: 0.7.0
+      TEMPLATE_VERSION_CLAUDE: 0.7.0
     steps:
       - uses: actions/checkout@v7
 
@@ -119,7 +121,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases in .github/renovate.json).
         env:
-          SBX_VERSION: v0.48.0
+          SBX_VERSION: v0.49.2
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail

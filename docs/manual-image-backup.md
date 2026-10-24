@@ -36,7 +36,7 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 
 ```powershell
 $DH  = "domboeckli"     # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
-$TAG = "0.7.0"          # Backup-Tag = TEMPLATE_VERSION (z. B. 0.7.0)
+$TAG = "0.7.0"          # Backup-Tag = Basis-Pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE, z. B. 0.7.0)
 cd C:\development\projects\opencode-sandbox-kit
 docker login
 ```
@@ -100,7 +100,7 @@ Für **amd64+arm64** statt manuellem amd64-Build:
 - `image`: `opencode` | `claude` | `mammouth` | `mistral-vibe` | `all`
 - `arch`: `amd64` | `arm64` | `both`
 - `push`: `true`/`false`
-- `tag`: Override (Default = Basis-Pin `TEMPLATE_VERSION` bzw. `VIBE_VERSION`)
+- `tag`: Override (Default = Basis-Pin `TEMPLATE_VERSION_OPENCODE`/`_CLAUDE` bzw. `VIBE_VERSION`)
 
 Baut auf **nativen** Runnern (`ubuntu-latest` / `ubuntu-24.04-arm`) und mergt bei `both`
 per `docker buildx imagetools create` zu `<namespace>/sbx-<name>:<tag>`. Kein Cloudsmith
