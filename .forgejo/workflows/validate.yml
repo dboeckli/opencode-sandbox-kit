@@ -24,11 +24,12 @@ jobs:
     # (2 CPU/4G/5 min Limit). Für einen self-hosted Runner RUNNER_LABEL setzen.
     runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-small' }}
     env:
-      # Sandbox-Template-Version (gepinnt, beide Kits): gilt fuer opencode-docker (OpenCode +
-      # Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die --template-Pins
-      # der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate (auf Codeberg ggf. manuell,
-      # siehe docs/codeberg-forgejo.md).
-      TEMPLATE_VERSION: 0.7.0
+      # Sandbox-Template-Versionen (gepinnt, je Familie getrennt — Issue #202): opencode-docker
+      # (OpenCode + Mammouth) und claude-code-docker (Claude Home). Source of Truth fuer die
+      # --template-Pins der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate
+      # (auf Codeberg ggf. manuell, siehe docs/codeberg-forgejo.md).
+      TEMPLATE_VERSION_OPENCODE: 0.7.0
+      TEMPLATE_VERSION_CLAUDE: 0.7.0
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
 
@@ -45,7 +46,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases). Der Release ist oeffentlich -> kein Token noetig.
         env:
-          SBX_VERSION: v0.48.0
+          SBX_VERSION: v0.49.2
         run: |
           set -euo pipefail
           echo "using sbx ${SBX_VERSION}"
