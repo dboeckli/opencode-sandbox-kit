@@ -177,7 +177,8 @@ Connected via the sbx MCP gateway (`mcp-gateway`, key in `~/.claude.json`); the 
 ## Kubernetes MCP
 
 On a sandbox started with `--static-mcp idea,k8s`, the host-side Kubernetes MCP server
-(`containers/kubernetes-mcp-server`, full scope: `read_only = false`, all toolsets) is exposed through the
+(`containers/kubernetes-mcp-server`, full scope: `read_only = false`, toolsets
+`core`/`config`/`helm`) is exposed through the
 same sbx MCP gateway. Tools arrive as `mcp__mcp-gateway__<tool>`. The documented read-only tools are on the
 `permissions.allow` list. The K8s write/exec tools are listed in `permissions.ask`: Claude runs with
 `defaultMode: default`, so it prompts for on-the-fly approval per call (not permanently granted). As a

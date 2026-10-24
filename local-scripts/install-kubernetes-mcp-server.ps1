@@ -13,7 +13,7 @@
     Configuration/start: see docs/kubernetes-mcp-server.md (Issue #40).
 
 .PARAMETER Version
-    Release tag (e.g. "v0.0.67"). Default: the pinned version (updated via Renovate).
+    Release tag (e.g. "v0.0.69"). Default: the pinned version (updated via Renovate).
     Pass "latest" to fetch the current release from GitHub.
 
 .PARAMETER InstallDir
@@ -30,14 +30,14 @@
     .\install-kubernetes-mcp-server.ps1
 
 .EXAMPLE
-    .\install-kubernetes-mcp-server.ps1 -Version v0.0.67
+    .\install-kubernetes-mcp-server.ps1 -Version v0.0.69
 
 .EXAMPLE
     .\install-kubernetes-mcp-server.ps1 -AddToPath:$false
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = "v0.0.67",
+    [string]$Version = "v0.0.69",
     [string]$InstallDir = (Join-Path $env:USERPROFILE ".local\bin"),
     [bool]$AddToPath = $true,
     [switch]$Force
@@ -100,7 +100,7 @@ function Show-Summary {
 $target = if ($Version -eq "latest") { Resolve-LatestTag -Repo $repo } else { $Version }
 $target = $target -replace '^v', ''
 if ($target -notmatch '^\d+\.\d+\.\d+') {
-    throw "Invalid -Version '$Version' (expected e.g. v0.0.67 or latest)."
+    throw "Invalid -Version '$Version' (expected e.g. v0.0.69 or latest)."
 }
 $target = "v$target"
 

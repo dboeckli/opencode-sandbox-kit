@@ -356,7 +356,7 @@ Drei host-seitige MCP-Server werden über den **sbx MCP Gateway** in die Sandbox
 | Server | Host | Registrierung (einmalig, PowerShell) |
 |--------|------|--------------------------------------|
 | **IntelliJ MCP** | IntelliJ IDEA (JetBrains MCP Server, Port `64615` seit IDEA 2026.2.2, Endpoint `/stream`) | `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` |
-| **Kubernetes** | `kubernetes-mcp-server` (voller Umfang, alle Toolsets; keine Sandbox-Credentials) | `sbx mcp add k8s --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"` |
+| **Kubernetes** | `kubernetes-mcp-server` (voller Umfang, Toolsets `core,config,helm`; keine Sandbox-Credentials) | `sbx mcp add k8s --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"` |
 | **Docker** | `ckreiling/mcp-server-docker` via `uvx` (steuert den Host-Docker-Daemon) | `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"` |
 
 ```powershell
