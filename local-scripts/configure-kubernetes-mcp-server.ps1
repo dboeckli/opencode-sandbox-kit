@@ -6,8 +6,8 @@
 
 .DESCRIPTION
     Creates %USERPROFILE%\.config\kubernetes-mcp-server\config.toml: stdio transport
-    (no port - sbx starts the process via `sbx mcp add --command`), full scope by
-    default (read-write, all toolsets), host kubeconfig. The sandbox-side Kit
+    (no port - sbx starts the process via `sbx mcp add --command`), full scope
+    (read-write, default toolsets core/config/helm), host kubeconfig. The sandbox-side Kit
     permission whitelist still limits the agent to read-only tools (docs/kubernetes-mcp-server.md).
     Secrets are deliberately NOT denied (required by the helm toolset, because
     Helm stores releases as Secrets) - the generic tools can therefore read
@@ -27,7 +27,8 @@
     Path to the host kubeconfig. Default: %USERPROFILE%\.kube\config
 
 .PARAMETER Toolsets
-    MCP toolsets to enable. Default: all (core, config, helm, kcp, kiali, kubevirt, netobserv, tekton)
+    MCP toolsets to enable. Default: core, config, helm (KubeVirt/Kiali/NetObserv/Tekton/KCP
+    only if those backends are installed - enable explicitly via -Toolsets).
 
 .PARAMETER ReadOnly
     Only expose read-only tools. Default: false (full scope; the sandbox Kit
@@ -47,7 +48,7 @@ param(
     [string]$InstallDir = (Join-Path $env:USERPROFILE ".local\bin"),
     [string]$ConfigDir = (Join-Path $env:USERPROFILE ".config\kubernetes-mcp-server"),
     [string]$Kubeconfig = (Join-Path $env:USERPROFILE ".kube\config"),
-    [string[]]$Toolsets = @("core", "config", "helm", "kcp", "kiali", "kubevirt", "netobserv", "tekton"),
+    [string[]]$Toolsets = @("core", "config", "helm"),
     [bool]$ReadOnly = $false,
     [switch]$Force
 )
@@ -87,7 +88,7 @@ $toml = @"
 # --- Scope: read_only = false exposes all read-write/exec tools ---
 read_only = $readOnlyToml
 
-# --- Toolsets (all by default) ---
+# --- Toolsets (default: core, config, helm) ---
 toolsets = [$toolsetsToml]
 
 # --- Cluster access from the host kubeconfig ---

@@ -43,7 +43,7 @@ Empfohlen über das Host-Skript im Repo (idempotent, erkennt die Architektur, pr
 # aus dem Repo-Root
 .\local-scripts\install-kubernetes-mcp-server.ps1                    # gepinnte Version (Renovate-tracked; PATH wird gesetzt)
 # oder explizit:
-.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.67
+.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.69
 # immer die aktuelle Release-Version:
 .\local-scripts\install-kubernetes-mcp-server.ps1 -Version latest
 # ohne PATH-Eintrag:
@@ -56,7 +56,7 @@ Empfohlen über das Host-Skript im Repo (idempotent, erkennt die Architektur, pr
 $dir = "$env:USERPROFILE\.local\bin"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
-# Aktuelle Release-Version ermitteln (oder fest pinnen, z. B. "v0.0.67")
+# Aktuelle Release-Version ermitteln (oder fest pinnen, z. B. "v0.0.69")
 $ver = (Invoke-RestMethod "https://api.github.com/repos/containers/kubernetes-mcp-server/releases/latest").tag_name
 
 $url = "https://github.com/containers/kubernetes-mcp-server/releases/download/$ver/kubernetes-mcp-server-windows-amd64.exe"
@@ -82,8 +82,9 @@ Empfohlen über das Host-Skript (schreibt die TOML UTF-8 ohne BOM; **scheitert, 
 
 ```powershell
 .\local-scripts\configure-kubernetes-mcp-server.ps1
-# Default: voller Umfang (read-write, alle Toolsets)
-# Einschränken: -ReadOnly:$true -Toolsets core,config,helm -Force
+# Default: voller Umfang (read-write, Toolsets core,config,helm)
+# Weitere Toolsets (nur mit installiertem Backend): -Toolsets core,config,helm,kubevirt bzw. ...,kiali
+# Einschränken: -ReadOnly:$true -Toolsets core,config -Force
 ```
 
 <details><summary>Manuell (ohne Skript)</summary>
@@ -99,8 +100,8 @@ $toml = @"
 # --- Scope: read_only = false = voller Umfang (read-write/exec) ---
 read_only = false
 
-# --- Toolsets (alle) ---
-toolsets = ["core", "config", "helm", "kcp", "kiali", "kubevirt", "netobserv", "tekton"]
+# --- Toolsets (Standard: nur Backends, die auf dem Dev-Cluster laufen) ---
+toolsets = ["core", "config", "helm"]
 
 # --- Cluster-Zugriff aus der Host-kubeconfig ---
 kubeconfig = "$kubeconfig"
@@ -192,8 +193,8 @@ Namespace default", „Zeig die Logs von Pod X", „Welche Helm-Releases laufen?
 > zusammen mit `mcp-docker` (lokaler Docker-MCP-Server, erkannt an `list_containers`; Issue #165).
 > Er ersetzt den früheren `kubectl get nodes`-Check, der ohne kubeconfig in der Sandbox nicht mehr funktioniert.
 
-> **Voller Umfang (Server):** `read_only = false` + alle Toolsets — der Server bietet auch
-> schreibende/ausführende Tools an (`pods_delete`, `helm_install`, `pods_run`, …). Die
+> **Voller Umfang (Server):** `read_only = false` + Standard-Toolsets (`core`, `config`, `helm`)
+> — der Server bietet auch schreibende/ausführende Tools an (`pods_delete`, `helm_install`, `pods_run`, …). Die
 > **Sandbox-Whitelist** (Abschnitt 5) regelt, was der Agent davon aufrufen darf: die dokumentierten
 > Read-only-Tools sind `allow`, die übrigen K8s-Tools bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe
 > pro Aufruf), bei Vibe hart `deny` (kein `ask`-Prompt). Volle Schreibrechte ohne Rückfrage hätte
@@ -218,7 +219,7 @@ freigegeben (in allen vier Agent-Configs):
 - Claude Code: `permissions.allow` + `permissions.ask` in `settings.json` (+ `settings.kit.json`, `defaultMode: default`)
 - Mistral Vibe: `pre_tool`-Guard (`vibe-mcp-guard.py`)
 
-Freigegeben (nur lesend, aus den Toolsets `core`/`helm`): `events_list`, `helm_list`,
+Freigegeben (nur lesend, aus den Toolsets `core`/`config`/`helm`): `events_list`, `helm_list`,
 `namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`,
 `pods_list_in_namespace`, `pods_log`, `pods_top`, `projects_list`, `resources_get`,
 `resources_list`.
@@ -246,6 +247,35 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
 > inkl. Client-Zertifikat/-Key als YAML in die Sandbox und würde das Sicherheitsziel von #40
 > (keine Credentials in der Sandbox) unterlaufen.
 
+## Upgrade-Hinweise (ab v0.0.68)
+
+> Geprüft mit **v0.0.69**: bestehende `config.toml` bleibt kompatibel (`read_only`, `toolsets`,
+> `kubeconfig`, `cluster_provider_strategy`, `log_file`/`log_level`, `denied_resources`).
+
+- **Config-Rework (breaking):** Runtime-CLI-Flags (`--port`, `--bind-address`, `--read-only`,
+  `--toolsets`, `--kubeconfig`, `--list-output`, `--stateless`, `--log-level`, …) sind entfernt —
+  es gelten nur noch `--config` und `--config-dir`. Der Bootstrap-Env `K8S_MCP_CONFIG_PATH` heißt
+  jetzt `MCP_CONFIG_PATH` (kein Shim). Unsere Registrierung (`--args "--config,…"`) ist nicht betroffen.
+  **Unbekannte TOML-Keys lassen den Start fehlschlagen** (auch bei SIGHUP).
+- **Pagination:** `resources_list`, `pods_list`, `pods_list_in_namespace`, `pods_top`, `nodes_top`,
+  `namespaces_list`, `projects_list`, `events_list` nehmen `limit` + `continue`; `helm_list` nimmt
+  `limit` + `offset`. Ohne `limit` bleibt das Verhalten wie bisher (alles listen).
+- **Memory-Bounds (Default an, reloadbar):** `max_backend_response_bytes` 4 MiB,
+  `max_result_bytes` 16 MiB, `max_in_flight` 64. Sehr große Objekte/Logs werden jetzt abgeschnitten
+  bzw. abgelehnt; bei Bedarf in der `config.toml` hochsetzen (`0` = aus).
+- **MCP Apps:** `apps_enabled = true` liefert interaktive `ui://`-Views; OpenCode/Claude Code rendern
+  sie nicht (Text-Fallback bleibt) — Default `false` beibehalten.
+- **Neue Tools:** `vm_console_screenshot` (KubeVirt, read-only; nur mit `kubevirt`-Toolset sichtbar); Kiali-Tools lassen sich per
+  `experimental_enable_target_compatibility_tool_filters = true` + `[toolset_configs.kiali].url`
+  auf Erreichbarkeit filtern.
+- **Nur mit Backend sinnvoll:** Kiali/NetObserv/Tekton/KCP-Tools sind ohne installiertes Backend
+  registriert, schlagen beim Aufruf aber fehl („kiali client not initialized", DNS-Fehler) und blähen
+  die Tool-Liste auf — daher nicht mehr im Default-Toolset. `kubevirt` ist aus demselben Grund nicht
+  Default (kein KubeVirt auf dem Dev-Cluster): es fügt 7 `vm_*`-Tools hinzu (23 → 30 Tools);
+  bei Bedarf `-Toolsets core,config,helm,kubevirt`.
+- **Tool-Anzahl (v0.0.69, gemessen):** Default `core,config,helm` = 23 Tools; mit `kubevirt` = 30;
+  mit allen 8 Toolsets = 52.
+
 ## Betrieb
 
 | Aktion | Befehl |
@@ -257,13 +287,25 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
 | kubeconfig-Rotation | Docker Desktop rotiert Zertifikate → Prozess neu starten (Sandbox neu erstellen oder `sbx mcp load k8s --sandbox <name>`) |
 | Registrierung entfernen | `sbx mcp rm k8s` |
 
+### Cluster-Abhängigkeiten der Read-only-Tools (geprüft mit v0.0.69, Docker Desktop)
+
+- `nodes_top`/`pods_top` brauchen den **metrics-server**; auf einem Docker-Desktop-Cluster ohne
+  metrics-server antworten beide mit `failed to get … top: metrics API is not available`
+  (Config-Fehler ist das nicht). `nodes_stats_summary` (kubelet-Summary-API) funktioniert ohne
+  metrics-server.
+- `projects_list` ist **OpenShift-only** und schlägt auf plain Kubernetes mit
+  `no matches for kind "Project"` fehl — auf K8s stattdessen `namespaces_list` nutzen.
+- `nodes_log` mit `query=kubelet` liefert auf Docker Desktop nur den Kubelet-Verzeichnisindex
+  (der Kubelet läuft dort als Host-Prozess, kein Container-Log) — konkrete Log-Dateien per
+  Pfad-Query (z. B. `/var/log/...`) oder `pods_log` für Container verwenden.
+
 ## Sicherheit (Kurz)
 
 - **stdio, kein Listen-Port** → der Server ist von außen nicht erreichbar; nur der sbx-Gateway spricht mit ihm.
-- `read_only = false` + alle Toolsets (**voller Umfang**) → der Server bietet auch Schreib-/Exec-Tools
-  (`pods_delete`, `helm_install`, `resources_delete`, …). Die **Sandbox-Whitelist** (Abschnitt 5) regelt
-  den Zugriff: Read-only = `allow`, übrige K8s-Tools bei OpenCode/Mammouth/Claude `ask` (Freigabe pro Aufruf),
-  bei Vibe `deny`.
+- `read_only = false` + Standard-Toolsets (`core`, `config`, `helm`) → der Server bietet auch
+  Schreib-/Exec-Tools (`pods_delete`, `helm_install`, `resources_delete`, …). Die **Sandbox-Whitelist**
+  (Abschnitt 5) regelt den Zugriff: Read-only = `allow`, übrige K8s-Tools bei OpenCode/Mammouth/Claude `ask`
+  (Freigabe pro Aufruf), bei Vibe `deny`.
 - kubeconfig/Credentials bleiben **ausschließlich** im Host-Prozess; die Sandbox sieht nur MCP.
   `configuration_view` ist in der Kit-Whitelist gesperrt (würde die kubeconfig inkl. Client-Cert/Key liefern).
 

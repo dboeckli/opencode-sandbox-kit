@@ -17,7 +17,7 @@ Abgrenzung zu den anderen Skript-Orten:
 | Skript | Zweck |
 |--------|-------|
 | `install-kubernetes-mcp-server.ps1` | [`containers/kubernetes-mcp-server`](https://github.com/containers/kubernetes-mcp-server) als native Windows-Binary installieren (Issue [#40](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/40)) |
-| `configure-kubernetes-mcp-server.ps1` | `config.toml` im **stdio-Modus** schreiben (Default voller Umfang: read-write, alle Toolsets; Host-kubeconfig, `log_file=stderr`), für `sbx mcp add --command`; setzt eine bestehende Installation voraus |
+| `configure-kubernetes-mcp-server.ps1` | `config.toml` im **stdio-Modus** schreiben (Default voller Umfang: read-write, Toolsets `core,config,helm`; Host-kubeconfig, `log_file=stderr`), für `sbx mcp add --command`; setzt eine bestehende Installation voraus |
 
 ## Nutzung
 
@@ -26,7 +26,7 @@ Abgrenzung zu den anderen Skript-Orten:
 .\local-scripts\install-kubernetes-mcp-server.ps1
 
 # bestimmte Version / immer aktuell
-.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.67
+.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.69
 .\local-scripts\install-kubernetes-mcp-server.ps1 -Version latest
 
 # ohne PATH-Eintrag

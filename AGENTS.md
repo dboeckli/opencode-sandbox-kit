@@ -340,8 +340,8 @@ Die Config liegt je Agent-Location vor:
   sowie die **Docker-MCP-Read-only-Tools** des lokalen Docker-MCP-Servers (`docs/docker-mcp-server.md`,
   Issue #165): `mcp-gateway_list_containers`, `mcp-gateway_list_images`, `mcp-gateway_list_networks`,
   `mcp-gateway_list_volumes`, `mcp-gateway_fetch_container_logs`.
-  Der Server selbst läuft im **vollen Umfang** (`read_only = false`, alle Toolsets); diese Whitelist
-  begrenzt den Agenten trotzdem. Die dokumentierten Read-only-Tools bleiben `allow`; alle übrigen
+  Der Server selbst läuft im **vollen Umfang** (`read_only = false`, Standard-Toolsets
+  `core`/`config`/`helm`); diese Whitelist begrenzt den Agenten trotzdem. Die dokumentierten Read-only-Tools bleiben `allow`; alle übrigen
   K8s-/Docker-Write-Tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`,
   `resources_delete`, `helm_install`, `vm_*`, `tekton_*`, `run_container`, `remove_container`,
   `build_image`, `create_volume`, …) sind bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe pro Aufruf).
