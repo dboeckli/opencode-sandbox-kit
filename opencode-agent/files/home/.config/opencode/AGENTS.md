@@ -138,6 +138,16 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+### Kein Push auf `master`/`main` (Pflicht)
+
+Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvor allgemein Commits/Pushes freigegeben wurden. Ausnahme ausschließlich: Der User verlangt den Push auf `master`/`main` **explizit** in derselben Anweisung (z. B. „push auf master"). Standard ist immer der Feature Branch + Frage nach einem PR.
+
+### Kein Push ohne vorherige Nachfrage (Pflicht)
+
+Jeder `git push` — auch auf einen Feature Branch — erfolgt **nur nach vorheriger, expliziter Zustimmung** des Users (pro Push, nicht pauschal für die Session). Nach dem Commit den User fragen, ob gepusht werden soll; ohne Antwort kein Push. Force-Push und `git push --no-verify` sind ebenfalls zustimmungspflichtig.
+
+**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p .review && git diff <base> > .review/changes.patch`) und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des Diffs wird gepusht.
+
 ### Feature Branch mit GitHub-Issue (Zusatzregel)
 
 Gehört zu einem Feature Branch ein GitHub-Issue, gilt zusätzlich:
