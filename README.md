@@ -675,7 +675,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
-| Bruno CLI (`bru`) | 4.2.1 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
+| Bruno CLI (`bru`) | 4.3.0 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über

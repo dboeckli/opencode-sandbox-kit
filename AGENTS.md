@@ -768,7 +768,7 @@ Die jeweilige Config wird automatisch gelesen:
 | skills | npm (vercel-labs) |
 | prettier | npm |
 | renovate | npm |
-| Bruno CLI (`bru`) 4.2.1 | npm (`@usebruno/cli`, gepinnt; Renovate-Custom-Manager) |
+| Bruno CLI (`bru`) 4.3.0 | npm (`@usebruno/cli`, gepinnt; Renovate-Custom-Manager) |
 
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
 > `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach
