@@ -106,7 +106,7 @@ jobs:
       # validate.yml identisch sein; Basis der Tooling-Images (opencode-agent/{opencode,claude}/
       # Dockerfile ARG BASE_IMAGE) und des Mammouth-spec-Images. Updates via Renovate
       # (customManager docker/sandbox-templates).
-      TEMPLATE_VERSION_OPENCODE: 0.7.0
+      TEMPLATE_VERSION_OPENCODE: 0.11.0
       TEMPLATE_VERSION_CLAUDE: 0.10.0
     steps:
       - uses: actions/checkout@v7
