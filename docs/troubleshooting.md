@@ -175,7 +175,7 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
 `sbx run --skills=off ./mammouth-agent/`) betrieben; das eigene Image `docker.io/domboeckli/sbx-mammouth`
-backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.1** via `ARG MAMMOUTH_VERSION` +
+backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.2** via `ARG MAMMOUTH_VERSION` +
 Symlink; Pin via Renovate). Das
 `opencode-agent/`-Kit (`sbx run --skills=off opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
 Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
