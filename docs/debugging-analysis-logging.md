@@ -82,9 +82,10 @@ cp opencode-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\fi
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
 Alle `--help`-Outputs der v0.50.1-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
-`opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — die sbx-Commands sind in Context7 nur
-**teilweise** abgedeckt (`/docker/docs`: Nutzung + Teil-Referenz; `/docker/sbx-releases`: nur Installation/Releases),
-die vollständigen `--help`-Flags liefert nur diese Offline-Referenz. Hintergrunddoku (Kits, Policy, Proxy):
+`opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — Context7 deckt die sbx-Commands
+inzwischen ab (`/docker/docs`: Manuels + generierte CLI-Referenz `data/sbx_cli/*.yaml`; `/docker/sbx-releases`:
+nur Installation/Releases), indexiert aber den Docs-`main`-Branch statt unseres Pins. Die exakten `--help`-Dumps
+der gepinnten Version liefert nur diese Offline-Referenz. Hintergrunddoku (Kits, Policy, Proxy):
 `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus

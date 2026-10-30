@@ -244,7 +244,7 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 
 Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 
-**sbx CLI** (auf dem Host via PowerShell): Offline-Referenz aller `--help`-Outputs unter `~/sbx-cli.md` — sie liegt im Kit-Bundle (`files/home/sbx-cli.md`, Stand siehe Header).
+**sbx CLI** (auf dem Host via PowerShell): `--help`-Outputs der gepinnten Version offline unter `~/sbx-cli.md` (Kit-Bundle `files/home/sbx-cli.md`, Stand siehe Header); Commands/Manuels auch via `npx ctx7 docs /docker/docs <query>` (Docs-`main`, nicht der Pin).
 
 ## kubectl
 
