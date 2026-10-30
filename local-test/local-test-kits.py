@@ -105,9 +105,9 @@ INSTALL_SCRIPT_PAIRS = (
 #     (Mammouth + OpenCode: opencode-docker, Claude: claude-code-docker) — Drift-Check in
 #     check_template_update().
 #   - Getrennte Pins, weil Docker die Familien nicht mehr in Lockstep veroeffentlicht
-#     (claude-code-docker 0.10.0 existiert, opencode-docker 0.10.0 noch nicht).
+#     (z. B. claude-code-docker 0.10.0 vs. opencode-docker 0.11.0).
 # Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag je Familie.
-TEMPLATE_VERSION_OPENCODE = "0.7.0"
+TEMPLATE_VERSION_OPENCODE = "0.11.0"
 TEMPLATE_VERSION_CLAUDE = "0.10.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 # Pin je Template-Familie + Name der Workflow-Variable (fuer Fehlermeldungen).

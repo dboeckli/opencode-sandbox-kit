@@ -27,16 +27,19 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 
 - Windows-Host mit **Docker Desktop** und Docker-Hub-Login (`docker login`).
 - Kit-Repo unter `C:\development\projects\opencode-sandbox-kit`.
-- Basis-Images auf Docker Hub (lokal gecacht oder werden gezogen):
-  `docker/sandbox-templates:opencode-docker-0.7.0`, `:claude-code-docker-0.7.0`,
-  `:shell-docker-0.7.0`.
+- Basis-Images auf Docker Hub (lokal gecacht oder werden gezogen), Pins je Familie
+  getrennt (Issue #202): `docker/sandbox-templates:opencode-docker-0.11.0`,
+  `:claude-code-docker-0.10.0`, `:shell-docker-0.10.0`.
 - Docker-Hub-Namespace = `DOCKER_USER` (z. B. `domboeckli`).
 
 ## Variablen (PowerShell)
 
 ```powershell
-$DH  = "domboeckli"     # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
-$TAG = "0.7.0"          # Backup-Tag = Basis-Pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE, z. B. 0.7.0)
+$DH  = "domboeckli"       # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
+# Backup-Tag = Basis-Pin je Template-Familie (getrennt, Issue #202):
+$TAG_OPENCODE = "0.11.0"  # TEMPLATE_VERSION_OPENCODE (opencode-docker) — auch für Mammouth
+$TAG_CLAUDE   = "0.10.0"  # TEMPLATE_VERSION_CLAUDE (claude-code-docker)
+$TAG_VIBE     = "0.10.0"  # shell-docker (Mistral Vibe)
 cd C:\development\projects\opencode-sandbox-kit
 docker login
 ```
@@ -45,45 +48,45 @@ docker login
 
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
-| claude | `opencode-agent` | `opencode-agent/claude/Dockerfile` | `BASE_IMAGE=claude-code-docker-0.7.0` |
-| mammouth | `mammouth-agent` | `mammouth-agent/Dockerfile` | `BASE_IMAGE=opencode-docker-0.7.0`, `MAMMOUTH_VERSION=1.18.31.1` |
-| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/Dockerfile` | `BASE_IMAGE=shell-docker-0.7.0`, `VIBE_VERSION=2.25.8` |
+| claude | `opencode-agent` | `opencode-agent/claude/Dockerfile` | `BASE_IMAGE=claude-code-docker-0.10.0` |
+| mammouth | `mammouth-agent` | `mammouth-agent/Dockerfile` | `BASE_IMAGE=opencode-docker-0.11.0`, `MAMMOUTH_VERSION=1.18.31.2` |
+| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/Dockerfile` | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.3` |
 
 ## 1. opencode — kein Build nötig (lokal gecacht)
 
 ```powershell
-docker tag docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local "$DH/sbx-opencode-tooling:$TAG"
-docker push "$DH/sbx-opencode-tooling:$TAG"
+docker tag docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local "$DH/sbx-opencode-tooling:$TAG_OPENCODE"
+docker push "$DH/sbx-opencode-tooling:$TAG_OPENCODE"
 ```
 
 ## 2. claude — bauen + pushen
 
 ```powershell
-docker build -f opencode-agent/claude/Dockerfile -t "$DH/sbx-claude-tooling:$TAG" opencode-agent
-docker push  "$DH/sbx-claude-tooling:$TAG"
+docker build -f opencode-agent/claude/Dockerfile -t "$DH/sbx-claude-tooling:$TAG_CLAUDE" opencode-agent
+docker push  "$DH/sbx-claude-tooling:$TAG_CLAUDE"
 ```
 
 ## 3. mammouth — bauen + pushen
 
 ```powershell
-docker build -f mammouth-agent/Dockerfile -t "$DH/sbx-mammouth:$TAG" mammouth-agent
-docker push  "$DH/sbx-mammouth:$TAG"
+docker build -f mammouth-agent/Dockerfile -t "$DH/sbx-mammouth:$TAG_OPENCODE" mammouth-agent
+docker push  "$DH/sbx-mammouth:$TAG_OPENCODE"
 ```
 
 ## 4. mistral-vibe — bauen + pushen
 
 ```powershell
-docker build -f mistral-vibe-agent/Dockerfile -t "$DH/sbx-mistral-vibe:$TAG" mistral-vibe-agent
-docker push  "$DH/sbx-mistral-vibe:$TAG"
+docker build -f mistral-vibe-agent/Dockerfile -t "$DH/sbx-mistral-vibe:$TAG_VIBE" mistral-vibe-agent
+docker push  "$DH/sbx-mistral-vibe:$TAG_VIBE"
 ```
 
 ## Verifikation
 
 ```powershell
-docker image inspect "$DH/sbx-claude-tooling:$TAG" --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-mammouth:$TAG"       --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-mistral-vibe:$TAG"   --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-opencode-tooling:$TAG" --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-claude-tooling:$TAG_CLAUDE" --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-mammouth:$TAG_OPENCODE"      --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-mistral-vibe:$TAG_VIBE"      --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-opencode-tooling:$TAG_OPENCODE" --format '{{.Id}} {{.Architecture}}'
 ```
 
 Oder über die Docker-Hub-API:
@@ -108,7 +111,8 @@ nötig. Credentials: repo-Variable `DOCKER_USERNAME` + repo-Secret `DOCKER_PAT`.
 
 ## Verwendung der Backup-Images (sbx run)
 
-Drop-in für das jeweilige Tooling-Template. `<tag>` = Backup-Tag (z. B. `0.7.0`).
+Drop-in für das jeweilige Tooling-Template. `<tag>` = Backup-Tag der jeweiligen Familie
+(z. B. `0.11.0` für OpenCode/Mammouth, `0.10.0` für Claude/Mistral Vibe).
 
 **OpenCode** (Mixin-Kit):
 
