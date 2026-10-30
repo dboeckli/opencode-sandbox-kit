@@ -1,11 +1,12 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.49.2**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.50.1**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
-(deckt die sbx-Commands nur teilweise ab; /docker/sbx-releases liefert nur Installation/Releases —
-die vollstaendigen `--help`-Flags liefert ausschliesslich diese Offline-Referenz). Kit-Grammatik v2:
+(deckt Commands/Flags + Manuels ab, indexiert aber den Docs-`main`-Branch statt des Pins;
+/docker/sbx-releases liefert nur Installation/Releases. Die exakten `--help`-Flags der gepinnten
+Version liefert ausschliesslich diese Offline-Referenz). Kit-Grammatik v2:
 `https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md`.
 
 ## sbx --help
@@ -107,6 +108,10 @@ Description:
   If the destination path does not exist it is created; if it already exists
   as a directory, the source is placed inside it.
 
+  When a local path is inside a sandbox workspace, sbx cp refuses symbolic
+  links that lead out of the workspace, even with --follow-link, including
+  when the workspace is reached through a symbolic link or junction to it.
+
 Usage:
   sbx cp SRC DST [flags]
 
@@ -141,7 +146,10 @@ Description:
   The first positional argument may be a built-in agent name or a sandbox kit
   reference. Sandbox kit references may be local directories, ZIP files, git
   repositories, or OCI references. Relative local references must be explicit
-  paths such as ./my-kit or ../my-kit.zip.
+  paths such as ./my-kit or ../my-kit.zip. A kit.shortcuts.<agent> setting
+  (sbx settings set kit.shortcuts.claude sbx/claude:latest) makes that agent name
+  resolve to the configured kit reference instead for local sandboxes; cloud
+  sandboxes ignore it.
 
   Omit the path to create a sandbox without a workspace bind mount: the agent
   then works in the container's own filesystem instead of on your files.
@@ -162,7 +170,8 @@ Description:
   do not apply. Set cloud account defaults with
   "sbx --cloud policy init <allow-all|balanced|deny-all>".
 
-  Use "sbx --cloud run --name SANDBOX" to attach to the agent after creation.
+  Use "sbx --cloud run <agent> --name SANDBOX" to attach to the agent after
+  creation: cloud needs the agent, since a name alone is not a unique handle.
 
 Usage:
   sbx create AGENT|SANDBOX_KIT [PATH...] [flags]
@@ -222,6 +231,7 @@ Flags:
       --kit-arg stringArray         (Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be repeated)
       --kit-args-file stringArray   (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
   -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
+      --mount stringArray           Bind a host directory to a kit host-mount@1 path (can be repeated): HOST:SANDBOX_PATH. Can only be used when creating a new sandbox.
       --name string                 Name for the sandbox (defaults to <agent>-<workdir>; at least two characters, starting with a letter or number, containing only letters, numbers, hyphens and periods (periods are rejected with --cloud); 'default' is reserved)
       --no-progress                 Suppress progress output
       --on-timeout string           What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Omit the flag and the server stops the sandbox when it can be started again later, and deletes it otherwise. With 'restart' a supplied --ttl must be at least 1h (cloud only).
@@ -252,6 +262,10 @@ Description:
   is not supported. Some flags (-d, --user, --privileged)
   are not supported with --cloud and are rejected rather than silently ignored.
   --detach-keys applies only to an interactive (-i/-t) cloud exec.
+
+  Exit status is that of the command. sbx exits 125 if it could not run the command,
+  for example because the sandbox does not exist. A missing command exits 127,
+  unless a cloud backend reports it as an error rather than a status, which exits 125.
 
 Usage:
   sbx exec [flags] SANDBOX COMMAND [ARG...]
@@ -530,12 +544,14 @@ Global Flags:
 ## sbx rm --help
 ```
 Description:
-  Remove one or more sandboxes and all associated resources. Or — with --cloud — the cloud sandbox
+  Remove one or more sandboxes. Or — with --cloud — the cloud sandbox
   ID (sbx_*) or name from "sbx --cloud ls".
 
   For local sandboxes, stops them, removes their containers, cleans up any Git
   worktrees, deletes sandbox state, and deletes secrets scoped to each removed
-  sandbox. This action cannot be undone. With --cloud, deletes
+  sandbox. Host-mount directories and persistent volume@1 storage created with
+  retention support are kept; creating the same sandbox name with the same kit
+  reattaches its persistent volumes. This action cannot be undone. With --cloud, deletes
   the sandbox in Docker Sandboxes Cloud. This action cannot be undone. Once the
   server accepts the request, rm waits up to 60 seconds per sandbox for the
   deletion. A removal still completing after that exits 0. Verify it later with
@@ -584,7 +600,10 @@ Description:
   agent name or a sandbox kit reference. Sandbox kit references may be local
   directories, ZIP files, git repositories, or OCI references. Relative local
   references must be explicit paths such as ./my-kit or ../my-kit.zip; bare values
-  retain their agent or sandbox-name meaning. To re-attach to an existing sandbox
+  retain their agent or sandbox-name meaning. A kit.shortcuts.<agent> setting (sbx
+  settings set kit.shortcuts.claude sbx/claude:latest) makes that agent name
+  resolve to the configured kit reference instead for local sandboxes; cloud
+  sandboxes ignore it. To re-attach to an existing sandbox
   by name, use --name; the agent positional is optional when the named sandbox
   already exists and is read from its spec.
 
@@ -681,6 +700,7 @@ Flags:
       --kit-arg stringArray         (Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be repeated)
       --kit-args-file stringArray   (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
   -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
+      --mount stringArray           Bind a host directory to a kit host-mount@1 path (can be repeated): HOST:SANDBOX_PATH. Can only be used when creating a new sandbox.
       --name string                 Name for the sandbox (default: <agent>-<workdir>)
       --new                         Always create a new cloud sandbox instead of prompting to reuse an existing one (cloud only)
       --on-timeout string           What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Omit the flag and the server stops the sandbox when it can be started again later, and deletes it otherwise. With 'restart' a supplied --ttl must be at least 1h (cloud only).
@@ -1108,9 +1128,15 @@ Description:
   exec to run a command, and rm to remove it and its provisioned secrets.
   Use plan to preview changes. Changes require approval; --force skips the prompt.
 
-  Lifecycle commands and command-based secrets execute on the host with your
-  permissions. Keep secret helpers and their dependencies outside writable
-  sandbox mounts, and use absolute helper paths.
+  Lifecycle commands, command-based secrets, and command-backed MCP servers execute
+  on the host with your permissions. Keep secret helpers and their dependencies
+  outside writable sandbox mounts, and use absolute helper paths.
+
+  MCP command approval persists across sandbox and daemon restarts. Use
+  --skip-host-commands to skip lifecycle commands and disable owned host MCP
+  commands until a later "sbx env run" without the flag. If initialize creates
+  a missing MCP executable or changes its resolved path, a second approval is
+  required before registration or sandbox creation.
 
   The environment file is mounted read-only by default when shared with the
   sandbox. Set sandboxOptions.writableEnvFiles only when you trust the agent

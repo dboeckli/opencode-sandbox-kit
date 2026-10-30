@@ -81,14 +81,15 @@ cp opencode-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\fi
 
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
-Alle `--help`-Outputs der v0.49.2-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
-`opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — die sbx-Commands sind in Context7 nur
-**teilweise** abgedeckt (`/docker/docs`: Nutzung + Teil-Referenz; `/docker/sbx-releases`: nur Installation/Releases),
-die vollständigen `--help`-Flags liefert nur diese Offline-Referenz. Hintergrunddoku (Kits, Policy, Proxy):
+Alle `--help`-Outputs der v0.50.1-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
+`opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — Context7 deckt die sbx-Commands
+inzwischen ab (`/docker/docs`: Manuels + generierte CLI-Referenz `data/sbx_cli/*.yaml`; `/docker/sbx-releases`:
+nur Installation/Releases), indexiert aber den Docs-`main`-Branch statt unseres Pins. Die exakten `--help`-Dumps
+der gepinnten Version liefert nur diese Offline-Referenz. Hintergrunddoku (Kits, Policy, Proxy):
 `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus
-`.github/workflows/validate.yml`, ggf. `v0.49.2` übergeben — die Doku muss den Renovate-verwalteten
+`.github/workflows/validate.yml`, ggf. `v0.50.1` übergeben — die Doku muss den Renovate-verwalteten
 Pin spiegeln, nicht das neueste Release). Der Validate-only-Lauf (`local-test-kits.py --validate-only`)
 vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 (Hinweis aufs Regen-Skript).
