@@ -258,7 +258,7 @@ Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts
 
 ## Bruno CLI
 
-Bruno CLI (`bru`, `@usebruno/cli` 4.2.1, npm global) runs Bruno API collections headlessly: from the collection root (the dir with `bruno.json`) `bru run` runs everything, `bru run <folder>` a subfolder (e.g. `bru run reactive/beer-flow-patch --env local`). `bru import openapi --source <file-or-url> --output <dir>` converts OpenAPI specs (default output format `opencollection`; `--collection-format bru` for `.bru`). Collections are plain-text (git-friendly); keep secrets in environment variables/environment files, not in the collection. `registry.npmjs.org` is allow-listed (install/update) — the API endpoints you call must be allow-listed as well.
+Bruno CLI (`bru`, `@usebruno/cli` 4.3.0, npm global) runs Bruno API collections headlessly: from the collection root (the dir with `bruno.json`) `bru run` runs everything, `bru run <folder>` a subfolder (e.g. `bru run reactive/beer-flow-patch --env local`). `bru import openapi --source <file-or-url> --output <dir>` converts OpenAPI specs (default output format `opencollection`; `--collection-format bru` for `.bru`). Collections are plain-text (git-friendly); keep secrets in environment variables/environment files, not in the collection. `registry.npmjs.org` is allow-listed (install/update) — the API endpoints you call must be allow-listed as well.
 
 ## Runtime tools / CLIs
 

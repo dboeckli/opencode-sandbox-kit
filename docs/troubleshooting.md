@@ -39,6 +39,25 @@ sbx daemon start --detach
 sbx rm <sandbox-name> --force
 ```
 
+### Veraltete CA-Zertifikate in bestehenden Sandboxes (Issue #202)
+
+`sbx` v0.49.2 behebt die eMudhra-CA-Kompromittierung; die gepinnten Basis-Templates
+(`opencode-docker-0.11.0`, `claude-code-docker-0.10.0`, `shell-docker-0.10.0`) bringen den
+aktualisierten Trust-Store mit. **Bestehende** Sandboxes behalten ihren alten Trust-Store —
+ein CLI-Update allein genügt nicht. Zwei Wege:
+
+```powershell
+# a) laufende Sandbox aktualisieren, danach Apps/Agent in der Sandbox neu starten
+sbx exec <sandbox-name> -- sudo apt-get update
+sbx exec <sandbox-name> -- sudo apt-get install --only-upgrade -y ca-certificates
+```
+
+```powershell
+# b) Sandbox mit frischem Image neu erstellen
+sbx rm <sandbox-name> --force
+sbx run <template> ... --pull always
+```
+
 ### Mistral Vibe: „Retrying…" / keine Antwort
 
 Vibe-Log in der laufenden Sandbox ansehen (Retry-Grund, z. B. Rate-Limit/Quota):
@@ -175,7 +194,7 @@ Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spe
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
 `sbx run --skills=off ./mammouth-agent/`) betrieben; das eigene Image `docker.io/domboeckli/sbx-mammouth`
-backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.1** via `ARG MAMMOUTH_VERSION` +
+backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.2** via `ARG MAMMOUTH_VERSION` +
 Symlink; Pin via Renovate). Das
 `opencode-agent/`-Kit (`sbx run --skills=off opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
 Claude Code fokussiert und enthält keine Mammouth-Konfiguration.

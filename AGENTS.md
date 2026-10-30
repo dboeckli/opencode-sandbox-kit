@@ -237,7 +237,8 @@ erst Cloudsmith-Quote prüfen (`curl -H "X-Api-Key: $CLOUDSMITH_API_KEY" https:/
 Verwendung:
 - `:local` → `local-test-kits-{opencode,claude,mammouth,mistral-vibe}` (Default von `OPENCODE_IMAGE_TAG`,
   `CLAUDE_IMAGE_TAG`, `MAMMOUTH_IMAGE_TAG`, `VIBE_IMAGE_TAG`).
-- Release-Tag `<basever>` bzw. Remote `:latest` (README/AGENTS-Startcommands, z. B. `…:0.7.0`).
+- Release-Tag `<basever>` bzw. Remote `:latest` (README/AGENTS-Startcommands, z. B. `…:0.11.0` für
+  OpenCode/Mammouth bzw. `…:0.10.0` für Claude/Mistral Vibe; Pin je Familie, Issue #202).
 - e2e-Szenario (`<AGENT>_IMAGE_TAG`): auf `master`/`schedule` der Release-Tag `<basever>` (= `version_tag`-Output
   des Publish-Jobs), auf **Branches/PRs das publizierte Master-`:latest`** (Branch-Images werden nicht gepusht).
   Das frisch gebaute Branch-Image prüft stattdessen der Build-Job selbst auf den Pin (`load` +
@@ -735,7 +736,7 @@ Die jeweilige Config wird automatisch gelesen:
 - Mistral Vibe: `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` (nur Agent-Kit)
 
 > **Mammouth Code**: Das Image `docker.io/domboeckli/sbx-mammouth` backt die Mammouth-CLI beim Image-Build —
-> **gepinnt auf v1.18.31.1** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/Dockerfile`, Renovate
+> **gepinnt auf v1.18.31.2** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/Dockerfile`, Renovate
 > `mammouth-ai/code`; `--validate-only` warnt bei neuerem Release) + Symlink `/usr/local/bin/mammouth` für den Entrypoint. API-Key als `MAMMOUTH_API_KEY` (Provider `mammouth-ai`, Base-URL `https://api.mammouth.ai/v1`), konfiguriert via `credentials[].apiKey` (`name`/`proxyManaged`/`inject`) im Kit.
 
 > **Mistral Vibe**: Installiert das Agent-Kit als eigenes gepinntes Image (`mistral-vibe-agent/Dockerfile`: shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`, Renovate `mistral-vibe` PyPI). API-Key via Built-in-Service `mistral` (`MISTRAL_API_KEY`, `api.mistral.ai`, Sentinel `proxy-managed`). Launch via `sandbox.entrypoint: [vibe, "--agent", "auto-approve"]` in der spec (ohne entrypoint startet sbx die Default-Shell). Image muss vor dem ersten Start publiziert sein (`build-and-publish-mistral-vibe-image.yml`, workflow_dispatch).
@@ -767,7 +768,7 @@ Die jeweilige Config wird automatisch gelesen:
 | skills | npm (vercel-labs) |
 | prettier | npm |
 | renovate | npm |
-| Bruno CLI (`bru`) 4.2.1 | npm (`@usebruno/cli`, gepinnt; Renovate-Custom-Manager) |
+| Bruno CLI (`bru`) 4.3.0 | npm (`@usebruno/cli`, gepinnt; Renovate-Custom-Manager) |
 
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
 > `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach

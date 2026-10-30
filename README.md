@@ -423,13 +423,13 @@ Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
 
 **Installation** — das Image `docker.io/domboeckli/sbx-mammouth` backt Mammouth beim **Image-Build**, gepinnt auf
-**v1.18.31.1** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/Dockerfile`, ausgeführt als User `agent`;
+**v1.18.31.2** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/Dockerfile`, ausgeführt als User `agent`;
 Pin via Renovate `mammouth-ai/code`; `local-test-kits.py --validate-only` warnt bei neuerem
 GitHub-Release) und legt einen Symlink `/usr/local/bin/mammouth` an, damit der Entrypoint den
 Agenten findet. Manuell nur nötig, wenn die Sandbox bereits läuft:
 
 ```bash
-curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.18.31.1 bash
+curl -fsSL https://code.mammouth.ai/install.sh | VERSION=1.18.31.2 bash
 ```
 
 **Update/Uninstall:** `mammouth upgrade` bzw. `mammouth uninstall`.
@@ -675,7 +675,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
-| Bruno CLI (`bru`) | 4.2.1 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
+| Bruno CLI (`bru`) | 4.3.0 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
