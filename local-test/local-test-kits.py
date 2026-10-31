@@ -1643,18 +1643,6 @@ def main():
             else:
                 sfail(f"startup check: {checks_tool}", f"status={m.get(checks_tool)}")
 
-            # Issue #139: der Gateway-Handshake allein beweist nur, dass die Infrastruktur
-            # erreichbar ist. Die Kit-Agenten muessen den Client selbst verdrahten (sbx injiziert
-            # nur fuer unterstuetzte Agenten wie OpenCode/Claude) -> mcp-client:OK, und der
-            # Agent-Client muss den Gateway tatsaechlich verbinden -> mcp-tools:OK (deep).
-            if s["agent"] in ("mammouth", "mistral-vibe"):
-                for token, label in (("mcp-client", "gateway declared in agent config"),
-                                     ("mcp-tools", "agent MCP client connects to the gateway")):
-                    if m.get(token) == "OK":
-                        pass_(f"MCP client wiring ({label})")
-                    else:
-                        sfail(f"MCP client wiring ({label})", f"status={m.get(token)}")
-
             if s["agent"] == "mammouth":
                 # Installierte Mammouth-CLI-Version gegen den Pin im Dockerfile (ARG MAMMOUTH_VERSION)
                 # pruefen — das Image backt exakt diese Version.
@@ -1781,6 +1769,20 @@ def main():
                 else:
                     sfail("zai credential resolved (SBX_CRED_ZAI_MODE=apikey)",
                           out + " — zai-Secret/Binding pruefen (credentials.yaml: zai.apiKey.domains=[api.z.ai])")
+
+        # Issue #139: der Gateway-Handshake allein beweist nur, dass die Infrastruktur
+        # erreichbar ist — in JEDER Sandbox muss der Agent den Client selbst verdrahten
+        # haben (sbx injiziert nur fuer unterstuetzte Agenten): mcp-client:OK (Config)
+        # und mcp-tools:OK (echter Handshake ueber den Agent-Client, Deep-Modus;
+        # Fallback auf mcp-client, wenn die CLI kein `mcp list` kennt, z.B. Vibe).
+        c2, out = exec_sandbox(s["name"], "MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh")
+        mcp_tokens = {k: v for k, v in re.findall(r"([A-Za-z0-9_/-]+):(OK|FAIL)", out)}
+        for token, label in (("mcp-client", "gateway declared in agent config"),
+                             ("mcp-tools", "agent MCP client connects to the gateway")):
+            if mcp_tokens.get(token) == "OK":
+                pass_(f"MCP client wiring ({label})")
+            else:
+                sfail(f"MCP client wiring ({label})", f"status={mcp_tokens.get(token)}; {out.strip()}")
 
         if not args.keep:
             if len(failed) > failed_before:

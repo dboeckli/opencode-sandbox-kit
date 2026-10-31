@@ -90,9 +90,11 @@ if [ "${MCP_CHECK_DEEP:-0}" = "1" ]; then
   probed=0
   for cli in mammouth opencode claude vibe; do
     command -v "$cli" >/dev/null 2>&1 || continue
-    timeout 5 "$cli" mcp list --help >/dev/null 2>&1 || continue
-    probed=1
+    # Exit != 0 -> the CLI has no `mcp list` subcommand (e.g. Vibe): skip it, do not
+    # treat it as a failure. A supported CLI reports its server states and exits 0.
     mcp_list_out=$(timeout 10 "$cli" mcp list 2>&1)
+    [ $? -ne 0 ] && continue
+    probed=1
     if printf '%s\n' "$mcp_list_out" | grep -Eqi 'mcp-gateway.*connected|connected.*mcp-gateway'; then
       tools="mcp-tools:OK"
       break
