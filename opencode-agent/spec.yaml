@@ -13,6 +13,9 @@ permissions:
     - "*.context7.com"
     # Mistral-Doku (docs.mistral.ai — Modelle/API/Vibe-Doku)
     - docs.mistral.ai
+    # Mistral API (Mistral-hosted GLM 5.3, OpenCode-Zusatz-Provider; GLM nur auf global + EU)
+    - api.mistral.ai
+    - api.eu.mistral.ai
     # DeepSeek (OpenCode-Modell mit eigenem API-Key)
     - api.deepseek.com
     - "*.deepseek.com"
@@ -157,6 +160,14 @@ credentials:
         - domain: api.deepseek.com
           header: Authorization
           format: "Bearer %s"
+  - service: mistral
+    description: "Mistral API-Key (https://console.mistral.ai/) — Built-in-Service (MISTRAL_API_KEY, api.mistral.ai); Mistral-hosted GLM 5.3 (zai-glm-5-3)"
+    apiKey:
+      name: MISTRAL_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.mistral.ai
+          scheme: bearer
   - service: zai
     description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — GLM, OpenAI-kompatibler Provider"
     apiKey:
@@ -369,6 +380,41 @@ setup:
               json.dump(merge(base, kit), f, indent=2)
       user: "1000"
       description: Re-apply kit settings after template overwrite — Python merge (faster than jq, handles arrays correctly)
+    - command:
+        - python3
+        - -c
+        - |
+          import json, os
+          path = os.path.expanduser('~/.local/state/opencode/model.json')
+          favorites = [
+              {'providerID': 'deepseek', 'modelID': 'deepseek-flash'},
+              {'providerID': 'deepseek', 'modelID': 'deepseek-v4-pro'},
+              {'providerID': 'zai', 'modelID': 'glm-5.3-flash'},
+              {'providerID': 'zai', 'modelID': 'glm-5.3'},
+              {'providerID': 'mistral', 'modelID': 'zai-glm-5-3'},
+          ]
+          data = {'recent': [], 'favorite': [], 'variant': {}}
+          if os.path.exists(path):
+              try:
+                  with open(path) as f:
+                      loaded = json.load(f)
+                  if isinstance(loaded, dict):
+                      data.update(loaded)
+              except Exception:
+                  pass
+          current = [f for f in data.get('favorite', []) if isinstance(f, dict)]
+          key = lambda f: (f.get('providerID'), f.get('modelID'))
+          have = {key(f) for f in current}
+          missing = [f for f in favorites if key(f) not in have]
+          if missing:
+              data['favorite'] = current + missing
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              tmp = path + '.tmp'
+              with open(tmp, 'w') as f:
+                  json.dump(data, f)
+              os.replace(tmp, path)
+      user: "1000"
+      description: Seed OpenCode model-picker favorites with the directly-served models (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3 via Z.AI, Mistral-hosted GLM-5.3) so they appear in a "Favorites" section above the provider groups — existing favorites keep their order, missing direct models are appended (ctrl+f toggles otherwise preserved)
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"

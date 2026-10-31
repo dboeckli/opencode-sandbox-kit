@@ -63,6 +63,16 @@
           "name": "GLM 5.3"
         }
       }
+    },
+    "mistral": {
+      "options": {
+        "apiKey": "{env:MISTRAL_API_KEY}"
+      },
+      "models": {
+        "zai-glm-5-3": {
+          "name": "GLM 5.3 (Mistral)"
+        }
+      }
     }
   },
   "permission": {
