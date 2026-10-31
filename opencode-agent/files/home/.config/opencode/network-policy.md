@@ -8,7 +8,7 @@ Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `web
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
-- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `api.deepseek.com`, `*.deepseek.com` (DeepSeek), `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `platform.claude.com`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini), `api.z.ai`, `*.z.ai` (Z.AI/GLM), `openai.com`, `*.openai.com` (OpenAI Platform/API)
+- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `api.deepseek.com`, `*.deepseek.com` (DeepSeek), `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `platform.claude.com`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini), `api.z.ai`, `*.z.ai` (Z.AI/GLM), `api.mistral.ai`, `api.eu.mistral.ai` (Mistral-hosted GLM `zai-glm-5-3`), `openai.com`, `*.openai.com` (OpenAI Platform/API)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `maven.pkg.github.com` (GitHub Packages Maven), `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Codeberg (Kit-Repo canonical, Forgejo Actions/CI)**: `codeberg.org`, `*.codeberg.org` — Repository/Issues/CI des Sandbox-Kits; GitHub bleibt als **Mirror** erhalten. Kit-Referenzen: `git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku)

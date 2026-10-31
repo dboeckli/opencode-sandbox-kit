@@ -229,8 +229,8 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
-    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "claude": ("github", "github-maven", "anthropic", "context7", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
