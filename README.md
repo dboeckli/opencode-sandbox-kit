@@ -351,7 +351,11 @@ flowchart TB
 
 ## MCP-Server (Host)
 
-Drei host-seitige MCP-Server werden über den **sbx MCP Gateway** in die Sandbox geliefert (keine `mcp.*`-Konfiguration im Kit; der Gateway erscheint als `mcp-gateway` in der Agent-MCP-Liste). Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
+Drei host-seitige MCP-Server werden über den **sbx MCP Gateway** in die Sandbox geliefert. Die Client-Verdrahtung
+(`mcp-gateway` → `http://mcp-gateway.docker.internal/mcp`) legt `sbx` nur für die **unterstützten** Agenten an
+(OpenCode: `~/.config/opencode/opencode.json`, Claude Code: `~/.claude.json`); **Mammouth** und **Mistral Vibe**
+bringen sie in ihrer Kit-Config selbst mit (`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`,
+`mistral-vibe-agent/files/home/.vibe/config.toml`, Issue #139). Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 
 | Server | Host | Registrierung (einmalig, PowerShell) |
 |--------|------|--------------------------------------|
@@ -418,7 +422,9 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
 - **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default
-- **IntelliJ MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`), keine direkte `mcp.idea`-Config
+- **IntelliJ/Kubernetes/Docker MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`); da `sbx` Mammouth nicht als
+  Agent-Integration kennt, ist der Gateway im Kit **explizit** verdrahtet (`mcp`-Block in `opencode.jsonc` →
+  `http://mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`, Issue #139) — keine direkte `mcp.idea`-Config
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
 
@@ -641,7 +647,7 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -650,7 +656,7 @@ Report als `[startup-checks] ...` an:
   **Skills** und **MCP & Host Systems** sofort sichtbar ist – ohne ersten Prompt. Der
   **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) die
   **MCP-Server** über den sbx-Gateway (`~/.local/bin/mcp-check.sh`: ein MCP-Handshake → `mcp-gateway`, `mcp-idea`,
-  `mcp-k8s`, `mcp-docker`; die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
+  `mcp-k8s`, `mcp-docker`, `mcp-client` (Agent-Config deklariert den Gateway) und `mcp-tools` (Startup-Report: `mammouth`/`opencode mcp list` verbindet real über den Agent-Client; die 10s-TUI-Box nutzt die schnelle Variante); die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
   (Issue #165)). MCP-Server stehen in einer Zeile. Gebounded per `timeout`.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.

@@ -83,6 +83,9 @@ The IntelliJ MCP server runs on the Windows host and is exposed through the sbx 
 registration: `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`; loaded via `--static-mcp idea`
 or `sbx mcp load idea --sandbox`). Tools arrive through the gateway and are prefixed `mcp-gateway_` (e.g.
 `mcp-gateway_analyze_calls`, `mcp-gateway_execute_run_configuration`) — the direct `idea_` prefix no longer exists.
+Mammouth is **not** an sbx agent integration, so `sbx` does not inject the gateway client: the kit declares it
+itself (`mcp` block in `~/.config/mammouth/opencode.jsonc` → `http://mcp-gateway.docker.internal/mcp`, Issue #139).
+Without that block no `mcp-gateway_*` tool reaches the agent, even when `mcp-check.sh` reports the gateway as OK.
 Exposed via a **permission-whitelist** in `~/.config/mammouth/opencode.jsonc` (Deny-by-Default, nur lesende
 Operationen erlaubt): `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_search_*`, `mcp-gateway_read*`,
 `mcp-gateway_generate_*`, `mcp-gateway_xdebug_get_*`, `mcp-gateway_xdebug_list_*` sowie einzeln
