@@ -24,7 +24,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)
 - **MongoDB apt (Helm-Test-Pod)**: `repo.mongodb.org`
 - **Python / PyPI**: `pypi.org`, `files.pythonhosted.org`
-- **Skills CLI**: `add-skill.vercel.sh`
+- **Skills CLI**: `add-skill.vercel.sh` (Install), `www.skills.sh` (Registry/Website: Update-/Metadaten-Checks des `skills`-CLI)
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **SonarCloud**: `sonarcloud.io`, `*.sonarcloud.io` (Web-API für CI-Ergebnis-Abfragen: Quality Gate, Issues, Measures, Coverage; Token als `Authorization: Bearer`)

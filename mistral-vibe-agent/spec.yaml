@@ -162,8 +162,9 @@ permissions:
       # Python / PyPI (mistral-vibe, uv)
       - "pypi.org:443"
       - "files.pythonhosted.org:443"
-      # Skills CLI (install via add-skill.vercel.sh)
+      # Skills CLI (install via add-skill.vercel.sh; www.skills.sh = Registry/Website)
       - "add-skill.vercel.sh:443"
+      - "www.skills.sh:443"
       # Web search (last resort, allow-list for websearch/webfetch provider)
       - "*.exa.ai:443"
       # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)
