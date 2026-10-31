@@ -24,7 +24,14 @@ sandbox:
   # + Mammouth-CLI. Build/Publish via .github/workflows/build-and-publish-mammouth-image.yml
   # (Renovate trackt den Base-Pin ARG BASE_IMAGE + ARG MAMMOUTH_VERSION).
   image: "${{ kit.args.imagePrefix }}/sbx-mammouth:${{ kit.args.imageTag }}"
-  entrypoint: [mammouth]
+  # Wrapper statt `mammouth`: seedet die Model-Picker-Favoriten VOR dem TUI-Start
+  # (setup.startup läuft erst nach dem Entrypoint, siehe mammouth-entrypoint.sh).
+  # Fallback auf `mammouth`, falls das Image den Wrapper noch nicht enthält (alte
+  # Release-Tags / Master-`:latest` im Branch-e2e).
+  entrypoint:
+    - bash
+    - -c
+    - "if command -v mammouth-entrypoint >/dev/null 2>&1; then exec mammouth-entrypoint; fi; exec mammouth"
 
 agentInstructions:
   filename: AGENTS.md
@@ -398,40 +405,9 @@ setup:
       description: Write ~/.m2/settings.xml with sandbox proxy routing (<proxies> gateway.docker.internal:3128) and GitHub Packages Maven credentials — password references ${env.GITHUB_MAVEN_TOKEN} (proxy-managed sentinel); Maven must route through the proxy (settings proxies) so the proxy can MITM and inject the Bearer PAT on maven.pkg.github.com. Wenn ein read-only Host-Maven-Cache gemountet ist (/c/Users/*/.m2/repository), wird zusaetzlich ein <repository> 'host-cache' (file://, snapshots disabled) in einem aktiven Profil ergaenzt — Maven nutzt den Host-Cache vor den echten Remotes
     - command:
         - python3
-        - -c
-        - |
-          import json, os
-          path = os.path.expanduser('~/.local/state/mammouth/model.json')
-          favorites = [
-              {'providerID': 'deepseek', 'modelID': 'deepseek-flash'},
-              {'providerID': 'deepseek', 'modelID': 'deepseek-v4-pro'},
-              {'providerID': 'zai', 'modelID': 'glm-5.3-flash'},
-              {'providerID': 'zai', 'modelID': 'glm-5.3'},
-              {'providerID': 'zai', 'modelID': 'glm-4.7-flash'},
-              {'providerID': 'mistral', 'modelID': 'zai-glm-5-3'},
-          ]
-          data = {'recent': [], 'favorite': [], 'variant': {}}
-          if os.path.exists(path):
-              try:
-                  with open(path) as f:
-                      loaded = json.load(f)
-                  if isinstance(loaded, dict):
-                      data.update(loaded)
-              except Exception:
-                  pass
-          current = [f for f in data.get('favorite', []) if isinstance(f, dict)]
-          key = lambda f: (f.get('providerID'), f.get('modelID'))
-          have = {key(f) for f in current}
-          missing = [f for f in favorites if key(f) not in have]
-          if missing:
-              data['favorite'] = current + missing
-              os.makedirs(os.path.dirname(path), exist_ok=True)
-              tmp = path + '.tmp'
-              with open(tmp, 'w') as f:
-                  json.dump(data, f)
-              os.replace(tmp, path)
+        - /home/agent/.local/bin/seed-mammouth-model-favorites.py
       user: "1000"
-      description: Seed Mammouth model-picker favorites with the same directly-served models as the OpenCode kit (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (free) via Z.AI, Mistral-hosted GLM-5.3) in ~/.local/state/mammouth/model.json (Mammouth is an OpenCode fork; same {recent,favorite,variant} schema) — existing favorites keep their order, missing seed models are appended on every start
+      description: Seed Mammouth model-picker favorites with the same directly-served models as the OpenCode kit (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (free) via Z.AI, Mistral-hosted GLM-5.3) in ~/.local/state/mammouth/model.json (Mammouth is an OpenCode fork; same {recent,favorite,variant} schema) — existing favorites keep their order, missing seed models are appended. Läuft zusätzlich im Entrypoint (mammouth-entrypoint) VOR dem TUI-Start, weil setup.startup erst nach dem Entrypoint ausgeführt wird
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"
