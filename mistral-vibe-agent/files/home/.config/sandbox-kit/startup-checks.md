@@ -24,7 +24,7 @@ It shows:
   Docker MCP server, issue #165), so reachability is verified with an MCP handshake
   (`initialize` → `notifications/initialized` → `tools/list`).
 
-Output format: MCP servers space-separated (`mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK`),
+Output format: MCP servers space-separated (`mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK`),
 each `FAIL` per component. All probes are bounded by `timeout`, so the check never hangs.
 
 > **Hinweis (Issue #57):** Der IntelliJ-MCP-Check prüft nur, dass der IntelliJ-Server auf dem Host läuft
@@ -42,7 +42,7 @@ each `FAIL` per component. All probes are bounded by `timeout`, so the check nev
 | 4 | Java / Maven | `java -version` and `mvn -version` |
 | 5 | Docker CLI | `docker version` (isolated daemon in the microVM) |
 | 6 | kubectl | `kubectl version --client` (CLI only; no kubeconfig in the sandbox) |
-| 6b | MCP servers | `bash ~/.local/bin/mcp-check.sh` (one MCP handshake via the sbx gateway → `mcp-gateway:OK`, `mcp-idea:OK` when the IntelliJ tools are present, `mcp-k8s:OK` when the Kubernetes tools are present, `mcp-docker:OK` when the Docker tools are present) |
+| 6b | MCP servers | `bash ~/.local/bin/mcp-check.sh` (one MCP handshake via the sbx gateway → `mcp-gateway:OK`, `mcp-idea:OK` when the IntelliJ tools are present, `mcp-k8s:OK` when the Kubernetes tools are present, `mcp-docker:OK` when the Docker tools are present, `mcp-client:OK` when the agent config declares the gateway) |
 | 7 | Helm | `helm version` |
 | 7b | Kafka CLI | `kafka-topics.sh --version` |
 | 7c | Bruno CLI | `bru --version` (pinned `@usebruno/cli`) |
@@ -52,7 +52,7 @@ each `FAIL` per component. All probes are bounded by `timeout`, so the check nev
 ## Report format
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK vibe:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK vibe:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).

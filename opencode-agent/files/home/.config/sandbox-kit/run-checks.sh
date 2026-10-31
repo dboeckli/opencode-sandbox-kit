@@ -69,7 +69,7 @@ fi
 # 6b. MCP servers via the sbx gateway (gateway + IntelliJ + Kubernetes + Docker). The
 # sandbox holds no kubeconfig and no host-Docker port (host-side Kubernetes MCP server
 # #40, local Docker MCP server #165), so reachability is checked via an MCP handshake.
-# Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker.
+# Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker, mcp-client.
 report="$report $(bash "$HOME/.local/bin/mcp-check.sh")"
 
 # 7. helm (Helm 4; `helm4` ist ein Symlink auf dasselbe Binary)

@@ -9,12 +9,19 @@
 # (initialize -> notifications/initialized -> tools/list) reveals which servers
 # are registered and reachable.
 #
-# Prints four space-separated tokens in the startup-checks format:
+# Prints five space-separated tokens in the startup-checks format:
 #   mcp-gateway:OK   gateway reachable (handshake succeeded)
 #   mcp-idea:OK      IntelliJ tools present (get_symbol_info)
 #   mcp-k8s:OK       Kubernetes tools present (pods_list)
 #   mcp-docker:OK    Docker tools present (list_containers)
+#   mcp-client:OK    the agent config declares the gateway (url = MCP_URL)
 # Any missing step -> that token is FAIL.
+#
+# mcp-client closes the blind spot from issue #139: the handshake above only proves
+# that the gateway + upstream servers answer *from the sandbox*, not that the agent
+# registered a client. sbx injects the entry for supported agents (OpenCode, Claude);
+# Mammouth/Vibe get it from their kit config. Without it, no mcp-gateway_* tools
+# reach the agent even though every probe here is OK.
 #
 # Bounded timeouts, never hangs. `mcp-gateway.docker.internal` is not in NO_PROXY,
 # so curl routes through the sandbox HTTP proxy (the only network egress) — do not
@@ -35,6 +42,18 @@ gateway="mcp-gateway:FAIL"
 idea="mcp-idea:FAIL"
 k8s="mcp-k8s:FAIL"
 docker="mcp-docker:FAIL"
+client="mcp-client:FAIL"
+
+# Agent-side wiring: does any agent config declare the gateway URL? JSON agents store
+# "url": "http://…", Vibe's TOML stores url = "http://…". Dependency-free (grep, no jq).
+for cfg in "$HOME/.config/opencode/opencode.json" "$HOME/.config/opencode/opencode.jsonc" \
+           "$HOME/.config/mammouth/opencode.jsonc" "$HOME/.vibe/config.toml" "$HOME/.claude.json"; do
+  [ -f "$cfg" ] || continue
+  if grep -Eq 'url"?[[:space:]]*[:=][[:space:]]*"http://mcp-gateway\.docker\.internal/mcp' "$cfg" 2>/dev/null; then
+    client="mcp-client:OK"
+    break
+  fi
+done
 
 if [ -n "$mcp_sid" ]; then
   gateway="mcp-gateway:OK"
@@ -58,4 +77,4 @@ if [ -n "$mcp_sid" ]; then
   esac
 fi
 
-echo "$gateway $idea $k8s $docker"
+echo "$gateway $idea $k8s $docker $client"
