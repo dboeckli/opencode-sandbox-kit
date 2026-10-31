@@ -409,7 +409,7 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 > Docker-Sandboxes-Weg (zentrale MCP-Registry am Host) und der Grund, warum das Kit keine direkte `mcp.idea`-
 > Konfiguration mehr mitbringt. Details/Verifikation: Issue #57.
 
-> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt; bestehende Favoriten/Reihenfolge werden nicht überschrieben, per `ctrl+f` entfernte Seed-Modelle werden beim nächsten Start wieder ergänzt). Gilt nur für das `opencode-agent`-Mixin, nicht für Mammouth.
+> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt; bestehende Favoriten/Reihenfolge werden nicht überschrieben, per `ctrl+f` entfernte Seed-Modelle werden beim nächsten Start wieder ergänzt). Gilt für das `opencode-agent`-Mixin (`~/.local/state/opencode/model.json`) und das `mammouth-agent`-Kit (`~/.local/state/mammouth/model.json`; Mammouth ist ein OpenCode-Fork mit demselben `{recent,favorite,variant}`-Schema).
 >
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
 > opencode/mammouth neu starten.
@@ -695,8 +695,8 @@ nötig.
 - `opencode-agent/files/home/.claude/settings.json` — Claude Code config (Permission-Whitelist `mcp__mcp-gateway__*`; keine `mcpServers.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `mcp__mcp-gateway__execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
-- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
-- `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
+- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`); `setup.startup` seedet dieselben Model-Picker-Favoriten wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/mammouth/model.json`; Credentials `zai`/`mistral` wie im OpenCode-Kit
+- `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit (Provider `deepseek`, `zai`, `mistral`)
 - `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe:<vibe-version>`, `entrypoint: [vibe, "--agent", "auto-approve"]` — ohne entrypoint startet sbx die Default-Shell)
 - `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/build-and-publish-mistral-vibe-image.yml`
 - `mistral-vibe-agent/spec.yaml` — pinnt das Start-Modell via `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"` (Env-Layer gewinnt gegen `active_model`, `/model` wechselt weiterhin pro Session)

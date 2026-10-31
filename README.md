@@ -421,7 +421,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
-- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default
+- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default; Zusatz-Provider `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit derselben **Favorites**-Sektion wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet via `setup.startup` in `~/.local/state/mammouth/model.json` (Mammouth ist ein OpenCode-Fork, gleiches Schema; bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
 - **IntelliJ/Kubernetes/Docker MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`); da `sbx` Mammouth nicht als
   Agent-Integration kennt, ist der Gateway im Kit **explizit** verdrahtet (`mcp`-Block in `opencode.jsonc` →
   `http://mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`, Issue #139) — keine direkte `mcp.idea`-Config
