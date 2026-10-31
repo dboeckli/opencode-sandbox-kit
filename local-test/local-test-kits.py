@@ -1552,22 +1552,26 @@ def main():
             else:
                 sfail("google not wired (only opencode template declares google)", out)
 
-        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude)
-        # und vom mistral-vibe-agent-Kit deklariert; mammouth nicht.
+        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude),
+        # vom mammouth-agent-Kit und vom mistral-vibe-agent-Kit deklariert.
         # (mistral-vibe hat eigene zai-Checks im Kit-spezifischen Block.)
         if s["agent"] != "mistral-vibe":
             zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
             c2, out = exec_sandbox(s["name"], zai_env_cmd)
-            if s["agent"] in ("opencode", "claude"):
-                if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
-                    pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
-                else:
-                    sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+            if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
+                pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
             else:
-                if c2 == 0 and "ZAI_API_KEY=<unset>" in out:
-                    pass_("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)")
-                else:
-                    sfail("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)", out)
+                sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+
+        # Kit-deklarierter mistral-Service: opencode-agent (OpenCode + Claude) und
+        # mammouth-agent; das mistral-vibe-Kit prueft es im eigenen Block.
+        if s["agent"] != "mistral-vibe":
+            mistral_env_cmd = 'echo "MISTRAL_API_KEY=${MISTRAL_API_KEY:-<unset>}"'
+            c2, out = exec_sandbox(s["name"], mistral_env_cmd)
+            if c2 == 0 and "MISTRAL_API_KEY=proxy-managed" in out:
+                pass_("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)")
+            else:
+                sfail("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)", out)
 
         # Kit-deklarierter stackoverflow-Service (beide Kits) → Platzhalter in allen 3 Szenarien
         stackoverflow_env_cmd = 'echo "STACKOVERFLOW_API_KEY=${STACKOVERFLOW_API_KEY:-<unset>}"'
