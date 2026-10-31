@@ -1645,13 +1645,15 @@ def main():
 
             # Issue #139: der Gateway-Handshake allein beweist nur, dass die Infrastruktur
             # erreichbar ist. Die Kit-Agenten muessen den Client selbst verdrahten (sbx injiziert
-            # nur fuer unterstuetzte Agenten wie OpenCode/Claude) -> mcp-client:OK.
+            # nur fuer unterstuetzte Agenten wie OpenCode/Claude) -> mcp-client:OK, und der
+            # Agent-Client muss den Gateway tatsaechlich verbinden -> mcp-tools:OK (deep).
             if s["agent"] in ("mammouth", "mistral-vibe"):
-                if m.get("mcp-client") == "OK":
-                    pass_("MCP client wiring (gateway declared in agent config)")
-                else:
-                    sfail("MCP client wiring (gateway declared in agent config)",
-                          f"status={m.get('mcp-client')}")
+                for token, label in (("mcp-client", "gateway declared in agent config"),
+                                     ("mcp-tools", "agent MCP client connects to the gateway")):
+                    if m.get(token) == "OK":
+                        pass_(f"MCP client wiring ({label})")
+                    else:
+                        sfail(f"MCP client wiring ({label})", f"status={m.get(token)}")
 
             if s["agent"] == "mammouth":
                 # Installierte Mammouth-CLI-Version gegen den Pin im Dockerfile (ARG MAMMOUTH_VERSION)

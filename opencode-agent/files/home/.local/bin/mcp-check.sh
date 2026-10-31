@@ -9,19 +9,24 @@
 # (initialize -> notifications/initialized -> tools/list) reveals which servers
 # are registered and reachable.
 #
-# Prints five space-separated tokens in the startup-checks format:
+# Prints five space-separated tokens in the startup-checks format (six with
+# MCP_CHECK_DEEP=1):
 #   mcp-gateway:OK   gateway reachable (handshake succeeded)
 #   mcp-idea:OK      IntelliJ tools present (get_symbol_info)
 #   mcp-k8s:OK       Kubernetes tools present (pods_list)
 #   mcp-docker:OK    Docker tools present (list_containers)
 #   mcp-client:OK    the agent config declares the gateway (url = MCP_URL)
+#   mcp-tools:OK     (deep) the agent's own MCP client reports the gateway CONNECTED;
+#                    falls back to mcp-client when no supported CLI exists
 # Any missing step -> that token is FAIL.
 #
-# mcp-client closes the blind spot from issue #139: the handshake above only proves
-# that the gateway + upstream servers answer *from the sandbox*, not that the agent
-# registered a client. sbx injects the entry for supported agents (OpenCode, Claude);
-# Mammouth/Vibe get it from their kit config. Without it, no mcp-gateway_* tools
-# reach the agent even though every probe here is OK.
+# mcp-client/mcp-tools close the blind spot from issue #139: the handshake above only
+# proves that the gateway + upstream servers answer *from the sandbox*, not that the
+# agent registered a client and loaded its tools. sbx injects the entry for supported
+# agents (OpenCode, Claude); Mammouth/Vibe get it from their kit config. `mcp-client`
+# is the cheap config check (also used by the 10s TUI box); `mcp-tools` additionally
+# runs `<agent> mcp list`, which performs a real handshake through the agent's own
+# client (startup report only — spawning an agent process every 10s is wasteful).
 #
 # Bounded timeouts, never hangs. `mcp-gateway.docker.internal` is not in NO_PROXY,
 # so curl routes through the sandbox HTTP proxy (the only network egress) — do not
@@ -77,4 +82,24 @@ if [ -n "$mcp_sid" ]; then
   esac
 fi
 
-echo "$gateway $idea $k8s $docker $client"
+if [ "${MCP_CHECK_DEEP:-0}" = "1" ]; then
+  # Deep probe: `<agent> mcp list` connects through the agent's own MCP client and
+  # prints "mcp-gateway ... connected" on success (mammouth/opencode; claude uses a
+  # similar line). No such CLI (e.g. Mistral Vibe) -> fall back to the config result.
+  tools="mcp-tools:FAIL"
+  probed=0
+  for cli in mammouth opencode claude vibe; do
+    command -v "$cli" >/dev/null 2>&1 || continue
+    timeout 5 "$cli" mcp list --help >/dev/null 2>&1 || continue
+    probed=1
+    mcp_list_out=$(timeout 10 "$cli" mcp list 2>&1)
+    if printf '%s\n' "$mcp_list_out" | grep -Eqi 'mcp-gateway.*connected|connected.*mcp-gateway'; then
+      tools="mcp-tools:OK"
+      break
+    fi
+  done
+  [ "$probed" = "0" ] && tools="mcp-tools:${client#mcp-client:}"
+  echo "$gateway $idea $k8s $docker $client $tools"
+else
+  echo "$gateway $idea $k8s $docker $client"
+fi

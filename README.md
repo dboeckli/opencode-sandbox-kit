@@ -647,7 +647,7 @@ Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -656,7 +656,7 @@ Report als `[startup-checks] ...` an:
   **Skills** und **MCP & Host Systems** sofort sichtbar ist – ohne ersten Prompt. Der
   **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) die
   **MCP-Server** über den sbx-Gateway (`~/.local/bin/mcp-check.sh`: ein MCP-Handshake → `mcp-gateway`, `mcp-idea`,
-  `mcp-k8s`, `mcp-docker`, `mcp-client` (Agent-Config deklariert den Gateway); die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
+  `mcp-k8s`, `mcp-docker`, `mcp-client` (Agent-Config deklariert den Gateway) und `mcp-tools` (Startup-Report: `mammouth`/`opencode mcp list` verbindet real über den Agent-Client; die 10s-TUI-Box nutzt die schnelle Variante); die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
   (Issue #165)). MCP-Server stehen in einer Zeile. Gebounded per `timeout`.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
