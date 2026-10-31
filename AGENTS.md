@@ -115,7 +115,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --skills=off `
       --static-mcp idea,k8s,docker
   ```
-- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`; eigenes Image `docker.io/domboeckli/sbx-mammouth`, Tooling + CLI vorgebacken — kein `--template`). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mammouth-image`); Release via `build-and-publish-mammouth-image.yml` (`workflow_dispatch`/Push auf `master`):
+- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth-entrypoint` — seedet die Model-Picker-Favoriten vor dem TUI-Start, dann `exec mammouth`; eigenes Image `docker.io/domboeckli/sbx-mammouth`, Tooling + CLI vorgebacken — kein `--template`). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mammouth-image`); Release via `build-and-publish-mammouth-image.yml` (`workflow_dispatch`/Push auf `master`):
   ```powershell
   sbx run ./mammouth-agent/ `
       --kit-arg imageTag=local `
@@ -409,7 +409,8 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 > Docker-Sandboxes-Weg (zentrale MCP-Registry am Host) und der Grund, warum das Kit keine direkte `mcp.idea`-
 > Konfiguration mehr mitbringt. Details/Verifikation: Issue #57.
 
-> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt; bestehende Favoriten/Reihenfolge werden nicht überschrieben, per `ctrl+f` entfernte Seed-Modelle werden beim nächsten Start wieder ergänzt). Gilt nur für das `opencode-agent`-Mixin, nicht für Mammouth.
+> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt; bestehende Favoriten/Reihenfolge werden nicht überschrieben, per `ctrl+f` entfernte Seed-Modelle werden beim nächsten Start wieder ergänzt). Gilt für das `opencode-agent`-Mixin (`~/.local/state/opencode/model.json`) und das `mammouth-agent`-Kit (`~/.local/state/mammouth/model.json`; Mammouth ist ein OpenCode-Fork mit demselben `{recent,favorite,variant}`-Schema).
+> **Reihenfolge (Mammouth):** `setup.startup` läuft **nach** dem Sandbox-Entrypoint — Mammouth liest `model.json` beim TUI-Start und schreibt den In-Memory-Stand (ohne die zu spät geseedeten Favoriten) beim ersten Model-/Variant-Wechsel zurück. Deshalb läuft der Seed beim Agent-Kit **im Entrypoint** (`mammouth-entrypoint` → `seed-mammouth-model-favorites.py`, idempotent, Fallback auf `mammouth` bei alten Images) und zusätzlich beim Image-Build; der `setup.startup`-Hook bleibt für bestehende Sandboxes. Ein nachträgliches Seeden bei laufendem TUI zeigt keine Favoriten — Mammouth neu starten.
 >
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
 > opencode/mammouth neu starten.
@@ -695,8 +696,10 @@ nötig.
 - `opencode-agent/files/home/.claude/settings.json` — Claude Code config (Permission-Whitelist `mcp__mcp-gateway__*`; keine `mcpServers.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `mcp__mcp-gateway__execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
-- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
-- `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
+- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth-entrypoint` mit Fallback auf `mammouth`); `setup.startup` seedet dieselben Model-Picker-Favoriten wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/mammouth/model.json`; Credentials `zai`/`mistral` wie im OpenCode-Kit
+- `mammouth-agent/files/home/.local/bin/mammouth-entrypoint.sh` — Entrypoint-Wrapper: seedet die Favoriten VOR dem TUI-Start, dann `exec mammouth` (der `setup.startup`-Hook läuft erst danach und verlöre das Race)
+- `mammouth-agent/files/home/.local/bin/seed-mammouth-model-favorites.py` — idempotenter Seeder (Favoriten-Liste, Order bleibt, fehlende Modelle werden angehängt); wird im Entrypoint, im `setup.startup`-Hook und beim Image-Build ausgeführt
+- `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit (Provider `deepseek`, `zai`, `mistral`)
 - `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe:<vibe-version>`, `entrypoint: [vibe, "--agent", "auto-approve"]` — ohne entrypoint startet sbx die Default-Shell)
 - `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/build-and-publish-mistral-vibe-image.yml`
 - `mistral-vibe-agent/spec.yaml` — pinnt das Start-Modell via `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"` (Env-Layer gewinnt gegen `active_model`, `/model` wechselt weiterhin pro Session)

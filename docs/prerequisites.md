@@ -23,8 +23,8 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `github-maven` | alle | Klassisches PAT (nur Scope `read:packages`) für GitHub Packages Maven — `https://github.com/settings/tokens` |
 | `anthropic` | Claude | https://console.anthropic.com — interaktiv, `-f` zum Überschreiben |
 | `mammouth` | Mammouth | https://mammouth.ai/app/account/settings/api |
-| `mistral` | Mistral Vibe | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
-| `zai` | OpenCode, Mistral Vibe | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
+| `mistral` | Mistral Vibe, OpenCode, Mammouth | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
+| `zai` | OpenCode, Mammouth, Mistral Vibe | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
 | `context7` | alle | https://context7.com/dashboard |
 | `openrouter` | OpenCode | Built-in-Service des opencode-Templates (nicht im Kit deklariert) |
 | `google` | OpenCode | https://aistudio.google.com/apikey (Built-in-Service) |

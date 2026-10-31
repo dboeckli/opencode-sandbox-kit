@@ -25,6 +25,13 @@ COPY files/home/.local/bin/install-apt-packages.sh /tmp/kit/install-apt-packages
 COPY files/home/.local/bin/install-tooling.sh /tmp/kit/install-tooling.sh
 COPY files/home/.local/bin/install-tooling-user.sh /tmp/kit/install-tooling-user.sh
 
+# Entrypoint wrapper + model-picker seeder (see sandbox.entrypoint in spec.yaml).
+# The favorites file must exist before mammouth starts — `setup.startup` runs
+# after it, so the seed happens here instead (and once at build time below).
+COPY files/home/.local/bin/seed-mammouth-model-favorites.py /usr/local/bin/seed-mammouth-model-favorites.py
+COPY files/home/.local/bin/mammouth-entrypoint.sh /usr/local/bin/mammouth-entrypoint
+RUN chmod +x /usr/local/bin/seed-mammouth-model-favorites.py /usr/local/bin/mammouth-entrypoint
+
 # Root-level tooling. install-tooling.sh is fail-open by design (for the runtime
 # `setup.install`); the explicit verification step below makes the build fail loud.
 RUN chmod +x /tmp/kit/*.sh \
@@ -60,11 +67,15 @@ RUN runuser -u agent -- env HOME=/home/agent VERSION="${MAMMOUTH_VERSION}" \
  && test -x /home/agent/.mammouth/bin/mammouth \
  && ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth
 
+# Seed the model-picker favorites at build time so `~/.local/state/mammouth/model.json`
+# already exists on the very first start (the entrypoint re-runs the seed anyway).
+RUN runuser -u agent -- env HOME=/home/agent python3 /usr/local/bin/seed-mammouth-model-favorites.py
+
 # Agent-user tooling (skills, Claude statusline, repsy docs) as uid 1000 / `agent`.
 RUN runuser -u agent -- env HOME=/home/agent bash /tmp/kit/install-tooling-user.sh
 
 RUN rm -rf /tmp/kit
 
 # Restore the base image's default user (Entrypoint/CMD are inherited from the base;
-# the kit sets `sandbox.entrypoint: [mammouth]`).
+# the kit sets `sandbox.entrypoint: [mammouth-entrypoint]`).
 USER agent
