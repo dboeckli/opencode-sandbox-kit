@@ -391,6 +391,7 @@ setup:
               {'providerID': 'deepseek', 'modelID': 'deepseek-v4-pro'},
               {'providerID': 'zai', 'modelID': 'glm-5.3-flash'},
               {'providerID': 'zai', 'modelID': 'glm-5.3'},
+              {'providerID': 'zai', 'modelID': 'glm-4.7-flash'},
               {'providerID': 'mistral', 'modelID': 'zai-glm-5-3'},
           ]
           data = {'recent': [], 'favorite': [], 'variant': {}}
@@ -414,7 +415,7 @@ setup:
                   json.dump(data, f)
               os.replace(tmp, path)
       user: "1000"
-      description: Seed OpenCode model-picker favorites with the directly-served models (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3 via Z.AI, Mistral-hosted GLM-5.3) so they appear in a "Favorites" section above the provider groups — existing favorites keep their order, missing direct models are appended (ctrl+f toggles otherwise preserved)
+      description: Seed OpenCode model-picker favorites with the directly-served models (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (free) via Z.AI, Mistral-hosted GLM-5.3) so they appear in a "Favorites" section above the provider groups — existing favorites keep their order, missing direct models are appended on every start (a seed model removed via ctrl+f is re-added next start)
 environment:
   variables:
     JAVA_HOME: "/usr/local/java"

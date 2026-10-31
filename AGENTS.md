@@ -409,7 +409,7 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 > Docker-Sandboxes-Weg (zentrale MCP-Registry am Host) und der Grund, warum das Kit keine direkte `mcp.idea`-
 > Konfiguration mehr mitbringt. Details/Verifikation: Issue #57.
 
-> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt, bestehende Favoriten werden nicht überschrieben). Gilt nur für das `opencode-agent`-Mixin, nicht für Mammouth.
+> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt; bestehende Favoriten/Reihenfolge werden nicht überschrieben, per `ctrl+f` entfernte Seed-Modelle werden beim nächsten Start wieder ergänzt). Gilt nur für das `opencode-agent`-Mixin, nicht für Mammouth.
 >
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
 > opencode/mammouth neu starten.
@@ -688,7 +688,7 @@ nötig.
 
 ## Layout
 
-- `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin); `setup.startup` seedet die Model-Picker-Favoriten (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3 via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/opencode/model.json`, nur wenn noch keine Favoriten existieren
+- `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin); `setup.startup` seedet die Model-Picker-Favoriten (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/opencode/model.json` (bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
 - `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config (Permission-Whitelist für IntelliJ-MCP-Tools via sbx MCP Gateway `mcp-gateway_*`; Provider `deepseek`/`openrouter`/`google`/`zai` (GLM, `ZAI_API_KEY`)/`mistral` (Mistral-hosted GLM `zai-glm-5-3`, `MISTRAL_API_KEY`); keine direkte `mcp.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `mcp-gateway_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
