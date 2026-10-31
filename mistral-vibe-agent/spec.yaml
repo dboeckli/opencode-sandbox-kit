@@ -55,7 +55,7 @@ permissions:
       - "docs.mistral.ai:443"
       # Vibe GrowthBook (Feature-Flags/Experimente)
       - "experiments.mistral.services:443"
-      # Z.AI (GLM-5.3-Flash als Default-Modell, direkter OpenAI-kompatibler Provider)
+      # Z.AI (GLM-5.3-Flash als Default + GLM-5.3 + GLM-4.7-Flash gratis, direkter OpenAI-kompatibler Provider)
       - "api.z.ai:443"
       - "*.z.ai:443"
       # Context7
@@ -183,7 +183,7 @@ credentials:
         - domain: api.mistral.ai
           scheme: bearer
   - service: zai
-    description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — OpenAI-kompatibler Provider (GLM-5.3-Flash)"
+    description: "Z.AI API-Key (https://z.ai/manage-apikey/apikey-list) — OpenAI-kompatibler Provider (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash)"
     apiKey:
       name: ZAI_API_KEY
       proxyManaged: true
@@ -373,3 +373,8 @@ environment:
   variables:
     JAVA_HOME: "/usr/local/java"
     npm_config_bin_links: "false"
+    # Pin the model selected at every Vibe start to GLM-5.3-Flash (alias `glm-flash`).
+    # Env layer overrides active_model from config.toml, so a previously persisted
+    # `/model` choice cannot leak into the next launch. `/model` still switches the
+    # model for the current session.
+    VIBE_ACTIVE_MODEL: "glm-flash"

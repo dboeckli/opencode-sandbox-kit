@@ -697,7 +697,8 @@ nötig.
 - `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
 - `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe:<vibe-version>`, `entrypoint: [vibe, "--agent", "auto-approve"]` — ohne entrypoint startet sbx die Default-Shell)
 - `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/build-and-publish-mistral-vibe-image.yml`
-- `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`) + Default-Modell GLM-5.3-Flash (Z.AI-Provider `zai`) + Mistral-hosted GLM (`glm` → `zai-glm-5-3`)
+- `mistral-vibe-agent/spec.yaml` — pinnt das Start-Modell via `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"` (Env-Layer gewinnt gegen `active_model`, `/model` wechselt weiterhin pro Session)
+- `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`) + Default-Modell GLM-5.3-Flash (Z.AI-Provider `zai`) + GLM-5.3 direkt via Z.AI (`glm-5.3`) + GLM-4.7-Flash gratis (`glm-4.7-flash`) + Mistral-hosted GLM (`glm` → `zai-glm-5-3`)
 - `mistral-vibe-agent/files/home/.vibe/hooks.toml` + `files/home/.config/sandbox-kit/vibe-mcp-guard.py` — pre_tool-Read-only-Guard für die IntelliJ-MCP-Tools (auto-approve umgeht das Permission-System)
 - `docs/prerequisites.md` — kompakte Übersicht aller Voraussetzungen (Host + Sandbox + Secrets + Netzwerk)
 
@@ -849,10 +850,14 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 > Start bestätigen). Ohne Binding wird nur der Sentinel gesetzt, der echte Key aber nicht injiziert
 > (`sbx create`: „no binding authorizes this service"); `local-test-kits.py` schlägt dann fehl.
 
-> **Default-Modell GLM-5.3-Flash (Z.AI):** `mistral-vibe-agent/files/home/.vibe/config.toml` setzt
+> **Start-Modell GLM-5.3-Flash (Z.AI):** `mistral-vibe-agent/spec.yaml` setzt zusätzlich
+> `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"` (Env-Layer überschreibt `active_model`; `/model` wechselt
+> weiterhin für die aktuelle Session). `mistral-vibe-agent/files/home/.vibe/config.toml` setzt
 > `active_model = "glm-flash"` und deklariert Z.AI als OpenAI-kompatiblen Provider (`[[providers]]` `zai`,
-> `ZAI_API_KEY`, `api.z.ai`) + `[[models]]` `glm-flash` → `glm-5.3-flash`. GLM-5.3-Flash gibt es **nicht über
-> Mistral** → eigener Service `zai` (`sbx secret set zai`, Key https://z.ai/manage-apikey/apikey-list, Binding
+> `ZAI_API_KEY`, `api.z.ai`) + `[[models]]` `glm-flash` → `glm-5.3-flash` sowie das Flagship `glm-5.3`
+> (Alias `glm-5.3`, gleicher Provider/Key) und das kostenlose `glm-4.7-flash` (Alias `glm-4.7-flash`). Alle gibt es
+> **nicht über Mistral** → eigener Service `zai`
+> (`sbx secret set zai`, Key https://z.ai/manage-apikey/apikey-list, Binding
 > `zai: apiKey.domains: [api.z.ai]`). Alternative: Mistral-hosted `zai-glm-5-3` (Alias `glm`, Provider `mistral`).
 >
 > **Plan vs. Guthaben (wichtig):** Der Mistral-**Plan** steuert Rate-Limits + Modellzugriff, nicht das Guthaben.

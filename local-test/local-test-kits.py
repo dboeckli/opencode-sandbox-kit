@@ -1753,7 +1753,7 @@ def main():
                         sfail("api.mistral.ai e2e (Proxy-Key)", out)
                         dump_policy_log(s["name"])
 
-                # Z.AI (GLM-5.3-Flash, Default-Modell): Sentinel + Credential-Aufloesung.
+                # Z.AI (GLM-5.3-Flash Default + GLM-5.3 + GLM-4.7-Flash): Sentinel + Credential-Aufloesung.
                 # Kein Real-API-Call (eigenes Z.AI-Guthaben) — nur Verdrahtung.
                 zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
                 c2, out = exec_sandbox(s["name"], zai_env_cmd)
