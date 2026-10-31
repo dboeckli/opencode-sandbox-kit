@@ -135,8 +135,10 @@ permissions:
     # Python / PyPI
     - pypi.org
     - files.pythonhosted.org
-    # Skills CLI
+    # Skills CLI (Install via add-skill.vercel.sh; www.skills.sh = Registry/Website
+    # fuer Update-/Metadaten-Checks des `skills`-CLI)
     - add-skill.vercel.sh
+    - www.skills.sh
     # Web search (last resort, allow-list for websearch/webfetch provider)
     - "*.exa.ai"
     # Stack Overflow API (Fallback-Quelle bei spezifischen Fehlermeldungen)

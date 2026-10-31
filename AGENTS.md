@@ -192,7 +192,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - `--skills=off` gehört in **jedes** `sbx run`/`sbx create`: der Host-Shared-Skills-Store wird nicht gemountet (Trust Boundary); die Kit-Skills kommen aus `dboeckli/ai-agent-skills`, nicht vom Host. Nur bei Sandbox-Erstellung wirksam — bestehende Sandbox neu erstellen. Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
 - `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`; deckt Commands/Flags + Manuels ab — inkl. generierter CLI-Referenz `data/sbx_cli/*.yaml` —, indexiert aber den Docs-`main`-Branch statt unseres Pins; `/docker/sbx-releases` liefert nur Installation/Releases. Exakte `--help`-Dumps der gepinnten Version: `~/sbx-cli.md`)
-- `python local-test/local-test-kits.py` — automate the 4 scenarios (OpenCode/Claude/Mammouth/Mistral Vibe): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
+- `python local-test/local-test-kits.py` — automate the 4 scenarios (OpenCode/Claude/Mammouth/Mistral Vibe): validate kits, check secrets, create sandboxes, run startup checks (**inkl. MCP-Client-Verdrahtung pro Sandbox**: `mcp-client` + `mcp-tools` via `MCP_CHECK_DEEP=1`), remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth/mistral API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (all kits), no secrets check and no sandbox start (default is starting the sandboxes); includes the Stack Exchange + sbx CLI offline-doc update checks, the install-script sync check, the **Sandbox-Template-Version-Checks** (getrennte Pins `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test-kits.py` gegen `validate.yml`/`e2e.yml` + Dockerfile-Base-Pins + Docker-Hub-Tags je Familie, Issue #202), den **Mammouth-CLI-Versions-Check** (Pin vs. latest GitHub-Release `mammouth-ai/code`), den **Mistral-Vibe-Versions-Check** (Dockerfile-Pin + spec-Image-Tag + shell-Basis-Template vs. latest PyPI `mistral-vibe`), den **Docker-MCP-Server-Versions-Check** (Pin `mcp-server-docker==<v>` in `docs/docker-mcp-server.md` vs. latest PyPI `mcp-server-docker`, Issue #165), den **Bruno-CLI-Versions-Check** (Pin `@usebruno/cli@<v>` in allen drei Kit-Specs + Tooling-Dockerfiles, Drift-Check + latest npm) und den **Node-Baseline-Check** (Issue #138: prüft per Docker best-effort die Node-Version der gepinnten Templates `opencode-docker`/`claude-code-docker`/`shell-docker`; warnt, sobald sie ≥ 24 sind → dann `install-tooling.sh node` + `nodejs.org`-Allowlist entfernen)
 - `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `opencode-agent/files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync all three kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
@@ -306,8 +306,11 @@ Der IntelliJ-MCP-Server läuft auf dem Windows-Host und wird über den **sbx MCP
 (dokumentierter Weg, Issue #57): einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 registrieren (SSRF-Guard blockt Loopback; `/stream` = Streamable HTTP, nicht `/sse`), dann beim Erzeugen
 `--static-mcp idea` setzen (oder `sbx mcp load idea --sandbox` in laufende Sandbox). Die Agent-Configs enthalten
-**keine** direkte `mcp.idea`-Konfiguration mehr — die Gateway-Verbindung legt das Template automatisch als
-`mcp-gateway` (OpenCode/Mammouth) bzw. in `~/.claude.json` unter `mcp-gateway` (Claude Code) an. Tool-Präfixe:
+**keine** direkte `mcp.idea`-Konfiguration — die Gateway-Verbindung (`mcp-gateway`) legt `sbx` automatisch nur für
+seine **unterstützten Agenten** an (OpenCode: `~/.config/opencode/opencode.json`, Claude Code: `~/.claude.json`).
+**Mammouth** ist keine sbx-Integration und bringt den `mcp`-Block selbst mit
+(`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`, Issue #139), **Mistral Vibe** analog in
+`~/.vibe/config.toml`. Tool-Präfixe:
 `mcp-gateway_<tool>` (OpenCode/Mammouth) bzw. `mcp__mcp-gateway__<tool>` (Claude Code) — der frühere direkte
 `idea_`/`mcp__idea__`-Prefix existiert nicht mehr.
 
@@ -862,9 +865,9 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 - **Quelle**: `permissions.network.allow` in `opencode-agent/spec.yaml` (bzw. `mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`). Nur gelistete
   Domains sind erreichbar, alles andere → HTTP 403.
 - **Enforcement**: Nicht das Kit, sondern die Sandbox selbst erzwingt die Liste — über den **Sandbox-Proxy**
-  (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; die Template
-  (`docker.io/domboeckli/sbx-opencode-tooling` / `sbx-claude-tooling`, bauen auf `docker/sandbox-templates:opencode-docker` / `claude-code-docker` auf) trägt ihn automatisch als `mcp-gateway`-MCP-Server in die
-  Agent-Config ein (daher „mcp-gateway Connected“ in OpenCode — kein Fehler). Derselbe Proxy macht die
+  (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; `sbx` trägt ihn für seine **unterstützten Agenten**
+  (OpenCode/Claude) automatisch als `mcp-gateway`-MCP-Server in die Agent-Config ein (daher „mcp-gateway Connected“
+  in OpenCode — kein Fehler). Die Agent-Kits **Mammouth/Vibe** verdrahten ihn selbst (Issue #139). Derselbe Proxy macht die
   **Credential-Injection** (`proxy-managed`-Platzhalter → echter Key, siehe Auth-Abschnitte oben).
 - **`files/home/.../network-policy.md` ist rein informativ**: Nur Doku der Allow-Liste in den Agent-Instructions
   (damit der Agent geblockte Calls vermeidet). Erzwingt nichts. Bei Änderungen an `permissions.network.allow`
