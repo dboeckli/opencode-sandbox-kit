@@ -71,7 +71,7 @@ sbx exec <sandbox-name> bash -c 'tail -n 30 ~/.vibe/logs/vibe.log'
   bei vorhandenem Guthaben. Limits: https://admin.mistral.ai/plateforme/limits · Plan: https://admin.mistral.ai/subscription
 - `403 … tier_not_allowed` (Mistral, Third-Party-Modell wie `zai-glm-5-3`) → Third-Party-Modelle erfordern einen
   **bezahlten Mistral-Plan** (Free mode sperrt sie); das API-Guthaben ($10 Free-Credit) ändert das nicht.
-- Z.AI direkt (`api.z.ai`, GLM-5.3-Flash): `429` → **Z.AI-Guthaben nicht aktiv/leer** oder Monats-/Rate-Limit
+- Z.AI direkt (`api.z.ai`, GLM-5.3-Flash/GLM-5.3): `429` → **Z.AI-Guthaben nicht aktiv/leer** oder Monats-/Rate-Limit
   (Guthaben: https://z.ai/manage-apikey/billing). Nach Aufladung kurz warten, bis das Guthaben aktiv ist.
 - `blocked by network policy: domain …` → fehlende Domain in `mistral-vibe-agent/spec.yaml`
   (`permissions.network.allow`, siehe auch `~/.vibe/network-policy.md`). Hinweis: Wildcards wie `*.mistral.ai`

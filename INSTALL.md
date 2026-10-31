@@ -386,8 +386,11 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 
 #### Z.AI (GLM) — Default-Modell GLM-5.3-Flash
 
-`mistral-vibe-agent/files/home/.vibe/config.toml` setzt **GLM-5.3-Flash** als Default (`active_model = "glm-flash"`).
-GLM-5.3-Flash gibt es **nicht über Mistral**, sondern nur direkt bei Z.AI → eigener OpenAI-kompatibler Provider
+`mistral-vibe-agent/spec.yaml` pinnt das Start-Modell mit `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"`
+(Env-Layer überschreibt `active_model`), zusätzlich setzt `~/.vibe/config.toml` `active_model = "glm-flash"`.
+**GLM-5.3 (Flagship)** ist ebenfalls direkt über Z.AI wählbar (Alias `glm-5.3`, gleicher Provider/Key), ebenso
+das **kostenlose GLM-4.7-Flash** (Alias `glm-4.7-flash`).
+Alle gibt es **nicht über Mistral**, sondern nur direkt bei Z.AI → eigener OpenAI-kompatibler Provider
 `zai` (`https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`). Key erstellen: https://z.ai/manage-apikey/apikey-list
 (Login https://z.ai/model-api, ggf. Guthaben aufladen). Der Proxy injiziert den Key als `Authorization: Bearer`
 für `api.z.ai` — der Key liegt nie im Sandbox-Filesystem:

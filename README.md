@@ -459,10 +459,15 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 - **Launch**: `sandbox.entrypoint: [vibe, "--agent", "auto-approve"]` in der spec (für `kind: sandbox` startet sbx ohne `entrypoint` die Default-Shell); das Dockerfile-`CMD` bleibt für `docker run`.
 - **Auth**: Kit-deklarierter Service `mistral` → `MISTRAL_API_KEY` (Built-in-Service `mistral`, Sentinel
   `proxy-managed`, Proxy injiziert `Authorization: Bearer` für `api.mistral.ai`).
-- **Default-Modell GLM-5.3-Flash (Z.AI)**: `~/.vibe/config.toml` setzt `active_model = "glm-flash"` und definiert
+- **Start-Modell GLM-5.3-Flash (Z.AI)**: `spec.yaml` pinnt `VIBE_ACTIVE_MODEL=glm-flash` (Env-Layer gewinnt,
+  ein persistierter `/model`-Wechsel leakt nicht in den nächsten Start); `~/.vibe/config.toml` setzt
+  `active_model = "glm-flash"` und definiert
   Z.AI als OpenAI-kompatiblen Provider (`[[providers]]` `zai` → `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`;
-  `[[models]]` `glm-flash` → `glm-5.3-flash`). GLM-5.3-Flash gibt es **nur direkt bei Z.AI** (nicht über Mistral);
-  Kit-Service `zai` (`sbx secret set zai`, Key: https://z.ai/manage-apikey/apikey-list).
+  `[[models]]` `glm-flash` → `glm-5.3-flash`). **GLM-5.3 (Flagship) ist ebenfalls direkt über Z.AI wählbar**
+  (Alias `glm-5.3` → `glm-5.3`, gleicher Provider/Key; ~10x Preis, stärker bei Agent-/Coding-Benchmarks), ebenso
+  das **kostenlose GLM-4.7-Flash** (Alias `glm-4.7-flash`, leichtgewichtig, 200K Kontext).
+  Alle gibt es **nur direkt bei Z.AI** (nicht über Mistral); Kit-Service `zai`
+  (`sbx secret set zai`, Key: https://z.ai/manage-apikey/apikey-list).
 - **Alternative ohne Z.AI-Key**: Mistral hostet GLM 5.3 selbst (`zai-glm-5-3`, Alias `glm`, Provider `mistral`,
   gleiche `MISTRAL_API_KEY`) — in der TUI per `/model` wählbar.
 - **Config**: `~/.vibe/config.toml` (MCP-Gateway auf `http://mcp-gateway.docker.internal/mcp` + GLM-Provider/-Modelle),
@@ -470,11 +475,11 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
   da `auto-approve` das Permission-System umgeht) und `~/.vibe/AGENTS.md`.
 - **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, ctx7, Skills).
 
-> **Modell-Verfügbarkeit (wichtig):** **GLM-5.3-Flash** (`glm-5.3-flash`) gibt es **nur direkt bei Z.AI**
-> (`api.z.ai`, Provider `zai`, `ZAI_API_KEY`, `sbx secret set zai`) — **nicht über Mistral**. Über Mistral
-> (la Plateforme) sind nur **`zai-glm-5-3`** und **`zai-glm-5-2`** verfügbar (Provider `mistral`, `MISTRAL_API_KEY`).
-> Deshalb ist GLM-5.3-Flash der Default über den Z.AI-Provider; `glm` (Mistral-hosted `zai-glm-5-3`) ist die
-> key-freie Alternative.
+> **Modell-Verfügbarkeit (wichtig):** **GLM-5.3-Flash** (`glm-5.3-flash`), **GLM-5.3** (`glm-5.3`) und
+> **GLM-4.7-Flash** (`glm-4.7-flash`, gratis) sind direkt bei Z.AI verfügbar (`api.z.ai`, Provider `zai`, `ZAI_API_KEY`, `sbx secret set zai`) — **nicht über
+> Mistral**. Über Mistral (la Plateforme) sind nur **`zai-glm-5-3`** und **`zai-glm-5-2`** verfügbar (Provider
+> `mistral`, `MISTRAL_API_KEY`). Default ist GLM-5.3-Flash über den Z.AI-Provider; `glm` (Mistral-hosted
+> `zai-glm-5-3`) ist die key-freie Alternative.
 
 > **Image-Publish:** Das Image wird in CI gebaut (multi-arch amd64+arm64; native Runner + `imagetools create`). Der e2e-Workflow
 > ruft den (auch manuell per `workflow_dispatch` startbaren) `build-and-publish-mistral-vibe-image.yml` als

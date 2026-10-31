@@ -76,10 +76,15 @@ Mistral Vibe is available in Context7 (`npx ctx7 docs /mistralai/mistral-vibe <q
 user-level instructions in `~/.vibe/AGENTS.md`, project instructions in the project's `AGENTS.md`.
 `VIBE_HOME` overrides the config directory.
 
-The default model is **GLM-5.3-Flash** (`active_model = "glm-flash"`), served directly by **Z.AI** through the
+The model selected at every start is pinned to **GLM-5.3-Flash**: `active_model = "glm-flash"` in `config.toml`
+plus `VIBE_ACTIVE_MODEL=glm-flash` (kit `environment.variables`, env layer wins → a persisted `/model` choice does
+not leak into the next launch). It is served directly by **Z.AI** through the
 OpenAI-compatible `zai` provider (`[[providers]]` → `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`; `[[models]]`
-`glm-flash` → `glm-5.3-flash`). GLM-5.3-Flash is **not** available via Mistral. The key is proxy-managed
-(`ZAI_API_KEY=proxy-managed`); the sandbox proxy injects the real key for `api.z.ai`. Switch models with `/model`.
+`glm-flash` → `glm-5.3-flash`). The flagship **GLM-5.3** is also available directly via Z.AI (alias `glm-5.3` →
+`glm-5.3`, same provider/credential; ~10x the price, stronger on agent/coding benchmarks), and **GLM-4.7-Flash**
+is a free, lightweight text model (alias `glm-4.7-flash`, 200K context). None of them is available via Mistral.
+The key is proxy-managed (`ZAI_API_KEY=proxy-managed`); the sandbox proxy injects the real key for `api.z.ai`.
+Switch models with `/model`.
 Alternative: Mistral hosts GLM 5.3 itself as `zai-glm-5-3` (alias `glm`, provider `mistral`, same
 `MISTRAL_API_KEY`). Other Mistral-hosted IDs: `zai-glm-5-2`, `mistral-large-latest`, `codestral-latest`.
 
