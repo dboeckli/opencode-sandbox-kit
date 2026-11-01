@@ -30,7 +30,9 @@
 #
 # Bounded timeouts, never hangs. `mcp-gateway.docker.internal` is not in NO_PROXY,
 # so curl routes through the sandbox HTTP proxy (the only network egress) — do not
-# disable the proxy.
+# disable the proxy. A *cold* agent CLI bootstraps its config-dir plugin dependencies
+# on the first run (bun/npm install through the proxy; ~60s for mammouth, ~10s once
+# warm), so the deep probe budgets the whole run instead of a short per-attempt kill.
 set +e
 
 MCP_URL="http://mcp-gateway.docker.internal/mcp"
@@ -51,12 +53,30 @@ client="mcp-client:FAIL"
 
 # Agent-side wiring: does any agent config declare the gateway URL? JSON agents store
 # "url": "http://…", Vibe's TOML stores url = "http://…". Dependency-free (grep, no jq).
+# `client_clis` records the agent CLI(s) whose OWN config declares the gateway: the deep
+# probe must only ask those. Another agent CLI that happens to be installed (e.g.
+# `opencode` in the mammouth image) has no gateway config and would answer "No MCP
+# servers configured" — a false failure if it were probed instead.
+client_clis=""
 for cfg in "$HOME/.config/opencode/opencode.json" "$HOME/.config/opencode/opencode.jsonc" \
            "$HOME/.config/mammouth/opencode.jsonc" "$HOME/.vibe/config.toml" "$HOME/.claude.json"; do
   [ -f "$cfg" ] || continue
   if grep -Eq 'url"?[[:space:]]*[:=][[:space:]]*"http://mcp-gateway\.docker\.internal/mcp' "$cfg" 2>/dev/null; then
     client="mcp-client:OK"
-    break
+    rel="${cfg#"$HOME"/}"
+    case "$rel" in
+      .config/mammouth/*) cand="mammouth" ;;
+      .config/opencode/*) cand="opencode" ;;
+      .vibe/*)            cand="vibe" ;;
+      .claude.json)       cand="claude" ;;
+      *)                  cand="" ;;
+    esac
+    if [ -n "$cand" ]; then
+      case " $client_clis " in
+        *" $cand "*) ;;
+        *) client_clis="$client_clis $cand" ;;
+      esac
+    fi
   fi
 done
 
@@ -85,40 +105,57 @@ fi
 if [ "${MCP_CHECK_DEEP:-0}" = "1" ]; then
   # Deep probe: `<agent> mcp list` connects through the agent's own MCP client and
   # prints "mcp-gateway ... connected" on success (mammouth/opencode; claude uses a
-  # similar line). No such CLI (e.g. Mistral Vibe) -> fall back to the config result.
-  # The first connect can transiently fail on a cold/loaded sandbox (observed in CI:
-  # mcp-gateway:OK via curl but `mammouth mcp list` briefly reports not-connected).
-  # Retry a few times, bounded by a deadline so the startup report never hangs. Only
-  # the first CLI that supports `mcp list` is probed: that is this image's agent;
-  # other agent CLIs may exist (e.g. opencode in the mammouth image) but are not
-  # configured with the gateway.
+  # similar line). No such CLI support (e.g. Mistral Vibe) -> fall back to the config
+  # result. Only the CLI(s) whose config declares the gateway above are probed.
+  #
+  # A cold CLI bootstraps its plugin dependencies on first run (mammouth ~60s); a short
+  # per-attempt timeout would kill that, and the old fallthrough then probed a different
+  # installed CLI (opencode -> "No MCP servers configured") as a false failure. Budget
+  # the whole probe and distinguish a timeout (transient, retry, definitive result) from
+  # an unsupported `mcp list` subcommand (skip, fall back to the config check).
   tools="mcp-tools:FAIL"
   probed=0
-  deep_deadline=$(( $(date +%s) + 45 ))
-  for cli in mammouth opencode claude vibe; do
+  [ -z "$client_clis" ] && client_clis="mammouth opencode claude vibe"
+  deep_deadline=$(( $(date +%s) + 180 ))
+  for cli in $client_clis; do
     command -v "$cli" >/dev/null 2>&1 || continue
     attempt=1
     had_mcp_list=0
-    while [ "$attempt" -le 3 ] && [ "$(date +%s)" -lt "$deep_deadline" ]; do
-      # Exit != 0 -> the CLI has no `mcp list` subcommand (e.g. Vibe): skip it, do not
-      # treat it as a failure. A supported CLI reports its server states and exits 0.
-      mcp_list_out=$(timeout 15 "$cli" mcp list 2>&1)
-      [ $? -ne 0 ] && break
-      had_mcp_list=1
-      if printf '%s\n' "$mcp_list_out" | grep -Eqi 'mcp-gateway.*connected|connected.*mcp-gateway'; then
-        tools="mcp-tools:OK"
+    last_rc=124
+    while [ "$attempt" -le 3 ]; do
+      remaining=$(( deep_deadline - $(date +%s) ))
+      [ "$remaining" -lt 10 ] && break
+      per_attempt=120
+      [ "$remaining" -lt "$per_attempt" ] && per_attempt=$remaining
+      mcp_list_out=$(timeout "$per_attempt" "$cli" mcp list 2>&1)
+      last_rc=$?
+      if [ "$last_rc" -eq 0 ]; then
+        had_mcp_list=1
+        if printf '%s\n' "$mcp_list_out" | grep -Eqi 'mcp-gateway.*connected|connected.*mcp-gateway'; then
+          tools="mcp-tools:OK"
+          break
+        fi
+      elif [ "$last_rc" -ne 124 ]; then
+        # Non-zero and not a timeout -> the CLI has no `mcp list` subcommand (e.g.
+        # Vibe): skip it and fall back to the config result, not a failure.
         break
       fi
       attempt=$((attempt + 1))
       [ "$attempt" -le 3 ] && sleep 3
     done
-    if [ "$had_mcp_list" = "1" ]; then
+    if [ "$tools" = "mcp-tools:OK" ]; then
+      probed=1
+      break
+    fi
+    # A timed-out CLI (rc 124) or one that answered but never reported the gateway
+    # connected is this image's configured agent: record the definitive result and
+    # stop, so an unconfigured CLI cannot mask it.
+    if [ "$had_mcp_list" = "1" ] || [ "$last_rc" -eq 124 ]; then
       probed=1
       # Diagnostics go to stderr (not part of the one-line report) so a failure in CI
       # shows what the agent client actually printed.
-      [ "$tools" = "mcp-tools:OK" ] || \
-        printf 'mcp-tools diagnostic (%s): %s\n' \
-          "$cli" "$(printf '%s' "$mcp_list_out" | tr '\n' ' ' | cut -c1-300)" >&2
+      printf 'mcp-tools diagnostic (%s): rc=%s %s\n' \
+        "$cli" "$last_rc" "$(printf '%s' "$mcp_list_out" | tr '\n' ' ' | cut -c1-300)" >&2
       break
     fi
   done
