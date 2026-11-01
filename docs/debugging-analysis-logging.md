@@ -129,7 +129,7 @@ python local-test\local-test-kits.py --validate-only
 
 ### Startup-Checks
 
-Der `[startup-checks]`-Report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP gateway/IntelliJ/Kubernetes, Helm, Kafka, Skills, SonarCloud)
+Der `[startup-checks]`-Report (Context7, gh, Java/Maven, Docker, kubectl, MCP gateway/IntelliJ/Kubernetes, Helm, Kafka, Skills, SonarCloud)
 wird beim Session-Start injiziert und nach `~/.config/sandbox-kit/startup-checks.report` geschrieben.
 Manuell neu ausführen:
 
@@ -171,16 +171,19 @@ Präfix `mcp-gateway_` in OpenCode/Mammouth/Mistral Vibe bzw. `mcp__mcp-gateway_
 ### IntelliJ MCP-Verbindung testen
 
 Der IntelliJ-MCP-Server läuft auf Windows unter `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342).
-Das Kit liefert ihn seit Issue #57 über den
-**sbx MCP Gateway** (Registration `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`,
-Sandbox mit `--static-mcp idea`). Der Health-Check aus der Sandbox prüft weiterhin die Erreichbarkeit des
-Host-Servers:
+Das Kit liefert ihn seit Issue #57 über den **sbx MCP Gateway** (Registration
+`sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`, Sandbox mit `--static-mcp idea`).
+
+Die Verbindung wird ausschließlich über den Gateway geprüft (`mcp-idea`, voller Handshake bis
+`get_symbol_info`). Ein direkter Host-Port-Probe ist bewusst **nicht** möglich — `host.docker.internal:64615`/`:64342`
+sind nicht allow-listed (Proxy → HTTP 403), damit kein Sandbox-Prozess die `mcp-gateway_*`-Whitelist per `curl`
+umgehen kann (Issue #163):
 
 ```bash
-sbx exec opencode-sandbox bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
+sbx exec <sandbox> bash -c 'MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh'
 ```
 
-Erwartet: `HTTP 200`. Details + WSL/Firewall-Varianten + Gateway-Verifikation: [`troubleshooting.md`](troubleshooting.md).
+Erwartet: `mcp-idea:OK`. Details + WSL/Firewall-Varianten: [`troubleshooting.md`](troubleshooting.md).
 
 ### IntelliJ MCP über die Permission-Whitelist
 
@@ -246,4 +249,4 @@ Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agen
 | Drift + SO-API-Check | `python local-test\local-test-kits.py --validate-only` |
 | Blocked requests | `sbx policy log <sandbox>` |
 | Startup-Checks (in Sandbox) | `bash ~/.config/sandbox-kit/run-checks.sh` |
-| IntelliJ MCP testen | `sbx exec <sandbox> bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'` |
+| IntelliJ MCP testen (Gateway) | `sbx exec <sandbox> bash -c 'MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh'` (erwartet `mcp-idea:OK`) |
