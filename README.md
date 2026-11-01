@@ -715,6 +715,7 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
 - [Kubernetes-MCP-Server](docs/kubernetes-mcp-server.md)
 - [Docker-MCP-Server (Host)](docs/docker-mcp-server.md)
+- [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp-gateway-security.md)
 - [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
 - [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.50.1 — generiert aus der Release-Binary)

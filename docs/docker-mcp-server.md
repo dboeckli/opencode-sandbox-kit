@@ -153,9 +153,11 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 - Kein offener Host-Port mehr in der Sandbox-Allowlist (statt `2375`).
 - Der MCP-Server + Docker-Socket bleiben host-seitig; die Sandbox sieht nur MCP-Tools.
-- Begrenzung = Sandbox-Permission-Whitelist (read-only `allow`, Write `ask`).
+- Begrenzung = **Agent-Guardrail** (`mcp-gateway_*`-Whitelist, read-only `allow`, Write `ask`), **keine**
+  Netz-/Sandbox-Grenze: Der Gateway ist aus der Sandbox per `curl` erreichbar (Issue #229).
+- Details + lokale Mitigationen: [mcp-gateway-security.md](mcp-gateway-security.md).
 
 ## Verwandt
 
 - #165 (Ticket), #71 (`2375` aus der Allowlist), #40 (K8s-MCP-Muster), #160 (Allowlist zentral pflegen),
-  #163 (IntelliJ-MCP-Direkt-Bypass).
+  #163 (IntelliJ-MCP-Direkt-Bypass), #229 (Gateway-Bypass + Mitigationen).

@@ -310,6 +310,8 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
   Für Dev-Cluster ggf. `read_only = true` bzw. Toolsets auf `core,config` reduzieren.
 - kubeconfig/Credentials bleiben **ausschließlich** im Host-Prozess; die Sandbox sieht nur MCP.
   `configuration_view` ist in der Kit-Whitelist gesperrt (würde die kubeconfig inkl. Client-Cert/Key liefern).
+- Trust-Boundary, Gateway-Bypass und lokale Mitigationen: [mcp-gateway-security.md](mcp-gateway-security.md)
+  (Issue #229).
 
 > [!CAUTION]
 > **Produktions-No-Go (Option A, Standard-Config):** `denied_resources` für `Secret` ist **deaktiviert**,
