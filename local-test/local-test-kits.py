@@ -177,6 +177,21 @@ BRUNO_PIN_FILES = [
 BRUNO_PIN_RE = re.compile(r"@usebruno/cli@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 BRUNO_NPM_URL = "https://registry.npmjs.org/@usebruno/cli/latest"
 
+# MCP Inspector CLI (Issue #231): Pin `@modelcontextprotocol/inspector@<v>` in denselben
+# Dateien wie der Bruno-Pin (drei Kit-Specs + Tooling-Image-Dockerfiles). Nur die CLI ist
+# nutzbar (Web/TUI brauchen Browser bzw. Ports). Drift = fail, neueres npm-Release = warn;
+# der Bump kommt via Renovate-Custom-Manager (.github/renovate.json).
+INSPECTOR_PIN_FILES = [
+    "opencode-agent/spec.yaml",
+    "mammouth-agent/spec.yaml",
+    "mistral-vibe-agent/spec.yaml",
+    "opencode-agent/opencode/Dockerfile",
+    "opencode-agent/claude/Dockerfile",
+    "mammouth-agent/Dockerfile",
+]
+INSPECTOR_PIN_RE = re.compile(r"@modelcontextprotocol/inspector@(?P<v>[0-9]+(?:\.[0-9]+)+)")
+INSPECTOR_NPM_URL = "https://registry.npmjs.org/@modelcontextprotocol/inspector/latest"
+
 # Apache Kafka-Distribution: install-tooling.sh laedt den Tarball von dlcdn
 # (haelt nur die aktuellen Releases) mit Fallback auf archive.apache.org (alle
 # Releases). Der Validate-Check stellt sicher, dass KAFKA_VER als Tarball
@@ -1119,6 +1134,47 @@ def check_bruno_cli_update():
         pass_(f"bruno CLI version up-to-date (Pin v{pin}, npm latest v{latest})")
 
 
+def check_inspector_cli_update():
+    """Prueft den MCP-Inspector-Pin (`@modelcontextprotocol/inspector@<v>`) in allen
+    Kit-Specs und Tooling-Images auf Gleichheit und vergleicht ihn mit der latest
+    npm-Version. Drift = fail; neueres npm-Release = warn (Renovate-Bump)."""
+    pins = {}
+    for rel in INSPECTOR_PIN_FILES:
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path):
+            fail(f"mcp-inspector pin ({rel} fehlt)")
+            return
+        with open(path, encoding="utf-8") as f:
+            m = INSPECTOR_PIN_RE.search(f.read())
+        if not m:
+            fail(f"mcp-inspector pin (@modelcontextprotocol/inspector@<version> nicht in {rel} gefunden)")
+            return
+        pins[rel] = m.group("v")
+    unique = sorted(set(pins.values()))
+    if len(unique) != 1:
+        detail = ", ".join(f"{rel}={v}" for rel, v in pins.items())
+        fail(
+            f"mcp-inspector pin drift ({detail})",
+            "alle Vorkommen (Specs + Dockerfiles) auf dieselbe @modelcontextprotocol/inspector-Version setzen",
+        )
+        return
+    pin = unique[0]
+    try:
+        data = json.loads(_http_get(INSPECTOR_NPM_URL))
+        latest = str(data["version"])
+    except Exception as e:
+        fail("mcp-inspector version (npm latest nicht abrufbar)", str(e))
+        return
+    if _version_newer(latest, pin):
+        warn(
+            f"mcp-inspector update available (Pin v{pin}, npm latest v{latest})",
+            "Optional: @modelcontextprotocol/inspector-Pin in den Specs + Dockerfiles auf "
+            f"v{latest} heben (Renovate-Custom-Manager uebernimmt den Bump)",
+        )
+    else:
+        pass_(f"mcp-inspector version up-to-date (Pin v{pin}, npm latest v{latest})")
+
+
 def _kafka_pin():
     """(KAFKA_VER, KAFKA_SCALA_VER) aus install-tooling.sh, oder (None, None)."""
     path = os.path.join(ROOT, KAFKA_INSTALL_SCRIPT)
@@ -1236,6 +1292,9 @@ def main():
         info("==> Bruno-CLI Version Update-Check (npm + Pin-Drift)")
         check_bruno_cli_update()
         print()
+        info("==> MCP-Inspector Version Update-Check (npm + Pin-Drift)")
+        check_inspector_cli_update()
+        print()
         info("==> Apache-Kafka-Distro Verfuegbarkeit (Tarball auf dlcdn ODER archive.apache.org)")
         check_kafka_distro_availability()
         print()
@@ -1285,7 +1344,8 @@ def main():
         'for t in "ctx7:ctx7 --version" "gh:gh auth status" "java:java -version" '
         '"javac:javac -version" "mvn:mvn -version" "docker:docker version" '
         '"kubectl:kubectl version --client" "jq:jq --version" "node:node --version" '
-        '"npm:npm --version" "kafka:kafka-topics.sh --version" "bruno:bru --version"; do '
+        '"npm:npm --version" "kafka:kafka-topics.sh --version" "bruno:bru --version" '
+        '"mcp-inspector:command -v mcp-inspector"; do '
         'name="${t%%:*}"; cmd="${t#*:}"; if $cmd >/dev/null 2>&1; then echo "TOOL-OK:$name"; '
         'else echo "TOOL-FAIL:$name"; fi; done'
     )

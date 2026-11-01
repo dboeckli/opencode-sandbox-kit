@@ -315,6 +315,14 @@
       "matchStrings": ["@usebruno/cli@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@usebruno/cli",
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "MCP Inspector CLI (@modelcontextprotocol/inspector) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #231",
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile"],
+      "matchStrings": ["@modelcontextprotocol/inspector@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@modelcontextprotocol/inspector",
+      "datasourceTemplate": "npm"
     }
   ],
   "customDatasources": {

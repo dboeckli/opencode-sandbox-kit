@@ -39,7 +39,8 @@ RUN chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-tooling.sh all
 
 # npm-global CLIs (NPM_CONFIG_PREFIX=/usr/local/share/npm-global inherited from the base).
-RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0
+RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
+    @modelcontextprotocol/inspector@2.13.0
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
 RUN shfmt --version \
@@ -57,7 +58,8 @@ RUN shfmt --version \
  && command -v skills \
  && command -v prettier \
  && command -v renovate \
- && bru --version
+ && bru --version \
+ && command -v mcp-inspector
 
 # Mammouth Code CLI (install.sh, pinned): run as the `agent` user so the binaries land
 # in ~/.mammouth, then symlink into PATH for the `mammouth` entrypoint.

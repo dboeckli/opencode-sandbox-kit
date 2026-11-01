@@ -263,6 +263,27 @@ Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts
 
 Bruno CLI (`bru`, `@usebruno/cli` 4.3.0, npm global) runs Bruno API collections headlessly: from the collection root (the dir with `bruno.json`) `bru run` runs everything, `bru run <folder>` a subfolder (e.g. `bru run reactive/beer-flow-patch --env local`). `bru import openapi --source <file-or-url> --output <dir>` converts OpenAPI specs (default output format `opencollection`; `--collection-format bru` for `.bru`). Collections are plain-text (git-friendly); keep secrets in environment variables/environment files, not in the collection. `registry.npmjs.org` is allow-listed (install/update) — the API endpoints you call must be allow-listed as well.
 
+
+## MCP Inspector CLI
+
+MCP Inspector CLI (`mcp-inspector`, `@modelcontextprotocol/inspector` 2.13.0, npm global) is a scriptable MCP client. Only `--cli` is usable in the sandbox — the web client and TUI need a browser resp. ports (6274/6275) that are not reachable from here.
+
+```bash
+# Handshake + tool inventory through the sbx MCP gateway (sentinel auth, JSON output)
+mcp-inspector --cli http://mcp-gateway.docker.internal/mcp --transport http \
+  --header "Authorization: Bearer proxy-managed" --method tools/list --format json \
+  | jq -r '.result.tools[].name'
+
+# Call one tool (read-only examples: get_symbol_info, pods_list, list_containers)
+mcp-inspector --cli http://mcp-gateway.docker.internal/mcp --transport http \
+  --header "Authorization: Bearer proxy-managed" --method tools/call \
+  --tool-name pods_list --tool-args-json '{}' --format json
+```
+
+Exit codes: `3` auth required, `4` unreachable, `6` `--strict` schema gate. `npx @modelcontextprotocol/inspector` does **not** work here (`npm_config_bin_links=false` breaks the npx bin link) — use the installed binary.
+
+Caveat: this bypasses the agent-side `mcp-gateway_*` permission whitelist (direct JSON-RPC, same residual risk as `curl`, Issue #229). It is a debugging tool, not a permission layer — do not use it to do what the whitelist denies.
+
 ## Runtime tools / CLIs
 
 Installed runtime CLIs — Node.js, npm, Git, jq, Go, pip, curl, GNU Make — see `context7-tools.md`.

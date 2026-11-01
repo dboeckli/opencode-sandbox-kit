@@ -292,6 +292,8 @@ setup:
       description: Install renovate — skip if already baked into the image
     - command: "[ -x /usr/local/share/npm-global/bin/bru ] || npm_config_bin_links=true npm install -g @usebruno/cli@4.3.0"
       description: Install Bruno CLI (`bru`, pinned; Renovate tracks @usebruno/cli) — skip if already baked into the image
+    - command: "[ -x /usr/local/share/npm-global/bin/mcp-inspector ] || npm_config_bin_links=true npm install -g @modelcontextprotocol/inspector@2.13.0"
+      description: Install MCP Inspector CLI (`mcp-inspector`, pinned; Renovate tracks @modelcontextprotocol/inspector) — scriptable MCP client for gateway/tool debugging; skip if already baked into the image
     - command: "bash /home/agent/.local/bin/install-apt-packages.sh"
       description: Install apt packages (jq, python3, pip, python3-yaml) — retries while the template's apt-get holds the dpkg lock; source files/home/.local/bin/install-apt-packages.sh
     - command: "bash /home/agent/.local/bin/install-tooling.sh shfmt"

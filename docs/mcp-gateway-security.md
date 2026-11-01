@@ -13,7 +13,9 @@ Host-MCP-Servern (IntelliJ, Kubernetes, Docker). Er ist aber **keine Sandbox-Gre
   (OpenCode/Mammouth `permission`, Claude `permissions` + PreToolUse-Hook, Vibe `pre_tool`-Hook).
 - Der Gateway akzeptiert den Sentinel `Authorization: Bearer proxy-managed` von **jedem** Sandbox-Prozess
   und führt die Tools **aller** registrierten Server aus — auch `ask`/`deny`-Tools.
-- Ein bash-fähiger Agent (oder prompt-injected Code) kann die Whitelist daher per `curl` umgehen.
+- Ein bash-fähiger Agent (oder prompt-injected Code) kann die Whitelist daher per `curl` **oder**
+  `mcp-inspector --cli` (im Kit enthalten, Issue [#231](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/231))
+  umgehen.
 
 Die Whitelist ist eine **Agent-Guardrail** (Schutz vor Fehlbedienung/Fehlentscheidungen des Agenten),
 keine Sicherheitsgrenze gegen beliebigen Code in der Sandbox.
@@ -88,3 +90,5 @@ Die folgenden Maßnahmen reduzieren den Blast-Radius, solange es kein lokales Ga
   (geschlossen: Allowlist-Einträge entfernt).
 - [#229](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/229) — Gateway selbst per `curl`
   erreichbar (dieses Dokument).
+- [#231](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/231) — MCP-Inspector-CLI im Kit:
+  zweiter direkter JSON-RPC-Client am Gateway (gleiche Restrisiko-Klasse wie `curl`).
