@@ -12,7 +12,9 @@ Host-MCP-Servern (IntelliJ, Kubernetes, Docker). Er ist aber **keine Sandbox-Gre
 - Die `mcp-gateway_*`-Permission-Whitelist und der Run-Config-Guard werden **agent-seitig** erzwungen
   (OpenCode/Mammouth `permission`, Claude `permissions` + PreToolUse-Hook, Vibe `pre_tool`-Hook).
 - Der Gateway akzeptiert den Sentinel `Authorization: Bearer proxy-managed` von **jedem** Sandbox-Prozess
-  und führt die Tools **aller** registrierten Server aus — auch `ask`/`deny`-Tools.
+  und führt die Tools **aller** registrierten Server aus — auch `ask`/`deny`-Tools. Verifiziert (2.13.0):
+  der Bearer wird **überhaupt nicht geprüft** — auch ohne Header bzw. mit falschem Token antwortet
+  `tools/list` mit `200`/112 Tools.
 - Ein bash-fähiger Agent (oder prompt-injected Code) kann die Whitelist daher per `curl` **oder**
   `mcp-inspector --cli` (im Kit enthalten, Issue [#231](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/231))
   umgehen.

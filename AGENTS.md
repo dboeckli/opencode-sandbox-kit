@@ -791,7 +791,8 @@ Die jeweilige Config wird automatisch gelesen:
 | prettier | npm |
 | renovate | npm |
 | Bruno CLI (`bru`) 4.3.0 | npm (`@usebruno/cli`, gepinnt; Renovate-Custom-Manager) |
-| MCP Inspector CLI (`mcp-inspector`, `mcpdo`) 2.13.0 | npm (`@modelcontextprotocol/inspector`, gepinnt; Renovate-Custom-Manager) |
+| MCP Inspector CLI (`mcp-inspector`) 2.13.0 | npm (`@modelcontextprotocol/inspector`, gepinnt; Renovate-Custom-Manager) |
+| MCP-Verbindungs-CLI (`mcpdo`, gleiches npm-Paket; Subcommands `connect`/`tools/list`/`tools/call`) 2.13.0 | npm (`@modelcontextprotocol/inspector`, gepinnt; Renovate-Custom-Manager) |
 
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
 > `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach

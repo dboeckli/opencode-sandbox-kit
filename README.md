@@ -694,7 +694,8 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
 | Bruno CLI (`bru`) | 4.3.0 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
-| MCP Inspector CLI (`mcp-inspector`, `mcpdo`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
+| MCP Inspector CLI (`mcp-inspector`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
+| MCP-Verbindungs-CLI (`mcpdo`, gleiches npm-Paket; Subcommands `connect`/`tools/list`/`tools/call`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
