@@ -264,23 +264,39 @@ Bruno CLI (`bru`, `@usebruno/cli` 4.3.0, npm global) runs Bruno API collections 
 
 ## MCP Inspector CLI
 
-MCP Inspector CLI (`mcp-inspector`, `@modelcontextprotocol/inspector` 2.13.0, npm global) is a scriptable MCP client. Only `--cli` is usable in the sandbox — the web client and TUI need a browser resp. ports (6274/6275) that are not reachable from here.
+`@modelcontextprotocol/inspector` 2.13.0 (npm global) ships **two** separate binaries:
+
+- `mcp-inspector` — the Inspector CLI. Only `--cli` is usable in the sandbox (web UI/TUI need a browser resp. ports 6274/6275, unreachable here); one-shot JSON-RPC via `--method`/`--tool-name`.
+- `mcpdo` — a **different**, connection-based CLI (`connect`, `tools/list`, `tools/call`, `resources/list`, `prompts/list`, …). `mcpdo --cli` does **not** exist.
 
 ```bash
-# Handshake + tool inventory through the sbx MCP gateway (sentinel auth, JSON output)
+# mcp-inspector: tool inventory + one tool call through the sbx MCP gateway (sentinel auth)
 mcp-inspector --cli http://mcp-gateway.docker.internal/mcp --transport http \
   --header "Authorization: Bearer proxy-managed" --method tools/list --format json \
   | jq -r '.result.tools[].name'
 
-# Call one tool (read-only examples: get_symbol_info, pods_list, list_containers)
 mcp-inspector --cli http://mcp-gateway.docker.internal/mcp --transport http \
   --header "Authorization: Bearer proxy-managed" --method tools/call \
   --tool-name pods_list --tool-args-json '{}' --format json
+
+# mcpdo: named persistent connection (non-TTY needs --connection; URL before the variadic --header)
+mcpdo --connection gw connect http://mcp-gateway.docker.internal/mcp --transport http \
+  --header "Authorization: Bearer proxy-managed"
+mcpdo --connection gw tools/call pods_get '{"name":"my-pod","namespace":"default"}' --format json
+mcpdo --connection gw disconnect
 ```
 
-Exit codes: `3` auth required, `4` unreachable, `6` `--strict` schema gate. `npx @modelcontextprotocol/inspector` does **not** work here (`npm_config_bin_links=false` breaks the npx bin link) — use the installed binary.
+Exit codes (`mcp-inspector --cli`): `0` success, `3` auth required, `4` unreachable, `5` tool error
+(`tool_not_found`, or a tool result with `isError: true`), `6` `--strict` schema gate. The gate fires only on
+schema **errors** — warnings (e.g. `type: ["string","null"]` in output schemas) keep exit `0`. The gateway
+does **not** enforce the bearer (missing/wrong `Authorization` also returns `200`, see Issue #229), so `3`
+is not observable against it.
 
-Caveat: this bypasses the agent-side `mcp-gateway_*` permission whitelist (direct JSON-RPC, same residual risk as `curl`, Issue #229). It is a debugging tool, not a permission layer — do not use it to do what the whitelist denies.
+`mcpdo` finds no OS keychain here — set `MCP_INSPECTOR_SECRET_STORE=memory` to silence the fallback warning
+(`file` persists tokens across its daemon processes, `memory` does not). `npx @modelcontextprotocol/inspector`
+does **not** work here (`npm_config_bin_links=false` breaks the npx bin link) — use the installed binaries.
+
+Caveat: both bypass the agent-side `mcp-gateway_*` permission whitelist (direct JSON-RPC, same residual risk as `curl`, Issue #229). They are debugging tools, not a permission layer — do not use them to do what the whitelist denies.
 
 ## Runtime tools / CLIs
 
