@@ -86,17 +86,39 @@ if [ "${MCP_CHECK_DEEP:-0}" = "1" ]; then
   # Deep probe: `<agent> mcp list` connects through the agent's own MCP client and
   # prints "mcp-gateway ... connected" on success (mammouth/opencode; claude uses a
   # similar line). No such CLI (e.g. Mistral Vibe) -> fall back to the config result.
+  # The first connect can transiently fail on a cold/loaded sandbox (observed in CI:
+  # mcp-gateway:OK via curl but `mammouth mcp list` briefly reports not-connected).
+  # Retry a few times, bounded by a deadline so the startup report never hangs. Only
+  # the first CLI that supports `mcp list` is probed: that is this image's agent;
+  # other agent CLIs may exist (e.g. opencode in the mammouth image) but are not
+  # configured with the gateway.
   tools="mcp-tools:FAIL"
   probed=0
+  deep_deadline=$(( $(date +%s) + 45 ))
   for cli in mammouth opencode claude vibe; do
     command -v "$cli" >/dev/null 2>&1 || continue
-    # Exit != 0 -> the CLI has no `mcp list` subcommand (e.g. Vibe): skip it, do not
-    # treat it as a failure. A supported CLI reports its server states and exits 0.
-    mcp_list_out=$(timeout 10 "$cli" mcp list 2>&1)
-    [ $? -ne 0 ] && continue
-    probed=1
-    if printf '%s\n' "$mcp_list_out" | grep -Eqi 'mcp-gateway.*connected|connected.*mcp-gateway'; then
-      tools="mcp-tools:OK"
+    attempt=1
+    had_mcp_list=0
+    while [ "$attempt" -le 3 ] && [ "$(date +%s)" -lt "$deep_deadline" ]; do
+      # Exit != 0 -> the CLI has no `mcp list` subcommand (e.g. Vibe): skip it, do not
+      # treat it as a failure. A supported CLI reports its server states and exits 0.
+      mcp_list_out=$(timeout 15 "$cli" mcp list 2>&1)
+      [ $? -ne 0 ] && break
+      had_mcp_list=1
+      if printf '%s\n' "$mcp_list_out" | grep -Eqi 'mcp-gateway.*connected|connected.*mcp-gateway'; then
+        tools="mcp-tools:OK"
+        break
+      fi
+      attempt=$((attempt + 1))
+      [ "$attempt" -le 3 ] && sleep 3
+    done
+    if [ "$had_mcp_list" = "1" ]; then
+      probed=1
+      # Diagnostics go to stderr (not part of the one-line report) so a failure in CI
+      # shows what the agent client actually printed.
+      [ "$tools" = "mcp-tools:OK" ] || \
+        printf 'mcp-tools diagnostic (%s): %s\n' \
+          "$cli" "$(printf '%s' "$mcp_list_out" | tr '\n' ' ' | cut -c1-300)" >&2
       break
     fi
   done
