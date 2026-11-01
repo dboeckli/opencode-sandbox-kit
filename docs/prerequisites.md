@@ -57,6 +57,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | prettier | latest | npm global |
 | renovate | latest | npm global |
 | Bruno CLI (`bru`) | 4.3.0 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
+| MCP Inspector CLI (`mcp-inspector`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq, python3, pip, python3-yaml | distro | apt |
 
 ### Agent-User-Tooling (`install-tooling-user.sh`, user 1000)

@@ -41,13 +41,14 @@ bash ~/.config/sandbox-kit/run-checks.sh
 | 7 | Helm | `helm version` |
 | 7b | Kafka CLI | `kafka-topics.sh --version` |
 | 7c | Bruno CLI | `bru --version` (pinned `@usebruno/cli`) |
+| 7d | MCP Inspector CLI | `command -v mcp-inspector` (pinned `@modelcontextprotocol/inspector`) |
 | 8 | Skills | `skills ls -g` |
 | 9 | Mammouth Code | `command -v mammouth` |
 
 ## Report format
 
 ```
-[startup-checks] ctx7:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK mammouth:OK
+[startup-checks] ctx7:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK mcp-inspector:OK skills:OK sonar:OK mammouth:OK
 ```
 
 A check is `FAIL` when its command errors. In the first reply, briefly confirm the status and suggest fixes for any `FAIL` (e.g. missing GitHub secret, IntelliJ not running).
