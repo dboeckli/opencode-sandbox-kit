@@ -64,7 +64,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 | Tool | Ziel |
 |------|------|
-| skills-Bundle | `~/.agents/skills/` (camel-matrix, cc-best-practices, cron-schedule-planner, project-references, skill-best-practices) |
+| skills-Bundle | `~/.agents/skills/` (dboeckli: camel-matrix, cc-best-practices, cron-schedule-planner, project-references, skill-best-practices; Superpowers: 15 Methodik-Skills inkl. brainstorming, TDD, systematic-debugging) |
 | Claude statusline | `~/.claude/statusline.sh` |
 | Repsy-Doku (offline) | `~/docs/repsy-docs/` (Shallow-Clone von `github.com/repsyio/repsy-docs`) |
 

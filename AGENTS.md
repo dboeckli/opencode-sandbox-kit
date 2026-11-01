@@ -700,6 +700,51 @@ Clone läuft über `opencode-agent/files/home/.local/bin/install-tooling-user.sh
 greift automatisch) — `github.com` ist bereits in der Network-Allowlist, keine spec.yaml-Änderung
 nötig.
 
+## Skills (Superpowers + eigene Skills)
+
+Beim `setup.install` (User 1000) werden zwei Skill-Bundles nach `~/.agents/skills/` installiert
+(`skills add -g -y …`; das CLI legt zusätzlich Symlinks in den Agent-Verzeichnissen an, u. a.
+`~/.claude/skills/` und `~/.vibe/skills/`).
+
+### Superpowers ([obra/superpowers](https://github.com/obra/superpowers))
+
+- **brainstorming** — Spezifikation/Brainstorming vor kreativer Arbeit
+- **writing-plans** — Implementierungsplan aus Spec/Requirements
+- **executing-plans** — Plan inline (ohne Subagents) selbst ausführen
+- **test-driven-development** — echtes Red/Green-TDD vor Implementierung
+- **systematic-debugging** — Bugs/Testfehler systematisch analysieren, bevor Fixes vorgeschlagen werden
+- **verification-before-completion** — Beweis vor Erfolgsmeldung (Verifikationskommandos laufen lassen)
+- **requesting-code-review** — Review anfordern vor Merge
+- **receiving-code-review** — Review-Feedback technisch prüfen statt blind umsetzen
+- **subagent-driven-development** — Plan über Subagents ausführen
+- **dispatching-parallel-agents** — unabhängige Aufgaben parallel verteilen
+- **using-git-worktrees** — isolierter Workspace via Git-Worktree
+- **finishing-a-development-branch** — Branch-Integration abschließen
+- **diagnosing-superpowers** — Fehlerdiagnose im Superpowers-Ablauf
+- **using-superpowers** — Einstieg: Skills finden und anwenden
+- **writing-skills** — neue Skills schreiben/prüfen
+
+### Meine Skills ([dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills))
+
+- **camel-matrix** — Camel Spring Boot Kompatibilitätsmatrix
+- **cc-best-practices** — Claude Code Best Practices
+- **cron-schedule-planner** — GitHub-Actions-Cron-Zeitpläne: Übersicht, Kollisionen, Umverteilung
+- **project-references** — Referenzprojekt-Suche
+- **skill-best-practices** — SKILL.md Schreib-Guide
+
+**Superpowers nur als Skill-Bundle, kein Plugin (bewusst, „Option A“):** Superpowers' OpenCode-Plugin
+(`"plugin": ["superpowers@git+…"]` in `opencode.jsonc`) wird **nicht** verwendet. Damit fehlen die
+automatische Methodik-Injektion beim Session-Start/Auto-Trigger — die Skills werden bei Bedarf über
+das `skill`-Tool geladen. Das vermeidet konkurrierende Instruktionen zu den Kit-Regeln
+(Feature-Branch-Pflicht, kein Auto-Commit, `.review`-Diff, Run-Config-Guard); **bei Konflikt gelten
+die Kit-Regeln**. Kein Versions-Pin (Upstream-`main`, Update via `skills update`).
+
+Die Installation läuft über `opencode-agent/files/home/.local/bin/install-tooling-user.sh` (alle drei
+Kit-Kopien, Drift-Check) mit eigenem Guard (`~/.agents/skills/using-superpowers`), damit
+vorgebackene Images ohne Superpowers beim Sandbox-Start nachinstallieren; `github.com` ist in der
+Network-Allowlist. Der e2e-Check (`local-test-kits.py`) prüft `using-superpowers` sowie
+`systematic-debugging`/`verification-before-completion`.
+
 ## Layout
 
 - `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin); `setup.startup` seedet die Model-Picker-Favoriten (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/opencode/model.json` (bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
@@ -914,7 +959,7 @@ Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 
 - **Docker Socket**: Jede Sandbox hat einen **isolierten Docker Daemon** im eigenen MicroVM (`docker info` zeigt den Sandbox-Namen als Servername) – kein Host-Socket-Mount nötig. Host-Docker-Zugriff (Container des Hosts sehen/steuern) läuft über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig via `sbx mcp add docker …` registriert; siehe `docs/docker-mcp-server.md`, Issue #165) — **kein offener `2375`-Port** mehr; die Permission-Whitelist gatet die Tools (read-only `allow`, Write `ask`).
 - **Pre-installed opencode**: Das Base-Image enthält eine eigene OpenCode CLI. `npm install -g` überschreibt sie, aber bei Abweichungen ist die Base-Image-Version die Ursache.
-- **Skills in `~/.agents/skills/`**: Werden via `skills add -g --all` mit `user: "1000"` installiert, damit sie beim `agent`-User landen.
+- **Skills in `~/.agents/skills/`**: Werden via `skills add -g` mit `user: "1000"` installiert (dboeckli-Bundle + Superpowers, siehe „Skills“), damit sie beim `agent`-User landen.
 - **Mammouth Code**: Wird vom Agent-Kit (`mammouth-agent/`) automatisch installiert. Das `opencode-agent/`-Kit ist bewusst auf OpenCode/Claude Code fokussiert — Mammouth wird ausschließlich über das Agent-Kit betrieben (`sbx run --skills=off ./mammouth-agent/`).
 - **Mistral Vibe**: Wird über das Agent-Kit (`mistral-vibe-agent/`) mit eigenem gepinntem Image betrieben (`sbx run --skills=off ./mistral-vibe-agent/`). Kein `setup.install` für Vibe — die Version steckt im Image (`ARG VIBE_VERSION` im Dockerfile). Image-Bootstrap vor dem ersten Start: `build-and-publish-mistral-vibe-image.yml` (workflow_dispatch).
 - **Kit-spec v2**: Alle Kits (`opencode-agent/spec.yaml` (Mixin), `mammouth-agent/spec.yaml`, `mistral-vibe-agent/spec.yaml`) nutzen die **stabilen** v2-Felder `schemaVersion: "2"` + `permissions.network.allow` + `setup` + `agentInstructions` (flacher `entrypoint`) — benötigt **sbx v0.38+** (strikte v2-Grammatik; ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler). Validieren mit `sbx kit validate ./opencode-agent` (bzw. `./mammouth-agent`/`./mistral-vibe-agent`) und `sbx kit inspect ... --json | jq '.warnings'` (erwartet `[]`). Migration aufs offizielle Skript: `git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git && go run scripts/migrate-v1-to-v2.go <kit-dir>`. Alte v1-Felder (`network.allowedDomains`, `credentials.sources`, `environment.proxyManaged`, `network.serviceAuth`/`serviceDomains`) erzeugen WARN-Meldungen. Offizielle v2-Referenz (nicht in Context7, `docker/docs` ist noch v1): https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md.
