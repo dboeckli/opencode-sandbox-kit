@@ -10,7 +10,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **Docker Desktop** (Windows) | Laufender Docker Daemon — nativ **oder** Ubuntu-WSL-Setup (Laufzeitumgebung dort: **Ubuntu 26.04**) | Sandbox-Ausführung |
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
-| **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342) + Firewall-Freigabe Port 64615; einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` (Gateway-Weg, Issue #57) | IntelliJ MCP (optional) |
+| **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342); einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` (Gateway-Weg, Issue #57). Die Sandbox erreicht den Server **nur** über den Gateway — direkte Host-Ports sind nicht allow-listed (Issue #163) | IntelliJ MCP (optional) |
 | **Kubernetes MCP Server** | Host-seitiger MCP-Server (`containers/kubernetes-mcp-server`, native Windows-Binary via `local-scripts/install-kubernetes-mcp-server.ps1`) + `sbx mcp add k8s …`; Details: `docs/kubernetes-mcp-server.md` (Issue #40) | Kubernetes MCP (optional) |
 | **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`mcp-server-docker==<pin>`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/docker-mcp-server.md` (Issue #165) | Host-Docker MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
@@ -23,8 +23,8 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `github-maven` | alle | Klassisches PAT (nur Scope `read:packages`) für GitHub Packages Maven — `https://github.com/settings/tokens` |
 | `anthropic` | Claude | https://console.anthropic.com — interaktiv, `-f` zum Überschreiben |
 | `mammouth` | Mammouth | https://mammouth.ai/app/account/settings/api |
-| `mistral` | Mistral Vibe | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
-| `zai` | OpenCode, Mistral Vibe | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
+| `mistral` | Mistral Vibe, OpenCode, Mammouth | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
+| `zai` | OpenCode, Mammouth, Mistral Vibe | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
 | `context7` | alle | https://context7.com/dashboard |
 | `openrouter` | OpenCode | Built-in-Service des opencode-Templates (nicht im Kit deklariert) |
 | `google` | OpenCode | https://aistudio.google.com/apikey (Built-in-Service) |

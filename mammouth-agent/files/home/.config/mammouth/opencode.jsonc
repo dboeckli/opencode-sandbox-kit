@@ -1,5 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "mcp-gateway": {
+      "type": "remote",
+      "url": "http://mcp-gateway.docker.internal/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer proxy-managed"
+      }
+    }
+  },
   "model": "deepseek/deepseek-flash",
   "provider": {
     "deepseek": {
@@ -18,6 +28,32 @@
         },
         "deepseek-reasoner": {
           "name": "DeepSeek Reasoner"
+        }
+      }
+    },
+    "zai": {
+      "options": {
+        "apiKey": "{env:ZAI_API_KEY}"
+      },
+      "models": {
+        "glm-5.3-flash": {
+          "name": "GLM 5.3 Flash"
+        },
+        "glm-5.3": {
+          "name": "GLM 5.3"
+        },
+        "glm-4.7-flash": {
+          "name": "GLM 4.7 Flash (free)"
+        }
+      }
+    },
+    "mistral": {
+      "options": {
+        "apiKey": "{env:MISTRAL_API_KEY}"
+      },
+      "models": {
+        "zai-glm-5-3": {
+          "name": "GLM 5.3 (Mistral)"
         }
       }
     }

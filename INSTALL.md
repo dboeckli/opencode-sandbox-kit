@@ -192,7 +192,7 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 
 > **`sbx secret` (v0.38+):** Das `-g`-Flag bei `sbx secret set` ist entfernt — Service-Secrets sind standardmäßig
 > **global**, der Service ist ein Positionsargument (`sbx secret set github`). Mit `--sandbox <name>` scopen.
-> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth/mistral/github-maven) funktionieren identisch. Third-Party-v2-Kits brauchen
+> Kit-deklarierte Services (context7/deepseek/openrouter/mammouth/mistral/zai/github-maven) funktionieren identisch. Third-Party-v2-Kits brauchen
 > zusätzlich pro Service ein **Credential-Binding** (`%APPDATA%\sbx\credentials.yaml`; beim ersten Lauf interaktiv).
 
 | Service | Secret | Befehl | Benötigt für |
@@ -201,7 +201,8 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | GitHub Packages Maven | klassisches PAT, Scope `read:packages` | `sbx secret set github-maven -t "<pat>"` | Maven-Builds mit GitHub-Packages-Dependency |
 | Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
-| Mistral | Mistral API-Key (Built-in-Service) | `sbx secret set mistral` | Mistral Vibe |
+| Mistral | Mistral API-Key (Built-in-Service) | `sbx secret set mistral` | Mistral Vibe, OpenCode + Mammouth (Mistral-hosted GLM `zai-glm-5-3`) |
+| Z.AI | Z.AI API-Key | `sbx secret set zai` | OpenCode, Mammouth, Mistral Vibe (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash) |
 | DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode + Mammouth (Default-Modell `deepseek/…`) |
 | OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
 | Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
@@ -386,8 +387,11 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 
 #### Z.AI (GLM) — Default-Modell GLM-5.3-Flash
 
-`mistral-vibe-agent/files/home/.vibe/config.toml` setzt **GLM-5.3-Flash** als Default (`active_model = "glm-flash"`).
-GLM-5.3-Flash gibt es **nicht über Mistral**, sondern nur direkt bei Z.AI → eigener OpenAI-kompatibler Provider
+`mistral-vibe-agent/spec.yaml` pinnt das Start-Modell mit `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"`
+(Env-Layer überschreibt `active_model`), zusätzlich setzt `~/.vibe/config.toml` `active_model = "glm-flash"`.
+**GLM-5.3 (Flagship)** ist ebenfalls direkt über Z.AI wählbar (Alias `glm-5.3`, gleicher Provider/Key), ebenso
+das **kostenlose GLM-4.7-Flash** (Alias `glm-4.7-flash`).
+Alle gibt es **nicht über Mistral**, sondern nur direkt bei Z.AI → eigener OpenAI-kompatibler Provider
 `zai` (`https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`). Key erstellen: https://z.ai/manage-apikey/apikey-list
 (Login https://z.ai/model-api, ggf. Guthaben aufladen). Der Proxy injiziert den Key als `Authorization: Bearer`
 für `api.z.ai` — der Key liegt nie im Sandbox-Filesystem:
@@ -399,8 +403,10 @@ sbx secret set zai
 > **Credential-Binding:** vorab `zai: apiKey.domains: [api.z.ai]` in `~/.config/sbx/credentials.yaml`
 > (bzw. `%APPDATA%\sbx\credentials.yaml`) bestätigen/hinterlegen.
 >
-> **Gilt auch für OpenCode:** dasselbe `zai`-Secret aktiviert den Provider `zai` (GLM-5.3-Flash/GLM-5.3) im
-> opencode-agent-Kit (`opencode.jsonc` → `provider.zai`, `ZAI_API_KEY`) — Modell in OpenCode auswählbar.
+> **Gilt auch für OpenCode und Mammouth:** dasselbe `zai`-Secret aktiviert den Provider `zai`
+> (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash) in den Configs `opencode-agent/files/home/.config/opencode/opencode.jsonc`
+> und `mammouth-agent/files/home/.config/mammouth/opencode.jsonc` (`provider.zai`, `ZAI_API_KEY`) — Modelle dort
+> auswählbar und als Favoriten geseedet.
 
 **Alternative (ohne Z.AI-Key):** Mistral hostet GLM 5.3 selbst als `zai-glm-5-3` (Alias `glm`, Provider
 `mistral`, gleiche `MISTRAL_API_KEY`). In der TUI per `/model` wählbar. Weitere Mistral-IDs:

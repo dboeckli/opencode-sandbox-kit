@@ -71,7 +71,7 @@ sbx exec <sandbox-name> bash -c 'tail -n 30 ~/.vibe/logs/vibe.log'
   bei vorhandenem Guthaben. Limits: https://admin.mistral.ai/plateforme/limits · Plan: https://admin.mistral.ai/subscription
 - `403 … tier_not_allowed` (Mistral, Third-Party-Modell wie `zai-glm-5-3`) → Third-Party-Modelle erfordern einen
   **bezahlten Mistral-Plan** (Free mode sperrt sie); das API-Guthaben ($10 Free-Credit) ändert das nicht.
-- Z.AI direkt (`api.z.ai`, GLM-5.3-Flash): `429` → **Z.AI-Guthaben nicht aktiv/leer** oder Monats-/Rate-Limit
+- Z.AI direkt (`api.z.ai`, GLM-5.3-Flash/GLM-5.3): `429` → **Z.AI-Guthaben nicht aktiv/leer** oder Monats-/Rate-Limit
   (Guthaben: https://z.ai/manage-apikey/billing). Nach Aufladung kurz warten, bis das Guthaben aktiv ist.
 - `blocked by network policy: domain …` → fehlende Domain in `mistral-vibe-agent/spec.yaml`
   (`permissions.network.allow`, siehe auch `~/.vibe/network-policy.md`). Hinweis: Wildcards wie `*.mistral.ai`
@@ -107,29 +107,25 @@ sbx run opencode `
 - **Registration lebt auf dem Host**: Der Gateway erreicht IntelliJ über `localhost` (Host-Seite), nicht über
   `host.docker.internal` aus der Sandbox.
 - **Port ändert sich nach IDE-Update (2026.2.2 → 64615)**: Der JetBrains-MCP-Server bindet nicht zwingend dauerhaft
-  denselben Port. Aktuellen Port in der IDE ablesen (**Settings → Tools → MCP Server** → Client-Config „Copy Config"),
-  die Registration anpassen (`sbx mcp rm idea`, dann `sbx mcp add idea --url http://localhost:<port>/stream
-  --skip-ssrf-check`) und die Sandbox mit aktualisierter Kit-Allowlist neu erzeugen (sonst blockt der Proxy den neuen
-  Port mit HTTP 403). Symptom bei Port-Drift: Health-Check meldet `intellij-mcp:FAIL`, Port ist auf dem Host aber
-  belegt (Listener vorhanden).
+  denselben Port. Aktuellen Port in der IDE ablesen (**Settings → Tools → MCP Server** → Client-Config „Copy Config")
+  und die Registration anpassen (`sbx mcp rm idea`, dann `sbx mcp add idea --url http://localhost:<port>/stream
+  --skip-ssrf-check`). Eine Sandbox-Allowlist-Anpassung ist **nicht** nötig (Issue #163). Symptom bei Port-Drift:
+  `mcp-idea:FAIL` im Startup-Report/`mcp-check.sh`, Port ist auf dem Host aber belegt (Listener vorhanden).
 - **Port ist dynamisch — Neustart von IDEA/Rechner verliert die Verbindung**: JetBrains bestätigt, dass der
   MCP-Server seinen Port **dynamisch wählt** (YouTrack IJPL-248682). Ein Neustart kann also einen neuen Port
-  vergeben → nach jedem Neustart Port prüfen und Registration/Allowlist anpassen (s.o.). Dauerlösung steht aus:
+  vergeben → nach jedem Neustart Port prüfen und Registration anpassen (s.o.). Dauerlösung steht aus:
   **IJPL-207839** („Configurable MCP Server Port") ist ein offener Feature-Request — **beobachten**.
   Vollständige Analyse + Issue-Referenzen: [`intellij-mcp-port.md`](intellij-mcp-port.md).
 
-> **Wichtig (Legacy, vor Issue #57):** Bei der alten Direkt-Config war die MCP-URL auf `host.docker.internal:64342/sse`
-> konfiguriert und die Sandbox verband sich direkt mit dem Host. Dieser Weg ist entfernt. Für Health-Checks
-> (`[startup-checks] intellij-mcp:OK`) wird die Erreichbarkeit weiterhin aus der Sandbox über
-> `host.docker.internal:64615/sse` geprüft (Port 64615 seit IDEA 2026.2.2, Legacy 64342) — das bestätigt nur,
-> dass IntelliJ auf dem Host läuft (Voraussetzung für den Gateway), nicht dass der Gateway verbunden ist.
+> **Wichtig (seit Issue #163):** Die Sandbox erreicht den IntelliJ-MCP **ausschließlich über den Gateway**.
+> `host.docker.internal:64615`/`:64342` sind bewusst **nicht** allow-listed (Proxy → HTTP 403), damit kein
+> Sandbox-Prozess die `mcp-gateway_*`-Whitelist und den Run-Config-Guard per `curl` umgehen kann. Der frühere
+> direkte Health-Check (`intellij-mcp`) ist durch den Gateway-Check (`mcp-idea`) ersetzt.
 
-**Manuelle Verifikation vom Host** (PowerShell oder WSL):
-
-IntelliJ-Server läuft? (Host-Seite; Health-Check-Pfad wie im Sandbox-Startup-Check):
+**Manuelle Verifikation** (sbx CLI auf dem Host; prüft die volle Kette Sandbox → Gateway → IntelliJ):
 
 ```bash
-sbx exec <sandbox-name> bash -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" -m 3 http://host.docker.internal:64615/sse'
+sbx exec <sandbox-name> bash -c 'MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh'
 ```
 
 Registration prüfen:
@@ -144,12 +140,12 @@ Gateway laden (falls Sandbox ohne `--static-mcp` erzeugt wurde):
 sbx mcp load idea --sandbox <sandbox-name>
 ```
 
-Erwartet (1): `HTTP 200` (das SSE-Endpoint hält die Verbindung offen — `-m 3` beendet curl nach 3s;
-nur der HTTP-Code zählt, ein `FEHLER`-Exit ist dabei normal). (2) `sbx mcp ls` zeigt `idea   remote   ✓ ready`.
+Erwartet: (1) `mcp-idea:OK` aus `mcp-check.sh`, (2) `sbx mcp ls` zeigt `idea   remote   ✓ ready`.
 
 Falls die Gateway-Verbindung fehlschlägt (Log: `connect to idea: … Method Not Allowed`): prüfen, dass der Endpoint
 `/stream` (nicht `/sse`) registriert ist — `sbx mcp inspect idea` muss `URL: http://localhost:64615/stream` zeigen.
-Stelle zudem sicher, dass Port 64615 in der Windows-Firewall freigegeben ist.
+Der Gateway verbindet host-seitig über `localhost`; eine Windows-Firewall-Freigabe für Port 64615 ist für die
+Sandbox **nicht** mehr nötig (Issue #163).
 
 ## Caveats
 
