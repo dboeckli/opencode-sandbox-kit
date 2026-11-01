@@ -71,6 +71,14 @@ else
   report="$report bruno:FAIL"
 fi
 
+# 7d. MCP Inspector CLI (`mcp-inspector`, pinned @modelcontextprotocol/inspector; scriptable
+# MCP client for gateway/tool debugging). Presence only - the gateway handshake is mcp-check.sh.
+if command -v mcp-inspector >/dev/null 2>&1; then
+  report="$report mcp-inspector:OK"
+else
+  report="$report mcp-inspector:FAIL"
+fi
+
 # 8. Skills
 if skills ls -g >/dev/null 2>&1; then
   report="$report skills:OK"

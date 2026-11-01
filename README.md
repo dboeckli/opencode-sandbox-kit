@@ -398,8 +398,10 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > Die direkten IntelliJ-Host-Ports (`64615`/`64342`) sind bewusst **nicht** in der Sandbox-Allowlist — Zugriff nur
 > über den Gateway (sonst wäre die `mcp-gateway_*`-Whitelist per `curl` umgehbar, Issue #163).
 > Whitelist und Run-Config-Guard sind Agent-Guardrails, **keine** Netzgrenze: Der Gateway selbst ist aus der
-> Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
-> Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, Skills, ctx7) und die
+> Sandbox per `curl` erreichbar (Restrisiko, Issue #229). Dasselbe gilt für die mitgelieferte MCP-Inspector-CLI
+> (`mcp-inspector --cli`, Issue #231): sie spricht den Gateway direkt an und ist damit ebenfalls ein Weg an der
+> Whitelist vorbei — Werkzeug, keine Grenze.
+> Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, Skills, ctx7) und die
 > Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
@@ -420,7 +422,7 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 - **Entrypoint**: `mammouth` (direkt, ohne Template-Umweg)
 - **Auth**: `credentials[].apiKey` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
   `inject` als `Authorization: Bearer`) — kit-spec v2
-- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, ctx7, Skills)
+- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, ctx7, Skills)
 - **Config**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
@@ -477,7 +479,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 - **Config**: `~/.vibe/config.toml` (MCP-Gateway auf `http://mcp-gateway.docker.internal/mcp` + GLM-Provider/-Modelle),
   `~/.vibe/hooks.toml` + `~/.config/sandbox-kit/vibe-mcp-guard.py` (Read-only-Guard für die IntelliJ-MCP-Tools,
   da `auto-approve` das Permission-System umgeht) und `~/.vibe/AGENTS.md`.
-- **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, ctx7, Skills).
+- **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, ctx7, Skills).
 
 > **Modell-Verfügbarkeit (wichtig):** **GLM-5.3-Flash** (`glm-5.3-flash`), **GLM-5.3** (`glm-5.3`) und
 > **GLM-4.7-Flash** (`glm-4.7-flash`, gratis) sind direkt bei Z.AI verfügbar (`api.z.ai`, Provider `zai`, `ZAI_API_KEY`, `sbx secret set zai`) — **nicht über
@@ -648,15 +650,16 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > gegen die latest PyPI-Version (`mistral-vibe`) — alle **warnen** (gelb), sobald eine neuere Version
 > existiert (Renovate-Tracking, s. o.). Die **Bruno-CLI-Pin** (`@usebruno/cli@<v>` in allen drei Specs +
 > Tooling-Dockerfiles) wird auf Drift geprüft (fail) und gegen die latest npm-Version verglichen (warn).
+> Dasselbe gilt für die **MCP-Inspector-Pin** (`@modelcontextprotocol/inspector@<v>`, Issue #231).
 
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, gh, Java/Maven, Docker, kubectl, MCP-Gateway/IntelliJ/Kubernetes, Helm, Kafka, Bruno, Skills, SonarCloud) und zeigt den
+(Context7, gh, Java/Maven, Docker, kubectl, MCP-Gateway/IntelliJ/Kubernetes, Helm, Kafka, Bruno, MCP-Inspector, Skills, SonarCloud) und zeigt den
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK mcp-inspector:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -691,6 +694,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
 | Bruno CLI (`bru`) | 4.3.0 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
+| MCP Inspector CLI (`mcp-inspector`, `mcpdo`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
