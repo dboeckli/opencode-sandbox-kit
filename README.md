@@ -12,7 +12,7 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral 
 
 Enthält zusätzlich dedizierte Agent-Kits:
 
-- **Mammouth Code** — `mammouth-agent/` (`kind: sandbox`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, entrypoint `mammouth`.
+- **Mammouth Code** — `mammouth-agent/` (`kind: sandbox`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, entrypoint `mammouth-entrypoint` (Wrapper: seedet die Model-Picker-Favoriten, dann `exec mammouth`; Fallback auf `mammouth` bei alten Images).
 - **Mistral Vibe** — `mistral-vibe-agent/` (`kind: sandbox`), eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`.
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
@@ -351,7 +351,11 @@ flowchart TB
 
 ## MCP-Server (Host)
 
-Drei host-seitige MCP-Server werden über den **sbx MCP Gateway** in die Sandbox geliefert (keine `mcp.*`-Konfiguration im Kit; der Gateway erscheint als `mcp-gateway` in der Agent-MCP-Liste). Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
+Drei host-seitige MCP-Server werden über den **sbx MCP Gateway** in die Sandbox geliefert. Die Client-Verdrahtung
+(`mcp-gateway` → `http://mcp-gateway.docker.internal/mcp`) legt `sbx` nur für die **unterstützten** Agenten an
+(OpenCode: `~/.config/opencode/opencode.json`, Claude Code: `~/.claude.json`); **Mammouth** und **Mistral Vibe**
+bringen sie in ihrer Kit-Config selbst mit (`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`,
+`mistral-vibe-agent/files/home/.vibe/config.toml`, Issue #139). Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 
 | Server | Host | Registrierung (einmalig, PowerShell) |
 |--------|------|--------------------------------------|
@@ -391,12 +395,16 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > (Host-Loopback, SSRF-Guard umgehen); Kubernetes und Host-Docker via `sbx mcp add k8s …`/`sbx mcp add docker …`
 > (`docs/kubernetes-mcp-server.md`, `docs/docker-mcp-server.md`). Dann `--static-mcp idea,k8s,docker` beim Erzeugen
 > oder `sbx mcp load <name> --sandbox <sandbox-name>`.
+> Die direkten IntelliJ-Host-Ports (`64615`/`64342`) sind bewusst **nicht** in der Sandbox-Allowlist — Zugriff nur
+> über den Gateway (sonst wäre die `mcp-gateway_*`-Whitelist per `curl` umgehbar, Issue #163).
+> Whitelist und Run-Config-Guard sind Agent-Guardrails, **keine** Netzgrenze: Der Gateway selbst ist aus der
+> Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 > Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, Skills, ctx7) und die
 > Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige
 > Konfiguration wird automatisch gelesen:
 
-- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash); Zusatz-Provider `openrouter`, `google` und `zai` (GLM-5.3-Flash/GLM-5.3 via `ZAI_API_KEY`, `sbx secret set zai`)
+- **OpenCode**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash); Zusatz-Provider `openrouter`, `google`, `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit einer **Favorites**-Sektion der direkt angebundenen Modelle (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet via `setup.startup` in `~/.local/state/opencode/model.json` (bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
 - **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 - **Mistral Vibe**: `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md`
@@ -417,8 +425,10 @@ Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
-- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default
-- **IntelliJ MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`), keine direkte `mcp.idea`-Config
+- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default; Zusatz-Provider `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit derselben **Favorites**-Sektion wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet in `~/.local/state/mammouth/model.json` (Mammouth ist ein OpenCode-Fork, gleiches Schema; bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt). Der Seed läuft **im Entrypoint** (`mammouth-entrypoint` → `seed-mammouth-model-favorites.py`) und beim Image-Build — nicht nur via `setup.startup`, weil dieser erst **nach** dem TUI-Start läuft und Mammouth seinen In-Memory-Stand (ohne Favoriten) zurückschreibt. Änderungen an `model.json` bei laufendem TUI wirken erst nach einem Mammouth-Neustart.
+- **IntelliJ/Kubernetes/Docker MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`); da `sbx` Mammouth nicht als
+  Agent-Integration kennt, ist der Gateway im Kit **explizit** verdrahtet (`mcp`-Block in `opencode.jsonc` →
+  `http://mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`, Issue #139) — keine direkte `mcp.idea`-Config
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
 - **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
 
@@ -453,10 +463,15 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 - **Launch**: `sandbox.entrypoint: [vibe, "--agent", "auto-approve"]` in der spec (für `kind: sandbox` startet sbx ohne `entrypoint` die Default-Shell); das Dockerfile-`CMD` bleibt für `docker run`.
 - **Auth**: Kit-deklarierter Service `mistral` → `MISTRAL_API_KEY` (Built-in-Service `mistral`, Sentinel
   `proxy-managed`, Proxy injiziert `Authorization: Bearer` für `api.mistral.ai`).
-- **Default-Modell GLM-5.3-Flash (Z.AI)**: `~/.vibe/config.toml` setzt `active_model = "glm-flash"` und definiert
+- **Start-Modell GLM-5.3-Flash (Z.AI)**: `spec.yaml` pinnt `VIBE_ACTIVE_MODEL=glm-flash` (Env-Layer gewinnt,
+  ein persistierter `/model`-Wechsel leakt nicht in den nächsten Start); `~/.vibe/config.toml` setzt
+  `active_model = "glm-flash"` und definiert
   Z.AI als OpenAI-kompatiblen Provider (`[[providers]]` `zai` → `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`;
-  `[[models]]` `glm-flash` → `glm-5.3-flash`). GLM-5.3-Flash gibt es **nur direkt bei Z.AI** (nicht über Mistral);
-  Kit-Service `zai` (`sbx secret set zai`, Key: https://z.ai/manage-apikey/apikey-list).
+  `[[models]]` `glm-flash` → `glm-5.3-flash`). **GLM-5.3 (Flagship) ist ebenfalls direkt über Z.AI wählbar**
+  (Alias `glm-5.3` → `glm-5.3`, gleicher Provider/Key; ~10x Preis, stärker bei Agent-/Coding-Benchmarks), ebenso
+  das **kostenlose GLM-4.7-Flash** (Alias `glm-4.7-flash`, leichtgewichtig, 200K Kontext).
+  Alle gibt es **nur direkt bei Z.AI** (nicht über Mistral); Kit-Service `zai`
+  (`sbx secret set zai`, Key: https://z.ai/manage-apikey/apikey-list).
 - **Alternative ohne Z.AI-Key**: Mistral hostet GLM 5.3 selbst (`zai-glm-5-3`, Alias `glm`, Provider `mistral`,
   gleiche `MISTRAL_API_KEY`) — in der TUI per `/model` wählbar.
 - **Config**: `~/.vibe/config.toml` (MCP-Gateway auf `http://mcp-gateway.docker.internal/mcp` + GLM-Provider/-Modelle),
@@ -464,11 +479,11 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
   da `auto-approve` das Permission-System umgeht) und `~/.vibe/AGENTS.md`.
 - **Tools**: dieselben wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, ctx7, Skills).
 
-> **Modell-Verfügbarkeit (wichtig):** **GLM-5.3-Flash** (`glm-5.3-flash`) gibt es **nur direkt bei Z.AI**
-> (`api.z.ai`, Provider `zai`, `ZAI_API_KEY`, `sbx secret set zai`) — **nicht über Mistral**. Über Mistral
-> (la Plateforme) sind nur **`zai-glm-5-3`** und **`zai-glm-5-2`** verfügbar (Provider `mistral`, `MISTRAL_API_KEY`).
-> Deshalb ist GLM-5.3-Flash der Default über den Z.AI-Provider; `glm` (Mistral-hosted `zai-glm-5-3`) ist die
-> key-freie Alternative.
+> **Modell-Verfügbarkeit (wichtig):** **GLM-5.3-Flash** (`glm-5.3-flash`), **GLM-5.3** (`glm-5.3`) und
+> **GLM-4.7-Flash** (`glm-4.7-flash`, gratis) sind direkt bei Z.AI verfügbar (`api.z.ai`, Provider `zai`, `ZAI_API_KEY`, `sbx secret set zai`) — **nicht über
+> Mistral**. Über Mistral (la Plateforme) sind nur **`zai-glm-5-3`** und **`zai-glm-5-2`** verfügbar (Provider
+> `mistral`, `MISTRAL_API_KEY`). Default ist GLM-5.3-Flash über den Z.AI-Provider; `glm` (Mistral-hosted
+> `zai-glm-5-3`) ist die key-freie Alternative.
 
 > **Image-Publish:** Das Image wird in CI gebaut (multi-arch amd64+arm64; native Runner + `imagetools create`). Der e2e-Workflow
 > ruft den (auch manuell per `workflow_dispatch` startbaren) `build-and-publish-mistral-vibe-image.yml` als
@@ -586,7 +601,7 @@ Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IM
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.49.2`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
+  (`SBX_VERSION`, aktuell `v0.50.1`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
   übersprungen, da keine Secrets), validiert alle Kits (`sbx kit validate ./opencode-agent/`,
   `./mammouth-agent/`, `./mistral-vibe-agent/`) und prüft, dass die Install-Skript-Kopien
@@ -637,11 +652,11 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 ## Startup Checks
 
 Beim Start jeder Session prüft das Kit automatisch die Tooling-Verfügbarkeit
-(Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP-Gateway/IntelliJ/Kubernetes, Helm, Kafka, Bruno, Skills, SonarCloud) und zeigt den
+(Context7, gh, Java/Maven, Docker, kubectl, MCP-Gateway/IntelliJ/Kubernetes, Helm, Kafka, Bruno, Skills, SonarCloud) und zeigt den
 Report als `[startup-checks] ...` an:
 
 ```
-[startup-checks] ctx7:OK intellij-mcp:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
+[startup-checks] ctx7:OK gh:OK java/maven:OK docker:OK kubectl:OK mcp-gateway:OK mcp-idea:OK mcp-k8s:OK mcp-docker:OK mcp-client:OK mcp-tools:OK helm:OK kafka:OK bruno:OK skills:OK sonar:OK
 ```
 
 - **OpenCode**: Ein Server-Plugin führt die Checks sofort beim Start aus, injiziert den Report in den
@@ -650,7 +665,7 @@ Report als `[startup-checks] ...` an:
   **Skills** und **MCP & Host Systems** sofort sichtbar ist – ohne ersten Prompt. Der
   **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) die
   **MCP-Server** über den sbx-Gateway (`~/.local/bin/mcp-check.sh`: ein MCP-Handshake → `mcp-gateway`, `mcp-idea`,
-  `mcp-k8s`, `mcp-docker`; die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
+  `mcp-k8s`, `mcp-docker`, `mcp-client` (Agent-Config deklariert den Gateway) und `mcp-tools` (Startup-Report: `mammouth`/`opencode mcp list` verbindet real über den Agent-Client; die 10s-TUI-Box nutzt die schnelle Variante); die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
   (Issue #165)). MCP-Server stehen in einer Zeile. Gebounded per `timeout`.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
@@ -700,9 +715,10 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
 - [Kubernetes-MCP-Server](docs/kubernetes-mcp-server.md)
 - [Docker-MCP-Server (Host)](docs/docker-mcp-server.md)
+- [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp-gateway-security.md)
 - [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
-- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.49.2 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.50.1 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
 - [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)

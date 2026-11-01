@@ -11,32 +11,10 @@ else
   report="$report ctx7:FAIL"
 fi
 
-# 2. IntelliJ MCP server (SSE endpoint reachable)
-# Robust: retries each endpoint a few times with a short delay - at session start the
-# IntelliJ MCP server may still be starting up, so a single probe fails spuriously.
-# host.docker.internal is primary (routes to the Windows host loopback);
-# 127.0.0.1/localhost only work in host-network mode (rare).
-# Port 64615 since IDEA 2026.2.2, legacy 64342 pre-2026.2.2 - probe both.
-code=""
-for port in 64615 64342; do
-  for host in host.docker.internal 127.0.0.1 localhost; do
-    attempt=1
-    while [ "$attempt" -le 3 ]; do
-      code=$(curl -s -o /dev/null -w '%{http_code}' -m 4 "http://$host:$port/sse" 2>/dev/null)
-      if [ "$code" = "200" ] || [ "$code" = "206" ]; then
-        break 3
-      fi
-      code=""
-      attempt=$((attempt + 1))
-      [ "$attempt" -le 3 ] && sleep 1
-    done
-  done
-done
-if [ "$code" = "200" ] || [ "$code" = "206" ]; then
-  report="$report intellij-mcp:OK"
-else
-  report="$report intellij-mcp:FAIL"
-fi
+# 2. IntelliJ MCP: checked through the sbx MCP gateway (check 6b, mcp-idea). No direct
+# host-port probe from the sandbox - it would need an allow-list entry for
+# host.docker.internal:64615/:64342 and let any sandbox process bypass the
+# mcp-gateway permission whitelist (issue #163).
 
 # 3. gh CLI + gh api (authenticated API call)
 if gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1; then
@@ -69,8 +47,8 @@ fi
 # 6b. MCP servers via the sbx gateway (gateway + IntelliJ + Kubernetes + Docker). The
 # sandbox holds no kubeconfig and no host-Docker port (host-side Kubernetes MCP server
 # #40, local Docker MCP server #165), so reachability is checked via an MCP handshake.
-# Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker.
-report="$report $(bash "$HOME/.local/bin/mcp-check.sh")"
+# Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker, mcp-client, mcp-tools (deep).
+report="$report $(MCP_CHECK_DEEP=1 bash "$HOME/.local/bin/mcp-check.sh")"
 
 # 7. helm (Helm 4; `helm4` ist ein Symlink auf dasselbe Binary)
 if helm version >/dev/null 2>&1 && helm4 version >/dev/null 2>&1; then

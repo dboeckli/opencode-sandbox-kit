@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """regenerate-sbx-doc.py - sbx CLI-Offline-Referenz aus der Release-Binary neu erzeugen.
 
-Die sbx-Commands sind in Context7 nur teilweise abgedeckt (/docker/docs: Nutzung +
-Teil-Referenz, /docker/sbx-releases: nur Installation/Releases). Die einzige
-vollstaendige, versionstreue Quelle sind die `--help`-Outputs der Binary selbst. Dieses
+Context7 deckt die sbx-Commands inzwischen ab (/docker/docs: Manuels + generierte
+CLI-Referenz unter data/sbx_cli/, /docker/sbx-releases: nur Installation/Releases),
+indexiert aber den Docs-`main`-Branch statt des Pins. Die einzige versionstreue,
+vollstaendige Quelle bleiben die `--help`-Outputs der Binary selbst. Dieses
 Skript laedt die Release-Binary aus `docker/sbx-releases`, sammelt `sbx --help` + die
 `--help` aller Subcommands, erzeugt `opencode-agent/files/home/sbx-cli.md` und syncet die
 Kopien in alle drei Kit-Bundles (opencode-agent/, mammouth-agent/, mistral-vibe-agent/).
@@ -155,8 +156,9 @@ def render(version, sections):
         f"`--help`-Outputs der **{version}**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das\n"
         f"interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).\n"
         f"Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`\n"
-        f"(deckt die sbx-Commands nur teilweise ab; /docker/sbx-releases liefert nur Installation/Releases —\n"
-        f"die vollstaendigen `--help`-Flags liefert ausschliesslich diese Offline-Referenz). Kit-Grammatik v2:\n"
+        f"(deckt Commands/Flags + Manuels ab, indexiert aber den Docs-`main`-Branch statt des Pins;\n"
+        f"/docker/sbx-releases liefert nur Installation/Releases. Die exakten `--help`-Flags der gepinnten\n"
+        f"Version liefert ausschliesslich diese Offline-Referenz). Kit-Grammatik v2:\n"
         f"`https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md`.\n"
     )
     out = [hdr]

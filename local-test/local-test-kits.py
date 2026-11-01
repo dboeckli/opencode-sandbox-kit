@@ -229,9 +229,9 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
-    "claude": ("github", "github-maven", "anthropic", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
-    "mammouth": ("github", "github-maven", "mammouth", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "claude": ("github", "github-maven", "anthropic", "context7", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "mammouth": ("github", "github-maven", "mammouth", "zai", "mistral", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
@@ -1485,25 +1485,36 @@ def main():
             else:
                 sfail(config_label, out)
 
-        mcp_cmd = (
-            'code=""; '
+        # Issue #163: IntelliJ MCP is only reachable through the sbx MCP gateway
+        # (mcp-idea). The sandbox must NOT be able to reach the host port directly,
+        # otherwise any sandbox process could bypass the mcp-gateway permission
+        # whitelist and the run-config guard via curl.
+        c2, out = exec_sandbox(s["name"], "MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh")
+        if c2 == 0 and "mcp-idea:OK" in out:
+            pass_("intellij-mcp via sbx MCP gateway (mcp-idea)")
+        elif ci:
+            print("  " + _color("33", "[SKIP] intellij-mcp via sbx MCP gateway (mcp-idea) — expected: "
+                                     "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
+        else:
+            sfail("intellij-mcp via sbx MCP gateway (mcp-idea)",
+                 "Gateway/IntelliJ nicht erreichbar — sbx mcp add idea + --static-mcp idea pruefen; "
+                 f"status={out.strip()}")
+
+        direct_cmd = (
+            'blocked=1; '
             'for port in 64615 64342; do '
             'for host in host.docker.internal 127.0.0.1 localhost; do '
             'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 "http://$host:$port/sse" 2>/dev/null); '
-            '[ "$code" = "200" ] || [ "$code" = "206" ] && break 2; code=""; '
+            '[ "$code" = "200" ] || [ "$code" = "206" ] && blocked=0; '
             'done; done; '
-            'if [ "$code" = "200" ] || [ "$code" = "206" ]; then echo MCP-OK; else echo MCP-FAIL; fi'
+            'echo "DIRECT-BLOCKED=$blocked"'
         )
-        c2, out = exec_sandbox(s["name"], mcp_cmd)
-        if c2 == 0 and "MCP-OK" in out:
-            pass_("intellij-mcp connection (via sbx exec)")
-        elif ci:
-            print("  " + _color("33", "[SKIP] intellij-mcp connection (via sbx exec) — expected: "
-                                     "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
+        c2, out = exec_sandbox(s["name"], direct_cmd)
+        if c2 == 0 and "DIRECT-BLOCKED=1" in out:
+            pass_("intellij-mcp direct host port blocked (proxy 403, issue #163)")
         else:
-            sfail("intellij-mcp connection (via sbx exec)",
-                 "IntelliJ MCP muss auf dem Host laufen (127.0.0.1/localhost/host.docker.internal:64615 "
-                 "(IDEA 2026.2.2) bzw. Legacy :64342)")
+            sfail("intellij-mcp direct host port blocked (proxy 403, issue #163)",
+                 f"host.docker.internal:64615/64342 direkt erreichbar; {out.strip()}")
 
         skills_cmd = (
             "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "
@@ -1552,22 +1563,26 @@ def main():
             else:
                 sfail("google not wired (only opencode template declares google)", out)
 
-        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude)
-        # und vom mistral-vibe-agent-Kit deklariert; mammouth nicht.
+        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude),
+        # vom mammouth-agent-Kit und vom mistral-vibe-agent-Kit deklariert.
         # (mistral-vibe hat eigene zai-Checks im Kit-spezifischen Block.)
         if s["agent"] != "mistral-vibe":
             zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
             c2, out = exec_sandbox(s["name"], zai_env_cmd)
-            if s["agent"] in ("opencode", "claude"):
-                if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
-                    pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
-                else:
-                    sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+            if c2 == 0 and "ZAI_API_KEY=proxy-managed" in out:
+                pass_("zai proxy env wiring (ZAI_API_KEY=proxy-managed)")
             else:
-                if c2 == 0 and "ZAI_API_KEY=<unset>" in out:
-                    pass_("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)")
-                else:
-                    sfail("zai not wired (only opencode-agent/mistral-vibe-agent declare zai)", out)
+                sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
+
+        # Kit-deklarierter mistral-Service: opencode-agent (OpenCode + Claude) und
+        # mammouth-agent; das mistral-vibe-Kit prueft es im eigenen Block.
+        if s["agent"] != "mistral-vibe":
+            mistral_env_cmd = 'echo "MISTRAL_API_KEY=${MISTRAL_API_KEY:-<unset>}"'
+            c2, out = exec_sandbox(s["name"], mistral_env_cmd)
+            if c2 == 0 and "MISTRAL_API_KEY=proxy-managed" in out:
+                pass_("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)")
+            else:
+                sfail("mistral proxy env wiring (MISTRAL_API_KEY=proxy-managed)", out)
 
         # Kit-deklarierter stackoverflow-Service (beide Kits) → Platzhalter in allen 3 Szenarien
         stackoverflow_env_cmd = 'echo "STACKOVERFLOW_API_KEY=${STACKOVERFLOW_API_KEY:-<unset>}"'
@@ -1753,7 +1768,7 @@ def main():
                         sfail("api.mistral.ai e2e (Proxy-Key)", out)
                         dump_policy_log(s["name"])
 
-                # Z.AI (GLM-5.3-Flash, Default-Modell): Sentinel + Credential-Aufloesung.
+                # Z.AI (GLM-5.3-Flash Default + GLM-5.3 + GLM-4.7-Flash): Sentinel + Credential-Aufloesung.
                 # Kein Real-API-Call (eigenes Z.AI-Guthaben) — nur Verdrahtung.
                 zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
                 c2, out = exec_sandbox(s["name"], zai_env_cmd)
@@ -1769,6 +1784,20 @@ def main():
                 else:
                     sfail("zai credential resolved (SBX_CRED_ZAI_MODE=apikey)",
                           out + " — zai-Secret/Binding pruefen (credentials.yaml: zai.apiKey.domains=[api.z.ai])")
+
+        # Issue #139: der Gateway-Handshake allein beweist nur, dass die Infrastruktur
+        # erreichbar ist — in JEDER Sandbox muss der Agent den Client selbst verdrahten
+        # haben (sbx injiziert nur fuer unterstuetzte Agenten): mcp-client:OK (Config)
+        # und mcp-tools:OK (echter Handshake ueber den Agent-Client, Deep-Modus;
+        # Fallback auf mcp-client, wenn die CLI kein `mcp list` kennt, z.B. Vibe).
+        c2, out = exec_sandbox(s["name"], "MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh")
+        mcp_tokens = {k: v for k, v in re.findall(r"([A-Za-z0-9_/-]+):(OK|FAIL)", out)}
+        for token, label in (("mcp-client", "gateway declared in agent config"),
+                             ("mcp-tools", "agent MCP client connects to the gateway")):
+            if mcp_tokens.get(token) == "OK":
+                pass_(f"MCP client wiring ({label})")
+            else:
+                sfail(f"MCP client wiring ({label})", f"status={mcp_tokens.get(token)}; {out.strip()}")
 
         if not args.keep:
             if len(failed) > failed_before:

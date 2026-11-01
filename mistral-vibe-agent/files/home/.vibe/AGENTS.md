@@ -76,10 +76,15 @@ Mistral Vibe is available in Context7 (`npx ctx7 docs /mistralai/mistral-vibe <q
 user-level instructions in `~/.vibe/AGENTS.md`, project instructions in the project's `AGENTS.md`.
 `VIBE_HOME` overrides the config directory.
 
-The default model is **GLM-5.3-Flash** (`active_model = "glm-flash"`), served directly by **Z.AI** through the
+The model selected at every start is pinned to **GLM-5.3-Flash**: `active_model = "glm-flash"` in `config.toml`
+plus `VIBE_ACTIVE_MODEL=glm-flash` (kit `environment.variables`, env layer wins → a persisted `/model` choice does
+not leak into the next launch). It is served directly by **Z.AI** through the
 OpenAI-compatible `zai` provider (`[[providers]]` → `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`; `[[models]]`
-`glm-flash` → `glm-5.3-flash`). GLM-5.3-Flash is **not** available via Mistral. The key is proxy-managed
-(`ZAI_API_KEY=proxy-managed`); the sandbox proxy injects the real key for `api.z.ai`. Switch models with `/model`.
+`glm-flash` → `glm-5.3-flash`). The flagship **GLM-5.3** is also available directly via Z.AI (alias `glm-5.3` →
+`glm-5.3`, same provider/credential; ~10x the price, stronger on agent/coding benchmarks), and **GLM-4.7-Flash**
+is a free, lightweight text model (alias `glm-4.7-flash`, 200K context). None of them is available via Mistral.
+The key is proxy-managed (`ZAI_API_KEY=proxy-managed`); the sandbox proxy injects the real key for `api.z.ai`.
+Switch models with `/model`.
 Alternative: Mistral hosts GLM 5.3 itself as `zai-glm-5-3` (alias `glm`, provider `mistral`, same
 `MISTRAL_API_KEY`). Other Mistral-hosted IDs: `zai-glm-5-2`, `mistral-large-latest`, `codestral-latest`.
 
@@ -153,12 +158,13 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 > **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
 > durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/docker-mcp-server.md`
-> (Issue #165).
+> (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus
+> der Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 
 Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 Docs: `npx ctx7 docs /docker/docs <query>` (e.g. `/docker/docs` for the Docker docs, `/docker/compose`, `/dockerfile`).
 
-**sbx CLI** (auf dem Host via PowerShell): Offline-Referenz aller `--help`-Outputs unter `~/sbx-cli.md` — sie liegt im Kit-Bundle (`files/home/sbx-cli.md`, Stand siehe Header).
+**sbx CLI** (auf dem Host via PowerShell): `--help`-Outputs der gepinnten Version offline unter `~/sbx-cli.md` (Kit-Bundle `files/home/sbx-cli.md`, Stand siehe Header); Commands/Manuels auch via `npx ctx7 docs /docker/docs <query>` (Docs-`main`, nicht der Pin).
 
 ## kubectl
 

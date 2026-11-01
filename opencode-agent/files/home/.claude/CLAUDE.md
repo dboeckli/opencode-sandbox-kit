@@ -238,11 +238,12 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 > **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
 > durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/docker-mcp-server.md`
-> (Issue #165).
+> (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus
+> der Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 
 Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 
-**sbx CLI** (auf dem Host via PowerShell): Offline-Referenz aller `--help`-Outputs unter `~/sbx-cli.md` — sie liegt im Kit-Bundle (`files/home/sbx-cli.md`, Stand siehe Header).
+**sbx CLI** (auf dem Host via PowerShell): `--help`-Outputs der gepinnten Version offline unter `~/sbx-cli.md` (Kit-Bundle `files/home/sbx-cli.md`, Stand siehe Header); Commands/Manuels auch via `npx ctx7 docs /docker/docs <query>` (Docs-`main`, nicht der Pin).
 
 ## kubectl
 

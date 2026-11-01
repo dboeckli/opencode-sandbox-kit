@@ -304,10 +304,14 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
 - **stdio, kein Listen-Port** → der Server ist von außen nicht erreichbar; nur der sbx-Gateway spricht mit ihm.
 - `read_only = false` + Standard-Toolsets (`core`, `config`, `helm`) → der Server bietet auch
   Schreib-/Exec-Tools (`pods_delete`, `helm_install`, `resources_delete`, …). Die **Sandbox-Whitelist**
-  (Abschnitt 5) regelt den Zugriff: Read-only = `allow`, übrige K8s-Tools bei OpenCode/Mammouth/Claude `ask`
-  (Freigabe pro Aufruf), bei Vibe `deny`.
+  (Abschnitt 5) beschränkt nur **Tool-Aufrufe des Agenten** (Read-only = `allow`, übrige K8s-Tools bei
+  OpenCode/Mammouth/Claude `ask`, bei Vibe `deny`) — sie ist **keine** Netz-/Sandbox-Grenze: Der
+  `mcp-gateway` ist aus der Sandbox direkt per `curl` erreichbar und führt beliebige Tools aus (Issue #229).
+  Für Dev-Cluster ggf. `read_only = true` bzw. Toolsets auf `core,config` reduzieren.
 - kubeconfig/Credentials bleiben **ausschließlich** im Host-Prozess; die Sandbox sieht nur MCP.
   `configuration_view` ist in der Kit-Whitelist gesperrt (würde die kubeconfig inkl. Client-Cert/Key liefern).
+- Trust-Boundary, Gateway-Bypass und lokale Mitigationen: [mcp-gateway-security.md](mcp-gateway-security.md)
+  (Issue #229).
 
 > [!CAUTION]
 > **Produktions-No-Go (Option A, Standard-Config):** `denied_resources` für `Secret` ist **deaktiviert**,

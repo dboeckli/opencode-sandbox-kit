@@ -83,6 +83,9 @@ The IntelliJ MCP server runs on the Windows host and is exposed through the sbx 
 registration: `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`; loaded via `--static-mcp idea`
 or `sbx mcp load idea --sandbox`). Tools arrive through the gateway and are prefixed `mcp-gateway_` (e.g.
 `mcp-gateway_analyze_calls`, `mcp-gateway_execute_run_configuration`) — the direct `idea_` prefix no longer exists.
+Mammouth is **not** an sbx agent integration, so `sbx` does not inject the gateway client: the kit declares it
+itself (`mcp` block in `~/.config/mammouth/opencode.jsonc` → `http://mcp-gateway.docker.internal/mcp`, Issue #139).
+Without that block no `mcp-gateway_*` tool reaches the agent, even when `mcp-check.sh` reports the gateway as OK.
 Exposed via a **permission-whitelist** in `~/.config/mammouth/opencode.jsonc` (Deny-by-Default, nur lesende
 Operationen erlaubt): `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_search_*`, `mcp-gateway_read*`,
 `mcp-gateway_generate_*`, `mcp-gateway_xdebug_get_*`, `mcp-gateway_xdebug_list_*` sowie einzeln
@@ -157,12 +160,13 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 > **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
 > durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/docker-mcp-server.md`
-> (Issue #165).
+> (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus
+> der Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 
 Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 Docs: `npx ctx7 docs /docker/docs <query>` (e.g. `/docker/docs` for the Docker docs, `/docker/compose`, `/dockerfile`).
 
-**sbx CLI** (auf dem Host via PowerShell): Offline-Referenz aller `--help`-Outputs unter `~/sbx-cli.md` — sie liegt im Kit-Bundle (`files/home/sbx-cli.md`, Stand siehe Header).
+**sbx CLI** (auf dem Host via PowerShell): `--help`-Outputs der gepinnten Version offline unter `~/sbx-cli.md` (Kit-Bundle `files/home/sbx-cli.md`, Stand siehe Header); Commands/Manuels auch via `npx ctx7 docs /docker/docs <query>` (Docs-`main`, nicht der Pin).
 
 ## kubectl
 

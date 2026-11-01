@@ -10,5 +10,5 @@ set +e
 # Docker MCP). The sandbox holds no kubeconfig (host-side Kubernetes MCP server,
 # issue #40) and no host-Docker port (local Docker MCP server, issue #165); the
 # helper runs one MCP handshake and reports
-# mcp-gateway/mcp-idea/mcp-k8s/mcp-docker.
+# mcp-gateway/mcp-idea/mcp-k8s/mcp-docker/mcp-client.
 printf '%s\n' "$(bash "$HOME/.local/bin/mcp-check.sh")"

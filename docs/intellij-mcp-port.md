@@ -9,8 +9,8 @@
 Nach dem Update auf **IntelliJ IDEA 2026.2.2** lauscht der MCP-Server nicht mehr auf dem
 bisherigen Port `64342`, sondern auf einem anderen Port (beobachtet: `64615`, zusätzlich
 `64616`). Ein Neustart von IDEA oder des Rechners kann den Port erneut ändern — damit geht
-die MCP-Verbindung (Gateway-Registrierung + Sandbox-Allowlist + Health-Check sind auf einen
-festen Port verdrahtet) jeweils verloren.
+die MCP-Verbindung (Gateway-Registrierung + Health-Check sind auf einen festen Port
+verdrahtet) jeweils verloren.
 
 ## Offizielle Bestätigung (YouTrack)
 
@@ -37,20 +37,22 @@ dokumentiert (Help-Doku und Plugin-Changelog nennen keinen Port).
 
 ## Konsequenz für das Kit
 
-- Der Port darf **nicht als feste Konstante** behandelt werden. Aktuell unterstützt das Kit
-  `64342` (Legacy) und `64615` (IDEA 2026.2.2) in Allowlist und Health-Check — das ist ein
-  pragmatischer Zwischenstand, aber **keine Dauerlösung**.
+- Der Port darf **nicht als feste Konstante** behandelt werden. Das Kit benötigt ihn nur noch
+  **host-seitig** (Gateway-Registrierung) und im Startup-Report (`mcp-idea`) — die früheren
+  Sandbox-Allowlist-Einträge für `64342`/`64615` sind entfallen (Issue #163), weil der
+  Gateway host-seitig über `localhost` verbindet.
 - **Nach jedem Neustart von IDEA / Rechner:** Port in *Settings → Tools → MCP Server* ablesen
   und ggf. anpassen:
   1. Host-Registrierung: `sbx mcp rm idea` + `sbx mcp add idea --url http://localhost:<port>/stream --skip-ssrf-check`
-  2. Sandbox-Allowlist: neuen Port ergänzen (Spec + Sandbox neu erzeugen bzw. `sbx`-Freigabe)
-  3. Health-Check: erwartet wieder `intellij-mcp:OK`
+  2. Health-Check: Startup-Report/`mcp-check.sh` zeigt wieder `mcp-idea:OK`
+  - Keine Sandbox-Allowlist-Anpassung und kein Neu-Erzeugen der Sandbox mehr nötig (Bonus aus
+    Issue #163).
 - Sobald **IJPL-207839** (konfigurierbarer Port) verfügbar ist: festen Port setzen → Kit kann
   dauerhaft darauf zeigen; die dynamische-Port-Arbeit entfällt.
 
 ## Symptome (Erkennung)
 
-- Startup-Check meldet `intellij-mcp:FAIL`.
-- Sandbox-Probe auf den alten Port liefert `HTTP 500` (Gateway-Dial → *connection refused*),
-  auf einen neuen, nicht-allowlisteten Port `HTTP 403`.
-- Auf dem Host ist der Listener aber vorhanden: `Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -ge 64000 }`
+- Startup-Report/`mcp-check.sh` meldet `mcp-idea:FAIL` (Gateway-Handshake fehlgeschlagen).
+- `sbx mcp inspect idea` zeigt den falschen/alten Port; die Registration muss auf den aktuellen
+  Port aus *Settings → Tools → MCP Server* zeigen.
+- Auf dem Host ist der Listener vorhanden: `Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -ge 64000 }`

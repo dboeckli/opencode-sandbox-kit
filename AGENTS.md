@@ -6,11 +6,12 @@ Repo: https://codeberg.org/dboeckli/opencode-sandbox-kit (kanonisch) — GitHub-
 ## Environment (wichtig!)
 
 Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **Windows-Setup** — der Host
-(IntelliJ MCP via `host.docker.internal:64615`; Port 64615 seit IDEA 2026.2.2, Legacy 64342) läuft immer auf Windows:
+(IntelliJ MCP auf `localhost:64615`, Port 64615 seit IDEA 2026.2.2, Legacy 64342; in die Sandbox **nur** über den
+sbx MCP Gateway, die direkten Host-Ports sind bewusst nicht allow-listed, Issue #163) läuft immer auf Windows:
 
 - **Agent-Sandbox** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, ...), Versions-Checks und Doku-Recherche. `sbx` ist hier **nicht** verfügbar (nicht im Sandbox-Image installiert).
 - **Windows/PowerShell** (User, **Standard**): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
-- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
+- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. Host-MCP-Zugriff über den sbx MCP Gateway (`host.docker.internal` für Docker) und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
 ## Diff-Review in IntelliJ (Pflicht)
@@ -115,7 +116,7 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
       --skills=off `
       --static-mcp idea,k8s,docker
   ```
-- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth`; eigenes Image `docker.io/domboeckli/sbx-mammouth`, Tooling + CLI vorgebacken — kein `--template`). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mammouth-image`); Release via `build-and-publish-mammouth-image.yml` (`workflow_dispatch`/Push auf `master`):
+- Run the dedicated Mammouth agent kit (kind: sandbox, entrypoint `mammouth-entrypoint` — seedet die Model-Picker-Favoriten vor dem TUI-Start, dann `exec mammouth`; eigenes Image `docker.io/domboeckli/sbx-mammouth`, Tooling + CLI vorgebacken — kein `--template`). Für die lokale Entwicklung `--kit-arg imageTag=local` verwenden (vorher Run-Config `build-and-publish-mammouth-image`); Release via `build-and-publish-mammouth-image.yml` (`workflow_dispatch`/Push auf `master`):
   ```powershell
   sbx run ./mammouth-agent/ `
       --kit-arg imageTag=local `
@@ -191,12 +192,12 @@ Close/Reopen des PRs, kein Rerun über die API, kein Force-Push/Empty-Commit.
 - `sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"` — allow GitHub and Codeberg as kit source (required once before remote Git)
 - `--skills=off` gehört in **jedes** `sbx run`/`sbx create`: der Host-Shared-Skills-Store wird nicht gemountet (Trust Boundary); die Kit-Skills kommen aus `dboeckli/ai-agent-skills`, nicht vom Host. Nur bei Sandbox-Erstellung wirksam — bestehende Sandbox neu erstellen. Doku: https://docs.docker.com/ai/sandboxes/workflows/agent-skills/
 - ctx7 installiert das Kit via `npm install -g ctx7` (opencode-agent/spec.yaml `setup.install`); `npx ctx7 setup --opencode` konfiguriert nur ctx7 für OpenCode (nicht Teil des Kits)
-- `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`; deckt die sbx-Commands nur **teilweise** ab — Nutzung + Teil-Referenz; `/docker/sbx-releases` liefert nur Installation/Releases. Vollständige `--help`-Referenz: `~/sbx-cli.md`)
-- `python local-test/local-test-kits.py` — automate the 4 scenarios (OpenCode/Claude/Mammouth/Mistral Vibe): validate kits, check secrets, create sandboxes, run startup checks, remove sandboxes (`--keep` to keep them)
+- `npx ctx7 docs /docker/docs <query>` — sbx CLI / sandbox documentation (ctx7 library ID: `/docker/docs`; deckt Commands/Flags + Manuels ab — inkl. generierter CLI-Referenz `data/sbx_cli/*.yaml` —, indexiert aber den Docs-`main`-Branch statt unseres Pins; `/docker/sbx-releases` liefert nur Installation/Releases. Exakte `--help`-Dumps der gepinnten Version: `~/sbx-cli.md`)
+- `python local-test/local-test-kits.py` — automate the 4 scenarios (OpenCode/Claude/Mammouth/Mistral Vibe): validate kits, check secrets, create sandboxes, run startup checks (**inkl. MCP-Client-Verdrahtung pro Sandbox**: `mcp-client` + `mcp-tools` via `MCP_CHECK_DEEP=1`), remove sandboxes (`--keep` to keep them)
 - `python local-test/local-test-kits.py --ci` — CI mode (used by GitHub Actions `.github/workflows/e2e.yml`): fake API keys, no real mammouth/mistral API call (only proxy env wiring)
 - `python local-test/local-test-kits.py --validate-only` — only `sbx kit validate` (all kits), no secrets check and no sandbox start (default is starting the sandboxes); includes the Stack Exchange + sbx CLI offline-doc update checks, the install-script sync check, the **Sandbox-Template-Version-Checks** (getrennte Pins `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test-kits.py` gegen `validate.yml`/`e2e.yml` + Dockerfile-Base-Pins + Docker-Hub-Tags je Familie, Issue #202), den **Mammouth-CLI-Versions-Check** (Pin vs. latest GitHub-Release `mammouth-ai/code`), den **Mistral-Vibe-Versions-Check** (Dockerfile-Pin + spec-Image-Tag + shell-Basis-Template vs. latest PyPI `mistral-vibe`), den **Docker-MCP-Server-Versions-Check** (Pin `mcp-server-docker==<v>` in `docs/docker-mcp-server.md` vs. latest PyPI `mcp-server-docker`, Issue #165), den **Bruno-CLI-Versions-Check** (Pin `@usebruno/cli@<v>` in allen drei Kit-Specs + Tooling-Dockerfiles, Drift-Check + latest npm) und den **Node-Baseline-Check** (Issue #138: prüft per Docker best-effort die Node-Version der gepinnten Templates `opencode-docker`/`claude-code-docker`/`shell-docker`; warnt, sobald sie ≥ 24 sind → dann `install-tooling.sh node` + `nodejs.org`-Allowlist entfernen)
 - `python local-test/regenerate-sbx-doc.py [<version>]` — regenerate `opencode-agent/files/home/sbx-cli.md` (all `--help` outputs) from the pinned `docker/sbx-releases` release binary and sync all three kit copies (default: `SBX_VERSION` from `.github/workflows/validate.yml`; pass an explicit version like `v0.39.0` to override). `local-test-kits.py --validate-only` fails when the documented version diverges from the (Renovate-managed) pin and tells you to run this script
-- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/build-and-publish-mistral-vibe-image.yml` + `.github/workflows/build-and-publish-opencode-image.yml` + `.github/workflows/build-and-publish-claude-image.yml` + `.github/workflows/build-and-publish-mammouth-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.49.2`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Versionen je Familie** (env `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in beiden Workflows + explizite Konstanten in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`, bewusst nicht familienuebergreifend gruppiert); e2e **und validate** signs in to Docker via `sbx login` (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`; sbx >= v0.47.0 braucht eine Docker-Session für `sbx kit validate`, Secret-Service-Setup wie im e2e) and stores the Cloudsmith registry credential **only when `IMAGE_PREFIX` starts with `docker.cloudsmith.io`** (variable `CLOUDSMITH_USERNAME` + secret `CLOUDSMITH_API_KEY`; im Docker-Hub-Modus entfällt das Registry-Secret, `sbx login` genügt), registers fake sandbox secrets, runs `local-test-kits.py --ci`. **Registry zentral via Repo-Variable `IMAGE_PREFIX`** (Default `docker.io/domboeckli`; Cloudsmith `docker.cloudsmith.io/dboeckli/sbx`), gelesen von allen `build-and-publish-*-image.yml` + `e2e.yml` (`vars.IMAGE_PREFIX || 'docker.io/domboeckli'`). `build-and-publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt Tag + Registry per `--kit-arg imageTag=…` / `--kit-arg imagePrefix=…` (`*-agent/spec.yaml` `args.imageTag`/`args.imagePrefix`)
+- GitHub Actions `.github/workflows/validate.yml` + `.github/workflows/e2e.yml` + `.github/workflows/build-and-publish-mistral-vibe-image.yml` + `.github/workflows/build-and-publish-opencode-image.yml` + `.github/workflows/build-and-publish-claude-image.yml` + `.github/workflows/build-and-publish-mammouth-image.yml` — install a **pinned sbx** (env `SBX_VERSION`, currently `v0.50.1`, mantained via Renovate customManager `docker/sbx-releases`); **gepinnte Sandbox-Template-Versionen je Familie** (env `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in beiden Workflows + explizite Konstanten in `local-test-kits.py`, aktuell `0.x.0`, Renovate customManager `docker/sandbox-templates`, bewusst nicht familienuebergreifend gruppiert); e2e **und validate** signs in to Docker via `sbx login` (variable `DOCKER_USERNAME` + secret `DOCKER_PAT`; sbx >= v0.47.0 braucht eine Docker-Session für `sbx kit validate`, Secret-Service-Setup wie im e2e) and stores the Cloudsmith registry credential **only when `IMAGE_PREFIX` starts with `docker.cloudsmith.io`** (variable `CLOUDSMITH_USERNAME` + secret `CLOUDSMITH_API_KEY`; im Docker-Hub-Modus entfällt das Registry-Secret, `sbx login` genügt), registers fake sandbox secrets, runs `local-test-kits.py --ci`. **Registry zentral via Repo-Variable `IMAGE_PREFIX`** (Default `docker.io/domboeckli`; Cloudsmith `docker.cloudsmith.io/dboeckli/sbx`), gelesen von allen `build-and-publish-*-image.yml` + `e2e.yml` (`vars.IMAGE_PREFIX || 'docker.io/domboeckli'`). `build-and-publish-mistral-vibe-image.yml` baut/pusht das Vibe-Image (multi-arch amd64+arm64 über native Runner `ubuntu-latest`/`ubuntu-24.04-arm`; Per-Arch-Image unter `<name>-amd64`/`<name>-arm64`, Merge zum Index unter `<name>` via `imagetools create`) — reusable (`workflow_call`), wird vom e2e vor der Matrix aufgerufen; zusätzlich manuell via `workflow_dispatch`. Tags: master `<pin>` + `latest`, Feature-Branch `<pin>-<branch-slug>.<timestamp>` (semver) + `<branch-slug>`; das e2e übergibt Tag + Registry per `--kit-arg imageTag=…` / `--kit-arg imagePrefix=…` (`*-agent/spec.yaml` `args.imageTag`/`args.imagePrefix`)
 
 - **Cleanup (Cloudsmith-only):** `.github/workflows/cleanup-cloudsmith.yml` löscht Feature-Branch-Image-Snapshots aus `dboeckli/sbx` (Tag-Muster `<basever>-<slug>.<YYYYMMDDHHMMSS>` + Moving-Tag `<slug>`; Master-Images `<basever>`/`latest` bleiben). Läuft nur im Cloudsmith-Modus (`IMAGE_PREFIX` startet mit `docker.cloudsmith.io`); im Docker-Hub-Modus übersprungen. Auslöser: **push auf `master`** (alle Feature-Images, da nach Merge obsolet), **nightly 04:25 UTC** (verwaiste Snapshot älter als `max-age-days`) und `workflow_dispatch` (`dry-run` Default an). Skript: `.github/workflows/scripts/cleanup-cloudsmith.py` (optional `SLUG`; child-aware: löscht auch untagged Orphans, die von keinem verbleibenden Index referenziert werden, fail-safe). Zusätzlich leert die Pipeline den **Recycle Bin** (hard delete, `purge-cloudsmith-recycle-bin.py`), da soft-gelöschte Packages 7 Tage weiter gegen das Storage-Kontingent zählen (`purge-recycle-bin`, Default an).
 
@@ -306,10 +307,23 @@ Der IntelliJ-MCP-Server läuft auf dem Windows-Host und wird über den **sbx MCP
 (dokumentierter Weg, Issue #57): einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 registrieren (SSRF-Guard blockt Loopback; `/stream` = Streamable HTTP, nicht `/sse`), dann beim Erzeugen
 `--static-mcp idea` setzen (oder `sbx mcp load idea --sandbox` in laufende Sandbox). Die Agent-Configs enthalten
-**keine** direkte `mcp.idea`-Konfiguration mehr — die Gateway-Verbindung legt das Template automatisch als
-`mcp-gateway` (OpenCode/Mammouth) bzw. in `~/.claude.json` unter `mcp-gateway` (Claude Code) an. Tool-Präfixe:
+**keine** direkte `mcp.idea`-Konfiguration — die Gateway-Verbindung (`mcp-gateway`) legt `sbx` automatisch nur für
+seine **unterstützten Agenten** an (OpenCode: `~/.config/opencode/opencode.json`, Claude Code: `~/.claude.json`).
+**Mammouth** ist keine sbx-Integration und bringt den `mcp`-Block selbst mit
+(`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`, Issue #139), **Mistral Vibe** analog in
+`~/.vibe/config.toml`. Tool-Präfixe:
 `mcp-gateway_<tool>` (OpenCode/Mammouth) bzw. `mcp__mcp-gateway__<tool>` (Claude Code) — der frühere direkte
 `idea_`/`mcp__idea__`-Prefix existiert nicht mehr.
+
+**Kein direkter Host-Port in der Sandbox:** `host.docker.internal:64615`/`:64342` (und `localhost`/`127.0.0.1`)
+stehen bewusst **nicht** in `permissions.network.allow` — der Proxy blockt sie mit HTTP 403. Sonst könnte jeder
+Sandbox-Prozess per `curl` die `mcp-gateway_*`-Whitelist und den Run-Config-Guard umgehen (Issue #163). Der
+Startup-Check prüft IntelliJ deshalb ausschließlich über den Gateway (`mcp-idea`), nicht per Direkt-Probe.
+
+> **Restrisiko (Issue #229):** Der `mcp-gateway` selbst ist aus der Sandbox per `curl` erreichbar
+> (`Authorization: Bearer proxy-managed`) und aggregiert die Tools aller Server. Whitelist und
+> Run-Config-Guard wirken nur bei **Agenten-Tool-Aufrufen**, nicht bei direktem JSON-RPC — sie sind
+> Guardrails, keine Sandbox-Grenze. K8s läuft mit `read_only=false`, Docker-MCP ist host-root-äquivalent.
 
 Der Zugriff auf die IntelliJ-MCP-Tools ist für **OpenCode (Mixin-Kit), Claude Code,
 Mammouth Code und Mistral Vibe (Agent-Kits)** per **Whitelist** eingeschränkt — Deny-by-Default, standardmäßig
@@ -406,6 +420,9 @@ MCP-Tools nie die Tool-Inputs (immer `resource: "*"`), daher ist `configurationN
 > Docker-Sandboxes-Weg (zentrale MCP-Registry am Host) und der Grund, warum das Kit keine direkte `mcp.idea`-
 > Konfiguration mehr mitbringt. Details/Verifikation: Issue #57.
 
+> **Model-Picker-Favoriten:** OpenCode hat keine Config für Gruppen/Reihenfolge — die Sektionen sind fest (Favorites → Recent → Provider). Das Kit seedet `~/.local/state/opencode/model.json` (`setup.startup`, `user: 1000`), damit die direkt angebundenen Modelle als **Favorites** oben stehen (`ctrl+f` toggelt; bestehende Favoriten/Reihenfolge werden nicht überschrieben, per `ctrl+f` entfernte Seed-Modelle werden beim nächsten Start wieder ergänzt). Gilt für das `opencode-agent`-Mixin (`~/.local/state/opencode/model.json`) und das `mammouth-agent`-Kit (`~/.local/state/mammouth/model.json`; Mammouth ist ein OpenCode-Fork mit demselben `{recent,favorite,variant}`-Schema).
+> **Reihenfolge (Mammouth):** `setup.startup` läuft **nach** dem Sandbox-Entrypoint — Mammouth liest `model.json` beim TUI-Start und schreibt den In-Memory-Stand (ohne die zu spät geseedeten Favoriten) beim ersten Model-/Variant-Wechsel zurück. Deshalb läuft der Seed beim Agent-Kit **im Entrypoint** (`mammouth-entrypoint` → `seed-mammouth-model-favorites.py`, idempotent, Fallback auf `mammouth` bei alten Images) und zusätzlich beim Image-Build; der `setup.startup`-Hook bleibt für bestehende Sandboxes. Ein nachträgliches Seeden bei laufendem TUI zeigt keine Favoriten — Mammouth neu starten.
+>
 > **Änderungen an `opencode.jsonc`/Plugins werden beim Start geladen (kein Hot-Reload)** — nach Anpassungen
 > opencode/mammouth neu starten.
 
@@ -683,18 +700,21 @@ nötig.
 
 ## Layout
 
-- `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin)
-- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config (Permission-Whitelist für IntelliJ-MCP-Tools via sbx MCP Gateway `mcp-gateway_*`; Provider `deepseek`/`openrouter`/`google`/`zai` (GLM, `ZAI_API_KEY`); keine direkte `mcp.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
+- `opencode-agent/spec.yaml` — kit definition (schemaVersion, caps, commands, kind: mixin); `setup.startup` seedet die Model-Picker-Favoriten (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/opencode/model.json` (bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
+- `opencode-agent/files/home/.config/opencode/opencode.jsonc` — OpenCode config (Permission-Whitelist für IntelliJ-MCP-Tools via sbx MCP Gateway `mcp-gateway_*`; Provider `deepseek`/`openrouter`/`google`/`zai` (GLM, `ZAI_API_KEY`)/`mistral` (Mistral-hosted GLM `zai-glm-5-3`, `MISTRAL_API_KEY`); keine direkte `mcp.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `opencode-agent/files/home/.config/opencode/plugins/intellij-run-config-guard.js` — OpenCode-Plugin: erlaubt `mcp-gateway_execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.config/opencode/AGENTS.md` — OpenCode rules (ctx7 + sandbox tools)
 - `opencode-agent/files/home/.claude/settings.json` — Claude Code config (Permission-Whitelist `mcp__mcp-gateway__*`; keine `mcpServers.idea`-Konfiguration, siehe Abschnitt "IntelliJ MCP: Permission-Whitelist + Run-Config-Guard")
 - `opencode-agent/files/home/.config/sandbox-kit/intellij-run-config-guard.sh` — Claude Code PreToolUse-Hook: erlaubt `mcp__mcp-gateway__execute_run_configuration` nur für `local-test-kits-validate-only`
 - `opencode-agent/files/home/.claude/CLAUDE.md` — Claude Code rules (ctx7 + sandbox tools)
-- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth`)
-- `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit
+- `mammouth-agent/spec.yaml` — dedicated Mammouth agent kit (kind: sandbox, name `mammouth`, entrypoint `mammouth-entrypoint` mit Fallback auf `mammouth`); `setup.startup` seedet dieselben Model-Picker-Favoriten wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3) in `~/.local/state/mammouth/model.json`; Credentials `zai`/`mistral` wie im OpenCode-Kit
+- `mammouth-agent/files/home/.local/bin/mammouth-entrypoint.sh` — Entrypoint-Wrapper: seedet die Favoriten VOR dem TUI-Start, dann `exec mammouth` (der `setup.startup`-Hook läuft erst danach und verlöre das Race)
+- `mammouth-agent/files/home/.local/bin/seed-mammouth-model-favorites.py` — idempotenter Seeder (Favoriten-Liste, Order bleibt, fehlende Modelle werden angehängt); wird im Entrypoint, im `setup.startup`-Hook und beim Image-Build ausgeführt
+- `mammouth-agent/files/home/.config/mammouth/` — Mammouth config for the agent kit (Provider `deepseek`, `zai`, `mistral`)
 - `mistral-vibe-agent/spec.yaml` — dedicated Mistral Vibe agent kit (kind: sandbox, name `mistral-vibe`, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe:<vibe-version>`, `entrypoint: [vibe, "--agent", "auto-approve"]` — ohne entrypoint startet sbx die Default-Shell)
 - `mistral-vibe-agent/Dockerfile` — pinned Vibe image (shell-docker-0.x.0 + `uv tool install mistral-vibe==<pin>`); Build/Publish via `.github/workflows/build-and-publish-mistral-vibe-image.yml`
-- `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`) + Default-Modell GLM-5.3-Flash (Z.AI-Provider `zai`) + Mistral-hosted GLM (`glm` → `zai-glm-5-3`)
+- `mistral-vibe-agent/spec.yaml` — pinnt das Start-Modell via `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"` (Env-Layer gewinnt gegen `active_model`, `/model` wechselt weiterhin pro Session)
+- `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`) + Default-Modell GLM-5.3-Flash (Z.AI-Provider `zai`) + GLM-5.3 direkt via Z.AI (`glm-5.3`) + GLM-4.7-Flash gratis (`glm-4.7-flash`) + Mistral-hosted GLM (`glm` → `zai-glm-5-3`)
 - `mistral-vibe-agent/files/home/.vibe/hooks.toml` + `files/home/.config/sandbox-kit/vibe-mcp-guard.py` — pre_tool-Read-only-Guard für die IntelliJ-MCP-Tools (auto-approve umgeht das Permission-System)
 - `docs/prerequisites.md` — kompakte Übersicht aller Voraussetzungen (Host + Sandbox + Secrets + Netzwerk)
 
@@ -846,10 +866,14 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 > Start bestätigen). Ohne Binding wird nur der Sentinel gesetzt, der echte Key aber nicht injiziert
 > (`sbx create`: „no binding authorizes this service"); `local-test-kits.py` schlägt dann fehl.
 
-> **Default-Modell GLM-5.3-Flash (Z.AI):** `mistral-vibe-agent/files/home/.vibe/config.toml` setzt
+> **Start-Modell GLM-5.3-Flash (Z.AI):** `mistral-vibe-agent/spec.yaml` setzt zusätzlich
+> `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"` (Env-Layer überschreibt `active_model`; `/model` wechselt
+> weiterhin für die aktuelle Session). `mistral-vibe-agent/files/home/.vibe/config.toml` setzt
 > `active_model = "glm-flash"` und deklariert Z.AI als OpenAI-kompatiblen Provider (`[[providers]]` `zai`,
-> `ZAI_API_KEY`, `api.z.ai`) + `[[models]]` `glm-flash` → `glm-5.3-flash`. GLM-5.3-Flash gibt es **nicht über
-> Mistral** → eigener Service `zai` (`sbx secret set zai`, Key https://z.ai/manage-apikey/apikey-list, Binding
+> `ZAI_API_KEY`, `api.z.ai`) + `[[models]]` `glm-flash` → `glm-5.3-flash` sowie das Flagship `glm-5.3`
+> (Alias `glm-5.3`, gleicher Provider/Key) und das kostenlose `glm-4.7-flash` (Alias `glm-4.7-flash`). Alle gibt es
+> **nicht über Mistral** → eigener Service `zai`
+> (`sbx secret set zai`, Key https://z.ai/manage-apikey/apikey-list, Binding
 > `zai: apiKey.domains: [api.z.ai]`). Alternative: Mistral-hosted `zai-glm-5-3` (Alias `glm`, Provider `mistral`).
 >
 > **Plan vs. Guthaben (wichtig):** Der Mistral-**Plan** steuert Rate-Limits + Modellzugriff, nicht das Guthaben.
@@ -862,9 +886,9 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 - **Quelle**: `permissions.network.allow` in `opencode-agent/spec.yaml` (bzw. `mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`). Nur gelistete
   Domains sind erreichbar, alles andere → HTTP 403.
 - **Enforcement**: Nicht das Kit, sondern die Sandbox selbst erzwingt die Liste — über den **Sandbox-Proxy**
-  (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; die Template
-  (`docker.io/domboeckli/sbx-opencode-tooling` / `sbx-claude-tooling`, bauen auf `docker/sandbox-templates:opencode-docker` / `claude-code-docker` auf) trägt ihn automatisch als `mcp-gateway`-MCP-Server in die
-  Agent-Config ein (daher „mcp-gateway Connected“ in OpenCode — kein Fehler). Derselbe Proxy macht die
+  (`mcp-gateway`, `mcp-gateway.docker.internal`). Er ist der einzige Netzwerk-Ausgang; `sbx` trägt ihn für seine **unterstützten Agenten**
+  (OpenCode/Claude) automatisch als `mcp-gateway`-MCP-Server in die Agent-Config ein (daher „mcp-gateway Connected“
+  in OpenCode — kein Fehler). Die Agent-Kits **Mammouth/Vibe** verdrahten ihn selbst (Issue #139). Derselbe Proxy macht die
   **Credential-Injection** (`proxy-managed`-Platzhalter → echter Key, siehe Auth-Abschnitte oben).
 - **`files/home/.../network-policy.md` ist rein informativ**: Nur Doku der Allow-Liste in den Agent-Instructions
   (damit der Agent geblockte Calls vermeidet). Erzwingt nichts. Bei Änderungen an `permissions.network.allow`
@@ -875,7 +899,7 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 Offizielle Docker-Doku für Sandbox-Kits, Templates und Custom Agents:
 
 - **`~/sbx-cli.md`** — **Offline-Referenz der sbx CLI** (alle `--help`-Outputs, generiert aus der
-  v0.49.2-Release-Binary; identische Kopien in allen Kit-Bundles)
+  v0.50.1-Release-Binary; identische Kopien in allen Kit-Bundles)
 - [Templates](https://docs.docker.com/ai/sandboxes/customize/templates/) — Custom Template-Images bauen (Base-Images, Dockerfile, `sbx template save`/`load`)
 - [Kits](https://docs.docker.com/ai/sandboxes/customize/kits/) — Kit-Übersicht (`kind: mixin` vs. `kind: sandbox`)
 - [Kit Reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference/) — spec.yaml-Felder (`sandbox`, `network`, `credentials`, `commands`, `agentContext`)

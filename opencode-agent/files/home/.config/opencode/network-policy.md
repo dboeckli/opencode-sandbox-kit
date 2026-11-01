@@ -8,7 +8,7 @@ Before making an outbound request (`curl`, `npm`, `git clone`, `websearch`, `web
 this list. Prefer whitelisted endpoints: `npx ctx7 docs` for library docs, `gh` / `api.github.com`
 for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io`.
 
-- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `api.deepseek.com`, `*.deepseek.com` (DeepSeek), `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `platform.claude.com`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini), `api.z.ai`, `*.z.ai` (Z.AI/GLM), `openai.com`, `*.openai.com` (OpenAI Platform/API)
+- **Agent APIs**: `opencode.ai`, `*.opencode.ai`, `api.deepseek.com`, `*.deepseek.com` (DeepSeek), `anthropic.com`, `api.anthropic.com`, `*.anthropic.com`, `platform.claude.com`, `openrouter.ai`, `*.openrouter.ai`, `generativelanguage.googleapis.com` (Google Gemini), `api.z.ai`, `*.z.ai` (Z.AI/GLM), `api.mistral.ai`, `api.eu.mistral.ai` (Mistral-hosted GLM `zai-glm-5-3`), `openai.com`, `*.openai.com` (OpenAI Platform/API)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `maven.pkg.github.com` (GitHub Packages Maven), `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Codeberg (Kit-Repo canonical, Forgejo Actions/CI)**: `codeberg.org`, `*.codeberg.org` — Repository/Issues/CI des Sandbox-Kits; GitHub bleibt als **Mirror** erhalten. Kit-Referenzen: `git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent`
 - **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku)
@@ -23,11 +23,11 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
 - **Ubuntu apt (http, Port 80)**: `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (arm64)
 - **MongoDB**: `repo.mongodb.org` (apt im Helm-Test-Pod)
-- **Skills CLI**: `add-skill.vercel.sh`
+- **Skills CLI**: `add-skill.vercel.sh` (Install), `www.skills.sh` (Registry/Website: Update-/Metadaten-Checks des `skills`-CLI)
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **SonarCloud**: `sonarcloud.io`, `*.sonarcloud.io` (Web-API für CI-Ergebnis-Abfragen: Quality Gate, Issues, Measures, Coverage; Token als `Authorization: Bearer`)
-- **IntelliJ MCP (Windows host)**: `localhost:64615`, `127.0.0.1:64615`, `host.docker.internal:64615` (seit IDEA 2026.2.2; Legacy `64342` weiterhin erlaubt) — MCP-Verbindung via sbx MCP Gateway (Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream`); der Allow-Eintrag dient nur dem Startup-Health-Check der Host-Erreichbarkeit
+- **IntelliJ MCP (Windows host)**: reachable **only through the sbx MCP gateway** (`mcp-gateway.docker.internal`; host registration `sbx mcp add idea --url http://localhost:64615/stream`). The direct host ports `64615`/`64342` are deliberately **not** allow-listed (proxy → HTTP 403) so the sandbox cannot bypass the `mcp-gateway_*` permission whitelist / run-config guard (issue #163).
 - **Elastic REST-APIs (ELK-Stack, Docker Compose im Host-Docker)**: `localhost:9200`, `127.0.0.1:9200`, `host.docker.internal:9200` (Elasticsearch REST-API), `localhost:5601`, `127.0.0.1:5601`, `host.docker.internal:5601` (Kibana UI + REST-API), `localhost:8200`, `127.0.0.1:8200`, `host.docker.internal:8200` (APM Server OTLP-HTTP-Intake)
 - **Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)**: `localhost:30920`, `127.0.0.1:30920` (Elasticsearch), `localhost:30561`, `127.0.0.1:30561` (Kibana), `localhost:30820`, `127.0.0.1:30820` (APM Server)
 
