@@ -397,6 +397,8 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > oder `sbx mcp load <name> --sandbox <sandbox-name>`.
 > Die direkten IntelliJ-Host-Ports (`64615`/`64342`) sind bewusst **nicht** in der Sandbox-Allowlist — Zugriff nur
 > über den Gateway (sonst wäre die `mcp-gateway_*`-Whitelist per `curl` umgehbar, Issue #163).
+> Whitelist und Run-Config-Guard sind Agent-Guardrails, **keine** Netzgrenze: Der Gateway selbst ist aus der
+> Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 > Alle vier erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, Skills, ctx7) und die
 > Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code). Die jeweilige

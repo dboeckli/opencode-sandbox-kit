@@ -320,6 +320,11 @@ stehen bewusst **nicht** in `permissions.network.allow` — der Proxy blockt sie
 Sandbox-Prozess per `curl` die `mcp-gateway_*`-Whitelist und den Run-Config-Guard umgehen (Issue #163). Der
 Startup-Check prüft IntelliJ deshalb ausschließlich über den Gateway (`mcp-idea`), nicht per Direkt-Probe.
 
+> **Restrisiko (Issue #229):** Der `mcp-gateway` selbst ist aus der Sandbox per `curl` erreichbar
+> (`Authorization: Bearer proxy-managed`) und aggregiert die Tools aller Server. Whitelist und
+> Run-Config-Guard wirken nur bei **Agenten-Tool-Aufrufen**, nicht bei direktem JSON-RPC — sie sind
+> Guardrails, keine Sandbox-Grenze. K8s läuft mit `read_only=false`, Docker-MCP ist host-root-äquivalent.
+
 Der Zugriff auf die IntelliJ-MCP-Tools ist für **OpenCode (Mixin-Kit), Claude Code,
 Mammouth Code und Mistral Vibe (Agent-Kits)** per **Whitelist** eingeschränkt — Deny-by-Default, standardmäßig
 nur lesende Operationen erlaubt (K8s-Schreib-/Exec-Tools bei OpenCode/Mammouth/Claude per `ask` freigebbar, siehe unten).
