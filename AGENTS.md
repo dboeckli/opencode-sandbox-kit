@@ -6,11 +6,12 @@ Repo: https://codeberg.org/dboeckli/opencode-sandbox-kit (kanonisch) — GitHub-
 ## Environment (wichtig!)
 
 Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **Windows-Setup** — der Host
-(IntelliJ MCP via `host.docker.internal:64615`; Port 64615 seit IDEA 2026.2.2, Legacy 64342) läuft immer auf Windows:
+(IntelliJ MCP auf `localhost:64615`, Port 64615 seit IDEA 2026.2.2, Legacy 64342; in die Sandbox **nur** über den
+sbx MCP Gateway, die direkten Host-Ports sind bewusst nicht allow-listed, Issue #163) läuft immer auf Windows:
 
 - **Agent-Sandbox** (hier): Agent-Laufzeit — ich teste Linux-Tools (`ctx7`, `curl`, ...), Versions-Checks und Doku-Recherche. `sbx` ist hier **nicht** verfügbar (nicht im Sandbox-Image installiert).
 - **Windows/PowerShell** (User, **Standard**): Alle Sandbox-Befehle (`sbx run`, `sbx exec`, `sbx template rm`, `sbx secret set`) führt der User in PowerShell aus — Docker Desktop läuft nativ auf Windows.
-- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. `host.docker.internal`-Zugriff für IntelliJ MCP und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
+- **Ubuntu-WSL** (User, Alternative): Die Sandbox-Befehle laufen auch aus einem Ubuntu-WSL-Setup heraus (Laufzeitumgebung dort: **Ubuntu 26.04**) — inkl. Host-MCP-Zugriff über den sbx MCP Gateway (`host.docker.internal` für Docker) und der Secret-Injection. Der Host bleibt derselbe: IntelliJ auf Windows.
 - Dokus (AGENTS.md/README) müssen **PowerShell-Syntax** verwenden.
 
 ## Diff-Review in IntelliJ (Pflicht)
@@ -313,6 +314,16 @@ seine **unterstützten Agenten** an (OpenCode: `~/.config/opencode/opencode.json
 `~/.vibe/config.toml`. Tool-Präfixe:
 `mcp-gateway_<tool>` (OpenCode/Mammouth) bzw. `mcp__mcp-gateway__<tool>` (Claude Code) — der frühere direkte
 `idea_`/`mcp__idea__`-Prefix existiert nicht mehr.
+
+**Kein direkter Host-Port in der Sandbox:** `host.docker.internal:64615`/`:64342` (und `localhost`/`127.0.0.1`)
+stehen bewusst **nicht** in `permissions.network.allow` — der Proxy blockt sie mit HTTP 403. Sonst könnte jeder
+Sandbox-Prozess per `curl` die `mcp-gateway_*`-Whitelist und den Run-Config-Guard umgehen (Issue #163). Der
+Startup-Check prüft IntelliJ deshalb ausschließlich über den Gateway (`mcp-idea`), nicht per Direkt-Probe.
+
+> **Restrisiko (Issue #229):** Der `mcp-gateway` selbst ist aus der Sandbox per `curl` erreichbar
+> (`Authorization: Bearer proxy-managed`) und aggregiert die Tools aller Server. Whitelist und
+> Run-Config-Guard wirken nur bei **Agenten-Tool-Aufrufen**, nicht bei direktem JSON-RPC — sie sind
+> Guardrails, keine Sandbox-Grenze. K8s läuft mit `read_only=false`, Docker-MCP ist host-root-äquivalent.
 
 Der Zugriff auf die IntelliJ-MCP-Tools ist für **OpenCode (Mixin-Kit), Claude Code,
 Mammouth Code und Mistral Vibe (Agent-Kits)** per **Whitelist** eingeschränkt — Deny-by-Default, standardmäßig

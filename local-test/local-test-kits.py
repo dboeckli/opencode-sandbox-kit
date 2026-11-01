@@ -1485,25 +1485,36 @@ def main():
             else:
                 sfail(config_label, out)
 
-        mcp_cmd = (
-            'code=""; '
+        # Issue #163: IntelliJ MCP is only reachable through the sbx MCP gateway
+        # (mcp-idea). The sandbox must NOT be able to reach the host port directly,
+        # otherwise any sandbox process could bypass the mcp-gateway permission
+        # whitelist and the run-config guard via curl.
+        c2, out = exec_sandbox(s["name"], "MCP_CHECK_DEEP=1 bash ~/.local/bin/mcp-check.sh")
+        if c2 == 0 and "mcp-idea:OK" in out:
+            pass_("intellij-mcp via sbx MCP gateway (mcp-idea)")
+        elif ci:
+            print("  " + _color("33", "[SKIP] intellij-mcp via sbx MCP gateway (mcp-idea) — expected: "
+                                     "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
+        else:
+            sfail("intellij-mcp via sbx MCP gateway (mcp-idea)",
+                 "Gateway/IntelliJ nicht erreichbar — sbx mcp add idea + --static-mcp idea pruefen; "
+                 f"status={out.strip()}")
+
+        direct_cmd = (
+            'blocked=1; '
             'for port in 64615 64342; do '
             'for host in host.docker.internal 127.0.0.1 localhost; do '
             'code=$(curl -s -o /dev/null -w "%{http_code}" -m 3 "http://$host:$port/sse" 2>/dev/null); '
-            '[ "$code" = "200" ] || [ "$code" = "206" ] && break 2; code=""; '
+            '[ "$code" = "200" ] || [ "$code" = "206" ] && blocked=0; '
             'done; done; '
-            'if [ "$code" = "200" ] || [ "$code" = "206" ]; then echo MCP-OK; else echo MCP-FAIL; fi'
+            'echo "DIRECT-BLOCKED=$blocked"'
         )
-        c2, out = exec_sandbox(s["name"], mcp_cmd)
-        if c2 == 0 and "MCP-OK" in out:
-            pass_("intellij-mcp connection (via sbx exec)")
-        elif ci:
-            print("  " + _color("33", "[SKIP] intellij-mcp connection (via sbx exec) — expected: "
-                                     "IntelliJ MCP muss auf dem Host laufen (nicht im CI)"))
+        c2, out = exec_sandbox(s["name"], direct_cmd)
+        if c2 == 0 and "DIRECT-BLOCKED=1" in out:
+            pass_("intellij-mcp direct host port blocked (proxy 403, issue #163)")
         else:
-            sfail("intellij-mcp connection (via sbx exec)",
-                 "IntelliJ MCP muss auf dem Host laufen (127.0.0.1/localhost/host.docker.internal:64615 "
-                 "(IDEA 2026.2.2) bzw. Legacy :64342)")
+            sfail("intellij-mcp direct host port blocked (proxy 403, issue #163)",
+                 f"host.docker.internal:64615/64342 direkt erreichbar; {out.strip()}")
 
         skills_cmd = (
             "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "

@@ -28,7 +28,7 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Web search (last resort)**: `*.exa.ai`
 - **Stack Overflow API**: `api.stackexchange.com` (Fallback-Quelle bei spezifischen Fehlermeldungen)
 - **SonarCloud**: `sonarcloud.io`, `*.sonarcloud.io` (Web-API für CI-Ergebnis-Abfragen: Quality Gate, Issues, Measures, Coverage; Token als `Authorization: Bearer`)
-- **IntelliJ MCP (Windows host)**: `localhost:64615`, `127.0.0.1:64615`, `host.docker.internal:64615` (seit IDEA 2026.2.2; Legacy `64342` weiterhin erlaubt) — MCP-Verbindung via sbx MCP Gateway (Host-Registrierung `sbx mcp add idea --url http://localhost:64615/stream`); der Allow-Eintrag dient nur dem Startup-Health-Check der Host-Erreichbarkeit
+- **IntelliJ MCP (Windows host)**: reachable **only through the sbx MCP gateway** (`mcp-gateway.docker.internal`; host registration `sbx mcp add idea --url http://localhost:64615/stream`). The direct host ports `64615`/`64342` are deliberately **not** allow-listed (proxy → HTTP 403) so the sandbox cannot bypass the `mcp-gateway_*` permission whitelist / run-config guard (issue #163).
 - **Elastic REST-APIs (ELK-Stack, Docker Compose im Host-Docker)**: `localhost:9200`, `127.0.0.1:9200`, `host.docker.internal:9200` (Elasticsearch REST-API), `localhost:5601`, `127.0.0.1:5601`, `host.docker.internal:5601` (Kibana UI + REST-API), `localhost:8200`, `127.0.0.1:8200`, `host.docker.internal:8200` (APM Server OTLP-HTTP-Intake)
 - **Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)**: `localhost:30920`, `127.0.0.1:30920` (Elasticsearch), `localhost:30561`, `127.0.0.1:30561` (Kibana), `localhost:30820`, `127.0.0.1:30820` (APM Server)
 
