@@ -1577,14 +1577,15 @@ def main():
                  f"host.docker.internal:64615/64342 direkt erreichbar; {out.strip()}")
 
         skills_cmd = (
-            "for sk in camel-matrix cc-best-practices project-references skill-best-practices; do "
+            "for sk in camel-matrix cc-best-practices project-references skill-best-practices "
+            "using-superpowers systematic-debugging verification-before-completion; do "
             "skills ls -g | grep -q \"$sk\" || echo \"MISSING:$sk\"; done; echo SKILLS-DONE"
         )
         c2, out = exec_sandbox(s["name"], skills_cmd)
         if c2 == 0 and "MISSING" not in out:
-            pass_("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)")
+            pass_("skills installed (dboeckli bundle + superpowers)")
         else:
-            sfail("skills installed (camel-matrix/cc-best-practices/project-references/skill-best-practices)", out)
+            sfail("skills installed (dboeckli bundle + superpowers)", out)
 
         ctx7_env_cmd = 'echo "CONTEXT7_API_KEY=${CONTEXT7_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], ctx7_env_cmd)

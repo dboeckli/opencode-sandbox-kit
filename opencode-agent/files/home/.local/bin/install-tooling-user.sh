@@ -23,6 +23,19 @@ if [ -d "${HOOKDIR}" ]; then
 	git config --global core.hooksPath "${HOOKDIR}"
 fi
 
+# --- superpowers skills (obra/superpowers) → ~/.agents/skills ---
+# Option A: nur das Skill-Bundle, kein OpenCode-Plugin/Hook (keine automatische
+# Methodik-Injektion beim Session-Start; Skills werden bei Bedarf über das
+# `skill`-Tool geladen). 15 Skills (brainstorming, writing-plans, TDD,
+# systematic-debugging, verification-before-completion, ...). Eigener Guard, damit
+# vorgebackene Images ohne Superpowers beim Start nachinstallieren.
+if [ -d "${HOME}/.agents/skills/using-superpowers" ]; then
+	echo "superpowers skills: bereits installiert, überspringe"
+else
+	/usr/local/share/npm-global/bin/skills add -g -y \
+		https://github.com/obra/superpowers.git -s '*'
+fi
+
 # Idempotenz-Guard: bereits vollständig provisioniert (vorgebackenes Custom-Template-Image)
 # → kein Netzwerk-Refetch (skills/clone) beim Sandbox-Start.
 if [ -d "${HOME}/.agents/skills" ] && [ -n "$(ls -A "${HOME}/.agents/skills" 2>/dev/null)" ] \

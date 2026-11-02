@@ -703,13 +703,39 @@ Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
 
 ## Skills
 
-Das Kit installiert automatisch Skills aus [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) via `skills add -g --all`. Installierte Skills:
+Das Kit installiert zwei Skill-Bundles nach `~/.agents/skills/` (als `user: "1000"`, via `skills add -g`).
+
+### Superpowers ([obra/superpowers](https://github.com/obra/superpowers))
+
+- **brainstorming** — Spezifikation/Brainstorming vor kreativer Arbeit
+- **writing-plans** — Implementierungsplan aus Spec/Requirements
+- **executing-plans** — Plan inline (ohne Subagents) selbst ausführen
+- **test-driven-development** — echtes Red/Green-TDD vor Implementierung
+- **systematic-debugging** — Bugs/Testfehler systematisch analysieren, bevor Fixes vorgeschlagen werden
+- **verification-before-completion** — Beweis vor Erfolgsmeldung (Verifikationskommandos laufen lassen)
+- **requesting-code-review** — Review anfordern vor Merge
+- **receiving-code-review** — Review-Feedback technisch prüfen statt blind umsetzen
+- **subagent-driven-development** — Plan über Subagents ausführen
+- **dispatching-parallel-agents** — unabhängige Aufgaben parallel verteilen
+- **using-git-worktrees** — isolierter Workspace via Git-Worktree
+- **finishing-a-development-branch** — Branch-Integration abschließen
+- **diagnosing-superpowers** — Fehlerdiagnose im Superpowers-Ablauf
+- **using-superpowers** — Einstieg: Skills finden und anwenden
+- **writing-skills** — neue Skills schreiben/prüfen
+
+### Meine Skills ([dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills))
 
 - **camel-matrix** — Camel Spring Boot Kompatibilitätsmatrix
 - **cc-best-practices** — Claude Code Best Practices
 - **cron-schedule-planner** — GitHub-Actions-Cron-Zeitpläne: Übersicht, Kollisionen, Umverteilung
 - **project-references** — Referenzprojekt-Suche
 - **skill-best-practices** — SKILL.md Schreib-Guide
+
+> **Superpowers nur als Skills, kein Plugin:** Das OpenCode-Plugin von Superpowers wird bewusst
+> **nicht** aktiviert — es gibt also keine automatische Methodik-Injektion/Auto-Trigger beim
+> Session-Start; Skills werden bei Bedarf über das `skill`-Tool geladen. So bleiben die Kit-Regeln
+> (Feature-Branch, kein Auto-Commit, `.review`-Diff, Run-Config-Guard) maßgeblich. Update:
+> `skills update`.
 
 Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 
