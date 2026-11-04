@@ -75,13 +75,13 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 |-------|-----------------------|---------------|
 | OpenCode | (Basis-Image bringt CLI mit) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` |
 | Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
-| Mammouth Code | `curl -fsSL https://code.mammouth.ai/install.sh \| bash` → `~/.mammouth` + Symlink `/usr/local/bin/mammouth` | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
+| Mammouth Code | v3-Workload (`mammouth-agent/mammouth-agent.yaml`); Image `sbx-mammouth` mit CLI + Tooling | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | Im eigenen gepinnten Image gebacken (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
 | Pi | v3-Workload-Image (`shell-docker`-Basis + Kit-Tooling + `@earendil-works/pi-coding-agent`, `docker.io/domboeckli/sbx-pi-agent:<pin>`; kein OpenCode im Image) | `~/.pi/agent/settings.json` + `mcp.json` (MCP-Gateway) + `extensions/mcp-guard.ts` (Read-only-Guard, gemeinsame Allow-Liste) + `AGENTS.md` |
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 
-Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`; Pi: `network-policy@1` in `pi-agent/pi-agent.yaml`) sind erreichbar.
+Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`) bzw. `network-policy@1` (Mammouth/Pi) sind erreichbar.
 Doku: `opencode-agent/files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth/Mistral-Vibe-Kopie). Enforced durch den
 Sandbox-Proxy (`mcp-gateway`), der auch die `proxy-managed`-Credential-Injection übernimmt.
 

@@ -12,7 +12,7 @@ Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral 
 
 Enthält zusätzlich dedizierte Agent-Kits:
 
-- **Mammouth Code** — `mammouth-agent/` (`kind: sandbox`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, entrypoint `mammouth-entrypoint` (Wrapper: seedet die Model-Picker-Favoriten, dann `exec mammouth`; Fallback auf `mammouth` bei alten Images).
+- **Mammouth Code** — `mammouth-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, Entrypoint `mammouth-entrypoint` (seedet die Model-Picker-Favoriten, dann `exec mammouth`).
 - **Mistral Vibe** — `mistral-vibe-agent/` (`kind: sandbox`), eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`.
 - **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie die anderen Kits, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
 
@@ -62,11 +62,20 @@ sbx run claude `
     "C:\development\maven-repo:ro"
 ```
 
-**Mammouth Code** (eigenes Image `docker.io/domboeckli/sbx-mammouth`):
+**Mammouth Code** (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-mammouth:<mammouth-version>`):
+
+```powershell
+sbx run docker.io/domboeckli/sbx-mammouth:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Alternativ baut `sbx` das Kit direkt aus dem Verzeichnis:
 
 ```powershell
 sbx run ./mammouth-agent/ `
-    --kit-arg imageTag=local `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -138,11 +147,10 @@ sbx run claude `
     "C:\development\maven-repo:ro"
 ```
 
-**Mammouth Code:**
+**Mammouth Code** (v3-Workload; `sbx` baut den Workload aus dem Git-Checkout):
 
 ```powershell
 sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
-    --kit-arg imageTag=latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -185,7 +193,7 @@ die Familien nicht mehr in Lockstep, Issue #202):
 Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
 `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
 gleichnamige Variablen in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed) sowie als `ARG BASE_IMAGE`
-in `opencode-agent/opencode/Dockerfile` + `mammouth-agent/Dockerfile` (opencode-docker) bzw.
+in `opencode-agent/opencode/Dockerfile` + `mammouth-agent/mammouth-agent.dockerfile` (opencode-docker) bzw.
 `opencode-agent/claude/Dockerfile` (claude-code-docker); Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles (gemeinsamer shell-Pin).
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
 bei Drift fehl.
@@ -221,7 +229,7 @@ Gesetzt wird er an drei Stellen (identischer Wert, Pfad-Komposition ist registry
    lesen `vars.IMAGE_PREFIX || 'docker.io/domboeckli'`). Fehlt sie → Docker-Hub-Default.
 2. **Lokal/e2e-Runner** — Env `IMAGE_PREFIX` (`local-test/local-test-kits.py`, `local-test/build-and-publish-*.py`;
    zusätzlich in allen IntelliJ-Run-Configs gesetzt).
-3. **Sandbox-Kits** — `--kit-arg imagePrefix=<prefix>` (`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`
+3. **Agent-Kits** — Mammouth (v3) per Image-Ref, Mistral Vibe (v2) per `--kit-arg imagePrefix=<prefix>` (`mistral-vibe-agent/spec.yaml`
    → `args.imagePrefix`, Default Docker Hub); CI/e2e/local-test übergeben ihn automatisch.
 
 Fertige `sbx run`-Kommandos für die Docker-Hub-Images (4 lokal + 4 remote): [`docs/dockerhub-images.md`](docs/dockerhub-images.md).
@@ -288,7 +296,6 @@ sbx run claude \
 
 ```bash
 sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" \
-    --kit-arg imageTag=latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
     . \
@@ -419,7 +426,7 @@ sondern vom Template bzw. dem Kit-Image beim `sbx run`:
 |-------|----------|-----|
 | OpenCode | `docker.io/domboeckli/sbx-opencode-tooling` (baut auf `opencode-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
 | Claude Code | `docker.io/domboeckli/sbx-claude-tooling` (baut auf `claude-code-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
-| Mammouth Code | `opencode-docker` (Pin `0.x.0`) | `mammouth-agent/` (`kind: sandbox`, Pin im spec-Image) |
+| Mammouth Code | `opencode-docker` (Pin `0.x.0`) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
 | Mistral Vibe | `shell` (Pin `0.x.0`, im eigenen Image) | `mistral-vibe-agent/` (`kind: sandbox`, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe`) |
 
 Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
@@ -449,27 +456,27 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 
 [Mammouth Code](https://info.mammouth.ai/docs/mammouth-code/) ist ein Open-Source-Fork von OpenCode.
 Da `sbx` keinen eingebauten `mammouth`-Agenten kennt, liegt unter `mammouth-agent/` ein **eigenes
-Sandbox-Kit** (`kind: sandbox`, Name `mammouth`) – analog zum Amp-Beispiel aus der Docker-Doku:
+v3-Workload** (`kind: workload`, Name `mammouth`) – analog zum Pi-Kit:
 
 - **Base-Image**: `docker/sandbox-templates:opencode-docker-0.x.0` (Mammouth ist ein OpenCode-Fork;
-  Version gepinnt im `sandbox.image` der spec, siehe Abschnitt "Template-Version (gepinnt)")
-- **Entrypoint**: `mammouth` (direkt, ohne Template-Umweg)
-- **Auth**: `credentials[].apiKey` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
-  `inject` als `Authorization: Bearer`) — kit-spec v2
+  Pin im Dockerfile/Descriptor, siehe Abschnitt "Template-Version (gepinnt)")
+- **Entrypoint**: `mammouth-entrypoint` (seedet Favoriten, dann `exec mammouth`)
+- **Auth**: `credential@1` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
+  `inject` als `Authorization: Bearer`) — kit-spec v3
 - **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, ctx7, Skills)
 - **Config**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
 
-- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default; Zusatz-Provider `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit derselben **Favorites**-Sektion wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet in `~/.local/state/mammouth/model.json` (Mammouth ist ein OpenCode-Fork, gleiches Schema; bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt). Der Seed läuft **im Entrypoint** (`mammouth-entrypoint` → `seed-mammouth-model-favorites.py`) und beim Image-Build — nicht nur via `setup.startup`, weil dieser erst **nach** dem TUI-Start läuft und Mammouth seinen In-Memory-Stand (ohne Favoriten) zurückschreibt. Änderungen an `model.json` bei laufendem TUI wirken erst nach einem Mammouth-Neustart.
+- **Modell**: `deepseek/deepseek-flash` (DeepSeek V4.1 Flash) als Default; Zusatz-Provider `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit derselben **Favorites**-Sektion wie OpenCode (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet in `~/.local/state/mammouth/model.json` (Mammouth ist ein OpenCode-Fork, gleiches Schema; bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt). Der Seed läuft **im Entrypoint** (`mammouth-entrypoint` → `seed-mammouth-model-favorites.py`) und beim Image-Build — nicht über Lifecycle-`startup`, weil dieser erst **nach** dem TUI-Start läuft und Mammouth seinen In-Memory-Stand (ohne Favoriten) zurückschreibt. Änderungen an `model.json` bei laufendem TUI wirken erst nach einem Mammouth-Neustart.
 - **IntelliJ/Kubernetes/Docker MCP**: über den sbx MCP Gateway (`mcp-gateway_<tool>`); da `sbx` Mammouth nicht als
   Agent-Integration kennt, ist der Gateway im Kit **explizit** verdrahtet (`mcp`-Block in `opencode.jsonc` →
   `http://mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`, Issue #139) — keine direkte `mcp.idea`-Config
 - **Plugins**: Startup-Checks + Auto-Session (identisch zu OpenCode, da Fork)
-- **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Kit-`environment.variables` (v2)
+- **PATH**: `mammouth`-Binary via Symlink `/usr/local/bin/mammouth` aufgelöst; `JAVA_HOME` via Dockerfile-`ENV` (v3)
 
 **Installation** — das Image `docker.io/domboeckli/sbx-mammouth` backt Mammouth beim **Image-Build**, gepinnt auf
-**v1.18.31.2** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/Dockerfile`, ausgeführt als User `agent`;
+**v1.18.31.2** (`ARG MAMMOUTH_VERSION` im `mammouth-agent/mammouth-agent.dockerfile`, ausgeführt als User `agent`;
 Pin via Renovate `mammouth-ai/code`; `local-test-kits.py --validate-only` warnt bei neuerem
 GitHub-Release) und legt einen Symlink `/usr/local/bin/mammouth` an, damit der Entrypoint den
 Agenten findet. Manuell nur nötig, wenn die Sandbox bereits läuft:

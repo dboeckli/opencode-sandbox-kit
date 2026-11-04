@@ -39,7 +39,7 @@ from shutil import which
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONTEXT = os.path.join(ROOT, "mammouth-agent")
-DOCKERFILE = os.path.join(CONTEXT, "Dockerfile")
+DESCRIPTOR = os.path.join(CONTEXT, "mammouth-agent.yaml")
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "build-and-publish-mammouth-image.log")
 NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
@@ -93,11 +93,12 @@ def run(cmd):
 
 
 def pin_version():
-    with open(DOCKERFILE, encoding="utf-8") as f:
-        m = re.search(r"ARG MAMMOUTH_VERSION=([0-9]+(?:\.[0-9]+)+)", f.read())
+    """Mammouth pin from the descriptor (args.version.default) — dependency-free (no PyYAML)."""
+    with open(DESCRIPTOR, encoding="utf-8") as f:
+        m = re.search(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"', f.read())
     if not m:
-        sys.exit("MAMMOUTH_VERSION pin not found in mammouth-agent/Dockerfile")
-    return m.group(1)
+        sys.exit("Mammouth pin not found in mammouth-agent/mammouth-agent.yaml args.version.default")
+    return m.group("v")
 
 
 def branch_slug():
@@ -150,16 +151,19 @@ def main():
         print(f"Version tag: {version_tag}")
         print(f"Moving tag:  {local_tag}")
         print(f"Platform:    {platform}")
-        print(f"Dockerfile:  {DOCKERFILE}")
+        print(f"Descriptor:  {DESCRIPTOR}")
         ensure_builder()
 
         # Registry build.
         push_cmd = ["docker", "buildx", "build",
                     "--platform", platform,
+                    "-f", DESCRIPTOR,
                     "-t", version_tag,
                     "-t", local_tag]
         if not build_only:
             push_cmd += ["--push"]
+        elif not no_load:
+            push_cmd += ["--load"]
         push_cmd += [CONTEXT]
         run(push_cmd)
         print("Built (not pushed)." if build_only else "Pushed to registry.")
@@ -169,6 +173,7 @@ def main():
             load_cmd = ["docker", "buildx", "build",
                         "--platform", platform,
                         "--load",
+                        "-f", DESCRIPTOR,
                         "-t", version_tag,
                         "-t", local_tag,
                         CONTEXT]

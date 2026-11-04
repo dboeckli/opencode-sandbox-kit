@@ -17,7 +17,7 @@ name: Kit e2e
 # The images are served from the configured registry prefix (`IMAGE_PREFIX`, default
 # Cloudsmith `docker.cloudsmith.io/dboeckli/sbx/…`; `docker.io/<user>` for Docker Hub):
 # the `mistral-vibe` scenario pulls `sbx-mistral-vibe`; `opencode`/`claude` pull
-# `sbx-opencode-tooling`/`sbx-claude-tooling`, `mammouth` pulls `sbx-mammouth`, and `pi` uses the
+# `sbx-opencode-tooling`/`sbx-claude-tooling`, `mammouth` pulls `sbx-mammouth` (v3 image ref), and `pi` uses the
 # v3 kit directory (branches) or the published `sbx-pi-agent` image (master/schedule)
 # (baked tooling/agent, issue #137). The `build-and-publish-*-image` jobs (reusing the
 # standalone build-and-publish workflows) build those images — but they PUSH only on

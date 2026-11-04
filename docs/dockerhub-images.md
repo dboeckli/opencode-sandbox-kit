@@ -47,12 +47,10 @@ sbx run claude `
     "C:\development\maven-repo:ro"
 ```
 
-**3) Mammouth Code** (`kind: sandbox`, eigenes Image)
+**3) Mammouth Code** (Kit-Spec v3, `kind: workload` — `sbx` baut den Workload aus dem Git-Checkout)
 
 ```powershell
 sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
-    --kit-arg imageTag=latest `
-    --kit-arg imagePrefix=docker.io/domboeckli `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -121,12 +119,10 @@ sbx run claude `
     "C:\development\maven-repo:ro"
 ```
 
-**3) Mammouth Code**
+**3) Mammouth Code** (v3-Workload)
 
 ```powershell
-sbx run ./mammouth-agent/ `
-    --kit-arg imageTag=local `
-    --kit-arg imagePrefix=docker.io/domboeckli `
+sbx run docker.io/domboeckli/sbx-mammouth:local `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `

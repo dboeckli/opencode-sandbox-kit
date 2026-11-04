@@ -673,10 +673,9 @@ sbx run claude `
     --skills=off `
     --static-mcp idea,k8s,docker
 
-# Mammouth Code (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
+# Mammouth Code (v3-Workload): lokaler Build-Tag :local
 # (vorher Run-Config build-and-publish-mammouth-image); Release-Image via Workflow build-and-publish-mammouth-image.yml
-sbx run ./mammouth-agent/ `
-    --kit-arg imageTag=local `
+sbx run docker.io/domboeckli/sbx-mammouth:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 
