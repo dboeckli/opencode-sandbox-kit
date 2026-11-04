@@ -7,7 +7,7 @@ indexiert aber den Docs-`main`-Branch statt des Pins. Die einzige versionstreue,
 vollstaendige Quelle bleiben die `--help`-Outputs der Binary selbst. Dieses
 Skript laedt die Release-Binary aus `docker/sbx-releases`, sammelt `sbx --help` + die
 `--help` aller Subcommands, erzeugt `opencode-agent/files/home/sbx-cli.md` und syncet die
-Kopien in alle drei Kit-Bundles (opencode-agent/, mammouth-agent/, mistral-vibe-agent/).
+Kopien in alle vier Kit-Bundles (opencode-agent/, mammouth-agent/, mistral-vibe-agent/, pi-agent/).
 
 Nach einem sbx-Version-Bump (Renovate/Validate-Check meldet Drift) einmal ausfuehren:
 
@@ -31,7 +31,8 @@ REPO = "docker/sbx-releases"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SBX_DOC_RELS = ("opencode-agent/files/home/sbx-cli.md",
                 "mammouth-agent/files/home/sbx-cli.md",
-                "mistral-vibe-agent/files/home/sbx-cli.md")
+                "mistral-vibe-agent/files/home/sbx-cli.md",
+                "pi-agent/files/home/sbx-cli.md")
 
 
 def _red(msg):

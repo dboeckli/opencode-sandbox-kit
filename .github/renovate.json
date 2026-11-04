@@ -4,6 +4,12 @@
   "dependencyDashboardHeader": "**Renovate report** (readable Dependency Dashboard, ersetzt das Mend-GUI). Listet alle erkannten Dependencies und offenen Updates. Fehlen Updates für GitHub-Dependencies, im Abschnitt `Repository Problems` nachsehen (fehlender GitHub-Token).",
   "packageRules": [
     {
+      "description": "Pi-Pin (Descriptor args.version.default + Dockerfile ARG PI_VERSION) gemeinsam aktualisieren",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["@earendil-works/pi-coding-agent"],
+      "groupName": "pi"
+    },
+    {
       "description": "Helm 4 (`helm`): nur v4-Linie",
       "matchDatasources": ["github-releases"],
       "matchPackageNames": ["helm/helm"],
@@ -90,7 +96,7 @@
     {
       "customType": "regex",
       "description": "Liberica JDK version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["LIBERICA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+)\""],
       "depNameTemplate": "bell-sw/Liberica",
       "datasourceTemplate": "github-releases",
@@ -99,7 +105,7 @@
     {
       "customType": "regex",
       "description": "Apache Maven version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["MAVEN_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "org.apache.maven:apache-maven",
       "datasourceTemplate": "maven"
@@ -107,7 +113,7 @@
     {
       "customType": "regex",
       "description": "Docker CLI version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/cli",
       "datasourceTemplate": "github-releases",
@@ -116,7 +122,7 @@
     {
       "customType": "regex",
       "description": "Docker Compose plugin version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["COMPOSE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/compose",
       "datasourceTemplate": "github-releases",
@@ -125,7 +131,7 @@
     {
       "customType": "regex",
       "description": "Helm 4 version (install-tooling.sh, alle Kit-Kopien) — einziges Binary `helm`, siehe packageRules",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
@@ -134,7 +140,7 @@
     {
       "customType": "regex",
       "description": "Node.js version (install-tooling.sh, alle Kit-Kopien) — node-version-Datasource + node-Versioning ⇒ LTS-Awareness: Current-Majors (z. B. 26) werden erst ab ihrem LTS-Termin vorgeschlagen; npm CLIs (renovate >=43) benötigen Node ^24.11",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["NODE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "node",
       "datasourceTemplate": "node-version"
@@ -142,7 +148,7 @@
     {
       "customType": "regex",
       "description": "shfmt version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["SHFMT_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "mvdan/sh",
       "datasourceTemplate": "github-releases",
@@ -151,7 +157,7 @@
     {
       "customType": "regex",
       "description": "Apache Kafka distribution version (install-tooling.sh, alle Kit-Kopien). Quelle = die distro-Verzeichnisliste auf dlcdn (custom Datasource `custom.apache-kafka`), NICHT Maven Central: die Maven-Artifacts (org.apache.kafka:kafka_2.13) werden publiziert, bevor der Binary-Tarball auf den Apache-Mirrors liegt — ein Maven-Bump auf eine noch nicht veröffentlichte Distro bricht den Image-Build.",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["KAFKA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "apache/kafka",
       "datasourceTemplate": "custom.apache-kafka",
@@ -311,7 +317,7 @@
     {
       "customType": "regex",
       "description": "Bruno CLI (@usebruno/cli) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #257 im spring-6-gateway-Repo",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile"],
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile", "pi-agent/pi-agent.dockerfile"],
       "matchStrings": ["@usebruno/cli@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@usebruno/cli",
       "datasourceTemplate": "npm"
@@ -319,10 +325,37 @@
     {
       "customType": "regex",
       "description": "MCP Inspector CLI (@modelcontextprotocol/inspector) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #231",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile"],
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile", "pi-agent/pi-agent.dockerfile"],
       "matchStrings": ["@modelcontextprotocol/inspector@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@modelcontextprotocol/inspector",
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Pi Coding Agent version (pi-agent/pi-agent.yaml args.version.default; npm @earendil-works/pi-coding-agent)",
+      "managerFilePatterns": ["pi-agent/pi-agent.yaml"],
+      "matchStrings": ["version:\\s*\\n\\s+default: \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "@earendil-works/pi-coding-agent",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Pi Coding Agent version mirror (pi-agent/pi-agent.dockerfile ARG PI_VERSION; folgt dem Descriptor-Pin)",
+      "managerFilePatterns": ["pi-agent/pi-agent.dockerfile"],
+      "matchStrings": ["ARG PI_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@earendil-works/pi-coding-agent",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "opencode-docker-Pin (pi-agent/pi-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION_OPENCODE spiegeln)",
+      "managerFilePatterns": ["pi-agent/pi-agent.dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "sandbox-templates-opencode",
+      "packageNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
+      "versioningTemplate": "semver"
     }
   ],
   "customDatasources": {

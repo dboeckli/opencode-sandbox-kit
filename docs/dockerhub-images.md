@@ -71,6 +71,17 @@ sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-
     "C:\development\maven-repo:ro"
 ```
 
+
+**5) Pi Coding Agent** (Kit-Spec v3, `kind: workload` — `sbx` baut den Workload aus dem Git-Checkout)
+
+```powershell
+sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=pi-agent" `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
 ## Lokal — lokal gebaute/gepushte `:local`-Images
 
 Zuerst je Kit das Image lokal bauen und **nach Docker Hub pushen** (setzt den beweglichen `:local`-Tag):
@@ -81,6 +92,7 @@ python local-test\build-and-publish-opencode-image.py       # sbx-opencode-tooli
 python local-test\build-and-publish-claude-image.py         # sbx-claude-tooling:local
 python local-test\build-and-publish-mammouth-image.py       # sbx-mammouth:local
 python local-test\build-and-publish-mistral-vibe-image.py   # sbx-mistral-vibe:local
+python local-test\build-and-publish-pi-image.py             # sbx-pi-agent:local
 ```
 
 Danach (der bewegliche `local`-Tag zeigt auf diesen lokalen Build):
@@ -127,6 +139,27 @@ sbx run ./mammouth-agent/ `
 sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --kit-arg imagePrefix=docker.io/domboeckli `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+
+**5) Pi Coding Agent** (v3-Workload)
+
+```powershell
+sbx run ./pi-agent/ `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Alternativ das publizierte Image:
+
+```powershell
+sbx run docker.io/domboeckli/sbx-pi-agent:local `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `

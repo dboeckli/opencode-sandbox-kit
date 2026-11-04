@@ -1,6 +1,6 @@
 # Installation
 
-Setup für das opencode-sandbox-kit (OpenCode / Claude Code / Mammouth Code / Mistral Vibe in Docker-Sandboxes).
+Setup für das opencode-sandbox-kit (OpenCode / Claude Code / Mammouth Code / Mistral Vibe / Pi in Docker-Sandboxes).
 Ausführliche Doku: [`README.md`](README.md) (Architektur, Kits, Auth-Details),
 [`docs/prerequisites.md`](docs/prerequisites.md) (kompakte Gesamtübersicht), [`AGENTS.md`](AGENTS.md) (alle Befehle).
 
@@ -124,10 +124,10 @@ sbx run opencode `
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
-Für **OpenCode (Mixin-Kit), Claude Code, Mammouth Code und Mistral Vibe (Agent-Kits)** ist der Zugriff auf die
+Für **OpenCode (Mixin-Kit), Claude Code, Mammouth Code, Mistral Vibe und Pi (Agent-Kits)** ist der Zugriff auf die
 über den Gateway gelieferten IntelliJ-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen
-erlaubt). Die Tools kommen durch den Gateway-Namespace: `mcp-gateway_<tool>` (OpenCode/Mammouth/Mistral Vibe) bzw.
-`mcp__mcp-gateway__<tool>` (Claude Code). Die Config liegt je Agent-Location vor:
+erlaubt). Die Tools kommen durch den Gateway-Namespace: `mcp-gateway_<tool>` (OpenCode/Mammouth/Mistral Vibe) bzw. `mcp__mcp-gateway__<tool>` (Claude Code)
+bzw. `mcp__mcp_gateway__<tool>` (Pi). Die Config liegt je Agent-Location vor:
 
 **OpenCode / Mammouth** (Mammouth ist ein OpenCode-Fork und nutzt dieselben `permission`-Regeln und
 Plugin-Hooks) — unter `~/.config/opencode/opencode.jsonc` und `~/.config/mammouth/opencode.jsonc`
@@ -171,6 +171,8 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
   `mcp__mcp-gateway__execute_run_configuration`. Liest `tool_input.configurationName`; erlaubt
   `local-test-kits-validate-only` (exit 0), blockt alles andere (`permissionDecision: deny`, exit 2). Andere
   MCP-Tools passieren den Hook unverändert.
+- Pi (`~/.pi/agent/extensions/mcp-guard.ts`): `tool_call`-Hook, Read-only-Whitelist + Run-Config-Guard;
+  Pi kennt kein `ask`, daher werden Write-/Exec-Tools hart geblockt.
 - Mistral Vibe (`~/.config/sandbox-kit/vibe-mcp-guard.py`, verdrahtet über `~/.vibe/hooks.toml`): `pre_tool`-Hook
   gematcht auf `mcp-gateway_*`. Das Image startet Vibe mit `--agent auto-approve`, das alle Tool-Calls ohne
   Rückfrage approvt — deshalb ist der Hook (nicht das Permission-System) der eigentliche Guard: Er erlaubt
@@ -203,9 +205,9 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | Mistral | Mistral API-Key (Built-in-Service) | `sbx secret set mistral` | Mistral Vibe, OpenCode + Mammouth (Mistral-hosted GLM `zai-glm-5-3`) |
 | Z.AI | Z.AI API-Key | `sbx secret set zai` | OpenCode, Mammouth, Mistral Vibe (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash) |
-| DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode + Mammouth (Default-Modell `deepseek/…`) |
-| OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode (optional, Modell `openrouter/…`) |
-| Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, Modell `google/…`) |
+| DeepSeek | DeepSeek API-Key | `sbx secret set deepseek` | OpenCode + Mammouth, Pi (Default-Modell `deepseek-flash`) |
+| OpenRouter | OpenRouter API-Key | `sbx secret set openrouter` | OpenCode/Pi (optional) |
+| Google | Google AI Studio API-Key | `sbx secret set google` | OpenCode (optional, `GOOGLE_GENERATIVE_AI_API_KEY`), Pi (optional, `GEMINI_API_KEY`) |
 | Context7 | Context7 API-Key (optional) | `sbx secret set context7` | ctx7 (höheres Rate-Limit) |
 | Stack Overflow | Stack Overflow API-Key (optional) | `sbx secret set stackoverflow` | Fallback-Quelle bei Fehlermeldungen |
 | Cloudsmith | Cloudsmith API-Key (optional) | `sbx secret set cloudsmith` | Artifact-Hosting API |
@@ -684,6 +686,12 @@ sbx run ./mistral-vibe-agent/ `
     --kit-arg imageTag=local `
     --skills=off `
     --static-mcp idea,k8s,docker
+
+# Pi Coding Agent (v3-Workload): sbx baut das Kit-Verzeichnis (oder publiziertes Image
+# docker.io/domboeckli/sbx-pi-agent:local verwenden, vorher Run-Config build-and-publish-pi-image)
+sbx run ./pi-agent/ `
+    --skills=off `
+    --static-mcp idea,k8s,docker
 ```
 
 Projekt einbinden + Kubernetes-/Host-Docker-Support:
@@ -705,7 +713,7 @@ Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md
 
 ```powershell
 python local-test\local-test-kits.py --validate-only   # Kit-Validierung (alle Kits) + Drift-Checks
-python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Mammouth/Mistral Vibe)
+python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Mammouth/Mistral Vibe/Pi)
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).

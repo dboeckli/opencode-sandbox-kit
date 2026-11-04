@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 4 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 5 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
@@ -9,26 +9,30 @@ Szenarien:
   2. Claude       + opencode-agent      (sbx create claude --kit ./opencode-agent/)   — Home (api.anthropic.com)
   3. Mammouth     + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
   4. Mistral Vibe + mistral-vibe-agent  (sbx create ./mistral-vibe-agent/ — Sandbox-Kit, eigenes gepinntes Image)
+  5. Pi           + pi-agent            (sbx create ./pi-agent/ — v3-Workload, Kit-Spec v3)
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
-  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud, codeberg
+  - Globale Secrets registriert: github, github-maven, anthropic, mammouth, deepseek, mistral, context7, openrouter, google, stackoverflow, cloudsmith, sonarcloud, codeberg
     (sbx secret set github-maven / sbx secret set mammouth / sbx secret set mistral / sbx secret set context7 / sbx secret set openrouter / sbx secret set google / sbx secret set stackoverflow / sbx secret set cloudsmith / sbx secret set sonarcloud / sbx secret set codeberg — seit v0.38 ohne `-g`)
   - Mistral-Vibe-Szenario (lokal): das Image `<IMAGE_PREFIX>/sbx-mistral-vibe:local` ist publiziert
     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image` bzw. `python local-test/build-and-publish-mistral-vibe-image.py`);
     CI/e2e uebergibt stattdessen den Feature-Tag per `VIBE_IMAGE_TAG`
+  - Pi-Szenario: v3-Workload, sbx >= v0.45; lokal wird das Kit-Verzeichnis gebaut (oder
+    PI_IMAGE_TAG fuer ein publiziertes Image gesetzt)
 
 Verwendung:
-  python local-test-kits.py                 # alle 4 Szenarien testen (default: all)
+  python local-test-kits.py                 # alle 5 Szenarien testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
   python local-test-kits.py claude          # nur Claude testen (Home-Szenario)
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
+  python local-test-kits.py pi              # nur Pi testen
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,claude,mammouth,mistral-vibe}  Zu testendes Kit (default: all)
+  {all,opencode,claude,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -63,19 +67,22 @@ SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
 SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
                 "mammouth-agent/files/home/stackexchange-api.md",
-                "mistral-vibe-agent/files/home/stackexchange-api.md")
+                "mistral-vibe-agent/files/home/stackexchange-api.md",
+                "pi-agent/files/home/stackexchange-api.md")
 
 # sbx CLI: die Offline-Referenz (sbx-cli.md) wird aus der Release-Binary generiert
 # (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im Header der Datei;
 # Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus .github/workflows/validate.yml
-# (Source of Truth, Renovate managed). Identische Kopien in allen drei Kit-Bundles.
+# (Source of Truth, Renovate managed). Identische Kopien in allen vier Kit-Bundles.
 SBX_DOC_FILES = ("opencode-agent/files/home/sbx-cli.md",
                  "mammouth-agent/files/home/sbx-cli.md",
-                 "mistral-vibe-agent/files/home/sbx-cli.md")
+                 "mistral-vibe-agent/files/home/sbx-cli.md",
+                 "pi-agent/files/home/sbx-cli.md")
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
-# Bundles beider Kits. `setup.install` konsumiert sie aus dem Sandbox-Home. Alle
+# Bundles aller Kits. Pi's mcp-check.sh weicht bewusst ab (Pi-Config-Pfad
+# ~/.pi/agent/mcp.json + pi-CLI im Deep-Probe-Fallback) und ist daher NICHT gepaart. `setup.install` konsumiert sie aus dem Sandbox-Home. Alle
 # Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
 # Renovate aktualisiert beide gemeinsam).
 INSTALL_SCRIPT_PAIRS = (
@@ -95,6 +102,12 @@ INSTALL_SCRIPT_PAIRS = (
      "mammouth-agent/files/home/.local/bin/install-apt-packages.sh"),
     ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
      "mistral-vibe-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+     "pi-agent/files/home/.local/bin/install-tooling.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+     "pi-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+     "pi-agent/files/home/.local/bin/install-apt-packages.sh"),
 )
 
 # Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
@@ -153,6 +166,20 @@ VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
 VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
+# Pi Coding Agent (Issue #236): v3-Workload, Descriptor pi-agent/pi-agent.yaml
+# (args.version.default) + Dockerfile pi-agent/pi-agent.dockerfile (ARG PI_VERSION).
+# Beide Pins muessen gleich sein; das Image backt exakt diese Version. Update-Check
+# gegen die latest npm-Version (@earendil-works/pi-coding-agent); neueres Release = warn.
+PI_DESCRIPTOR = "pi-agent/pi-agent.yaml"
+PI_DOCKERFILE = "pi-agent/pi-agent.dockerfile"
+PI_IMAGE_NAME = os.environ.get("PI_IMAGE_NAME", "sbx-pi-agent")
+PI_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
+PI_DOCKERFILE_VERSION_RE = re.compile(r"ARG PI_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
+PI_BASE_IMAGE_RE = re.compile(
+    r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+)
+PI_NPM_URL = "https://registry.npmjs.org/@earendil-works%2Fpi-coding-agent/latest"
+
 # Lokaler Docker-MCP-Server (Issue #165): Pin im Doku-Command (`uvx mcp-server-docker==<v>`,
 # docs/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
 # (mcp-server-docker), warnt (gelb), Drift zwischen den Dateien = fail.
@@ -173,12 +200,13 @@ BRUNO_PIN_FILES = [
     "opencode-agent/opencode/Dockerfile",
     "opencode-agent/claude/Dockerfile",
     "mammouth-agent/Dockerfile",
+    "pi-agent/pi-agent.dockerfile",
 ]
 BRUNO_PIN_RE = re.compile(r"@usebruno/cli@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 BRUNO_NPM_URL = "https://registry.npmjs.org/@usebruno/cli/latest"
 
 # MCP Inspector CLI (Issue #231): Pin `@modelcontextprotocol/inspector@<v>` in denselben
-# Dateien wie der Bruno-Pin (drei Kit-Specs + Tooling-Image-Dockerfiles). Nur die CLI ist
+# Dateien wie der Bruno-Pin (vier Kit-Specs + Tooling-Image-Dockerfiles). Nur die CLI ist
 # nutzbar (Web/TUI brauchen Browser bzw. Ports). Drift = fail, neueres npm-Release = warn;
 # der Bump kommt via Renovate-Custom-Manager (.github/renovate.json).
 INSPECTOR_PIN_FILES = [
@@ -188,6 +216,7 @@ INSPECTOR_PIN_FILES = [
     "opencode-agent/opencode/Dockerfile",
     "opencode-agent/claude/Dockerfile",
     "mammouth-agent/Dockerfile",
+    "pi-agent/pi-agent.dockerfile",
 ]
 INSPECTOR_PIN_RE = re.compile(r"@modelcontextprotocol/inspector@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 INSPECTOR_NPM_URL = "https://registry.npmjs.org/@modelcontextprotocol/inspector/latest"
@@ -242,16 +271,18 @@ SCENARIO_KIT = {
     "claude": "opencode-agent",  # Claude-Home-Szenario (claude-code-docker-Template + opencode-agent-Kit)
     "mammouth": "mammouth-agent",
     "mistral-vibe": "mistral-vibe-agent",
+    "pi": "pi-agent",
 }
 SCENARIO_SECRETS = {
     "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "claude": ("github", "github-maven", "anthropic", "context7", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mammouth": ("github", "github-maven", "mammouth", "zai", "mistral", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "pi": ("github", "github-maven", "deepseek", "zai", "mistral", "openrouter", "google", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
-SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "mistral", "zai", "context7", "openrouter", "google",
-                "stackoverflow", "cloudsmith", "sonarcloud", "codeberg")
+SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "deepseek", "mistral", "zai", "context7", "openrouter",
+                "google", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg")
 
 
 def enable_ansi():
@@ -513,7 +544,7 @@ def _sbx_doc_version(rel=None):
 
 def check_sbx_doc_update(installed_ver=""):
     """Vergleicht die im Kit dokumentierte sbx-CLI-Version (sbx-cli.md-Header) in allen
-    drei Kit-Kopien mit dem gepinnten SBX_VERSION (validate.yml) und stellt sicher, dass
+    vier Kit-Kopien mit dem gepinnten SBX_VERSION (validate.yml) und stellt sicher, dass
     die Kopien identisch sind. Schlaegt fehl bei Abweichung — die Doku muss den Pin
     spiegeln und wird per regenerate-sbx-doc.py neu erzeugt (Default liest denselben Pin).
     Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin.
@@ -718,10 +749,14 @@ KIT_KIND_RE = re.compile(r"^kind:\s*(?P<v>\S+)", re.M)
 
 
 def _kit_kind(kit_dir):
-    """`kind` (mixin|sandbox) aus der spec.yaml eines Kits.
-    Sandbox-Kits werden bei `sbx create`/`sbx run` als erstes positionales Argument
-    uebergeben; `--kit` ist fuer Sandbox-Kits deprecated (sbx >= 0.42, gilt nur fuer Mixin-Kits)."""
+    """`kind` (mixin|sandbox|workload) eines Kits.
+    Sandbox- und v3-Workload-Kits definieren den Agenten selbst und werden bei
+    `sbx create`/`sbx run` als erstes positionales Argument uebergeben; `--kit` ist
+    fuer sie deprecated (sbx >= 0.42, gilt nur fuer Mixin-Kits).
+    v2: <kit>/spec.yaml; v3: <kit>/<basename>.yaml (Descriptor)."""
     path = os.path.join(kit_dir, "spec.yaml")
+    if not os.path.isfile(path):
+        path = os.path.join(kit_dir, os.path.basename(os.path.normpath(kit_dir)) + ".yaml")
     if not os.path.isfile(path):
         return "mixin"
     with open(path, encoding="utf-8") as f:
@@ -816,6 +851,7 @@ def check_template_update():
     for label, rel, cur in (
         ("Mammouth", MAMMOUTH_DOCKERFILE, _mammouth_base_image_version()),
         ("opencode", OPENCODE_DOCKERFILE, _opencode_base_image_version()),
+        ("Pi", PI_DOCKERFILE, _pi_pin_from(PI_DOCKERFILE, PI_BASE_IMAGE_RE)),
     ):
         if not cur:
             fail(f"template version ({rel} BASE_IMAGE nicht gepinnt)",
@@ -1043,6 +1079,76 @@ def check_vibe_cli_update():
         pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")
 
 
+def _pi_pin_from(rel, regex):
+    path = os.path.join(ROOT, rel)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = regex.search(f.read())
+    return m.group("v") if m else None
+
+
+def check_pi_cli_update():
+    """Vergleicht den Pi-Pin (Descriptor args.version.default) mit dem Dockerfile-Pin
+    (ARG PI_VERSION), prueft das Basis-Template gegen TEMPLATE_VERSION_OPENCODE und
+    warnt (gelb) bei einer neueren npm-Version (@earendil-works/pi-coding-agent)."""
+    pin = _pi_pin_from(PI_DESCRIPTOR, PI_DESCRIPTOR_VERSION_RE)
+    if not pin:
+        fail("pi version (args.version.default nicht in pi-agent/pi-agent.yaml gefunden)")
+        return
+    dockerfile_pin = _pi_pin_from(PI_DOCKERFILE, PI_DOCKERFILE_VERSION_RE)
+    if not dockerfile_pin:
+        fail("pi version (ARG PI_VERSION nicht in pi-agent/pi-agent.dockerfile gefunden)")
+        return
+    if dockerfile_pin != pin:
+        fail(
+            f"pi version (Dockerfile-Pin v{dockerfile_pin} != Descriptor-Pin v{pin})",
+            f"ARG PI_VERSION in {PI_DOCKERFILE} und args.version.default in {PI_DESCRIPTOR} angleichen",
+        )
+        return
+    base = _pi_pin_from(PI_DOCKERFILE, PI_BASE_IMAGE_RE)
+    if base is None:
+        fail("pi base image (BASE_IMAGE nicht in pi-agent/pi-agent.dockerfile gefunden)")
+        return
+    if base != TEMPLATE_VERSION_OPENCODE:
+        fail(
+            f"pi base image (opencode-docker-{base} != TEMPLATE_VERSION_OPENCODE {TEMPLATE_VERSION_OPENCODE})",
+            f"ARG BASE_IMAGE in {PI_DOCKERFILE} auf opencode-docker-{TEMPLATE_VERSION_OPENCODE} setzen",
+        )
+        return
+    try:
+        data = json.loads(_http_get(PI_NPM_URL))
+        latest = str(data["version"])
+    except Exception as e:
+        fail("pi version (npm latest nicht abrufbar)", str(e))
+        return
+    if _version_newer(latest, pin):
+        warn(
+            f"pi update available (Pin v{pin}, npm latest v{latest})",
+            f"Optional: args.version.default in {PI_DESCRIPTOR} + ARG PI_VERSION in {PI_DOCKERFILE} "
+            f"auf v{latest} heben, Image neu publizieren (build-and-publish-pi-image.yml)",
+        )
+    else:
+        pass_(f"pi version up-to-date (Pin v{pin}, npm latest v{latest})")
+
+
+def check_pi_mcp_guard():
+    """Fuehrt die Unit-Tests der Pi-MCP-Guard-Policy aus (Node type-stripping).
+    Die Policy spiegelt die OpenCode-Whitelist; der Test haelt Allow-/Deny-Listen
+    und den Run-Config-Guard synchron. Uebersprungen, wenn Node fehlt."""
+    if which("node") is None:
+        print("  " + _color("33", "[SKIP] pi mcp guard policy — node nicht im PATH"))
+        return
+    proc = subprocess.run(
+        ["node", "--test", "pi-agent/test/mcp-guard-policy.test.ts"],
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        pass_("pi mcp guard policy tests (node --test)")
+    else:
+        fail("pi mcp guard policy tests (node --test)", (proc.stdout or "")[-500:] + (proc.stderr or "")[-500:])
+
+
 def _docker_mcp_pins():
     """Liest den `mcp-server-docker==<v>`-Pin aus allen Doku-/README-Dateien."""
     pins = {}
@@ -1221,7 +1327,7 @@ def check_kafka_distro_availability():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth", "mistral-vibe"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth", "mistral-vibe", "pi"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -1258,6 +1364,18 @@ def main():
     info("  --> validate: " + os.path.join(ROOT, "mistral-vibe-agent"))
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mistral-vibe-agent")], stream=True)
     pass_("sbx kit validate (mistral-vibe-agent)") if code == 0 else fail("sbx kit validate (mistral-vibe-agent)")
+    info("  --> validate: " + os.path.join(ROOT, "pi-agent"))
+    # v3-Quellkits brauchen den Kit-Builder; `--offline` hat keinen ("no kit builder
+    # configured"). Die Descriptor-/Dockerfile-Validierung uebernimmt der buildx-Build
+    # (Kit-Frontend) in der Publish-Pipeline bzw. das e2e-Szenario (`sbx run ./pi-agent/`).
+    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "pi-agent")], stream=True)
+    if code == 0:
+        pass_("sbx kit validate (pi-agent)")
+    elif "no kit builder configured" in out:
+        print("  " + _color("33", "[SKIP] sbx kit validate (pi-agent) — v3-Quellkit braucht den Kit-Builder; "
+                                  "validiert via buildx-Kit-Frontend (build-and-publish-pi-image) + e2e-Szenario"))
+    else:
+        fail("sbx kit validate (pi-agent)")
 
     if args.validate_only:
         print()
@@ -1285,6 +1403,12 @@ def main():
         print()
         info("==> Mistral-Vibe Version Update-Check (PyPI + Image-Tag + Basis-Template)")
         check_vibe_cli_update()
+        print()
+        info("==> Pi Version Update-Check (npm + Descriptor/Dockerfile-Pin + Basis-Template)")
+        check_pi_cli_update()
+        print()
+        info("==> Pi MCP-Guard Policy (Unit-Tests)")
+        check_pi_mcp_guard()
         print()
         info("==> Docker-MCP-Server Version Update-Check (PyPI)")
         check_docker_mcp_update()
@@ -1345,7 +1469,7 @@ def main():
         '"javac:javac -version" "mvn:mvn -version" "docker:docker version" '
         '"kubectl:kubectl version --client" "jq:jq --version" "node:node --version" '
         '"npm:npm --version" "kafka:kafka-topics.sh --version" "bruno:bru --version" '
-        '"mcp-inspector:command -v mcp-inspector"; do '
+        '"mcp-inspector:command -v mcp-inspector" "pi:pi --version"; do '
         'name="${t%%:*}"; cmd="${t#*:}"; if $cmd >/dev/null 2>&1; then echo "TOOL-OK:$name"; '
         'else echo "TOOL-FAIL:$name"; fi; done'
     )
@@ -1384,6 +1508,31 @@ def main():
             "run_checks": True,
             "checks_tool": "vibe",
         },
+        {
+            "name": "kit-test-pi",
+            "agent": "pi",
+            "kit": os.path.join(ROOT, "pi-agent"),
+            "model": "deepseek/deepseek-flash",
+            "config_label": "pi config (default model + mcp-gateway + read-only guard)",
+            "config": (
+                'test -f ~/.pi/agent/settings.json '
+                '&& grep -q "\\"defaultProvider\\": \\"deepseek\\"" ~/.pi/agent/settings.json '
+                '&& grep -q "\\"defaultModel\\": \\"deepseek-flash\\"" ~/.pi/agent/settings.json '
+                '&& grep -q "mcp-gateway.docker.internal" ~/.pi/agent/mcp.json '
+                '&& test -f ~/.pi/agent/extensions/mcp-guard.ts '
+                '&& test -f ~/.pi/agent/lib/mcp-guard-policy.ts '
+                '&& pi --version >/dev/null 2>&1 '
+                '&& [ "${DEEPSEEK_API_KEY:-}" = "proxy-managed" ] '
+                '&& ! (pi --help 2>&1 | grep -q "Failed to load extension") '
+                '&& echo CONFIG-OK '
+                '|| { echo "SETTINGS=$(cat ~/.pi/agent/settings.json 2>/dev/null || echo MISSING)"; '
+                'echo "GATEWAY=$(grep -c mcp-gateway.docker.internal ~/.pi/agent/mcp.json 2>/dev/null || echo 0)"; '
+                'echo "GUARD=$(test -f ~/.pi/agent/extensions/mcp-guard.ts && test -f ~/.pi/agent/lib/mcp-guard-policy.ts && echo 1 || echo 0)"; '
+                'echo "DEEPSEEK=${DEEPSEEK_API_KEY:-<unset>}"; '
+                'echo "PI=$(pi --version 2>/dev/null || echo MISSING)"; '
+                'pi --help 2>&1 | grep -i "extension" | head -3; exit 1; }'
+            ),
+        },
     ]
 
     if agent != "all":
@@ -1416,12 +1565,22 @@ def main():
         if template_fam and not template_image:
             sfail("template pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE-Konstante fehlt)")
             continue
-        if _kit_kind(s["kit"]) == "sandbox":
-            # Sandbox-Kit (kind:sandbox) definiert den Agenten selbst → Kit als erstes
+        # v3-Pi-Workload: lokal das Kit-Verzeichnis (sbx baut es), in CI das publizierte
+        # Image (PI_IMAGE_TAG). v2-Sandbox-Kits nutzen immer das Verzeichnis.
+        kit_target = s["kit"]
+        if s["agent"] == "pi":
+            pi_tag = os.environ.get("PI_IMAGE_TAG")
+            if pi_tag:
+                kit_target = f"{IMAGE_PREFIX}/{PI_IMAGE_NAME}:{pi_tag}"
+                info(f"Pi-Image (publiziert): {kit_target}")
+            else:
+                info("Pi-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
+        if _kit_kind(s["kit"]) in ("sandbox", "workload"):
+            # Sandbox-/Workload-Kit definiert den Agenten selbst → Kit als erstes
             # positionales Argument; kein Agent-Name, kein --kit (deprecated fuer Sandbox-Kits).
-            create_cmd = ["create", "--name", s["name"], s["kit"], ws]
+            create_cmd = ["create", "--name", s["name"], kit_target, ws]
         else:
-            create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", s["kit"]]
+            create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", kit_target]
         # Mistral-Vibe-Image-Tag per --kit-arg an das Kit uebergeben:
         #   - lokal (Host): `local` = zuletzt lokal gebauter/pushter Stand
         #     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image`).
@@ -1498,7 +1657,7 @@ def main():
         c2, out = exec_sandbox(s["name"], tools_cmd)
         ok_tools = set(re.findall(r"TOOL-OK:(\w+)", out))
         missing_tools = []
-        for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka"):
+        for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka", "pi"):
             if t in ok_tools:
                 pass_(f"tool: {t}")
             else:
@@ -1596,7 +1755,7 @@ def main():
 
         openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
-        if s["agent"] == "opencode":
+        if s["agent"] in ("opencode", "pi"):
             if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
                 pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
             else:
@@ -1612,13 +1771,21 @@ def main():
         # provider reads by default) — assert that for the opencode template,
         # while claude/mammouth must have it unset.
         google_env_cmd = 'echo "GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-<unset>}"'
-        c2, out = exec_sandbox(s["name"], google_env_cmd)
+        if s["agent"] == "pi":
+            gemini_env_cmd = 'echo "GEMINI_API_KEY=${GEMINI_API_KEY:-<unset>}"'
+            c2, out = exec_sandbox(s["name"], gemini_env_cmd)
+            if c2 == 0 and "GEMINI_API_KEY=proxy-managed" in out:
+                pass_("google proxy env wiring (GEMINI_API_KEY=proxy-managed)")
+            else:
+                sfail("google proxy env wiring (GEMINI_API_KEY=proxy-managed)", out)
+        else:
+            c2, out = exec_sandbox(s["name"], google_env_cmd)
         if s["agent"] == "opencode":
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
                 pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
             else:
                 sfail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
-        else:
+        elif s["agent"] != "pi":
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
                 pass_("google not wired (only opencode template declares google)")
             else:

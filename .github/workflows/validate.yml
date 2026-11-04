@@ -122,6 +122,20 @@ jobs:
         if: env.CAN_VALIDATE == 'true'
         run: sbx kit validate ./mistral-vibe-agent/
 
+      - name: Validate Pi agent kit (v3 workload)
+        if: env.CAN_VALIDATE == 'true'
+        # v3-Quellkits brauchen den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Die Descriptor-/Dockerfile-Validierung uebernimmt der
+        # buildx-Kit-Frontend-Build (build-and-publish-pi-image / e2e).
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./pi-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+
       - name: Sign out of Docker Hub via sbx
         if: always() && env.CAN_VALIDATE == 'true'
         run: sbx logout --yes || true
@@ -135,6 +149,10 @@ jobs:
           for f in install-tooling.sh install-tooling-user.sh mcp-check.sh install-apt-packages.sh; do
             cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
             cmp "opencode-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
+          done
+          # Pi-Kopien (mcp-check.sh weicht bewusst ab: Pi-Config-Pfad + pi-Fallback)
+          for f in install-tooling.sh install-tooling-user.sh install-apt-packages.sh; do
+            cmp "opencode-agent/files/home/.local/bin/$f" "pi-agent/files/home/.local/bin/$f"
           done
 
       - name: Check Mistral Vibe image tag matches the Dockerfile pin

@@ -1,0 +1,304 @@
+# syntax=docker/sandbox-kit:3
+#
+# Pi Coding Agent as a v3 sandbox workload (issue #236).
+# Descriptor + Dockerfile share the stem: pi-agent.yaml + pi-agent.dockerfile.
+# Build/publish: docker buildx build ./pi-agent -f ./pi-agent/pi-agent.yaml
+# (multi-arch via .github/workflows/build-and-publish-pi-image.yml).
+#
+# v3 requires sbx >= v0.45 (repo pin: v0.50.1). v3 kits cannot compose with
+# v1/v2 kits, so this workload is standalone (--template does not apply).
+schemaVersion: "3"
+kind: workload
+displayName: Pi Coding Agent
+description: >-
+  Pi Coding Agent (@earendil-works/pi-coding-agent) with the same tooling as
+  opencode-agent, MCP gateway wiring and proxy-managed provider credentials.
+
+args:
+  version:
+    default: "1.5.0"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: Pi coding agent version to install (npm @earendil-works/pi-coding-agent)
+    buildArg: PI_VERSION
+
+provides: ["pi@${{ kit.args.version }}"]
+
+dockerfile: ./pi-agent.dockerfile
+
+capabilities:
+  - type: com.docker.sandbox/sbx@1
+
+  # Same egress as the opencode-agent kit (runtime + build-time install, so a
+  # local `sbx run ./pi-agent/` build can download Node/JDK/Maven/Helm/Kafka).
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      install:
+        allow: &allow
+          - opencode.ai
+          - '*.opencode.ai'
+          - context7.com
+          - '*.context7.com'
+          - docs.mistral.ai
+          - api.mistral.ai
+          - api.eu.mistral.ai
+          - api.deepseek.com
+          - '*.deepseek.com'
+          - openrouter.ai
+          - '*.openrouter.ai'
+          - api.z.ai
+          - '*.z.ai'
+          - generativelanguage.googleapis.com
+          - openai.com
+          - '*.openai.com'
+          - anthropic.com
+          - api.anthropic.com
+          - '*.anthropic.com'
+          - platform.claude.com
+          - github.com
+          - api.github.com
+          - '*.github.com'
+          - codeberg.org
+          - '*.codeberg.org'
+          - maven.pkg.github.com
+          - githubusercontent.com
+          - objects.githubusercontent.com
+          - '*.githubusercontent.com'
+          - models.dev
+          - registry.npmjs.org
+          - nodejs.org
+          - dlcdn.apache.org
+          - archive.apache.org
+          - camel.apache.org
+          - '*.camel.apache.org'
+          - jetbrains.com
+          - www.jetbrains.com
+          - plugins.jetbrains.com
+          - youtrack.jetbrains.com
+          - localhost:9200
+          - 127.0.0.1:9200
+          - host.docker.internal:9200
+          - localhost:5601
+          - 127.0.0.1:5601
+          - host.docker.internal:5601
+          - localhost:8200
+          - 127.0.0.1:8200
+          - host.docker.internal:8200
+          - localhost:30920
+          - 127.0.0.1:30920
+          - localhost:30561
+          - 127.0.0.1:30561
+          - localhost:30820
+          - 127.0.0.1:30820
+          - maven.org
+          - repo1.maven.org
+          - '*.maven.org'
+          - spring.io
+          - repo.spring.io
+          - '*.spring.io'
+          - start.spring.io
+          - docker.io
+          - '*.docker.io'
+          - docker.com
+          - '*.docker.com'
+          - download.docker.com
+          - dl.k8s.io
+          - get.helm.sh
+          - docker.elastic.co
+          - docker-auth.elastic.co
+          - cr.jaegertracing.io
+          - ghcr.io
+          - repo.repsy.io
+          - jitpack.io
+          - artifacts.cibseven.org
+          - packages.scm-manager.org
+          - api.cloudsmith.io
+          - upload.cloudsmith.io
+          - docker.cloudsmith.io
+          - helm.oci.cloudsmith.io
+          - dl.cloudsmith.io
+          - docs.cloudsmith.com
+          - cloudsmith.com
+          - www.cloudsmith.com
+          - '**/*.r2.cloudflarestorage.com'
+          - api.bell-sw.com
+          - archive.ubuntu.com
+          - security.ubuntu.com
+          - ports.ubuntu.com
+          - repo.mongodb.org
+          - pypi.org
+          - files.pythonhosted.org
+          - add-skill.vercel.sh
+          - www.skills.sh
+          - '*.exa.ai'
+          - api.stackexchange.com
+          - sonarcloud.io
+          - '*.sonarcloud.io'
+          - pi.dev
+          - '*.pi.dev'
+      runtime:
+        allow: *allow
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: GitHub (gh/git) — proxy-managed token
+    config:
+      service: github
+      phase: runtime
+      apiKey:
+        name: GH_TOKEN
+        proxyManaged: true
+        inject:
+          - {domain: api.github.com, header: Authorization, format: "Bearer %s"}
+          - {domain: github.com, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: DeepSeek API-Key (https://platform.deepseek.com/api_keys)
+    config:
+      service: deepseek
+      phase: runtime
+      apiKey:
+        name: DEEPSEEK_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: api.deepseek.com, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Mistral API-Key (https://console.mistral.ai/)
+    config:
+      service: mistral
+      phase: runtime
+      apiKey:
+        name: MISTRAL_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: api.mistral.ai, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Z.AI API-Key (https://z.ai/manage-apikey/apikey-list)
+    config:
+      service: zai
+      phase: runtime
+      apiKey:
+        name: ZAI_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: api.z.ai, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: OpenRouter API-Key (https://openrouter.ai/keys)
+    config:
+      service: openrouter
+      phase: runtime
+      apiKey:
+        name: OPENROUTER_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: openrouter.ai, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Google Gemini API-Key (https://aistudio.google.com/apikey)
+    config:
+      service: google
+      phase: runtime
+      apiKey:
+        name: GEMINI_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: generativelanguage.googleapis.com, header: x-goog-api-key, format: "%s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Context7 API-Key (https://context7.com/dashboard)
+    config:
+      service: context7
+      phase: runtime
+      apiKey:
+        name: CONTEXT7_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: context7.com, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Stack Overflow API-Key (https://stackapps.com/applications)
+    config:
+      service: stackoverflow
+      phase: runtime
+      apiKey:
+        name: STACKOVERFLOW_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: api.stackexchange.com, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Cloudsmith API-Key (https://cloudsmith.io/user/settings/api-keys/)
+    config:
+      service: cloudsmith
+      phase: runtime
+      apiKey:
+        name: CLOUDSMITH_API_KEY
+        proxyManaged: true
+        inject:
+          - {domain: api.cloudsmith.io, header: X-Api-Key, format: "%s"}
+          - {domain: upload.cloudsmith.io, header: X-Api-Key, format: "%s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: GitHub Packages Maven — klassisches PAT (nur read:packages)
+    config:
+      service: github-maven
+      phase: runtime
+      apiKey:
+        name: GITHUB_MAVEN_TOKEN
+        proxyManaged: true
+        inject:
+          - {domain: maven.pkg.github.com, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: SonarCloud API-Token (https://sonarcloud.io/account/security)
+    config:
+      service: sonarcloud
+      phase: runtime
+      apiKey:
+        name: SONAR_TOKEN
+        proxyManaged: true
+        inject:
+          - {domain: sonarcloud.io, header: Authorization, format: "Bearer %s"}
+
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Codeberg API-Token (https://codeberg.org/user/settings/applications)
+    config:
+      service: codeberg
+      phase: runtime
+      apiKey:
+        name: CODEBERG_TOKEN
+        proxyManaged: true
+        inject:
+          - {domain: codeberg.org, header: Authorization, format: "token %s"}
+
+  - type: com.docker.sandbox/agent-context@1
+    optional: true
+    config:
+      filename: AGENTS.md
+      directory: /home/agent/.pi/agent
+      contentFile: ./context.md
+
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      startup:
+        - command: bash /home/agent/.local/bin/pi-startup-ca.sh
+          user: "0"
+          env: [PROXY_CA_CERT_B64, JAVA_HOME]
+          description: Import the sandbox proxy CA into the JDK cacerts (Maven trust)
+        - command: bash /home/agent/.local/bin/pi-startup-maven.sh
+          user: "1000"
+          env: [GITHUB_MAVEN_TOKEN, HOME]
+          description: Write ~/.m2/settings.xml with proxy routing, github-maven and host-cache profile
