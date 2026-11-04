@@ -37,7 +37,8 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 ```powershell
 $DH  = "domboeckli"       # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
 # Backup-Tag = Basis-Pin je Template-Familie (getrennt, Issue #202):
-$TAG_OPENCODE = "0.11.0"  # TEMPLATE_VERSION_OPENCODE (opencode-docker) — auch für Mammouth
+$TAG_OPENCODE = "0.11.0"  # TEMPLATE_VERSION_OPENCODE (opencode-docker)
+$TAG_SHELL = "0.10.0"     # TEMPLATE_VERSION (shell-docker) — Mistral Vibe/Mammouth
 $TAG_CLAUDE   = "0.10.0"  # TEMPLATE_VERSION_CLAUDE (claude-code-docker)
 $TAG_VIBE     = "0.10.0"  # shell-docker (Mistral Vibe)
 cd C:\development\projects\opencode-sandbox-kit
@@ -49,7 +50,7 @@ docker login
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
 | claude | `opencode-agent` | `opencode-agent/claude/Dockerfile` | `BASE_IMAGE=claude-code-docker-0.10.0` |
-| mammouth | `mammouth-agent` | `mammouth-agent/Dockerfile` | `BASE_IMAGE=opencode-docker-0.11.0`, `MAMMOUTH_VERSION=1.18.31.2` |
+| mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `MAMMOUTH_VERSION=1.18.31.2` |
 | mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/Dockerfile` | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.3` |
 
 ## 1. opencode — kein Build nötig (lokal gecacht)
@@ -69,8 +70,8 @@ docker push  "$DH/sbx-claude-tooling:$TAG_CLAUDE"
 ## 3. mammouth — bauen + pushen
 
 ```powershell
-docker build -f mammouth-agent/Dockerfile -t "$DH/sbx-mammouth:$TAG_OPENCODE" mammouth-agent
-docker push  "$DH/sbx-mammouth:$TAG_OPENCODE"
+docker build -f mammouth-agent/mammouth-agent.yaml -t "$DH/sbx-mammouth:$TAG_SHELL" mammouth-agent
+docker push  "$DH/sbx-mammouth:$TAG_SHELL"
 ```
 
 ## 4. mistral-vibe — bauen + pushen
@@ -134,11 +135,10 @@ sbx run claude `
     --static-mcp idea,k8s,docker
 ```
 
-**Mammouth Code** (`kind: sandbox`):
+**Mammouth Code** (v3-Workload):
 
 ```powershell
-sbx run ./mammouth-agent/ `
-    --template domboeckli/sbx-mammouth:<tag> `
+sbx run docker.io/domboeckli/sbx-mammouth:<tag> `
     --skills=off `
     --static-mcp idea,k8s,docker
 ```
@@ -152,10 +152,9 @@ sbx run ./mistral-vibe-agent/ `
     --static-mcp idea,k8s,docker
 ```
 
-> Bei den `kind: sandbox`-Kits (Mammouth/Mistral) steht das Image zusätzlich in der spec
-> (`sandbox.image`). `--template` auf der CLI sollte es überschreiben; falls sbx die
-> Spec-Angabe bevorzugt, muss die Image-Referenz in der spec auf Docker Hub umgestellt
-> (dann statt `--template` dort eintragen) werden.
+> Bei den Agent-Kits steht das Image in der v3-Spec (`mammouth-agent.yaml`) bzw. wird
+> per `--template` (Mistral, v2) gesetzt. Immer `--skills=off` setzen; das
+> `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
 > Immer `--skills=off` setzen; das `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
 
 ## Hinweise

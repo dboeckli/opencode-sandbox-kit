@@ -219,19 +219,19 @@
     },
     {
       "customType": "regex",
-      "description": "opencode-docker-Pin (mammouth-agent/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION_OPENCODE spiegeln)",
-      "managerFilePatterns": ["mammouth-agent/Dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-opencode",
+      "description": "shell-docker-Pin (mammouth-agent/mammouth-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-<v>; muss dem Mistral-Vibe-shell-Pin entsprechen)",
+      "managerFilePatterns": ["mammouth-agent/mammouth-agent.dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "sandbox-templates-shell",
       "packageNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
+      "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
       "versioningTemplate": "semver"
     },
     {
       "customType": "regex",
-      "description": "Mammouth CLI version (mammouth-agent/Dockerfile ARG MAMMOUTH_VERSION; github-releases mammouth-ai/code) — spec-Image-Tag wird per packageRule mitgruppiert",
-      "managerFilePatterns": ["mammouth-agent/Dockerfile"],
+      "description": "Mammouth CLI version (mammouth-agent/mammouth-agent.dockerfile ARG MAMMOUTH_VERSION; github-releases mammouth-ai/code) — Descriptor-Pin wird per packageRule mitgruppiert",
+      "managerFilePatterns": ["mammouth-agent/mammouth-agent.dockerfile"],
       "matchStrings": ["ARG MAMMOUTH_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "mammouth-ai/code",
       "datasourceTemplate": "github-releases",
@@ -240,9 +240,9 @@
     },
     {
       "customType": "regex",
-      "description": "Mammouth image tag (mammouth-agent/spec.yaml args.imageTag.default; Mirror des Dockerfile-Pins)",
-      "managerFilePatterns": ["mammouth-agent/spec.yaml"],
-      "matchStrings": ["imageTag:\\s*\\n\\s+default: \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "description": "Mammouth version (mammouth-agent/mammouth-agent.yaml args.version.default; Mirror des Dockerfile-Pins)",
+      "managerFilePatterns": ["mammouth-agent/mammouth-agent.yaml"],
+      "matchStrings": ["version:\\s*\\n\\s+default: \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "mammouth-ai/code",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$",
@@ -317,7 +317,7 @@
     {
       "customType": "regex",
       "description": "Bruno CLI (@usebruno/cli) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #257 im spring-6-gateway-Repo",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile", "pi-agent/pi-agent.dockerfile"],
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "pi-agent/pi-agent.dockerfile"],
       "matchStrings": ["@usebruno/cli@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@usebruno/cli",
       "datasourceTemplate": "npm"
@@ -325,7 +325,7 @@
     {
       "customType": "regex",
       "description": "MCP Inspector CLI (@modelcontextprotocol/inspector) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #231",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "mammouth-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/Dockerfile", "pi-agent/pi-agent.dockerfile"],
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "mistral-vibe-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "pi-agent/pi-agent.dockerfile"],
       "matchStrings": ["@modelcontextprotocol/inspector@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@modelcontextprotocol/inspector",
       "datasourceTemplate": "npm"

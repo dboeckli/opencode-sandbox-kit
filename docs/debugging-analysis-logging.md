@@ -230,7 +230,7 @@ schreibt der **Dispatcher des Base-Templates** — Timestamps pro Zeile kann das
 | `002-startup-opencode-sandbox-kit/000-cmd.sh` | Kit `setup.startup` (agent) | `~/.claude/settings.json` mit `settings.kit.json` mergen (nach Template-Overwrite — Python-Merge, korrekte Array-Behandlung) |
 
 Das `002-…-sandbox-kit`-Verzeichnis wird vom Template aus dem `setup.startup`-Abschnitt der Kit-Spec
-generiert (`opencode-agent/spec.yaml`, `mammouth-agent/spec.yaml`, `mistral-vibe-agent/spec.yaml`); die
+generiert (`opencode-agent/spec.yaml`, `mistral-vibe-agent/spec.yaml`) bzw. `lifecycle@1`-Capabilities (Mammouth/Pi); die
 Hook-Skripte landen als `000-cmd.sh`, `001-cmd.sh`, … in Namensreihenfolge.
 
 ### Kit-Spec v2 / sbx-Version

@@ -363,3 +363,13 @@ git -C ~/docs/repsy-docs pull --ff-only --quiet
 
 A hook injects a `[startup-checks] ...` report (Context7, IntelliJ MCP, gh, Java/Maven, Docker, kubectl, MCP gateway/IntelliJ/Kubernetes, helm, kafka, skills, sonar, mammouth) into the system prompt at the start of the session. When you see it, briefly confirm the tooling status in your first reply and continue. If any check reports FAIL, mention it and suggest a fix. Do not re-run the checks yourself.
 <!-- sandbox-tools -->
+
+## Sandbox environment
+
+You are running inside a Docker sandbox. The workspace is mounted at its
+absolute host path. `sudo` is passwordless; use it for package installs.
+Docker is available inside the sandbox; containers you start are isolated
+in the microVM. The IntelliJ MCP server runs on the Windows host and is
+delivered via the sbx MCP Gateway (registration `sbx mcp add idea --url
+http://localhost:64615/stream`, sandbox with `--static-mcp idea`; port 64615
+since IDEA 2026.2.2, previously 64342).
