@@ -8,7 +8,7 @@ set -euo pipefail
 #     ${env.GITHUB_MAVEN_TOKEN}; the token never lands in the filesystem)
 #   - an active host-cache profile when a read-only host Maven repository is
 #     mounted (/c/Users/*/.m2/repository, /c/*/maven-repo, /c/*/m2-repository)
-# Same behavior as the opencode-agent `setup.startup` step.
+# Same behavior as the other kit startup steps.
 
 path="${HOME}/.m2/settings.xml"
 mkdir -p "$(dirname "${path}")"

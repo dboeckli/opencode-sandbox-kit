@@ -11,8 +11,8 @@ schemaVersion: "3"
 kind: workload
 displayName: Pi Coding Agent
 description: >-
-  Pi Coding Agent (@earendil-works/pi-coding-agent) with the same tooling as
-  opencode-agent, MCP gateway wiring and proxy-managed provider credentials.
+  Pi Coding Agent (@earendil-works/pi-coding-agent) with the kit tooling,
+  MCP gateway wiring and proxy-managed provider credentials.
 
 args:
   version:
@@ -28,14 +28,12 @@ dockerfile: ./pi-agent.dockerfile
 capabilities:
   - type: com.docker.sandbox/sbx@1
 
-  # Same egress as the opencode-agent kit (runtime + build-time install, so a
-  # local `sbx run ./pi-agent/` build can download Node/JDK/Maven/Helm/Kafka).
+  # Kit egress (runtime + build-time install, so a local `sbx run ./pi-agent/`
+  # build can download Node/JDK/Maven/Helm/Kafka).
   - type: com.docker.sandbox/network-policy@1
     config:
       install:
         allow: &allow
-          - opencode.ai
-          - '*.opencode.ai'
           - context7.com
           - '*.context7.com'
           - docs.mistral.ai

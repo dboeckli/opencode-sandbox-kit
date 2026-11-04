@@ -14,7 +14,7 @@ Enthält zusätzlich dedizierte Agent-Kits:
 
 - **Mammouth Code** — `mammouth-agent/` (`kind: sandbox`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, entrypoint `mammouth-entrypoint` (Wrapper: seedet die Model-Picker-Favoriten, dann `exec mammouth`; Fallback auf `mammouth` bei alten Images).
 - **Mistral Vibe** — `mistral-vibe-agent/` (`kind: sandbox`), eigenes gepinntes Image, entrypoint `vibe --agent auto-approve`.
-- **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie OpenCode, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
+- **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie die anderen Kits, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
 
@@ -180,7 +180,7 @@ die Familien nicht mehr in Lockstep, Issue #202):
 - **Claude (Home)**: `docker.io/domboeckli/sbx-claude-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:claude-code-docker-0.x.0` auf (Issue #137)
 - **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken, Issue #137)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
-- **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (ohne OpenCode-Basis; `<tag>` = Pi-Version)
+- **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (schmale Shell-Basis; `<tag>` = Pi-Version)
 
 Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
 `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
@@ -565,13 +565,13 @@ v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.50.1). **v3-Kits lassen sich nicht mi
 (`--template` entfällt); das Pi-Kit ist ein eigenständiger Workload.
 
 - **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker/sandbox-templates:shell-docker-0.x.0`
-  auf (keine OpenCode-Basis) und backt **dasselbe Tooling wie OpenCode** (Node 26, JDK, Maven, Docker CLI/Compose, kubectl, Helm, Kafka,
+  auf (schmale Shell-Basis) und backt **dasselbe Tooling wie die anderen Kits** (Node 26, JDK, Maven, Docker CLI/Compose, kubectl, Helm, Kafka,
   shfmt, ctx7, skills, prettier, renovate, Bruno CLI, MCP-Inspector) plus Pi `1.5.0` (Pin im Descriptor,
   `buildArg: PI_VERSION`). Die Tooling-Skripte sind identische Kopien (`local-test-kits.py --validate-only` prüft Drift).
 - **Launch**: `ENTRYPOINT ["pi"]` im Dockerfile; Entrypoint/Config kommen aus dem Image, nicht aus einem `sandbox:`-Block.
 - **Config**: `~/.pi/agent/settings.json` (`defaultProvider: deepseek`, `defaultModel: deepseek-flash`),
   `~/.pi/agent/mcp.json` (eingebautes MCP, Gateway `http://mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`),
-  `~/.pi/agent/extensions/mcp-guard.ts` (Read-only-Whitelist + Run-Config-Guard, gleiche Allow-Liste wie OpenCode)
+  `~/.pi/agent/extensions/mcp-guard.ts` (Read-only-Whitelist + Run-Config-Guard, gemeinsame Allow-Liste)
   und `~/.pi/agent/AGENTS.md` (Sandbox-Regeln via `agent-context`-Capability).
 - **Auth**: `credential@1`-Capabilities für `deepseek`, `zai`, `mistral`, `openrouter`, `google` (`GEMINI_API_KEY`),
   `context7`, `stackoverflow`, `cloudsmith`, `github-maven`, `sonarcloud`, `codeberg` — alle `proxyManaged`

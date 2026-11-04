@@ -2,9 +2,7 @@
 set -euo pipefail
 
 # Shared tooling installation (root). Single source of truth for the `setup.install`
-# tooling steps that both kit specs reference:
-#   - opencode-agent/spec.yaml (mixin, OpenCode/Claude Home)
-#   - mammouth-agent/spec.yaml (Mammouth Code)
+# tooling steps that the kit specs reference.
 #
 # The script is bundled into the sandbox via files/home/.local/bin/ (both kits) and
 # executed by `setup.install` as root. It must stay identical in both kits — edit one
@@ -18,7 +16,7 @@ set -euo pipefail
 # packages live in install-apt-packages.sh.
 # Idempotency guards: each tool checks whether it is already installed at the expected
 # version and skips the download otherwise. This keeps `setup.install` fast when the
-# tooling is pre-baked into a custom template image (e.g. docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling),
+# tooling is pre-baked into a custom template image,
 # while a clean base template (e.g. Claude on the official template) still installs.
 #
 # Fail-open: every tool runs via `run_step` in a subshell. A failing tool does NOT abort
@@ -103,7 +101,7 @@ download() {
 # --- Node.js (LTS) ---
 # The base templates ship Ubuntu's Node 22 (nodejs 22.x via apt), but current
 # npm CLIs (renovate >=43) require Node ^24.11.0. The agents themselves are
-# native binaries (opencode ELF, claude native), so Node is only needed for the
+# agent binaries are native, so Node is only needed for the
 # npm-global CLIs — installing Node 24 here is safe and keeps npm CLIs current.
 # Extract to /opt/node and symlink into /usr/local/bin (which precedes /usr/bin
 # on PATH), so the distro Node stays untouched as a fallback.

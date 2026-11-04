@@ -3,7 +3,7 @@ set -euo pipefail
 
 # apt package installation (root). Referenced by `setup.install` in both kit specs
 # (single source of truth for the inline apt step they previously duplicated). Retries
-# while the template's own apt-get (001-startup-opencode) holds the dpkg/apt lock, so the
+# while the template's own apt-get startup holds the dpkg/apt lock, so the
 # sandbox build does not fail on a transient lock condition.
 #
 # Bundled via files/home/.local/bin/ (both kits), executed by setup.install as root. Must

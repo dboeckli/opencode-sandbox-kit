@@ -2,9 +2,7 @@
 set -euo pipefail
 
 # Shared agent-user tooling installation (uid 1000). Single source of truth for the
-# `user: "1000"` `setup.install` steps that both kit specs reference:
-#   - opencode-agent/spec.yaml (mixin, OpenCode/Claude Home)
-#   - mammouth-agent/spec.yaml (Mammouth Code)
+# `user: "1000"` `setup.install` steps that the kit specs reference.
 #
 # The script is bundled into the sandbox via files/home/.local/bin/ (both kits) and
 # executed by `setup.install` with user "1000" (~ = /home/agent). It must stay
@@ -24,7 +22,7 @@ if [ -d "${HOOKDIR}" ]; then
 fi
 
 # --- superpowers skills (obra/superpowers) → ~/.agents/skills ---
-# Option A: nur das Skill-Bundle, kein OpenCode-Plugin/Hook (keine automatische
+# Option A: nur das Skill-Bundle, kein Agent-Plugin/Hook (keine automatische
 # Methodik-Injektion beim Session-Start; Skills werden bei Bedarf über das
 # `skill`-Tool geladen). 15 Skills (brainstorming, writing-plans, TDD,
 # systematic-debugging, verification-before-completion, ...). Eigener Guard, damit

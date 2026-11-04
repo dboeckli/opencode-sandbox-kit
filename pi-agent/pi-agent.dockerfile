@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1
 #
 # Pinned Pi Coding Agent image for the `pi-agent` v3 sandbox workload (issue #236).
-# Bakes the same tooling as `opencode-agent/opencode/Dockerfile` on top of the
-# plain `shell-docker` template (no OpenCode baggage), so the Pi kit has full
+# Bakes the kit tooling on top of the plain `shell-docker` template, so Pi has full
 # tooling parity (JDK, Maven, Docker CLI, Compose, kubectl, Helm, Kafka CLI,
 # Node.js, npm CLIs, agent-user tooling) and no runtime installs.
 #
@@ -20,8 +19,8 @@
 ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
 FROM ${BASE_IMAGE}
 
-# The plain shell template does not set an npm global prefix (opencode-docker did).
-# Keep the opencode-agent convention so install-tooling-user.sh finds the CLIs at
+# The plain shell template does not set an npm global prefix.
+# Keep the shared kit convention so install-tooling-user.sh finds the CLIs at
 # /usr/local/share/npm-global/bin.
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=/usr/local/share/npm-global/bin:${PATH}
@@ -43,14 +42,24 @@ RUN chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-tooling.sh all
 
 # npm-global CLIs (install-tooling.sh installed Node 26; npm prefix is /usr/local).
-# Same set as the OpenCode tooling image, plus Pi itself.
-RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
-    @modelcontextprotocol/inspector@2.13.0 \
- && npm_config_bin_links=true npm install -g --ignore-scripts @earendil-works/pi-coding-agent@${PI_VERSION}
+# Same npm CLI set as the other kit images, plus Pi itself. Retry the install:
+# the npm registry occasionally serves metadata for a just-published dependency
+# before all its versions resolve (transient ETARGET), which fails a single run.
+RUN set -e; \
+    for attempt in 1 2 3; do \
+      if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
+           @modelcontextprotocol/inspector@2.13.0 \
+         && npm_config_bin_links=true npm install -g --ignore-scripts @earendil-works/pi-coding-agent@${PI_VERSION}; then \
+        break; \
+      fi; \
+      if [ "${attempt}" = "3" ]; then exit 1; fi; \
+      echo "npm install failed (attempt ${attempt}/3); retrying in 10s..." >&2; \
+      sleep 10; \
+    done
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
 # Node must satisfy Pi's floor (>= 22.19) — install-tooling.sh installs the
-# opencode-agent Node pin (26.x), so this also proves tooling parity.
+# shared Node pin (26.x), so this also proves tooling parity.
 RUN shfmt --version \
  && java -version \
  && mvn -v \
@@ -100,7 +109,7 @@ RUN chmod +x /home/agent/.local/bin/pi-startup-*.sh /home/agent/.local/bin/mcp-c
 
 RUN rm -rf /tmp/kit
 
-# Same runtime environment as the opencode-agent kit.
+# Same runtime environment as the other kit images.
 ENV JAVA_HOME=/usr/local/java
 ENV npm_config_bin_links=false
 

@@ -1,15 +1,14 @@
 // Read-only whitelist and run-config guard for the sbx MCP gateway tools.
 //
-// Pi has no permission system like OpenCode's, so this policy is enforced by
-// the mcp-guard extension (see ../extensions/mcp-guard.ts) in a tool_call hook.
-// The allow-list mirrors opencode-agent/files/home/.config/opencode/opencode.jsonc:
-// read-only tools are allowed, write/exec tools are denied (Pi cannot ask on the
-// fly). mcp-gateway_execute_run_configuration is limited to the validate-only
-// run configuration.
+// Pi has no permission system, so this policy is enforced by the mcp-guard
+// extension (see ../extensions/mcp-guard.ts) in a tool_call hook: read-only
+// tools are allowed, write/exec tools are denied (Pi cannot ask on the fly).
+// mcp-gateway_execute_run_configuration is limited to the validate-only run
+// configuration.
 //
 // Pi registers gateway tools as `mcp__mcp_gateway__<tool>` (server name
 // `mcp-gateway` sanitized to `mcp_gateway`). The policy normalizes that prefix
-// to the `mcp-gateway_` form used by the OpenCode whitelist.
+// to the canonical `mcp-gateway_` form used by the shared whitelist.
 
 export interface ToolDecision {
 	allowed: boolean;

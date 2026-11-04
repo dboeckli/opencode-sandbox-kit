@@ -77,7 +77,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
 | Mammouth Code | `curl -fsSL https://code.mammouth.ai/install.sh \| bash` → `~/.mammouth` + Symlink `/usr/local/bin/mammouth` | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | Im eigenen gepinnten Image gebacken (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
-| Pi | v3-Workload-Image (`shell-docker`-Basis + OpenCode-Tooling + `@earendil-works/pi-coding-agent`, `docker.io/domboeckli/sbx-pi-agent:<pin>`; kein OpenCode im Image) | `~/.pi/agent/settings.json` + `mcp.json` (MCP-Gateway) + `extensions/mcp-guard.ts` (Read-only-Guard) + `AGENTS.md` |
+| Pi | v3-Workload-Image (`shell-docker`-Basis + Kit-Tooling + `@earendil-works/pi-coding-agent`, `docker.io/domboeckli/sbx-pi-agent:<pin>`; kein OpenCode im Image) | `~/.pi/agent/settings.json` + `mcp.json` (MCP-Gateway) + `extensions/mcp-guard.ts` (Read-only-Guard, gemeinsame Allow-Liste) + `AGENTS.md` |
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Import the sandbox proxy CA into the JDK cacerts (root).
-# Same behavior as the opencode-agent `setup.startup` step: Java/Maven must
+# Same behavior as the other kit startup steps: Java/Maven must
 # trust the proxy TLS interception so proxy-managed credentials can be
 # injected into Maven builds. Idempotent (delete + import on every start).
 

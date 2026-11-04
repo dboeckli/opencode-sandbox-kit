@@ -4,7 +4,7 @@
 // file — helper modules must live outside this directory). The gateway tools are
 // registered as `mcp__mcp_gateway__<tool>`; this hook enforces the read-only
 // whitelist plus the run-config guard implemented in ../lib/mcp-guard-policy.ts
-// (same allow-list as the OpenCode kit).
+// (shared read-only allow-list).
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { isAllowedTool } from "../lib/mcp-guard-policy.ts";

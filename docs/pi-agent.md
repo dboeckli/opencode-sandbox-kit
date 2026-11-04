@@ -1,7 +1,7 @@
 # Pi Coding Agent Kit (Kit-Spec v3)
 
 Pi (`@earendil-works/pi-coding-agent`) läuft als eigenständiger **v3-Sandbox-Workload** unter
-`pi-agent/`. Das Kit hat dasselbe Tooling wie `opencode-agent` und verdrahtet den sbx MCP
+`pi-agent/`. Das Kit hat dasselbe Tooling wie die anderen Kits und verdrahtet den sbx MCP
 Gateway direkt über Pis eingebautes MCP (`~/.pi/agent/mcp.json`) — kein `pi-mcp-adapter` nötig.
 
 ## Voraussetzungen
@@ -18,7 +18,7 @@ Gateway direkt über Pis eingebautes MCP (`~/.pi/agent/mcp.json`) — kein `pi-m
 ```
 pi-agent/
 ├── pi-agent.yaml          # v3 descriptor (kind: workload, args.version, capabilities)
-├── pi-agent.dockerfile    # Image: OpenCode-Tooling + Pi, ENTRYPOINT [pi]
+├── pi-agent.dockerfile    # Image: Kit-Tooling + Pi, ENTRYPOINT [pi]
 ├── context.md             # Sandbox-AGENTS.md (agent-context@1, contentFile)
 └── files/home/
     ├── .local/bin/        # install-*.sh (Kopien), pi-startup-*.sh, mcp-check.sh
@@ -39,7 +39,7 @@ v3-Besonderheiten gegenüber den v2-Kits:
 
 ## Tooling-Parität
 
-Das Image nutzt dieselben Skripte und Versionen wie `opencode-agent`:
+Das Image nutzt dieselben Skripte und Versionen wie die anderen Kits:
 
 - Node 26.13.0, shfmt 3.14.1, Liberica JDK 25.0.5+11, Maven 3.10.0, Docker CLI 27.5.1,
   Compose 5.7.0, kubectl (stable), Helm 4.3.1, Kafka 4.4.0
@@ -81,7 +81,7 @@ geprüft (`INSTALL_SCRIPT_PAIRS`).
 ```
 
 `~/.pi/agent/extensions/mcp-guard.ts` blockt im `tool_call`-Hook alle `mcp__mcp_gateway__*`-Tools außer
-der Read-only-Whitelist (analog `opencode.jsonc`); `mcp__mcp_gateway__execute_run_configuration` ist nur
+der Read-only-Whitelist; `mcp__mcp_gateway__execute_run_configuration` ist nur
 für `local-test-kits-validate-only` erlaubt.
 
 ## Credentials
