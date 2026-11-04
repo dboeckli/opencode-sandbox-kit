@@ -45,6 +45,7 @@ Das Image nutzt dieselben Skripte und Versionen wie `opencode-agent`:
   Compose 5.7.0, kubectl (stable), Helm 4.3.1, Kafka 4.4.0
 - apt: `jq`, `python3`, `python3-pip`, `python3-yaml`, `libatomic1`
 - `fd` + `ripgrep` (Pi lädt sie sonst beim ersten Start nach `~/.pi/agent/bin`)
+- Node 26 (via `install-tooling.sh node`; die shell-docker-Basis bringt Node 22 mit)
 - npm: `ctx7`, `skills`, `prettier`, `renovate`, `@usebruno/cli`, `@modelcontextprotocol/inspector`,
   `@earendil-works/pi-coding-agent`
 - Agent-User: git-`commit-msg`-Hook, Superpowers + dboeckli-Skills (`~/.agents/skills`, Pi erkennt

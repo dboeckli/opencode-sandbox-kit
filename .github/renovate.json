@@ -348,13 +348,13 @@
     },
     {
       "customType": "regex",
-      "description": "opencode-docker-Pin (pi-agent/pi-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION_OPENCODE spiegeln)",
+      "description": "shell-docker-Pin (pi-agent/pi-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-<v>; muss dem Mistral-Vibe-shell-Pin entsprechen)",
       "managerFilePatterns": ["pi-agent/pi-agent.dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-opencode",
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "sandbox-templates-shell",
       "packageNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
+      "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
       "versioningTemplate": "semver"
     }
   ],

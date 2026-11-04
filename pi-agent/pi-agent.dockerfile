@@ -1,9 +1,10 @@
 # syntax=docker/dockerfile:1
 #
 # Pinned Pi Coding Agent image for the `pi-agent` v3 sandbox workload (issue #236).
-# Bakes the same tooling as `opencode-agent/opencode/Dockerfile`, so the Pi kit
-# has full tooling parity (JDK, Maven, Docker CLI, Compose, kubectl, Helm,
-# Kafka CLI, npm CLIs, agent-user tooling) and no runtime installs.
+# Bakes the same tooling as `opencode-agent/opencode/Dockerfile` on top of the
+# plain `shell-docker` template (no OpenCode baggage), so the Pi kit has full
+# tooling parity (JDK, Maven, Docker CLI, Compose, kubectl, Helm, Kafka CLI,
+# Node.js, npm CLIs, agent-user tooling) and no runtime installs.
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./pi-agent -f ./pi-agent/pi-agent.yaml \
@@ -13,11 +14,17 @@
 #   docker buildx build ./pi-agent -f ./pi-agent/pi-agent.yaml \
 #     -t <IMAGE_PREFIX>/sbx-pi-agent:local --load
 #
-# ARG BASE_IMAGE must mirror TEMPLATE_VERSION_OPENCODE (Renovate-managed);
+# ARG BASE_IMAGE uses the shell-docker pin (same as Mistral Vibe; Renovate-managed);
 # ARG PI_VERSION is the Pi pin (Renovate, npm @earendil-works/pi-coding-agent).
 
-ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-0.11.0
+ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
 FROM ${BASE_IMAGE}
+
+# The plain shell template does not set an npm global prefix (opencode-docker did).
+# Keep the opencode-agent convention so install-tooling-user.sh finds the CLIs at
+# /usr/local/share/npm-global/bin.
+ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
+ENV PATH=/usr/local/share/npm-global/bin:${PATH}
 
 ARG PI_VERSION=1.5.0
 
@@ -35,7 +42,7 @@ RUN chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
  && bash /tmp/kit/install-tooling.sh all
 
-# npm-global CLIs (NPM_CONFIG_PREFIX=/usr/local/share/npm-global inherited from the base).
+# npm-global CLIs (install-tooling.sh installed Node 26; npm prefix is /usr/local).
 # Same set as the OpenCode tooling image, plus Pi itself.
 RUN npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
     @modelcontextprotocol/inspector@2.13.0 \

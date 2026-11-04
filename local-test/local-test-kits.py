@@ -176,7 +176,7 @@ PI_IMAGE_NAME = os.environ.get("PI_IMAGE_NAME", "sbx-pi-agent")
 PI_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
 PI_DOCKERFILE_VERSION_RE = re.compile(r"ARG PI_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
 PI_BASE_IMAGE_RE = re.compile(
-    r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+    r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
 PI_NPM_URL = "https://registry.npmjs.org/@earendil-works%2Fpi-coding-agent/latest"
 
@@ -851,7 +851,6 @@ def check_template_update():
     for label, rel, cur in (
         ("Mammouth", MAMMOUTH_DOCKERFILE, _mammouth_base_image_version()),
         ("opencode", OPENCODE_DOCKERFILE, _opencode_base_image_version()),
-        ("Pi", PI_DOCKERFILE, _pi_pin_from(PI_DOCKERFILE, PI_BASE_IMAGE_RE)),
     ):
         if not cur:
             fail(f"template version ({rel} BASE_IMAGE nicht gepinnt)",
@@ -1110,10 +1109,14 @@ def check_pi_cli_update():
     if base is None:
         fail("pi base image (BASE_IMAGE nicht in pi-agent/pi-agent.dockerfile gefunden)")
         return
-    if base != TEMPLATE_VERSION_OPENCODE:
+    shell_pin = _vibe_base_image_version()
+    if not shell_pin:
+        fail("pi base image (shell-docker-Pin nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        return
+    if base != shell_pin:
         fail(
-            f"pi base image (opencode-docker-{base} != TEMPLATE_VERSION_OPENCODE {TEMPLATE_VERSION_OPENCODE})",
-            f"ARG BASE_IMAGE in {PI_DOCKERFILE} auf opencode-docker-{TEMPLATE_VERSION_OPENCODE} setzen",
+            f"pi base image (shell-docker-{base} != Mistral-Vibe shell-docker-{shell_pin})",
+            f"ARG BASE_IMAGE in {PI_DOCKERFILE} auf shell-docker-{shell_pin} setzen (gemeinsamer shell-Pin)",
         )
         return
     try:
@@ -1657,7 +1660,11 @@ def main():
         c2, out = exec_sandbox(s["name"], tools_cmd)
         ok_tools = set(re.findall(r"TOOL-OK:(\w+)", out))
         missing_tools = []
-        for t in ("ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka", "pi"):
+        # Pi ist nur im Pi-Image vorhanden; die anderen Agenten-Images bringen es nicht mit.
+        required_tools = ["ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka"]
+        if s["agent"] == "pi":
+            required_tools.append("pi")
+        for t in required_tools:
             if t in ok_tools:
                 pass_(f"tool: {t}")
             else:

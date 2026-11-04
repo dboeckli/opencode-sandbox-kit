@@ -180,13 +180,13 @@ die Familien nicht mehr in Lockstep, Issue #202):
 - **Claude (Home)**: `docker.io/domboeckli/sbx-claude-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:claude-code-docker-0.x.0` auf (Issue #137)
 - **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken, Issue #137)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
-- **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (`<tag>` = Pi-Version)
+- **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (ohne OpenCode-Basis; `<tag>` = Pi-Version)
 
 Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
 `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
 gleichnamige Variablen in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed) sowie als `ARG BASE_IMAGE`
 in `opencode-agent/opencode/Dockerfile` + `mammouth-agent/Dockerfile` (opencode-docker) bzw.
-`opencode-agent/claude/Dockerfile` (claude-code-docker); Mistral Vibe pinnt `shell-docker` im eigenen Dockerfile.
+`opencode-agent/claude/Dockerfile` (claude-code-docker); Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles (gemeinsamer shell-Pin).
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
 bei Drift fehl.
 
@@ -564,8 +564,8 @@ Das Kit liegt unter `pi-agent/` und ist bewusst als **Kit-Spec v3** umgesetzt (`
 v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.50.1). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
 (`--template` entfällt); das Pi-Kit ist ein eigenständiger Workload.
 
-- **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker/sandbox-templates:opencode-docker-0.x.0`
-  auf und backt **dasselbe Tooling wie OpenCode** (Node 26, JDK, Maven, Docker CLI/Compose, kubectl, Helm, Kafka,
+- **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker/sandbox-templates:shell-docker-0.x.0`
+  auf (keine OpenCode-Basis) und backt **dasselbe Tooling wie OpenCode** (Node 26, JDK, Maven, Docker CLI/Compose, kubectl, Helm, Kafka,
   shfmt, ctx7, skills, prettier, renovate, Bruno CLI, MCP-Inspector) plus Pi `1.5.0` (Pin im Descriptor,
   `buildArg: PI_VERSION`). Die Tooling-Skripte sind identische Kopien (`local-test-kits.py --validate-only` prüft Drift).
 - **Launch**: `ENTRYPOINT ["pi"]` im Dockerfile; Entrypoint/Config kommen aus dem Image, nicht aus einem `sandbox:`-Block.
