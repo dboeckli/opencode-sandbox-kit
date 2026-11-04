@@ -4,12 +4,12 @@ name: Kit e2e
 # (repo variable DOCKER_USERNAME / secret DOCKER_PAT — sbx needs a Docker account
 # session), store the Cloudsmith registry credential when IMAGE_PREFIX points at
 # Cloudsmith (variables CLOUDSMITH_USERNAME + secret CLOUDSMITH_API_KEY; skipped for Docker Hub),
-# register fake API-key secrets for github/github-maven/anthropic/mammouth/mistral/context7/openrouter/google,
-# and run the 4 agent scenarios (OpenCode / Claude / Mammouth / Mistral Vibe)
+# register fake API-key secrets for github/github-maven/anthropic/mammouth/mistral/deepseek/context7/openrouter/google,
+# and run the 5 agent scenarios (OpenCode / Claude / Mammouth / Mistral Vibe / Pi)
 # from local-test/local-test-kits.py with `--ci` (no real
 # mammouth/mistral/context7 API calls — fake keys only prove proxy wiring).
 #
-# The 4 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
+# The 5 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
 # each on its own runner with the full setup (sbx, secrets, Cloudsmith registry credential).
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
@@ -17,7 +17,8 @@ name: Kit e2e
 # The images are served from the configured registry prefix (`IMAGE_PREFIX`, default
 # Cloudsmith `docker.cloudsmith.io/dboeckli/sbx/…`; `docker.io/<user>` for Docker Hub):
 # the `mistral-vibe` scenario pulls `sbx-mistral-vibe`; `opencode`/`claude` pull
-# `sbx-opencode-tooling`/`sbx-claude-tooling`, and `mammouth` pulls `sbx-mammouth`
+# `sbx-opencode-tooling`/`sbx-claude-tooling`, `mammouth` pulls `sbx-mammouth`, and `pi` uses the
+# v3 kit directory (branches) or the published `sbx-pi-agent` image (master/schedule)
 # (baked tooling/agent, issue #137). The `build-and-publish-*-image` jobs (reusing the
 # standalone build-and-publish workflows) build those images — but they PUSH only on
 # `push` to master / `schedule`; on PR/feature-branch builds they are build-only
@@ -85,10 +86,19 @@ jobs:
       push: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
     secrets: inherit
 
+  build-and-publish-pi-image:
+    # Build (and, unless it's a PR, push) the Pi v3 workload image the `pi` scenario
+    # pulls on master/schedule. Reuses the standalone build-and-publish workflow.
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: ./.github/workflows/build-and-publish-pi-image.yml
+    with:
+      push: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
+    secrets: inherit
+
   e2e-scenario:
     # Scheduled runs (weekly cron, Monday) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
-    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image]
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-image, build-and-publish-claude-image, build-and-publish-mammouth-image, build-and-publish-pi-image]
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -100,7 +110,7 @@ jobs:
       # parallelen Jobs nicht ab (ersetzt das fruehere `success() || failure()`).
       fail-fast: false
       matrix:
-        scenario: [opencode, claude, mammouth, mistral-vibe]
+        scenario: [opencode, claude, mammouth, mistral-vibe, pi]
     env:
       # Sandbox-Template-Versionen (gepinnt, je Familie getrennt — Issue #202) — muessen mit
       # validate.yml identisch sein; Basis der Tooling-Images (opencode-agent/{opencode,claude}/
@@ -228,11 +238,11 @@ jobs:
           printf '%s' "$TOKEN_CLEAN" | sbx secret set --registry docker.cloudsmith.io \
             --username "$USER_CLEAN" --password-stdin
 
-      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/mistral/zai/context7/openrouter/google fake)
+      - name: Register sandbox secrets (github real, github-maven/anthropic/mammouth/mistral/deepseek/zai/context7/openrouter/google fake)
         # local-test/local-test-kits.py asserts these global services exist
         # (`sbx secret ls`). github uses the Actions GITHUB_TOKEN so
         # `gh auth status` passes inside the sandbox; github-maven, anthropic,
-        # mammouth, mistral, zai, context7, openrouter and google get fake keys — enough to prove the
+        # mammouth, mistral, deepseek, zai, context7, openrouter and google get fake keys — enough to prove the
         # kit's proxy env wiring.
         # `-g` was removed in sbx v0.38 (secrets are global by default);
         # `-f` overwrites an existing entry.
@@ -245,6 +255,7 @@ jobs:
           printf '%s' 'sk-ant-fake-ci-key' | sbx secret set anthropic -f
           printf '%s' 'mammouth-fake-ci-key' | sbx secret set mammouth -f
           printf '%s' 'mistral-fake-ci-key' | sbx secret set mistral -f
+          printf '%s' 'deepseek-fake-ci-key' | sbx secret set deepseek -f
           printf '%s' 'zai-fake-ci-key' | sbx secret set zai -f
           printf '%s' 'ctx7op-fake-ci-key' | sbx secret set context7 -f
           printf '%s' 'openrouter-fake-ci-key' | sbx secret set openrouter -f
@@ -293,6 +304,15 @@ jobs:
             github-maven:
               apiKey:
                 domains: [maven.pkg.github.com]
+            github:
+              apiKey:
+                domains: [api.github.com, github.com]
+            openrouter:
+              apiKey:
+                domains: [openrouter.ai]
+            google:
+              apiKey:
+                domains: [generativelanguage.googleapis.com]
           EOF
 
       - name: Initialize global network policy (balanced)
@@ -315,6 +335,9 @@ jobs:
           MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || 'latest' }}
           OPENCODE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-opencode-image.outputs.version_tag || 'latest' }}
           CLAUDE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-claude-image.outputs.version_tag || 'latest' }}
+          # Pi (v3-Workload): master/schedule das publizierte Image, auf Branches/PRs
+          # leer -> das Szenario baut das lokale Kit-Verzeichnis (Branch-Stand).
+          PI_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-pi-image.outputs.version_tag || '' }}
         run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
 
       - name: Sign out of Docker Hub

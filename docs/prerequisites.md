@@ -23,11 +23,12 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `github-maven` | alle | Klassisches PAT (nur Scope `read:packages`) für GitHub Packages Maven — `https://github.com/settings/tokens` |
 | `anthropic` | Claude | https://console.anthropic.com — interaktiv, `-f` zum Überschreiben |
 | `mammouth` | Mammouth | https://mammouth.ai/app/account/settings/api |
-| `mistral` | Mistral Vibe, OpenCode, Mammouth | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
-| `zai` | OpenCode, Mammouth, Mistral Vibe | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
+| `deepseek` | Pi (Default), OpenCode, Mammouth | DeepSeek (`DEEPSEEK_API_KEY`, `api.deepseek.com`) — https://platform.deepseek.com/api_keys |
+| `mistral` | Mistral Vibe, OpenCode, Mammouth, Pi | Built-in-Service (`MISTRAL_API_KEY`, `api.mistral.ai`) — https://console.mistral.ai/ |
+| `zai` | OpenCode, Mammouth, Mistral Vibe, Pi | Z.AI (GLM, OpenAI-kompatibler Provider) — https://z.ai/manage-apikey/apikey-list |
 | `context7` | alle | https://context7.com/dashboard |
-| `openrouter` | OpenCode | Built-in-Service des opencode-Templates (nicht im Kit deklariert) |
-| `google` | OpenCode | https://aistudio.google.com/apikey (Built-in-Service) |
+| `openrouter` | OpenCode, Pi | Built-in-Service des opencode-Templates; Pi deklariert ihn im v3-Kit (`OPENROUTER_API_KEY`) |
+| `google` | OpenCode, Pi | https://aistudio.google.com/apikey (OpenCode: Built-in-Service; Pi: `GEMINI_API_KEY`) |
 | `stackoverflow` | alle | https://stackapps.com/applications (Fallback-Quelle) |
 | `cloudsmith` | alle | https://cloudsmith.io/user/settings/api-keys/ |
 | `sonarcloud` | alle | SonarCloud API-Token (Web-API) — https://sonarcloud.io/account/security |
@@ -76,15 +77,17 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
 | Mammouth Code | `curl -fsSL https://code.mammouth.ai/install.sh \| bash` → `~/.mammouth` + Symlink `/usr/local/bin/mammouth` | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | Im eigenen gepinnten Image gebacken (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
+| Pi | v3-Workload-Image (`shell-docker`-Basis + Kit-Tooling + `@earendil-works/pi-coding-agent`, `docker.io/domboeckli/sbx-pi-agent:<pin>`; kein OpenCode im Image) | `~/.pi/agent/settings.json` + `mcp.json` (MCP-Gateway) + `extensions/mcp-guard.ts` (Read-only-Guard, gemeinsame Allow-Liste) + `AGENTS.md` |
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 
-Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`) sind erreichbar.
+Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`/`mammouth-agent/spec.yaml`/`mistral-vibe-agent/spec.yaml`; Pi: `network-policy@1` in `pi-agent/pi-agent.yaml`) sind erreichbar.
 Doku: `opencode-agent/files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth/Mistral-Vibe-Kopie). Enforced durch den
 Sandbox-Proxy (`mcp-gateway`), der auch die `proxy-managed`-Credential-Injection übernimmt.
 
 ## Verifikation
 
 - Host-Validierung: `python local-test/local-test-kits.py --validate-only` (bzw. IntelliJ-Config `local-test-kits-validate-only`)
-- Volltest: `python local-test/local-test-kits.py` (alle 4 Szenarien)
+- Volltest: `python local-test/local-test-kits.py` (alle 5 Szenarien)
 - Laufzeit-Checks: `bash ~/.config/sandbox-kit/run-checks.sh` → `[startup-checks] ...`
+  (Pi hat kein `run-checks.sh`; der Kit-Check prüft `~/.pi/agent/*` + `pi --version`.)

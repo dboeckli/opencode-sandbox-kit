@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mcp-gateway": {
+      "url": "http://mcp-gateway.docker.internal/mcp",
+      "headers": {
+        "Authorization": "Bearer proxy-managed"
+      },
+      "description": "Docker Sandboxes MCP gateway (IntelliJ, Kubernetes, Docker)"
+    }
+  }
+}
