@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # Pinned Mammouth Code image for the `mammouth-agent` v3 sandbox workload (issue #240).
-# Mammouth is an OpenCode fork, so the image builds on the versioned
-# `opencode-docker` template and bakes the kit tooling + Mammouth CLI.
+# Mammouth is an OpenCode fork; the image builds on the plain `shell-docker`
+# template (no OpenCode CLI in the image) and bakes the kit tooling + Mammouth CLI.
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./mammouth-agent -f ./mammouth-agent/mammouth-agent.yaml \
@@ -12,11 +12,16 @@
 #   docker buildx build ./mammouth-agent -f ./mammouth-agent/mammouth-agent.yaml \
 #     -t <IMAGE_PREFIX>/sbx-mammouth:local --load
 #
-# ARG BASE_IMAGE must mirror TEMPLATE_VERSION_OPENCODE (Renovate-managed);
+# ARG BASE_IMAGE uses the shell-docker pin (same as Mistral Vibe; Renovate-managed);
 # ARG MAMMOUTH_VERSION is the Mammouth CLI pin (Renovate, mammouth-ai/code).
 
-ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-0.11.0
+ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
 FROM ${BASE_IMAGE}
+
+# The plain shell template does not set an npm global prefix (opencode-docker did).
+# Keep the shared kit convention for install-tooling-user.sh.
+ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
+ENV PATH=/usr/local/share/npm-global/bin:${PATH}
 
 ARG MAMMOUTH_VERSION=1.18.31.2
 
@@ -37,13 +42,18 @@ COPY files/home/.local/bin/seed-mammouth-model-favorites.py /usr/local/bin/seed-
 COPY files/home/.local/bin/mammouth-entrypoint.sh /usr/local/bin/mammouth-entrypoint
 RUN chmod +x /usr/local/bin/seed-mammouth-model-favorites.py /usr/local/bin/mammouth-entrypoint
 
+# Base utilities the Mammouth installer/tooling expect on the plain shell image.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates xz-utils unzip \
+ && rm -rf /var/lib/apt/lists/*
+
 # Root-level tooling. install-tooling.sh is fail-open by design; the explicit
 # verification step below makes the build fail loud.
 RUN chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
  && bash /tmp/kit/install-tooling.sh all
 
-# npm-global CLIs (NPM_CONFIG_PREFIX inherited from the opencode base).
+# npm-global CLIs (install-tooling.sh installed Node 26; npm prefix is /usr/local/share/npm-global).
 # Retry: the npm registry occasionally serves metadata for a just-published
 # dependency before all its versions resolve (transient ETARGET).
 RUN set -e; \

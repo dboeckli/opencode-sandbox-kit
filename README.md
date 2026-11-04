@@ -186,14 +186,14 @@ die Familien nicht mehr in Lockstep, Issue #202):
 
 - **OpenCode**: `docker.io/domboeckli/sbx-opencode-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling vorgebacken, Issue #137)
 - **Claude (Home)**: `docker.io/domboeckli/sbx-claude-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:claude-code-docker-0.x.0` auf (Issue #137)
-- **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken, Issue #137)
+- **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — v3-Workload, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
 - **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (schmale Shell-Basis; `<tag>` = Pi-Version)
 
 Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
 `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
 gleichnamige Variablen in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed) sowie als `ARG BASE_IMAGE`
-in `opencode-agent/opencode/Dockerfile` + `mammouth-agent/mammouth-agent.dockerfile` (opencode-docker) bzw.
+in `opencode-agent/opencode/Dockerfile` (opencode-docker) bzw.
 `opencode-agent/claude/Dockerfile` (claude-code-docker); Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles (gemeinsamer shell-Pin).
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
 bei Drift fehl.
@@ -426,7 +426,7 @@ sondern vom Template bzw. dem Kit-Image beim `sbx run`:
 |-------|----------|-----|
 | OpenCode | `docker.io/domboeckli/sbx-opencode-tooling` (baut auf `opencode-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
 | Claude Code | `docker.io/domboeckli/sbx-claude-tooling` (baut auf `claude-code-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
-| Mammouth Code | `opencode-docker` (Pin `0.x.0`) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
+| Mammouth Code | `shell-docker` (Pin `0.x.0`) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
 | Mistral Vibe | `shell` (Pin `0.x.0`, im eigenen Image) | `mistral-vibe-agent/` (`kind: sandbox`, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe`) |
 
 Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
@@ -458,7 +458,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 Da `sbx` keinen eingebauten `mammouth`-Agenten kennt, liegt unter `mammouth-agent/` ein **eigenes
 v3-Workload** (`kind: workload`, Name `mammouth`) – analog zum Pi-Kit:
 
-- **Base-Image**: `docker/sandbox-templates:opencode-docker-0.x.0` (Mammouth ist ein OpenCode-Fork;
+- **Base-Image**: `docker/sandbox-templates:shell-docker-0.x.0` (Mammouth ist ein OpenCode-Fork;
   Pin im Dockerfile/Descriptor, siehe Abschnitt "Template-Version (gepinnt)")
 - **Entrypoint**: `mammouth-entrypoint` (seedet Favoriten, dann `exec mammouth`)
 - **Auth**: `credential@1` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,

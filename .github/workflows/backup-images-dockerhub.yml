@@ -86,7 +86,7 @@ jobs:
               mammouth)
                 ctx=mammouth-agent;     df=mammouth-agent/mammouth-agent.yaml
                 name=sbx-mammouth
-                pin=$(grep -oE 'opencode-docker-[0-9]+(\.[0-9]+)+' mammouth-agent/mammouth-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
+                pin=$(grep -oE 'shell-docker-[0-9]+(\.[0-9]+)+' mammouth-agent/mammouth-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
               mistral-vibe)
                 ctx=mistral-vibe-agent; df=mistral-vibe-agent/Dockerfile
                 name=sbx-mistral-vibe

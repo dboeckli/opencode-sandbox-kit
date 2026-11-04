@@ -33,8 +33,6 @@ capabilities:
     config:
       install:
         allow: &allow
-          - opencode.ai:443
-          - '*.opencode.ai:443'
           - context7.com:443
           - '*.context7.com:443'
           - mammouth.ai:443

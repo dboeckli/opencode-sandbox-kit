@@ -332,7 +332,9 @@ jobs:
           # Images werden nur bei push auf master / schedule gepusht; bei PR/Branch-Builds
           # (push: false) nutzt e2e das veröffentlichte `latest`-Master-Image.
           VIBE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mistral-vibe-image.outputs.version_tag || 'latest' }}
-          MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || 'latest' }}
+          # Mammouth (v3): master/schedule das publizierte Image, auf Branches/PRs
+          # leer -> das Szenario baut das lokale Kit-Verzeichnis (Branch-Stand).
+          MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || '' }}
           OPENCODE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-opencode-image.outputs.version_tag || 'latest' }}
           CLAUDE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-claude-image.outputs.version_tag || 'latest' }}
           # Pi (v3-Workload): master/schedule das publizierte Image, auf Branches/PRs

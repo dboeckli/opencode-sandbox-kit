@@ -1,8 +1,8 @@
 # Sandbox startup checks
 
 The startup checks run **automatically** at the start of each session:
-- **OpenCode**: a server plugin (`~/.config/opencode/plugins/startup-checks.js`) runs the checks immediately at plugin load, injects the report into the system prompt via `experimental.chat.system.transform`, and writes it to `~/.config/sandbox-kit/startup-checks.report` for the TUI sidebar plugin.
-- **OpenCode TUI**: an auto-session plugin (`~/.config/opencode/plugins/auto-session.tsx`, registered in `tui.json`) creates a new session at startup and navigates directly into the session view, so the sidebar info panel is visible immediately (no first prompt needed). The `startup-checks-tui.tsx` plugin shows three blocks in that panel (`sidebar_content` slot): **Startup checks** (order 150), **Skills** (order 155, lists `~/.agents/skills/` dirs containing `SKILL.md`) and **MCP & Host Systems** (order 160, live reachability via `check-infra.sh`, refreshed every 10s).
+- **Mammouth**: a server plugin (`~/.config/mammouth/plugins/startup-checks.js`) runs the checks immediately at plugin load, injects the report into the system prompt via `experimental.chat.system.transform`, and writes it to `~/.config/sandbox-kit/startup-checks.report` for the TUI sidebar plugin.
+- **Mammouth TUI**: an auto-session plugin (`~/.config/mammouth/plugins/auto-session.tsx`, registered in `tui.json`) creates a new session at startup and navigates directly into the session view, so the sidebar info panel is visible immediately (no first prompt needed). The `startup-checks-tui.tsx` plugin shows three blocks in that panel (`sidebar_content` slot): **Startup checks** (order 150), **Skills** (order 155, lists `~/.agents/skills/` dirs containing `SKILL.md`) and **MCP & Host Systems** (order 160, live reachability via `check-infra.sh`, refreshed every 10s).
 
 The actual checks live in `~/.config/sandbox-kit/run-checks.sh`. You only need to read this file or run the script manually when the automatic report is missing or a check fails.
 

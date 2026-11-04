@@ -82,7 +82,7 @@ SBX_DOC_FILES = ("opencode-agent/files/home/sbx-cli.md",
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
-# Bundles aller Kits. Pi's mcp-check.sh weicht bewusst ab (Pi-Config-Pfad
+# Bundles aller Kits. Mammouth/Pi mcp-check.sh weichen bewusst ab (Agent-Config-Pfade
 # ~/.pi/agent/mcp.json + pi-CLI im Deep-Probe-Fallback) und ist daher NICHT gepaart. `setup.install` konsumiert sie aus dem Sandbox-Home. Alle
 # Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
 # Renovate aktualisiert beide gemeinsam).
@@ -95,8 +95,6 @@ INSTALL_SCRIPT_PAIRS = (
      "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
     ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
      "mistral-vibe-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("opencode-agent/files/home/.local/bin/mcp-check.sh",
-     "mammouth-agent/files/home/.local/bin/mcp-check.sh"),
     ("opencode-agent/files/home/.local/bin/mcp-check.sh",
      "mistral-vibe-agent/files/home/.local/bin/mcp-check.sh"),
     ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
@@ -158,7 +156,7 @@ MAMMOUTH_IMAGE_NAMESPACE = os.environ.get("MAMMOUTH_IMAGE_NAMESPACE", "domboeckl
 MAMMOUTH_IMAGE_NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
 MAMMOUTH_VERSION_RE = re.compile(r"ARG MAMMOUTH_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
 MAMMOUTH_BASE_IMAGE_RE = re.compile(
-    r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+    r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
 MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
@@ -854,7 +852,6 @@ def check_template_update():
 
     pin_open = TEMPLATE_VERSION_OPENCODE
     for label, rel, cur in (
-        ("Mammouth", MAMMOUTH_DOCKERFILE, _mammouth_base_image_version()),
         ("opencode", OPENCODE_DOCKERFILE, _opencode_base_image_version()),
     ):
         if not cur:
@@ -987,10 +984,14 @@ def check_mammouth_cli_update():
         )
         return
     base = _mammouth_base_image_version()
-    if base != TEMPLATE_VERSION_OPENCODE:
+    shell_pin = _vibe_base_image_version()
+    if not shell_pin:
+        fail("mammouth base image (shell-docker-Pin nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        return
+    if base != shell_pin:
         fail(
-            f"mammouth base image (opencode-docker-{base} != TEMPLATE_VERSION_OPENCODE {TEMPLATE_VERSION_OPENCODE})",
-            f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf opencode-docker-{TEMPLATE_VERSION_OPENCODE} setzen",
+            f"mammouth base image (shell-docker-{base} != Mistral-Vibe shell-docker-{shell_pin})",
+            f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf shell-docker-{shell_pin} setzen (gemeinsamer shell-Pin)",
         )
         return
     try:
@@ -1609,10 +1610,16 @@ def main():
                 info("Pi-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
         if s["agent"] == "mammouth":
             # Lokal default `local` (per build-and-publish-mammouth-image); CI/e2e
-            # uebergibt den Feature-/Master-Tag per MAMMOUTH_IMAGE_TAG.
-            mam_tag = os.environ.get("MAMMOUTH_IMAGE_TAG") or "local"
-            kit_target = f"{IMAGE_PREFIX}/{MAMMOUTH_IMAGE_NAME}:{mam_tag}"
-            info(f"Mammouth-Image (publiziert): {kit_target}")
+            # uebergibt den Master-Tag per MAMMOUTH_IMAGE_TAG. Explizit leer
+            # (Branch/PR) -> lokales v3-Workload-Verzeichnis, damit der Branch-Stand
+            # getestet wird und kein v2-Master-Image als v3-Kit gepullt wird.
+            mam_raw = os.environ.get("MAMMOUTH_IMAGE_TAG")
+            mam_tag = "local" if mam_raw is None else mam_raw
+            if mam_tag:
+                kit_target = f"{IMAGE_PREFIX}/{MAMMOUTH_IMAGE_NAME}:{mam_tag}"
+                info(f"Mammouth-Image (publiziert): {kit_target}")
+            else:
+                info("Mammouth-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
         if _kit_kind(s["kit"]) in ("sandbox", "workload"):
             # Sandbox-/Workload-Kit definiert den Agenten selbst → Kit als erstes
             # positionales Argument; kein Agent-Name, kein --kit (deprecated fuer Sandbox-Kits).
