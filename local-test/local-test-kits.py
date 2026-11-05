@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 6 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 7 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
@@ -8,6 +8,7 @@ Szenarien:
   1. OpenCode     + opencode-agent      (sbx create opencode --kit ./opencode-agent/)
   1b. OpenCode v3 + opencode-v3-agent   (sbx create ./opencode-v3-agent/ — v3-Workload)
   2. Claude       + opencode-agent      (sbx create claude --kit ./opencode-agent/)   — Home (api.anthropic.com)
+  2b. Claude v3   + claude-v3-agent     (sbx create ./claude-v3-agent/ — v3-Workload)
   3. Mammouth     + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
   4. Mistral Vibe + mistral-vibe-agent  (sbx create ./mistral-vibe-agent/ — Sandbox-Kit, eigenes gepinntes Image)
   5. Pi           + pi-agent            (sbx create ./pi-agent/ — v3-Workload, Kit-Spec v3)
@@ -24,10 +25,11 @@ Voraussetzungen:
     PI_IMAGE_TAG fuer ein publiziertes Image gesetzt)
 
 Verwendung:
-  python local-test-kits.py                 # alle 6 Szenarien testen (default: all)
+  python local-test-kits.py                 # alle 7 Szenarien testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
   python local-test-kits.py opencode-v3     # nur OpenCode v3 testen
   python local-test-kits.py claude          # nur Claude testen (Home-Szenario)
+  python local-test-kits.py claude-v3       # nur Claude v3 testen
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
   python local-test-kits.py pi              # nur Pi testen
@@ -35,7 +37,7 @@ Verwendung:
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,opencode-v3,claude,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
+  {all,opencode,opencode-v3,claude,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -72,7 +74,8 @@ SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
                 "mammouth-agent/files/home/stackexchange-api.md",
                 "mistral-vibe-agent/files/home/stackexchange-api.md",
                 "pi-agent/files/home/stackexchange-api.md",
-                "opencode-v3-agent/files/home/stackexchange-api.md")
+                "opencode-v3-agent/files/home/stackexchange-api.md",
+                "claude-v3-agent/files/home/stackexchange-api.md")
 
 # sbx CLI: die Offline-Referenz (sbx-cli.md) wird aus der Release-Binary generiert
 # (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im Header der Datei;
@@ -82,7 +85,8 @@ SBX_DOC_FILES = ("opencode-agent/files/home/sbx-cli.md",
                  "mammouth-agent/files/home/sbx-cli.md",
                  "mistral-vibe-agent/files/home/sbx-cli.md",
                  "pi-agent/files/home/sbx-cli.md",
-                 "opencode-v3-agent/files/home/sbx-cli.md")
+                 "opencode-v3-agent/files/home/sbx-cli.md",
+                 "claude-v3-agent/files/home/sbx-cli.md")
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
@@ -131,6 +135,18 @@ INSTALL_SCRIPT_PAIRS = (
      "opencode-v3-agent/files/home/.local/bin/opencode-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
      "opencode-v3-agent/files/home/.local/bin/opencode-startup-maven.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+     "claude-v3-agent/files/home/.local/bin/install-tooling.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+     "claude-v3-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+     "claude-v3-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-agent/files/home/.local/bin/mcp-check.sh",
+     "claude-v3-agent/files/home/.local/bin/mcp-check.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
+     "claude-v3-agent/files/home/.local/bin/claude-startup-ca.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
+     "claude-v3-agent/files/home/.local/bin/claude-startup-maven.sh"),
 )
 
 # Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
@@ -226,6 +242,7 @@ BRUNO_PIN_FILES = [
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
     "opencode-v3-agent/opencode-v3-agent.dockerfile",
+    "claude-v3-agent/claude-v3-agent.dockerfile",
 ]
 BRUNO_PIN_RE = re.compile(r"@usebruno/cli@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 BRUNO_NPM_URL = "https://registry.npmjs.org/@usebruno/cli/latest"
@@ -241,6 +258,7 @@ INSPECTOR_PIN_FILES = [
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
     "opencode-v3-agent/opencode-v3-agent.dockerfile",
+    "claude-v3-agent/claude-v3-agent.dockerfile",
 ]
 INSPECTOR_PIN_RE = re.compile(r"@modelcontextprotocol/inspector@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 INSPECTOR_NPM_URL = "https://registry.npmjs.org/@modelcontextprotocol/inspector/latest"
@@ -268,6 +286,9 @@ OPENCODE_DOCKERFILE = "opencode-agent/opencode/Dockerfile"
 OPENCODE_V3_DOCKERFILE = "opencode-v3-agent/opencode-v3-agent.dockerfile"
 OPENCODE_V3_DESCRIPTOR = "opencode-v3-agent/opencode-v3-agent.yaml"
 OPENCODE_V3_IMAGE_NAME = os.environ.get("OPENCODE_V3_IMAGE_NAME", "sbx-opencode")
+CLAUDE_V3_DOCKERFILE = "claude-v3-agent/claude-v3-agent.dockerfile"
+CLAUDE_V3_DESCRIPTOR = "claude-v3-agent/claude-v3-agent.yaml"
+CLAUDE_V3_IMAGE_NAME = os.environ.get("CLAUDE_V3_IMAGE_NAME", "sbx-claude")
 CLAUDE_DOCKERFILE = "opencode-agent/claude/Dockerfile"
 OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
 OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
@@ -300,6 +321,7 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
     "pi": "pi-agent",
     "opencode-v3": "opencode-v3-agent",
+    "claude-v3": "claude-v3-agent",
 }
 SCENARIO_SECRETS = {
     "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
@@ -308,6 +330,7 @@ SCENARIO_SECRETS = {
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "pi": ("github", "github-maven", "deepseek", "zai", "mistral", "openrouter", "google", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "opencode-v3": ("github", "github-maven", "deepseek", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "claude-v3": ("github", "github-maven", "anthropic", "context7", "mistral", "zai", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
 SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "deepseek", "mistral", "zai", "context7", "openrouter",
@@ -1152,6 +1175,31 @@ def check_opencode_v3_base_update():
     pass_(f"opencode-v3 base image up-to-date (opencode-docker-{cur})")
 
 
+def _claude_v3_base_version():
+    path = os.path.join(ROOT, CLAUDE_V3_DOCKERFILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = re.search(r"ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)", f.read())
+    return m.group("v") if m else None
+
+
+def check_claude_v3_base_update():
+    """Prueft den claude-code-docker-Basis-Pin des Claude-v3-Workloads gegen
+    TEMPLATE_VERSION_CLAUDE. Die Claude-CLI selbst kommt aus dem Template."""
+    cur = _claude_v3_base_version()
+    if not cur:
+        fail(f"claude-v3 base image (BASE_IMAGE nicht in {CLAUDE_V3_DOCKERFILE} gefunden)")
+        return
+    if cur != TEMPLATE_VERSION_CLAUDE:
+        fail(
+            f"claude-v3 base image (claude-code-docker-{cur} != TEMPLATE_VERSION_CLAUDE {TEMPLATE_VERSION_CLAUDE})",
+            f"ARG BASE_IMAGE in {CLAUDE_V3_DOCKERFILE} auf claude-code-docker-{TEMPLATE_VERSION_CLAUDE} setzen",
+        )
+        return
+    pass_(f"claude-v3 base image up-to-date (claude-code-docker-{cur})")
+
+
 def _pi_pin_from(rel, regex):
     path = os.path.join(ROOT, rel)
     if not os.path.isfile(path):
@@ -1404,7 +1452,7 @@ def check_kafka_distro_availability():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "opencode-v3", "claude", "mammouth", "mistral-vibe", "pi"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "opencode-v3", "claude", "claude-v3", "mammouth", "mistral-vibe", "pi"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -1444,6 +1492,16 @@ def main():
                                   "validiert via buildx-Kit-Frontend (build-and-publish-opencode-v3-image) + e2e-Szenario"))
     else:
         fail("sbx kit validate (opencode-v3-agent)")
+
+    info("  --> validate: " + os.path.join(ROOT, "claude-v3-agent"))
+    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "claude-v3-agent")], stream=True)
+    if code == 0:
+        pass_("sbx kit validate (claude-v3-agent)")
+    elif "no kit builder configured" in out:
+        print("  " + _color("33", "[SKIP] sbx kit validate (claude-v3-agent) — v3-Quellkit braucht den Kit-Builder; "
+                                  "validiert via buildx-Kit-Frontend (build-and-publish-claude-v3-image) + e2e-Szenario"))
+    else:
+        fail("sbx kit validate (claude-v3-agent)")
 
     info("  --> validate: " + os.path.join(ROOT, "mammouth-agent"))
     # v3-Quellkit: `--offline` hat keinen Kit-Builder; Validierung via buildx/e2e.
@@ -1498,6 +1556,9 @@ def main():
         print()
         info("==> OpenCode-v3 Basis-Image-Check (opencode-docker gegen TEMPLATE_VERSION_OPENCODE)")
         check_opencode_v3_base_update()
+        print()
+        info("==> Claude-v3 Basis-Image-Check (claude-code-docker gegen TEMPLATE_VERSION_CLAUDE)")
+        check_claude_v3_base_update()
         print()
         info("==> Sandbox-Template Node-Baseline-Check (Node >= 24 macht install-tooling.sh node ueberfluessig)")
         check_template_node_baseline()
@@ -1573,7 +1634,7 @@ def main():
         '"javac:javac -version" "mvn:mvn -version" "docker:docker version" '
         '"kubectl:kubectl version --client" "jq:jq --version" "node:node --version" '
         '"npm:npm --version" "kafka:kafka-topics.sh --version" "bruno:bru --version" '
-        '"mcp-inspector:command -v mcp-inspector" "pi:pi --version" "opencode:opencode --version"; do '
+        '"mcp-inspector:command -v mcp-inspector" "pi:pi --version" "opencode:opencode --version" "claude:claude --version"; do '
         'name="${t%%:*}"; cmd="${t#*:}"; if $cmd >/dev/null 2>&1; then echo "TOOL-OK:$name"; '
         'else echo "TOOL-FAIL:$name"; fi; done'
     )
@@ -1600,6 +1661,14 @@ def main():
             "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "claude-sonnet-4-6",
             "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
+        },
+        {
+            "name": "kit-test-claude-v3",
+            "agent": "claude-v3",
+            "kit": os.path.join(ROOT, "claude-v3-agent"),
+            "model": "claude-sonnet-4-6",
+            "config_label": "claude-v3 config (default model, gateway, guard, managed settings, CLI)",
+            "config": 'test -f ~/.claude/settings.json && grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "mcp-gateway" ~/.claude.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && claude --version >/dev/null 2>&1 && echo CONFIG-OK || { echo "MODEL=$(grep -c claude-sonnet-4-6 ~/.claude/settings.json 2>/dev/null || echo 0)"; echo "GW=$(grep -c mcp-gateway ~/.claude.json 2>/dev/null || echo 0)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; echo "CLI=$(claude --version 2>/dev/null || echo MISSING)"; exit 1; }',
         },
         {
             "name": "kit-test-mammouth",
@@ -1696,6 +1765,15 @@ def main():
                 info(f"OpenCode-v3-Image (publiziert): {kit_target}")
             else:
                 info("OpenCode-v3-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
+        if s["agent"] == "claude-v3":
+            # Lokal default `local`; explizit leer (Branch/PR) -> lokales Verzeichnis.
+            cc_raw = os.environ.get("CLAUDE_V3_IMAGE_TAG")
+            cc_tag = "local" if cc_raw is None else cc_raw
+            if cc_tag:
+                kit_target = f"{IMAGE_PREFIX}/{CLAUDE_V3_IMAGE_NAME}:{cc_tag}"
+                info(f"Claude-v3-Image (publiziert): {kit_target}")
+            else:
+                info("Claude-v3-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
         if s["agent"] == "mammouth":
             # Lokal default `local` (per build-and-publish-mammouth-image); CI/e2e
             # uebergibt den Master-Tag per MAMMOUTH_IMAGE_TAG. Explizit leer
@@ -1790,6 +1868,8 @@ def main():
             required_tools.append("pi")
         if s["agent"] in ("opencode", "opencode-v3"):
             required_tools.append("opencode")
+        if s["agent"] == "claude-v3":
+            required_tools.append("claude")
         for t in required_tools:
             if t in ok_tools:
                 pass_(f"tool: {t}")

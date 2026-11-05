@@ -114,6 +114,32 @@ jobs:
         if: env.CAN_VALIDATE == 'true'
         run: sbx kit validate ./opencode-agent/
 
+      - name: Validate OpenCode v3 agent kit (v3 workload)
+        if: env.CAN_VALIDATE == 'true'
+        # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Validierung via buildx-Kit-Frontend/e2e.
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./opencode-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+
+      - name: Validate Claude Code v3 agent kit (v3 workload)
+        if: env.CAN_VALIDATE == 'true'
+        # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Validierung via buildx-Kit-Frontend/e2e.
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./claude-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+
       - name: Validate Mammouth agent kit (v3 workload)
         if: env.CAN_VALIDATE == 'true'
         # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder

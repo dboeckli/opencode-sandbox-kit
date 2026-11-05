@@ -15,6 +15,7 @@ Enthält zusätzlich dedizierte Agent-Kits:
 - **Mammouth Code** — `mammouth-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, Entrypoint `mammouth-entrypoint` (seedet die Model-Picker-Favoriten, dann `exec mammouth`).
 - **Mistral Vibe** — `mistral-vibe-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image, Entrypoint `vibe --agent auto-approve`.
 - **OpenCode v3** — `opencode-v3-agent/` (**Kit-Spec v3**, `kind: workload`, Pilot für die Migration), eigenes Image `docker.io/domboeckli/sbx-opencode`; das v2-Mixin `opencode-agent/` bleibt unverändert.
+- **Claude Code v3** — `claude-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-claude` (baut auf `claude-code-docker` auf, CLI aus dem Template); das Claude-Home-Szenario im Mixin bleibt parallel verfügbar.
 - **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie die anderen Kits, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
@@ -35,6 +36,7 @@ Vor dem lokalen Start einmalig die Run-Config `build-and-publish-<agent>-image` 
 
 - [`build-and-publish-opencode-image`](.run/build-and-publish-opencode-image.run.xml)
 - [`build-and-publish-opencode-v3-image`](.run/build-and-publish-opencode-v3-image.run.xml)
+- [`build-and-publish-claude-v3-image`](.run/build-and-publish-claude-v3-image.run.xml)
 - [`build-and-publish-claude-image`](.run/build-and-publish-claude-image.run.xml)
 - [`build-and-publish-mammouth-image`](.run/build-and-publish-mammouth-image.run.xml)
 - [`build-and-publish-mistral-vibe-image`](.run/build-and-publish-mistral-vibe-image.run.xml)
@@ -66,6 +68,26 @@ Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
 
 ```powershell
 sbx run ./opencode-v3-agent/ `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**Claude Code v3** (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-claude:<basever>`):
+
+```powershell
+sbx run docker.io/domboeckli/sbx-claude:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
+
+```powershell
+sbx run ./claude-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -458,6 +480,7 @@ sondern vom Template bzw. dem Kit-Image beim `sbx run`:
 |-------|----------|-----|
 | OpenCode | `docker.io/domboeckli/sbx-opencode-tooling` (baut auf `opencode-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
 | OpenCode v3 | `docker.io/domboeckli/sbx-opencode` (v3-Workload) | `opencode-v3-agent/` |
+| Claude Code v3 | `docker.io/domboeckli/sbx-claude` (v3-Workload, baut auf `claude-code-docker-0.x.0` auf) | `claude-v3-agent/` |
 | Claude Code | `docker.io/domboeckli/sbx-claude-tooling` (baut auf `claude-code-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
 | Mammouth Code | `shell-docker` (Pin `0.x.0`) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
 | Mistral Vibe | `shell` (Pin `0.x.0`) | `mistral-vibe-agent/` (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe`) |
@@ -474,7 +497,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > Sandbox per `curl` erreichbar (Restrisiko, Issue #229). Dasselbe gilt für die mitgelieferte MCP-Inspector-CLI
 > (`mcp-inspector --cli`, Issue #231): sie spricht den Gateway direkt an und ist damit ebenfalls ein Weg an der
 > Whitelist vorbei — Werkzeug, keine Grenze.
-> Alle sechs erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, Skills, ctx7) und die
+> Alle sieben erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, Skills, ctx7) und die
 > Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/OpenCode v3/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code, `mcp__mcp_gateway__<tool>` in Pi). Die jeweilige
 > Konfiguration wird automatisch gelesen:
@@ -655,7 +678,7 @@ Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 
 ## Automatisierter Kit-Test
 
-Die 6 Agent-Szenarien (OpenCode, OpenCode v3, Claude Home, Mammouth, Mistral Vibe, Pi) lassen sich lokal automatisiert testen —
+Die 7 Agent-Szenarien (OpenCode, OpenCode v3, Claude Home, Claude v3, Mammouth, Mistral Vibe, Pi) lassen sich lokal automatisiert testen —
 `local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf.
 
@@ -663,7 +686,7 @@ Als **Workspace** mounten die Szenarien den **Repo-Root** (`--workspace <pfad>` 
 übersteuert; Default ist nicht das Aufrufverzeichnis). Der Test startet den Agenten nicht und schreibt
 nichts ins Workspace.
 
-Alle 6 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
+Alle 7 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
 
 ```bash
 python local-test/local-test-kits.py
@@ -683,7 +706,7 @@ python local-test/local-test-kits.py --validate-only
 
 Lokales Testen in **Windows PowerShell** (Docker Desktop nativ):
 
-Alle 6 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
+Alle 7 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
 
 ```powershell
 python .\local-test\local-test-kits.py
@@ -717,7 +740,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   (`files/home/.local/bin/`) in allen Kits identisch sind, sowie dass der Vibe-Image-Tag in
   `args.version.default` im Descriptor zum `ARG VIBE_VERSION` im Dockerfile passt.
 - **`e2e.yml`** — bei jedem Push/PR + wöchentlich Montag (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
-  alle 6 Szenarien (`local-test-kits.py opencode|opencode-v3|claude|mammouth|mistral-vibe|pi --ci`) mit KVM-Zugriff,
+  alle 7 Szenarien (`local-test-kits.py opencode|opencode-v3|claude|claude-v3|mammouth|mistral-vibe|pi --ci`) mit KVM-Zugriff,
   `sbx login` (`DOCKER_USERNAME`/`DOCKER_PAT`) + Cloudsmith-Registry-Credential (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`, nur wenn `IMAGE_PREFIX` auf Cloudsmith zeigt) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
 - **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`)

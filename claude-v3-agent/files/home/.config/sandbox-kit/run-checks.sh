@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# Sandbox startup checks - run once per session, output a one-line report.
+set +e
+
+report=""
+
+# 1. Context7
+if npx ctx7 --help >/dev/null 2>&1; then
+  report="$report ctx7:OK"
+else
+  report="$report ctx7:FAIL"
+fi
+
+# 2. IntelliJ MCP: checked through the sbx MCP gateway (check 6b, mcp-idea). No direct
+# host-port probe from the sandbox - it would need an allow-list entry for
+# host.docker.internal:64615/:64342 and let any sandbox process bypass the
+# mcp-gateway permission whitelist (issue #163).
+
+# 3. gh CLI + gh api (authenticated API call)
+if gh auth status >/dev/null 2>&1 && gh api user >/dev/null 2>&1; then
+  report="$report gh:OK"
+else
+  report="$report gh:FAIL"
+fi
+
+# 4. Java / Maven
+if java -version >/dev/null 2>&1 && mvn -version >/dev/null 2>&1; then
+  report="$report java/maven:OK"
+else
+  report="$report java/maven:FAIL"
+fi
+
+# 5. Docker CLI (isolated daemon in the microVM)
+if docker version >/dev/null 2>&1; then
+  report="$report docker:OK"
+else
+  report="$report docker:FAIL"
+fi
+
+# 6. kubectl (CLI present; no kubeconfig in the sandbox)
+if kubectl version --client >/dev/null 2>&1; then
+  report="$report kubectl:OK"
+else
+  report="$report kubectl:FAIL"
+fi
+
+# 6b. MCP servers via the sbx gateway (gateway + IntelliJ + Kubernetes + Docker). The
+# sandbox holds no kubeconfig and no host-Docker port (host-side Kubernetes MCP server
+# #40, local Docker MCP server #165), so reachability is checked via an MCP handshake.
+# Adds mcp-gateway, mcp-idea, mcp-k8s, mcp-docker, mcp-client, mcp-tools (deep).
+report="$report $(MCP_CHECK_DEEP=1 bash "$HOME/.local/bin/mcp-check.sh")"
+
+# 7. helm (Helm 4; `helm4` ist ein Symlink auf dasselbe Binary)
+if helm version >/dev/null 2>&1 && helm4 version >/dev/null 2>&1; then
+  report="$report helm:OK"
+else
+  report="$report helm:FAIL"
+fi
+
+# 7b. Kafka CLI (Apache distribution; bin/*.sh wrappers in /usr/local/bin)
+if kafka-topics.sh --version >/dev/null 2>&1; then
+  report="$report kafka:OK"
+else
+  report="$report kafka:FAIL"
+fi
+
+# 7c. Bruno CLI (`bru`, pinned @usebruno/cli; API-collection runner for restRequests)
+if bru --version >/dev/null 2>&1; then
+  report="$report bruno:OK"
+else
+  report="$report bruno:FAIL"
+fi
+
+# 7d. MCP Inspector CLI (`mcp-inspector`, pinned @modelcontextprotocol/inspector; scriptable
+# MCP client for gateway/tool debugging). Presence only - the gateway handshake is mcp-check.sh.
+if command -v mcp-inspector >/dev/null 2>&1; then
+  report="$report mcp-inspector:OK"
+else
+  report="$report mcp-inspector:FAIL"
+fi
+
+# 8. Skills
+if skills ls -g >/dev/null 2>&1; then
+  report="$report skills:OK"
+else
+  report="$report skills:FAIL"
+fi
+
+# 8b. SonarCloud Web-API reachable (200 = token valid, 401 = reachable without valid token);
+# only blocked-by-policy (403) or unreachable (000/timeout) is a FAIL.
+sonar_code=$(curl -s -o /dev/null -w '%{http_code}' -m 8 \
+  -H "Authorization: Bearer ${SONAR_TOKEN:-proxy-managed}" \
+  "https://sonarcloud.io/api/authentication/validate" 2>/dev/null)
+if [ "$sonar_code" = "200" ] || [ "$sonar_code" = "401" ]; then
+  report="$report sonar:OK"
+else
+  report="$report sonar:FAIL"
+fi
+
+echo "[startup-checks]$report"

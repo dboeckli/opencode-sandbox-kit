@@ -41,7 +41,7 @@
       "groupName": "sandbox-templates-opencode"
     },
     {
-      "description": "claude-code-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_CLAUDE in validate.yml/e2e.yml + local-test-kits.py + Dockerfile ARG BASE_IMAGE (opencode-agent/claude)",
+      "description": "claude-code-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_CLAUDE in validate.yml/e2e.yml + local-test-kits.py + Dockerfile ARG BASE_IMAGE (opencode-agent/claude + claude-v3-agent)",
       "matchDatasources": ["docker"],
       "matchDepNames": ["sandbox-templates-claude"],
       "groupName": "sandbox-templates-claude"
@@ -182,6 +182,17 @@
       "packageNameTemplate": "docker/sandbox-templates",
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "claude-code-docker-Pin (claude-v3-agent/claude-v3-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-<v>; muss TEMPLATE_VERSION_CLAUDE spiegeln)",
+      "managerFilePatterns": ["claude-v3-agent/claude-v3-agent.dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "sandbox-templates-claude",
+      "packageNameTemplate": "docker/sandbox-templates",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
       "versioningTemplate": "semver"
     },
     {
@@ -328,7 +339,7 @@
     {
       "customType": "regex",
       "description": "Bruno CLI (@usebruno/cli) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #257 im spring-6-gateway-Repo",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile"],
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile"],
       "matchStrings": ["@usebruno/cli@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@usebruno/cli",
       "datasourceTemplate": "npm"
@@ -336,7 +347,7 @@
     {
       "customType": "regex",
       "description": "MCP Inspector CLI (@modelcontextprotocol/inspector) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #231",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile"],
+      "managerFilePatterns": ["opencode-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile"],
       "matchStrings": ["@modelcontextprotocol/inspector@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@modelcontextprotocol/inspector",
       "datasourceTemplate": "npm"

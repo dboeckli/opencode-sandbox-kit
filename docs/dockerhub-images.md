@@ -1,10 +1,10 @@
 # Images von Docker Hub (Default)
 
-Kurzreferenz: `sbx run`-Kommandos für die **4 Kits**, die die Images aus **Docker Hub**
+Kurzreferenz: `sbx run`-Kommandos für die **7 Szenarien**, die die Images aus **Docker Hub**
 (`docker.io/domboeckli/sbx-…`) ziehen — dem Default-Registry. Hintergrund und Umschalter:
 README → „Registry umschalten (Docker Hub ↔ Cloudsmith)".
 
-Es gibt **4 lokale** Kommandos (Tag `:local`, zuvor lokal gebaut/gepusht) und **4 remote**
+Es gibt **lokale** Kommandos (Tag `:local`, zuvor lokal gebaut/gepusht) und **remote**
 Kommandos (publizierte Images, Tag `:latest`).
 
 ## Voraussetzungen
@@ -13,7 +13,7 @@ Kommandos (publizierte Images, Tag `:latest`).
   - CI: Repo-Variable `IMAGE_PREFIX` (`gh variable set IMAGE_PREFIX --body "docker.io/domboeckli" --repo dboeckli/opencode-sandbox-kit`)
   - Lokal: nur nötig, um vom Default abzuweichen (`$env:IMAGE_PREFIX = "docker.io/domboeckli"`)
 - Images auf Docker Hub (öffentlich, anonym pullbar):
-  `domboeckli/sbx-opencode-tooling`, `domboeckli/sbx-claude-tooling`, `domboeckli/sbx-mammouth`, `domboeckli/sbx-mistral-vibe`
+  `domboeckli/sbx-opencode-tooling`, `domboeckli/sbx-opencode`, `domboeckli/sbx-claude-tooling`, `domboeckli/sbx-claude`, `domboeckli/sbx-mammouth`, `domboeckli/sbx-mistral-vibe`, `domboeckli/sbx-pi-agent`
 - `--skills=off` gehört in **jedes** Kommando (Trust Boundary).
 - `--static-mcp idea,k8s,docker` nur, wenn die Host-MCP-Server registriert sind
   (`sbx mcp add idea …` / `k8s` / `docker`); sonst weglassen.
@@ -39,6 +39,16 @@ sbx run opencode `
 
 ```powershell
 sbx run docker.io/domboeckli/sbx-opencode:latest `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**1c) Claude Code v3** (Kit-Spec v3, `kind: workload`, Release-Image)
+
+```powershell
+sbx run docker.io/domboeckli/sbx-claude:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -97,6 +107,7 @@ $env:IMAGE_PREFIX = "docker.io/domboeckli"
 python local-test\build-and-publish-opencode-image.py       # sbx-opencode-tooling:local
 python local-test\build-and-publish-opencode-v3-image.py    # sbx-opencode:local
 python local-test\build-and-publish-claude-image.py         # sbx-claude-tooling:local
+python local-test\build-and-publish-claude-v3-image.py      # sbx-claude:local
 python local-test\build-and-publish-mammouth-image.py       # sbx-mammouth:local
 python local-test\build-and-publish-mistral-vibe-image.py   # sbx-mistral-vibe:local
 python local-test\build-and-publish-pi-image.py             # sbx-pi-agent:local
@@ -130,6 +141,26 @@ Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
 
 ```powershell
 sbx run ./opencode-v3-agent/ `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**1c) Claude Code v3** (v3-Workload)
+
+```powershell
+sbx run docker.io/domboeckli/sbx-claude:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
+
+```powershell
+sbx run ./claude-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `

@@ -655,7 +655,7 @@ curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/us
 
 ```powershell
 # Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version). OpenCode/Claude nutzen eigene
-# Tooling-Images mit dem lokal gebauten Tag :local (vorher Run-Config build-and-publish-opencode-image /
+# Tooling-Images (OpenCode v3/Claude v3 eigene Workload-Images aus dem Template) mit dem lokal gebauten Tag :local (vorher Run-Config build-and-publish-opencode-image /
 # build-and-publish-claude-image ausfuehren; der Release-Tag :<version>/:latest entsteht erst beim
 # Master-Publish); Mammouth/Mistral Vibe via spec-Image, kein --template noetig.
 
@@ -669,6 +669,12 @@ sbx run opencode `
 # OpenCode v3 (v3-Workload): lokaler Build-Tag :local
 # (vorher Run-Config build-and-publish-opencode-v3-image); Release-Image via Workflow build-and-publish-opencode-v3-image.yml
 sbx run docker.io/domboeckli/sbx-opencode:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker
+
+# Claude Code v3 (v3-Workload): lokaler Build-Tag :local
+# (vorher Run-Config build-and-publish-claude-v3-image); Release-Image via Workflow build-and-publish-claude-v3-image.yml
+sbx run docker.io/domboeckli/sbx-claude:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 
@@ -717,7 +723,7 @@ Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md
 
 ```powershell
 python local-test\local-test-kits.py --validate-only   # Kit-Validierung (alle Kits) + Drift-Checks
-python local-test\local-test-kits.py                   # Volltest (OpenCode/OpenCode v3/Claude/Mammouth/Mistral Vibe/Pi)
+python local-test\local-test-kits.py                   # Volltest (OpenCode/OpenCode v3/Claude/Claude v3/Mammouth/Mistral Vibe/Pi)
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).
