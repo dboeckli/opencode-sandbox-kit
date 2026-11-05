@@ -22,7 +22,7 @@
 ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
 FROM ${BASE_IMAGE}
 
-ARG VIBE_VERSION=3.0.4
+ARG VIBE_VERSION=3.1.0
 
 # The plain shell template does not set an npm global prefix; keep the shared
 # kit convention for install-tooling-user.sh.
