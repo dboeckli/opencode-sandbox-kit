@@ -35,6 +35,16 @@ sbx run opencode `
     "C:\development\maven-repo:ro"
 ```
 
+**1b) OpenCode v3** (Kit-Spec v3, `kind: workload`, Release-Image)
+
+```powershell
+sbx run docker.io/domboeckli/sbx-opencode:latest `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
 **2) Claude Code** (Mixin-Kit, Home)
 
 ```powershell
@@ -85,6 +95,7 @@ Zuerst je Kit das Image lokal bauen und **nach Docker Hub pushen** (setzt den be
 ```powershell
 $env:IMAGE_PREFIX = "docker.io/domboeckli"
 python local-test\build-and-publish-opencode-image.py       # sbx-opencode-tooling:local
+python local-test\build-and-publish-opencode-v3-image.py    # sbx-opencode:local
 python local-test\build-and-publish-claude-image.py         # sbx-claude-tooling:local
 python local-test\build-and-publish-mammouth-image.py       # sbx-mammouth:local
 python local-test\build-and-publish-mistral-vibe-image.py   # sbx-mistral-vibe:local
@@ -99,6 +110,26 @@ Danach (der bewegliche `local`-Tag zeigt auf diesen lokalen Build):
 sbx run opencode `
     --kit ./opencode-agent/ `
     --template docker.io/domboeckli/sbx-opencode-tooling:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**1b) OpenCode v3** (v3-Workload)
+
+```powershell
+sbx run docker.io/domboeckli/sbx-opencode:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
+
+```powershell
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `

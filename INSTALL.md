@@ -666,6 +666,12 @@ sbx run opencode `
     --skills=off `
     --static-mcp idea,k8s,docker
 
+# OpenCode v3 (v3-Workload): lokaler Build-Tag :local
+# (vorher Run-Config build-and-publish-opencode-v3-image); Release-Image via Workflow build-and-publish-opencode-v3-image.yml
+sbx run docker.io/domboeckli/sbx-opencode:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker
+
 # Claude Code (Home, gegen api.anthropic.com)
 sbx run claude `
     --kit ./opencode-agent/ `
@@ -711,7 +717,7 @@ Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md
 
 ```powershell
 python local-test\local-test-kits.py --validate-only   # Kit-Validierung (alle Kits) + Drift-Checks
-python local-test\local-test-kits.py                   # Volltest (OpenCode/Claude/Mammouth/Mistral Vibe/Pi)
+python local-test\local-test-kits.py                   # Volltest (OpenCode/OpenCode v3/Claude/Mammouth/Mistral Vibe/Pi)
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).

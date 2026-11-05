@@ -74,6 +74,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Agent | Zusätzlich installiert | Konfiguration |
 |-------|-----------------------|---------------|
 | OpenCode | (Basis-Image bringt CLI mit) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` |
+| OpenCode v3 | v3-Workload (`opencode-v3-agent/`, Image `sbx-opencode`; CLI aus dem opencode-docker-Template) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` + Plugins |
 | Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
 | Mammouth Code | v3-Workload (`mammouth-agent/mammouth-agent.yaml`); Image `sbx-mammouth` mit CLI + Tooling | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | v3-Workload-Image (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |

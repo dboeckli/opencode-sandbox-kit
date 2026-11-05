@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 5 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 6 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
 
 Szenarien:
   1. OpenCode     + opencode-agent      (sbx create opencode --kit ./opencode-agent/)
+  1b. OpenCode v3 + opencode-v3-agent   (sbx create ./opencode-v3-agent/ — v3-Workload)
   2. Claude       + opencode-agent      (sbx create claude --kit ./opencode-agent/)   — Home (api.anthropic.com)
   3. Mammouth     + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
   4. Mistral Vibe + mistral-vibe-agent  (sbx create ./mistral-vibe-agent/ — Sandbox-Kit, eigenes gepinntes Image)
@@ -23,8 +24,9 @@ Voraussetzungen:
     PI_IMAGE_TAG fuer ein publiziertes Image gesetzt)
 
 Verwendung:
-  python local-test-kits.py                 # alle 5 Szenarien testen (default: all)
+  python local-test-kits.py                 # alle 6 Szenarien testen (default: all)
   python local-test-kits.py opencode        # nur OpenCode testen
+  python local-test-kits.py opencode-v3     # nur OpenCode v3 testen
   python local-test-kits.py claude          # nur Claude testen (Home-Szenario)
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
@@ -33,7 +35,7 @@ Verwendung:
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
 
 Optionen:
-  {all,opencode,claude,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
+  {all,opencode,opencode-v3,claude,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -69,7 +71,8 @@ SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
 SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
                 "mammouth-agent/files/home/stackexchange-api.md",
                 "mistral-vibe-agent/files/home/stackexchange-api.md",
-                "pi-agent/files/home/stackexchange-api.md")
+                "pi-agent/files/home/stackexchange-api.md",
+                "opencode-v3-agent/files/home/stackexchange-api.md")
 
 # sbx CLI: die Offline-Referenz (sbx-cli.md) wird aus der Release-Binary generiert
 # (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im Header der Datei;
@@ -78,7 +81,8 @@ SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
 SBX_DOC_FILES = ("opencode-agent/files/home/sbx-cli.md",
                  "mammouth-agent/files/home/sbx-cli.md",
                  "mistral-vibe-agent/files/home/sbx-cli.md",
-                 "pi-agent/files/home/sbx-cli.md")
+                 "pi-agent/files/home/sbx-cli.md",
+                 "opencode-v3-agent/files/home/sbx-cli.md")
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
 # Die Install-Skripte liegen als identische Kopien in den files/home/.local/bin-
@@ -115,6 +119,18 @@ INSTALL_SCRIPT_PAIRS = (
      "mistral-vibe-agent/files/home/.local/bin/vibe-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
      "mistral-vibe-agent/files/home/.local/bin/vibe-startup-maven.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+     "opencode-v3-agent/files/home/.local/bin/install-tooling.sh"),
+    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+     "opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+     "opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-agent/files/home/.local/bin/mcp-check.sh",
+     "opencode-v3-agent/files/home/.local/bin/mcp-check.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
+     "opencode-v3-agent/files/home/.local/bin/opencode-startup-ca.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
+     "opencode-v3-agent/files/home/.local/bin/opencode-startup-maven.sh"),
 )
 
 # Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
@@ -209,6 +225,7 @@ BRUNO_PIN_FILES = [
     "opencode-agent/claude/Dockerfile",
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
+    "opencode-v3-agent/opencode-v3-agent.dockerfile",
 ]
 BRUNO_PIN_RE = re.compile(r"@usebruno/cli@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 BRUNO_NPM_URL = "https://registry.npmjs.org/@usebruno/cli/latest"
@@ -223,6 +240,7 @@ INSPECTOR_PIN_FILES = [
     "opencode-agent/claude/Dockerfile",
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
+    "opencode-v3-agent/opencode-v3-agent.dockerfile",
 ]
 INSPECTOR_PIN_RE = re.compile(r"@modelcontextprotocol/inspector@(?P<v>[0-9]+(?:\.[0-9]+)+)")
 INSPECTOR_NPM_URL = "https://registry.npmjs.org/@modelcontextprotocol/inspector/latest"
@@ -247,6 +265,9 @@ KAFKA_ARCHIVE_URL = "https://archive.apache.org/dist/kafka/{ver}/kafka_{scala}-{
 # Tag: CI/e2e uebergibt den Feature-Tag per `OPENCODE_IMAGE_TAG` / `CLAUDE_IMAGE_TAG`; lokal
 # default `local` (zuletzt per local-test/build-and-publish-<agent>-image.py gebaut/gepusht).
 OPENCODE_DOCKERFILE = "opencode-agent/opencode/Dockerfile"
+OPENCODE_V3_DOCKERFILE = "opencode-v3-agent/opencode-v3-agent.dockerfile"
+OPENCODE_V3_DESCRIPTOR = "opencode-v3-agent/opencode-v3-agent.yaml"
+OPENCODE_V3_IMAGE_NAME = os.environ.get("OPENCODE_V3_IMAGE_NAME", "sbx-opencode")
 CLAUDE_DOCKERFILE = "opencode-agent/claude/Dockerfile"
 OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
 OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
@@ -278,6 +299,7 @@ SCENARIO_KIT = {
     "mammouth": "mammouth-agent",
     "mistral-vibe": "mistral-vibe-agent",
     "pi": "pi-agent",
+    "opencode-v3": "opencode-v3-agent",
 }
 SCENARIO_SECRETS = {
     "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
@@ -285,6 +307,7 @@ SCENARIO_SECRETS = {
     "mammouth": ("github", "github-maven", "mammouth", "zai", "mistral", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "pi": ("github", "github-maven", "deepseek", "zai", "mistral", "openrouter", "google", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "opencode-v3": ("github", "github-maven", "deepseek", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
 SECRET_ORDER = ("github", "github-maven", "anthropic", "mammouth", "deepseek", "mistral", "zai", "context7", "openrouter",
@@ -1104,6 +1127,31 @@ def check_vibe_cli_update():
         pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")
 
 
+def _opencode_v3_base_version():
+    path = os.path.join(ROOT, OPENCODE_V3_DOCKERFILE)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = re.search(r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)", f.read())
+    return m.group("v") if m else None
+
+
+def check_opencode_v3_base_update():
+    """Prueft den opencode-docker-Basis-Pin des OpenCode-v3-Workloads gegen
+    TEMPLATE_VERSION_OPENCODE. Die OpenCode-CLI selbst kommt aus dem Template."""
+    cur = _opencode_v3_base_version()
+    if not cur:
+        fail(f"opencode-v3 base image (BASE_IMAGE nicht in {OPENCODE_V3_DOCKERFILE} gefunden)")
+        return
+    if cur != TEMPLATE_VERSION_OPENCODE:
+        fail(
+            f"opencode-v3 base image (opencode-docker-{cur} != TEMPLATE_VERSION_OPENCODE {TEMPLATE_VERSION_OPENCODE})",
+            f"ARG BASE_IMAGE in {OPENCODE_V3_DOCKERFILE} auf opencode-docker-{TEMPLATE_VERSION_OPENCODE} setzen",
+        )
+        return
+    pass_(f"opencode-v3 base image up-to-date (opencode-docker-{cur})")
+
+
 def _pi_pin_from(rel, regex):
     path = os.path.join(ROOT, rel)
     if not os.path.isfile(path):
@@ -1356,7 +1404,7 @@ def check_kafka_distro_availability():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "claude", "mammouth", "mistral-vibe", "pi"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "opencode-v3", "claude", "mammouth", "mistral-vibe", "pi"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -1387,6 +1435,16 @@ def main():
     info("  --> validate: " + os.path.join(ROOT, "opencode-agent"))
     code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "opencode-agent")], stream=True)
     pass_("sbx kit validate (opencode-agent)") if code == 0 else fail("sbx kit validate (opencode-agent)")
+    info("  --> validate: " + os.path.join(ROOT, "opencode-v3-agent"))
+    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "opencode-v3-agent")], stream=True)
+    if code == 0:
+        pass_("sbx kit validate (opencode-v3-agent)")
+    elif "no kit builder configured" in out:
+        print("  " + _color("33", "[SKIP] sbx kit validate (opencode-v3-agent) — v3-Quellkit braucht den Kit-Builder; "
+                                  "validiert via buildx-Kit-Frontend (build-and-publish-opencode-v3-image) + e2e-Szenario"))
+    else:
+        fail("sbx kit validate (opencode-v3-agent)")
+
     info("  --> validate: " + os.path.join(ROOT, "mammouth-agent"))
     # v3-Quellkit: `--offline` hat keinen Kit-Builder; Validierung via buildx/e2e.
     code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "mammouth-agent")], stream=True)
@@ -1437,6 +1495,9 @@ def main():
         print()
         info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
         check_template_update()
+        print()
+        info("==> OpenCode-v3 Basis-Image-Check (opencode-docker gegen TEMPLATE_VERSION_OPENCODE)")
+        check_opencode_v3_base_update()
         print()
         info("==> Sandbox-Template Node-Baseline-Check (Node >= 24 macht install-tooling.sh node ueberfluessig)")
         check_template_node_baseline()
@@ -1512,7 +1573,7 @@ def main():
         '"javac:javac -version" "mvn:mvn -version" "docker:docker version" '
         '"kubectl:kubectl version --client" "jq:jq --version" "node:node --version" '
         '"npm:npm --version" "kafka:kafka-topics.sh --version" "bruno:bru --version" '
-        '"mcp-inspector:command -v mcp-inspector" "pi:pi --version"; do '
+        '"mcp-inspector:command -v mcp-inspector" "pi:pi --version" "opencode:opencode --version"; do '
         'name="${t%%:*}"; cmd="${t#*:}"; if $cmd >/dev/null 2>&1; then echo "TOOL-OK:$name"; '
         'else echo "TOOL-FAIL:$name"; fi; done'
     )
@@ -1524,6 +1585,14 @@ def main():
             "kit": os.path.join(ROOT, "opencode-agent"),
             "model": "deepseek/deepseek-flash",
             "config": 'grep -q "deepseek/deepseek-flash" ~/.config/opencode/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc && ! grep -q "host.docker.internal:64342" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "DIRECT=$(grep -c host.docker.internal:64342 ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; exit 1; }',
+        },
+        {
+            "name": "kit-test-opencode-v3",
+            "agent": "opencode-v3",
+            "kit": os.path.join(ROOT, "opencode-v3-agent"),
+            "model": "deepseek/deepseek-flash",
+            "config_label": "opencode-v3 config (default model, gateway, guard, CLI)",
+            "config": 'test -f ~/.config/opencode/opencode.jsonc && grep -q "deepseek/deepseek-flash" ~/.config/opencode/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc && test -f ~/.config/opencode/plugins/intellij-run-config-guard.js && opencode --version >/dev/null 2>&1 && echo CONFIG-OK || { echo "MODEL=$(grep -c deepseek/deepseek-flash ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "GUARD=$(test -f ~/.config/opencode/plugins/intellij-run-config-guard.js && echo 1 || echo 0)"; echo "CLI=$(opencode --version 2>/dev/null || echo MISSING)"; exit 1; }',
         },
         {
             "name": "kit-test-claude",
@@ -1618,6 +1687,15 @@ def main():
                 info(f"Pi-Image (publiziert): {kit_target}")
             else:
                 info("Pi-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
+        if s["agent"] == "opencode-v3":
+            # Lokal default `local`; explizit leer (Branch/PR) -> lokales Verzeichnis.
+            oc_raw = os.environ.get("OPENCODE_V3_IMAGE_TAG")
+            oc_tag = "local" if oc_raw is None else oc_raw
+            if oc_tag:
+                kit_target = f"{IMAGE_PREFIX}/{OPENCODE_V3_IMAGE_NAME}:{oc_tag}"
+                info(f"OpenCode-v3-Image (publiziert): {kit_target}")
+            else:
+                info("OpenCode-v3-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
         if s["agent"] == "mammouth":
             # Lokal default `local` (per build-and-publish-mammouth-image); CI/e2e
             # uebergibt den Master-Tag per MAMMOUTH_IMAGE_TAG. Explizit leer
@@ -1710,6 +1788,8 @@ def main():
         required_tools = ["ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka"]
         if s["agent"] == "pi":
             required_tools.append("pi")
+        if s["agent"] in ("opencode", "opencode-v3"):
+            required_tools.append("opencode")
         for t in required_tools:
             if t in ok_tools:
                 pass_(f"tool: {t}")
@@ -1808,7 +1888,7 @@ def main():
 
         openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
-        if s["agent"] in ("opencode", "pi"):
+        if s["agent"] in ("opencode", "opencode-v3", "pi"):
             if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
                 pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
             else:
@@ -1833,12 +1913,12 @@ def main():
                 sfail("google proxy env wiring (GEMINI_API_KEY=proxy-managed)", out)
         else:
             c2, out = exec_sandbox(s["name"], google_env_cmd)
-        if s["agent"] == "opencode":
+        if s["agent"] in ("opencode", "opencode-v3"):
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
                 pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
             else:
                 sfail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
-        elif s["agent"] != "pi":
+        elif s["agent"] not in ("pi",):
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
                 pass_("google not wired (only opencode template declares google)")
             else:
