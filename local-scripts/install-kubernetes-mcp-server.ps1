@@ -37,7 +37,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = "v0.1.1",
+    [string]$Version = "v0.1.2",
     [string]$InstallDir = (Join-Path $env:USERPROFILE ".local\bin"),
     [bool]$AddToPath = $true,
     [switch]$Force
