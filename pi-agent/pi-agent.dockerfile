@@ -48,7 +48,7 @@ RUN chmod +x /tmp/kit/*.sh \
 RUN set -e; \
     for attempt in 1 2 3; do \
       if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
-           @modelcontextprotocol/inspector@2.13.0 \
+           @modelcontextprotocol/inspector@2.14.0 \
          && npm_config_bin_links=true npm install -g --ignore-scripts @earendil-works/pi-coding-agent@${PI_VERSION}; then \
         break; \
       fi; \
