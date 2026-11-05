@@ -389,7 +389,7 @@ sbx exec mistral-vibe-sandbox bash -c 'curl -s https://api.mistral.ai/v1/models 
 
 #### Z.AI (GLM) — Default-Modell GLM-5.3-Flash
 
-`mistral-vibe-agent/spec.yaml` pinnt das Start-Modell mit `environment.variables.VIBE_ACTIVE_MODEL: "glm-flash"`
+`mistral-vibe-agent/mistral-vibe-agent.dockerfile` pinnt das Start-Modell mit `ENV VIBE_ACTIVE_MODEL=glm-flash`
 (Env-Layer überschreibt `active_model`), zusätzlich setzt `~/.vibe/config.toml` `active_model = "glm-flash"`.
 **GLM-5.3 (Flagship)** ist ebenfalls direkt über Z.AI wählbar (Alias `glm-5.3`, gleicher Provider/Key), ebenso
 das **kostenlose GLM-4.7-Flash** (Alias `glm-4.7-flash`).
@@ -679,10 +679,9 @@ sbx run docker.io/domboeckli/sbx-mammouth:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 
-# Mistral Vibe (eigenes Agent-Kit): lokaler Build-Tag :local via --kit-arg imageTag=local
+# Mistral Vibe (v3-Workload): lokaler Build-Tag :local
 # (vorher Run-Config build-and-publish-mistral-vibe-image); Release-Image via Workflow build-and-publish-mistral-vibe-image.yml
-sbx run ./mistral-vibe-agent/ `
-    --kit-arg imageTag=local `
+sbx run docker.io/domboeckli/sbx-mistral-vibe:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 

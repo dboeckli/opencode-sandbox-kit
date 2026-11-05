@@ -47,22 +47,20 @@ sbx run claude `
     "C:\development\maven-repo:ro"
 ```
 
-**3) Mammouth Code** (Kit-Spec v3, `kind: workload` — `sbx` baut den Workload aus dem Git-Checkout)
+**3) Mammouth Code** (Kit-Spec v3, `kind: workload`, Release-Image)
 
 ```powershell
-sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mammouth-agent" `
+sbx run docker.io/domboeckli/sbx-mammouth:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
     "C:\development\maven-repo:ro"
 ```
 
-**4) Mistral Vibe** (`kind: sandbox`, eigenes Image)
+**4) Mistral Vibe** (Kit-Spec v3, `kind: workload`, Release-Image)
 
 ```powershell
-sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-vibe-agent" `
-    --kit-arg imageTag=latest `
-    --kit-arg imagePrefix=docker.io/domboeckli `
+sbx run docker.io/domboeckli/sbx-mistral-vibe:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -70,10 +68,10 @@ sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=mistral-
 ```
 
 
-**5) Pi Coding Agent** (Kit-Spec v3, `kind: workload` — `sbx` baut den Workload aus dem Git-Checkout)
+**5) Pi Coding Agent** (Kit-Spec v3, `kind: workload`, Release-Image)
 
 ```powershell
-sbx run "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=pi-agent" `
+sbx run docker.io/domboeckli/sbx-pi-agent:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -129,12 +127,20 @@ sbx run docker.io/domboeckli/sbx-mammouth:local `
     "C:\development\maven-repo:ro"
 ```
 
-**4) Mistral Vibe**
+**4) Mistral Vibe** (v3-Workload)
+
+```powershell
+sbx run docker.io/domboeckli/sbx-mistral-vibe:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
 
 ```powershell
 sbx run ./mistral-vibe-agent/ `
-    --kit-arg imageTag=local `
-    --kit-arg imagePrefix=docker.io/domboeckli `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `

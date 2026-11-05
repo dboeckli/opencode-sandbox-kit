@@ -4,8 +4,8 @@ name: Build and publish Mistral Vibe image
 # `mistral-vibe-agent` sandbox kit references (spec.yaml `sandbox.image`, via the
 # `imageTag` kit arg).
 #
-# The image bakes a pinned Mistral Vibe version on top of the versioned
-# `shell-docker` sandbox template (Docker Engine inside the sandbox), following
+# The v3 descriptor is the Dockerfile frontend; the image bakes a pinned Mistral
+# Vibe version on top of the versioned `shell-docker` sandbox template, following
 # https://docs.docker.com/guides/mistral-vibe-sandbox/.
 # Vibe is not a pre-built docker/sandbox-templates agent, so the kit ships its
 # own image instead of installing the agent at sandbox build time.
@@ -73,16 +73,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "image_prefix=${IMAGE_PREFIX}" >> "$GITHUB_OUTPUT"
-          pin=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
-            | head -1 | cut -d= -f2)
-          if [ -z "$pin" ]; then
-            echo "VIBE_VERSION pin not found in mistral-vibe-agent/Dockerfile" >&2
-            exit 1
-          fi
-          spec_default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+          pin=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/mistral-vibe-agent.yaml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
-          if [ "$spec_default" != "$pin" ]; then
-            echo "spec.yaml args.imageTag.default ($spec_default) != Dockerfile pin ($pin)" >&2
+          if [ -z "$pin" ]; then
+            echo "Vibe pin not found in mistral-vibe-agent/mistral-vibe-agent.yaml args.version.default" >&2
             exit 1
           fi
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
@@ -140,6 +134,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: mistral-vibe-agent
+          file: ./mistral-vibe-agent/mistral-vibe-agent.yaml
           platforms: ${{ matrix.platform }}
           # Keine provenance/SBOM-Attestations: die erzeugen pro Build zusaetzliche
           # untagged Attestation-Manifeste (Package-Bloat); fuer die Tooling-Images nicht noetig.

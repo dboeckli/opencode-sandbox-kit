@@ -111,6 +111,10 @@ INSTALL_SCRIPT_PAIRS = (
      "mammouth-agent/files/home/.local/bin/mammouth-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
      "mammouth-agent/files/home/.local/bin/mammouth-startup-maven.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
+     "mistral-vibe-agent/files/home/.local/bin/vibe-startup-ca.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
+     "mistral-vibe-agent/files/home/.local/bin/vibe-startup-maven.sh"),
 )
 
 # Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
@@ -164,10 +168,11 @@ MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/la
 # mit demselben Tag. Update-Check gegen die latest PyPI-Version (mistral-vibe); warnt (gelb)
 # bei neuerer Version. Die shell-Basis (docker/sandbox-templates:shell-docker-<v>) ist ein
 # eigener Pin im Dockerfile (Renovate-managed) und wird nur gegen Docker Hub geprueft.
-VIBE_DOCKERFILE = "mistral-vibe-agent/Dockerfile"
-VIBE_SPEC_FILE = "mistral-vibe-agent/spec.yaml"
+VIBE_DOCKERFILE = "mistral-vibe-agent/mistral-vibe-agent.dockerfile"
+VIBE_DESCRIPTOR = "mistral-vibe-agent/mistral-vibe-agent.yaml"
+VIBE_IMAGE_NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
 VIBE_VERSION_RE = re.compile(r"ARG VIBE_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
-VIBE_IMAGE_TAG_RE = re.compile(r"default:\s*\"(?P<v>[0-9]+(?:\.[0-9]+)+)\"")
+VIBE_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
 VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
@@ -200,7 +205,6 @@ DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
 # der Bump kommt via Renovate-Custom-Manager (.github/renovate.json).
 BRUNO_PIN_FILES = [
     "opencode-agent/spec.yaml",
-    "mistral-vibe-agent/spec.yaml",
     "opencode-agent/opencode/Dockerfile",
     "opencode-agent/claude/Dockerfile",
     "mammouth-agent/mammouth-agent.dockerfile",
@@ -215,7 +219,6 @@ BRUNO_NPM_URL = "https://registry.npmjs.org/@usebruno/cli/latest"
 # der Bump kommt via Renovate-Custom-Manager (.github/renovate.json).
 INSPECTOR_PIN_FILES = [
     "opencode-agent/spec.yaml",
-    "mistral-vibe-agent/spec.yaml",
     "opencode-agent/opencode/Dockerfile",
     "opencode-agent/claude/Dockerfile",
     "mammouth-agent/mammouth-agent.dockerfile",
@@ -986,7 +989,7 @@ def check_mammouth_cli_update():
     base = _mammouth_base_image_version()
     shell_pin = _vibe_base_image_version()
     if not shell_pin:
-        fail("mammouth base image (shell-docker-Pin nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        fail("mammouth base image (shell-docker-Pin nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
         return
     if base != shell_pin:
         fail(
@@ -1023,12 +1026,12 @@ def _vibe_dockerfile_pin():
     return m.group("v") if m else None
 
 
-def _vibe_spec_image_tag():
-    path = os.path.join(ROOT, VIBE_SPEC_FILE)
+def _vibe_descriptor_pin():
+    path = os.path.join(ROOT, VIBE_DESCRIPTOR)
     if not os.path.isfile(path):
         return None
     with open(path, encoding="utf-8") as f:
-        m = VIBE_IMAGE_TAG_RE.search(f.read())
+        m = VIBE_DESCRIPTOR_VERSION_RE.search(f.read())
     return m.group("v") if m else None
 
 
@@ -1049,21 +1052,21 @@ def check_vibe_cli_update():
     Warnt (gelb) bei neuerer PyPI-Version."""
     pin = _vibe_dockerfile_pin()
     if not pin:
-        fail("mistral-vibe version (VIBE_VERSION nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        fail("mistral-vibe version (VIBE_VERSION nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
         return
-    image_tag = _vibe_spec_image_tag()
-    if not image_tag:
-        fail("mistral-vibe version (Image-Tag nicht in mistral-vibe-agent/spec.yaml gefunden)")
+    descriptor_pin = _vibe_descriptor_pin()
+    if not descriptor_pin:
+        fail(f"mistral-vibe version (args.version.default nicht in {VIBE_DESCRIPTOR} gefunden)")
         return
-    if image_tag != pin:
+    if descriptor_pin != pin:
         fail(
-            f"mistral-vibe version (spec-Image-Tag v{image_tag} != Dockerfile-Pin v{pin})",
-            f"args.imageTag.default in {VIBE_SPEC_FILE} auf {pin} setzen (Image via args.imagePrefix + args.imageTag)",
+            f"mistral-vibe version (Descriptor-Pin v{descriptor_pin} != Dockerfile-Pin v{pin})",
+            f"args.version.default in {VIBE_DESCRIPTOR} und ARG VIBE_VERSION in {VIBE_DOCKERFILE} angleichen",
         )
         return
     base = _vibe_base_image_version()
     if base is None:
-        fail("mistral-vibe base image (shell-Basis-Image nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        fail("mistral-vibe base image (shell-Basis-Image nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
         return
     try:
         shell_latest = _template_latest_per_family().get("shell-docker")
@@ -1094,7 +1097,7 @@ def check_vibe_cli_update():
     if _version_newer(latest, pin):
         warn(
             f"mistral-vibe update available (Pin v{pin}, PyPI latest v{latest})",
-            f"Optional: ARG VIBE_VERSION in {VIBE_DOCKERFILE} + image-Tag in {VIBE_SPEC_FILE} auf "
+            f"Optional: ARG VIBE_VERSION in {VIBE_DOCKERFILE} + args.version.default in {VIBE_DESCRIPTOR} auf "
             f"v{latest} heben, Image neu publizieren (build-and-publish-mistral-vibe-image.yml)",
         )
     else:
@@ -1134,7 +1137,7 @@ def check_pi_cli_update():
         return
     shell_pin = _vibe_base_image_version()
     if not shell_pin:
-        fail("pi base image (shell-docker-Pin nicht in mistral-vibe-agent/Dockerfile gefunden)")
+        fail("pi base image (shell-docker-Pin nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
         return
     if base != shell_pin:
         fail(
@@ -1395,8 +1398,15 @@ def main():
     else:
         fail("sbx kit validate (mammouth-agent)")
     info("  --> validate: " + os.path.join(ROOT, "mistral-vibe-agent"))
-    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "mistral-vibe-agent")], stream=True)
-    pass_("sbx kit validate (mistral-vibe-agent)") if code == 0 else fail("sbx kit validate (mistral-vibe-agent)")
+    # v3-Quellkit: `--offline` hat keinen Kit-Builder; Validierung via buildx/e2e.
+    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "mistral-vibe-agent")], stream=True)
+    if code == 0:
+        pass_("sbx kit validate (mistral-vibe-agent)")
+    elif "no kit builder configured" in out:
+        print("  " + _color("33", "[SKIP] sbx kit validate (mistral-vibe-agent) — v3-Quellkit braucht den Kit-Builder; "
+                                  "validiert via buildx-Kit-Frontend (build-and-publish-mistral-vibe-image) + e2e-Szenario"))
+    else:
+        fail("sbx kit validate (mistral-vibe-agent)")
     info("  --> validate: " + os.path.join(ROOT, "pi-agent"))
     # v3-Quellkits brauchen den Kit-Builder; `--offline` hat keinen ("no kit builder
     # configured"). Die Descriptor-/Dockerfile-Validierung uebernimmt der buildx-Build
@@ -1626,17 +1636,17 @@ def main():
             create_cmd = ["create", "--name", s["name"], kit_target, ws]
         else:
             create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", kit_target]
-        # Mistral-Vibe-Image-Tag per --kit-arg an das Kit uebergeben:
-        #   - lokal (Host): `local` = zuletzt lokal gebauter/pushter Stand
-        #     (IntelliJ-Run-Config `build-and-publish-mistral-vibe-image`).
-        #   - CI/e2e: VIBE_IMAGE_TAG = Feature-Tag (`<pin>-<branch>.<timestamp>`),
-        #     damit der e2e genau diesen Branch-Build testet.
+        # Mistral Vibe (v3): publiziertes Image per Ref; lokal default `local`
+        # (build-and-publish-mistral-vibe-image), CI/e2e uebergibt den Master-Tag.
+        # Explizit leer (Branch/PR) -> lokales Workload-Verzeichnis (Branch-Stand).
         if s["agent"] == "mistral-vibe":
-            vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
-            create_cmd += ["--kit-arg", f"imageTag={vibe_tag}",
-                           "--kit-arg", f"imagePrefix={IMAGE_PREFIX}"]
-            info(f"  Vibe-Image-Tag (--kit-arg imageTag): {vibe_tag}")
-            info(f"  Image-Prefix (--kit-arg imagePrefix): {IMAGE_PREFIX}")
+            vibe_raw = os.environ.get("VIBE_IMAGE_TAG")
+            vibe_tag = "local" if vibe_raw is None else vibe_raw
+            if vibe_tag:
+                kit_target = f"{IMAGE_PREFIX}/{VIBE_IMAGE_NAME}:{vibe_tag}"
+                info(f"Mistral-Vibe-Image (publiziert): {kit_target}")
+            else:
+                info("Mistral-Vibe-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.
@@ -1979,12 +1989,13 @@ def main():
                 # (Tag == Pin [Release-Build] oder `local` [lokal gebaut]). Bei Tag `latest`
                 # (CI-Branch-Push) ist es das publizierte Master-Image; ein Renovate-Pin-Bump
                 # waere sonst ein Fehlalarm.
-                vibe_tag = os.environ.get("VIBE_IMAGE_TAG") or "local"
+                vibe_raw = os.environ.get("VIBE_IMAGE_TAG")
+                vibe_tag = "local" if vibe_raw is None else vibe_raw
                 vibe_ver_cmd = "vibe --version 2>/dev/null | grep -oE '[0-9]+(\\.[0-9]+)+' | head -1"
                 c2, out = exec_sandbox(s["name"], vibe_ver_cmd)
                 installed = out.strip().splitlines()[0].strip() if c2 == 0 and out.strip() else ""
                 pin = _vibe_dockerfile_pin()
-                if vibe_tag == "latest":
+                if vibe_tag in ("", "latest"):
                     print("  " + _color("33", "[SKIP] mistral-vibe version installed — Image-Tag "
                                               "'latest' (publiziertes Master-Image, nicht aus diesem "
                                               "Checkout); Pin-Abgleich nicht aussagekraeftig"))

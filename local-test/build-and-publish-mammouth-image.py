@@ -23,7 +23,7 @@ the docker/buildx output) is additionally written to
 `target/build-and-publish-mammouth-image.log` (gitignored) for later inspection.
 
 `local-test-kits.py mammouth` uses the moving `local` tag by default
-(`--kit-arg imageTag=local`), so a local run after this script tests exactly this build.
+(`MAMMOUTH_IMAGE_TAG=local`), so a local run after this script tests exactly this build.
 CI passes a feature tag via `MAMMOUTH_IMAGE_TAG`.
 
 Environment overrides: IMAGE_PREFIX, MAMMOUTH_IMAGE_NAME, MAMMOUTH_BUILDX_BUILDER.
