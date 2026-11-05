@@ -152,9 +152,18 @@ jobs:
             *) exit 1 ;;
           esac
 
-      - name: Validate Mistral Vibe agent kit spec
+      - name: Validate Mistral Vibe agent kit (v3 workload)
         if: env.CAN_VALIDATE == 'true'
-        run: sbx kit validate ./mistral-vibe-agent/
+        # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Validierung via buildx-Kit-Frontend/e2e.
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./mistral-vibe-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *) exit 1 ;;
+          esac
 
       - name: Validate Pi agent kit (v3 workload)
         if: env.CAN_VALIDATE == 'true'
@@ -188,9 +197,9 @@ jobs:
       - name: Check Mistral Vibe image tag matches the Dockerfile pin
         run: |
           set -euo pipefail
-          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/Dockerfile \
+          version=$(grep -oE 'ARG VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/mistral-vibe-agent.dockerfile \
             | head -1 | cut -d= -f2)
-          default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/spec.yaml \
+          default=$(grep -oE 'default: "[0-9]+(\.[0-9]+)+"' mistral-vibe-agent/mistral-vibe-agent.yaml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
-          echo "VIBE_VERSION=${version}  spec args.imageTag.default=${default}"
+          echo "VIBE_VERSION=${version}  descriptor args.version.default=${default}"
           test "$version" = "$default"

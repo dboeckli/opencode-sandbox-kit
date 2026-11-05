@@ -51,7 +51,7 @@ docker login
 |-------|---------|-----------|----------------------|
 | claude | `opencode-agent` | `opencode-agent/claude/Dockerfile` | `BASE_IMAGE=claude-code-docker-0.10.0` |
 | mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `MAMMOUTH_VERSION=1.18.31.2` |
-| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/Dockerfile` | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.3` |
+| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.4` |
 
 ## 1. opencode — kein Build nötig (lokal gecacht)
 
@@ -77,7 +77,7 @@ docker push  "$DH/sbx-mammouth:$TAG_SHELL"
 ## 4. mistral-vibe — bauen + pushen
 
 ```powershell
-docker build -f mistral-vibe-agent/Dockerfile -t "$DH/sbx-mistral-vibe:$TAG_VIBE" mistral-vibe-agent
+docker build -f mistral-vibe-agent/mistral-vibe-agent.yaml -t "$DH/sbx-mistral-vibe:$TAG_VIBE" mistral-vibe-agent
 docker push  "$DH/sbx-mistral-vibe:$TAG_VIBE"
 ```
 
@@ -143,17 +143,16 @@ sbx run docker.io/domboeckli/sbx-mammouth:<tag> `
     --static-mcp idea,k8s,docker
 ```
 
-**Mistral Vibe** (`kind: sandbox`):
+**Mistral Vibe** (v3-Workload):
 
 ```powershell
-sbx run ./mistral-vibe-agent/ `
-    --template domboeckli/sbx-mistral-vibe:<tag> `
+sbx run docker.io/domboeckli/sbx-mistral-vibe:<tag> `
     --skills=off `
     --static-mcp idea,k8s,docker
 ```
 
-> Bei den Agent-Kits steht das Image in der v3-Spec (`mammouth-agent.yaml`) bzw. wird
-> per `--template` (Mistral, v2) gesetzt. Immer `--skills=off` setzen; das
+> Bei den Agent-Kits steht das Image im v3-Descriptor (`mammouth-agent.yaml`,
+> `mistral-vibe-agent.yaml`). Immer `--skills=off` setzen; das
 > `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
 > Immer `--skills=off` setzen; das `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
 

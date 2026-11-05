@@ -88,9 +88,9 @@ jobs:
                 name=sbx-mammouth
                 pin=$(grep -oE 'shell-docker-[0-9]+(\.[0-9]+)+' mammouth-agent/mammouth-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
               mistral-vibe)
-                ctx=mistral-vibe-agent; df=mistral-vibe-agent/Dockerfile
+                ctx=mistral-vibe-agent; df=mistral-vibe-agent/mistral-vibe-agent.yaml
                 name=sbx-mistral-vibe
-                pin=$(grep -oE 'VIBE_VERSION=[0-9]+(\.[0-9]+)+' "$df" | head -1 | cut -d= -f2);;
+                pin=$(grep -oE 'VIBE_VERSION=[0-9]+(\.[0-9]+)+' mistral-vibe-agent/mistral-vibe-agent.dockerfile | head -1 | cut -d= -f2);;
               *)
                 echo "unknown image: $img" >&2; exit 1;;
             esac

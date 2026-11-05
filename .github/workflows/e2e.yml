@@ -78,7 +78,7 @@ jobs:
 
   build-and-publish-mammouth-image:
     # Build (and, unless it's a PR, push) the Mammouth image the `mammouth` scenario pulls
-    # (`--kit-arg imageTag=<tag>`). Reuses the standalone build-and-publish workflow (multi-arch).
+    # (v3 image reference). Reuses the standalone build-and-publish workflow (multi-arch).
     # Same fork-PR guard as the scenario job: fork PRs have no Docker Hub secrets.
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     uses: ./.github/workflows/build-and-publish-mammouth-image.yml
@@ -331,7 +331,9 @@ jobs:
           IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.io/domboeckli' }}
           # Images werden nur bei push auf master / schedule gepusht; bei PR/Branch-Builds
           # (push: false) nutzt e2e das veröffentlichte `latest`-Master-Image.
-          VIBE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mistral-vibe-image.outputs.version_tag || 'latest' }}
+          # Mistral Vibe (v3): master/schedule das publizierte Image, auf Branches/PRs
+          # leer -> das Szenario baut das lokale Kit-Verzeichnis (Branch-Stand).
+          VIBE_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mistral-vibe-image.outputs.version_tag || '' }}
           # Mammouth (v3): master/schedule das publizierte Image, auf Branches/PRs
           # leer -> das Szenario baut das lokale Kit-Verzeichnis (Branch-Stand).
           MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || '' }}
