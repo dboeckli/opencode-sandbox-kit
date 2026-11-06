@@ -45,6 +45,8 @@ Optionen:
   --validate-only                 Nur Kit-Validierung (sbx kit validate; v3-Kits
                                   via Kit-Builder), keine Secrets-/Sandbox-Checks
                                   (default: Sandboxes werden gestartet)
+  --skip-v3-builder               v3-Kits nur per Offline-Probe pruefen (schnell,
+                                  z. B. CI-Szenario-Laeufe)
   --workspace <pfad>              Workspace der Sandbox-Szenarien
                                   (default: $WORKSPACE_DIR oder Repo-Root)
 """
@@ -1462,6 +1464,9 @@ def main():
     parser.add_argument("--workspace", default=None,
                         help="Workspace-Pfad fuer die Sandbox-Szenarien "
                              "(default: $WORKSPACE_DIR oder Repo-Root)")
+    parser.add_argument("--skip-v3-builder", action="store_true",
+                        help="v3-Kits nur per Offline-Probe pruefen statt ueber den Kit-Builder "
+                             "(schnell; fuer CI-Szenario-Laeufe, volle Validierung via --validate-only)")
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
@@ -1483,11 +1488,10 @@ def main():
     # v3-Quellkits können nicht ueber den `--offline`-Ladepfad validiert werden
     # ("no kit builder configured"). Der Kit-Builder (Sandbox `sbx-kit-builder`)
     # baut das Artefakt und validiert es — genau das passiert im Publish-Build.
-    # Im --validate-only-Modus nutzen wir den Builder (echte Validierung); in den
-    # Szenario-Laeufen reicht der schnelle Offline-Probe (die Szenarien bauen die
-    # Kits ohnehin selbst und im e2e waeren sonst pro Matrix-Job alle Kits erneut
-    # zu bauen).
-    validate_v3_via_builder = args.validate_only
+    # Default: echte Artefakt-Validierung ueber den Kit-Builder (auch im Voll-Lauf).
+    # `--skip-v3-builder` schaltet auf den schnellen Offline-Probe zurueck (z. B. in
+    # CI-Szenario-Laeufen, wo sonst pro Matrix-Job alle Kits erneut gebaut wuerden).
+    validate_v3_via_builder = not args.skip_v3_builder
     builder_hints = ("no kit builder configured", "failed to create kit builder",
                      "failed to start kit builder", "kit builder sandbox",
                      "sandboxd", "cannot connect to the docker daemon",
@@ -1506,6 +1510,11 @@ def main():
             return
         if v3:
             low = out.lower()
+            if not validate_v3_via_builder and "no kit builder configured" in low:
+                print("  " + _color("33", f"[SKIP] sbx kit validate ({label}) — Offline-Probe "
+                                          "(--skip-v3-builder); volle Validierung via Kit-Builder "
+                                          "(`--validate-only` bzw. ohne --skip-v3-builder)"))
+                return
             if any(hint in low for hint in builder_hints):
                 last = out.strip().splitlines()[-1] if out.strip() else "unknown"
                 warn(

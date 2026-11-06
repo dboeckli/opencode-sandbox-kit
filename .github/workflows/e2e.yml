@@ -366,7 +366,10 @@ jobs:
           # Pi (v3-Workload): master/schedule das publizierte Image, auf Branches/PRs
           # leer -> das Szenario baut das lokale Kit-Verzeichnis (Branch-Stand).
           PI_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-pi-image.outputs.version_tag || '' }}
-        run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci
+        # --skip-v3-builder: die Szenarien bauen/validieren ihr Kit selbst; ein
+        # Builder-Validate aller v3-Kits pro Matrix-Job waere ein Vielfach-Rebuild.
+        # Die volle Artefakt-Validierung laeuft in --validate-only bzw. im Publish.
+        run: python3 local-test/local-test-kits.py ${{ matrix.scenario }} --ci --skip-v3-builder
 
       - name: Sign out of Docker Hub
         if: always()
