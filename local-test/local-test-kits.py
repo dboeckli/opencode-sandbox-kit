@@ -34,7 +34,7 @@ Verwendung:
   python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
   python local-test-kits.py pi              # nur Pi testen
   python local-test-kits.py --help          # alle Optionen anzeigen
-  python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien
+  python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien (v3 via Kit-Builder)
 
 Optionen:
   {all,opencode,opencode-v3,claude,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
@@ -42,9 +42,9 @@ Optionen:
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
                                   mammouth-/mistral-API-Call
-  --validate-only                 Nur Kit-Validierung (sbx kit validate),
-                                  keine Secrets-/Sandbox-Checks (default: Sandboxes
-                                  werden gestartet)
+  --validate-only                 Nur Kit-Validierung (sbx kit validate; v3-Kits
+                                  via Kit-Builder), keine Secrets-/Sandbox-Checks
+                                  (default: Sandboxes werden gestartet)
   --workspace <pfad>              Workspace der Sandbox-Szenarien
                                   (default: $WORKSPACE_DIR oder Repo-Root)
 """
@@ -1458,7 +1458,7 @@ def main():
     parser.add_argument("--ci", action="store_true",
                         help="CI-Modus: Fake-API-Keys, kein realer mammouth-/mistral-API-Call")
     parser.add_argument("--validate-only", action="store_true",
-                        help="Nur Kit-Validierung, keine Sandbox-Szenarien (default: Sandboxes werden gestartet)")
+                        help="Nur Kit-Validierung, keine Sandbox-Szenarien (default: Sandboxes werden gestartet); v3-Kits werden ueber den Kit-Builder validiert")
     parser.add_argument("--workspace", default=None,
                         help="Workspace-Pfad fuer die Sandbox-Szenarien "
                              "(default: $WORKSPACE_DIR oder Repo-Root)")
@@ -1480,61 +1480,51 @@ def main():
 
     print()
     info("==> Kit-Validierung")
-    info("  --> validate: " + os.path.join(ROOT, "opencode-agent"))
-    code, _ = run_sbx(["kit", "validate", os.path.join(ROOT, "opencode-agent")], stream=True)
-    pass_("sbx kit validate (opencode-agent)") if code == 0 else fail("sbx kit validate (opencode-agent)")
-    info("  --> validate: " + os.path.join(ROOT, "opencode-v3-agent"))
-    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "opencode-v3-agent")], stream=True)
-    if code == 0:
-        pass_("sbx kit validate (opencode-v3-agent)")
-    elif "no kit builder configured" in out:
-        print("  " + _color("33", "[SKIP] sbx kit validate (opencode-v3-agent) — v3-Quellkit braucht den Kit-Builder; "
-                                  "validiert via buildx-Kit-Frontend (build-and-publish-opencode-v3-image) + e2e-Szenario"))
-    else:
-        fail("sbx kit validate (opencode-v3-agent)")
+    # v3-Quellkits können nicht ueber den `--offline`-Ladepfad validiert werden
+    # ("no kit builder configured"). Der Kit-Builder (Sandbox `sbx-kit-builder`)
+    # baut das Artefakt und validiert es — genau das passiert im Publish-Build.
+    # Im --validate-only-Modus nutzen wir den Builder (echte Validierung); in den
+    # Szenario-Laeufen reicht der schnelle Offline-Probe (die Szenarien bauen die
+    # Kits ohnehin selbst und im e2e waeren sonst pro Matrix-Job alle Kits erneut
+    # zu bauen).
+    validate_v3_via_builder = args.validate_only
+    builder_hints = ("no kit builder configured", "failed to create kit builder",
+                     "failed to start kit builder", "kit builder sandbox",
+                     "sandboxd", "cannot connect to the docker daemon",
+                     "is the docker daemon running", "/dev/kvm", "kvm",
+                     "not signed in to docker")
 
-    info("  --> validate: " + os.path.join(ROOT, "claude-v3-agent"))
-    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "claude-v3-agent")], stream=True)
-    if code == 0:
-        pass_("sbx kit validate (claude-v3-agent)")
-    elif "no kit builder configured" in out:
-        print("  " + _color("33", "[SKIP] sbx kit validate (claude-v3-agent) — v3-Quellkit braucht den Kit-Builder; "
-                                  "validiert via buildx-Kit-Frontend (build-and-publish-claude-v3-image) + e2e-Szenario"))
-    else:
-        fail("sbx kit validate (claude-v3-agent)")
+    def validate_kit(label, kit_dir, v3):
+        info("  --> validate: " + kit_dir)
+        cmd = ["kit", "validate"]
+        if v3 and not validate_v3_via_builder:
+            cmd.append("--offline")
+        cmd.append(kit_dir)
+        code, out = run_sbx(cmd, stream=True)
+        if code == 0:
+            pass_(f"sbx kit validate ({label})")
+            return
+        if v3:
+            low = out.lower()
+            if any(hint in low for hint in builder_hints):
+                last = out.strip().splitlines()[-1] if out.strip() else "unknown"
+                warn(
+                    f"sbx kit validate ({label}) — Kit-Builder nicht verfügbar ({last})",
+                    "v3-Quellkit wird per buildx-Kit-Frontend im Publish/e2e gebaut; "
+                    "für die echte Artefakt-Validierung `sbx kit validate ./<kit>/` "
+                    "(ohne --offline, Kit-Builder-Sandbox) auf einem Host mit Docker/KVM ausführen",
+                )
+                return
+        fail(f"sbx kit validate ({label})")
 
-    info("  --> validate: " + os.path.join(ROOT, "mammouth-agent"))
-    # v3-Quellkit: `--offline` hat keinen Kit-Builder; Validierung via buildx/e2e.
-    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "mammouth-agent")], stream=True)
-    if code == 0:
-        pass_("sbx kit validate (mammouth-agent)")
-    elif "no kit builder configured" in out:
-        print("  " + _color("33", "[SKIP] sbx kit validate (mammouth-agent) — v3-Quellkit braucht den Kit-Builder; "
-                                  "validiert via buildx-Kit-Frontend (build-and-publish-mammouth-image) + e2e-Szenario"))
-    else:
-        fail("sbx kit validate (mammouth-agent)")
-    info("  --> validate: " + os.path.join(ROOT, "mistral-vibe-agent"))
-    # v3-Quellkit: `--offline` hat keinen Kit-Builder; Validierung via buildx/e2e.
-    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "mistral-vibe-agent")], stream=True)
-    if code == 0:
-        pass_("sbx kit validate (mistral-vibe-agent)")
-    elif "no kit builder configured" in out:
-        print("  " + _color("33", "[SKIP] sbx kit validate (mistral-vibe-agent) — v3-Quellkit braucht den Kit-Builder; "
-                                  "validiert via buildx-Kit-Frontend (build-and-publish-mistral-vibe-image) + e2e-Szenario"))
-    else:
-        fail("sbx kit validate (mistral-vibe-agent)")
-    info("  --> validate: " + os.path.join(ROOT, "pi-agent"))
-    # v3-Quellkits brauchen den Kit-Builder; `--offline` hat keinen ("no kit builder
-    # configured"). Die Descriptor-/Dockerfile-Validierung uebernimmt der buildx-Build
-    # (Kit-Frontend) in der Publish-Pipeline bzw. das e2e-Szenario (`sbx run ./pi-agent/`).
-    code, out = run_sbx(["kit", "validate", "--offline", os.path.join(ROOT, "pi-agent")], stream=True)
-    if code == 0:
-        pass_("sbx kit validate (pi-agent)")
-    elif "no kit builder configured" in out:
-        print("  " + _color("33", "[SKIP] sbx kit validate (pi-agent) — v3-Quellkit braucht den Kit-Builder; "
-                                  "validiert via buildx-Kit-Frontend (build-and-publish-pi-image) + e2e-Szenario"))
-    else:
-        fail("sbx kit validate (pi-agent)")
+    if validate_v3_via_builder:
+        info("  (v3-Kits: Validierung ueber den Kit-Builder `sbx-kit-builder`; der erste Lauf baut die Artefakte und dauert laenger)")
+    validate_kit("opencode-agent", os.path.join(ROOT, "opencode-agent"), v3=False)
+    validate_kit("opencode-v3-agent", os.path.join(ROOT, "opencode-v3-agent"), v3=True)
+    validate_kit("claude-v3-agent", os.path.join(ROOT, "claude-v3-agent"), v3=True)
+    validate_kit("mammouth-agent", os.path.join(ROOT, "mammouth-agent"), v3=True)
+    validate_kit("mistral-vibe-agent", os.path.join(ROOT, "mistral-vibe-agent"), v3=True)
+    validate_kit("pi-agent", os.path.join(ROOT, "pi-agent"), v3=True)
 
     if args.validate_only:
         print()

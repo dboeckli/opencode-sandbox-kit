@@ -148,7 +148,7 @@ jobs:
           out=$(sbx kit validate --offline ./opencode-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
@@ -161,7 +161,7 @@ jobs:
           out=$(sbx kit validate --offline ./claude-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
@@ -174,7 +174,7 @@ jobs:
           out=$(sbx kit validate --offline ./mammouth-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
@@ -187,7 +187,7 @@ jobs:
           out=$(sbx kit validate --offline ./mistral-vibe-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
@@ -201,7 +201,7 @@ jobs:
           out=$(sbx kit validate --offline ./pi-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 

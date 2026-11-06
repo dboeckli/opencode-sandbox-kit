@@ -140,9 +140,12 @@ python local-test\local-test-kits.py pi                # Sandbox-Szenario
 ```
 
 Der Validate-Lauf prüft den Pi-Pin (Descriptor == Dockerfile-ARG), das Basis-Template, die
-MCP-Guard-Unit-Tests und warnt bei neuerer npm-Version. `sbx kit validate` kann ein **v3-Quellkit**
-mit `--offline` nicht prüfen (`no kit builder configured`) — die Descriptor-/Dockerfile-Validierung
-übernimmt das buildx-Kit-Frontend im Publish-Workflow bzw. das e2e-Szenario (`sbx run ./pi-agent/`).
+MCP-Guard-Unit-Tests und warnt bei neuerer npm-Version. **v3-Quellkits** validiert `--validate-only`
+über den Kit-Builder: `sbx kit validate ./pi-agent/` **ohne** `--offline` (Builder-Sandbox
+`sbx-kit-builder`, Docker/KVM nötig). Mit `--offline` meldet sbx `no kit builder configured`; in
+diesem Fall fällt der Lauf auf den Offline-Probe zurück und warnt (kein FAIL). Die
+Descriptor-/Dockerfile-Validierung im Publish-Workflow bzw. e2e-Szenario (`sbx run ./pi-agent/`)
+bleibt zusätzlich bestehen.
 Das e2e-Szenario prüft zudem Config, Credential-Wiring und MCP-Gateway (den Guard deckt der Unit-Test ab).
 
 ## Troubleshooting
