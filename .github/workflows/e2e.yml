@@ -333,6 +333,9 @@ jobs:
             google:
               apiKey:
                 domains: [generativelanguage.googleapis.com]
+            anthropic:
+              apiKey:
+                domains: [api.anthropic.com]
           EOF
 
       - name: Initialize global network policy (balanced)
@@ -373,7 +376,7 @@ jobs:
 
       - name: Sign out of Docker Hub
         if: always()
-        run: sbx logout --yes || true
+        run: sbx logout --force || true
 
       - name: Report status to Codeberg
         # GitHub Actions is the execution host (reliable runners); report the outcome back to the
