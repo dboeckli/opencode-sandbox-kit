@@ -1,0 +1,29 @@
+#!/bin/sh
+# Branch-name allowlist for sandbox agents (global hook, bundled by every kit;
+# activated via `git config --global core.hooksPath ~/.config/git/hooks` in
+# install-tooling-user.sh). Only master, main, development and renovate/**,
+# feature/**, dependabot/** may be pushed; branch deletions and tags are
+# untouched. Override for special cases (single push):
+#
+#   KIT_BRANCH_PATTERN='<regex>' git push ...
+
+zero=0000000000000000000000000000000000000000
+branch_pattern="${KIT_BRANCH_PATTERN:-^(master|main|development|renovate/.+|feature/.+|dependabot/.+)$}"
+while read -r local_ref local_sha remote_ref remote_sha; do
+	# Skip branch deletions (cleanup is allowed regardless of the name).
+	[ "$local_sha" = "$zero" ] && continue
+
+	case "$remote_ref" in
+		refs/heads/*)
+			branch="${remote_ref#refs/heads/}"
+			if ! printf '%s' "$branch" | grep -Eq "$branch_pattern"; then
+				echo "pre-push: blocked - branch name '$branch' violates the branch policy." >&2
+				echo "          Allowed: master, main, development, renovate/**, feature/**, dependabot/**." >&2
+				echo "          Override once: KIT_BRANCH_PATTERN='<regex>' git push ..." >&2
+				exit 1
+			fi
+			;;
+	esac
+done
+
+exit 0

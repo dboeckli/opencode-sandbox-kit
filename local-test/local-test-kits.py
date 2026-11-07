@@ -143,6 +143,22 @@ INSTALL_SCRIPT_PAIRS = (
      "claude-v3-agent/files/home/.local/bin/claude-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
      "claude-v3-agent/files/home/.local/bin/claude-startup-maven.sh"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/pre-push",
+     "claude-v3-agent/files/home/.config/git/hooks/pre-push"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/pre-push",
+     "mammouth-agent/files/home/.config/git/hooks/pre-push"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/pre-push",
+     "mistral-vibe-agent/files/home/.config/git/hooks/pre-push"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/pre-push",
+     "pi-agent/files/home/.config/git/hooks/pre-push"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/commit-msg",
+     "claude-v3-agent/files/home/.config/git/hooks/commit-msg"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/commit-msg",
+     "mammouth-agent/files/home/.config/git/hooks/commit-msg"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/commit-msg",
+     "mistral-vibe-agent/files/home/.config/git/hooks/commit-msg"),
+    ("opencode-v3-agent/files/home/.config/git/hooks/commit-msg",
+     "pi-agent/files/home/.config/git/hooks/commit-msg"),
 )
 
 # Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):

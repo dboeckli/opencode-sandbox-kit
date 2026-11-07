@@ -81,7 +81,7 @@ RUN shfmt --version \
  && pi --version | grep -F "${PI_VERSION}"
 
 # Global git hook must exist before install-tooling-user.sh sets core.hooksPath.
-COPY --chown=agent:agent files/home/.config/git/hooks/commit-msg /home/agent/.config/git/hooks/commit-msg
+COPY --chown=agent:agent files/home/.config/git/hooks/ /home/agent/.config/git/hooks/
 
 # Agent-user tooling (skills, git hook, repsy docs) as uid 1000 / `agent`.
 RUN runuser -u agent -- env HOME=/home/agent bash /tmp/kit/install-tooling-user.sh

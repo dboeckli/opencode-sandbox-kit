@@ -1,7 +1,8 @@
 #!/bin/sh
-# Guard against (1) pushing to the read-only GitHub mirror, (2) pushing
-# directly to master/main, and (3) co-authoring / AI-attribution trailers in
-# outgoing commit messages. Enable once per clone:
+# Guard against (1) pushing to the read-only GitHub mirror, (2) branch names
+# violating the allowlist (master, main, development, renovate/**, feature/**,
+# dependabot/**), (3) pushing directly to master/main, and (4) co-authoring /
+# AI-attribution trailers in outgoing commit messages. Enable once per clone:
 #
 #   git config core.hooksPath .githooks
 #
@@ -19,10 +20,29 @@ case "$remote_url" in
     ;;
 esac
 
-# 2) No direct pushes to master/main (use a feature branch + pull request).
-# 3) No co-authoring / AI-attribution trailers in outgoing commit messages.
+# 2) Branch-name allowlist: only master, main, development and renovate/**,
+#    feature/**, dependabot/** may exist on the remote. Override for special
+#    cases: KIT_BRANCH_PATTERN='<regex>' git push ...
+# 3) No direct pushes to master/main (use a feature branch + pull request).
+# 4) No co-authoring / AI-attribution trailers in outgoing commit messages.
 zero=0000000000000000000000000000000000000000
+branch_pattern="${KIT_BRANCH_PATTERN:-^(master|main|development|renovate/.+|feature/.+|dependabot/.+)$}"
 while read -r local_ref local_sha remote_ref remote_sha; do
+  # Skip branch deletions (cleanup is allowed regardless of the name).
+  [ "$local_sha" = "$zero" ] && continue
+
+  case "$remote_ref" in
+    refs/heads/*)
+      branch="${remote_ref#refs/heads/}"
+      if ! printf '%s' "$branch" | grep -Eq "$branch_pattern"; then
+        echo "pre-push: blocked - branch name '$branch' violates the branch policy." >&2
+        echo "          Allowed: master, main, development, renovate/**, feature/**, dependabot/**." >&2
+        echo "          Override once: KIT_BRANCH_PATTERN='<regex>' git push ..." >&2
+        exit 1
+      fi
+      ;;
+  esac
+
   case "$remote_ref" in
     refs/heads/master | refs/heads/main)
       echo "pre-push: blocked direct push to $remote_ref." >&2
@@ -30,9 +50,6 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       exit 1
       ;;
   esac
-
-  # Skip branch deletions.
-  [ "$local_sha" = "$zero" ] && continue
 
   # Only inspect the commits actually being pushed (new-branch safe: do NOT
   # scan the whole history, which may legitimately contain old trailers).

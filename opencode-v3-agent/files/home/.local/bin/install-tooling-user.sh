@@ -13,11 +13,14 @@ set -euo pipefail
 export PATH="/usr/local/share/npm-global/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
 
 # --- git: global commit-msg hook (strip co-authoring / AI attribution) ---
-# The hook is bundled at ~/.config/git/hooks/commit-msg; make it the global hooks
-# dir so agent-created commits are sanitized in every repo of the sandbox.
+# The hooks are bundled at ~/.config/git/hooks/ (commit-msg strips AI trailers,
+# pre-push enforces the branch-name allowlist); make it the global hooks dir so
+# agent commits/pushes are guarded in every repo of the sandbox.
 HOOKDIR="${HOME}/.config/git/hooks"
 if [ -d "${HOOKDIR}" ]; then
-	chmod +x "${HOOKDIR}/commit-msg" 2>/dev/null || true
+	for hook in "${HOOKDIR}"/*; do
+		chmod +x "${hook}" 2>/dev/null || true
+	done
 	git config --global core.hooksPath "${HOOKDIR}"
 fi
 

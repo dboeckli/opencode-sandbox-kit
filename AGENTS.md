@@ -58,8 +58,11 @@ Diffs wird gepusht.
 ### Lokaler Schutz (pre-push-Hook)
 
 Zusätzlich zum Server-seitigen Schutz blockiert der versionierte Hook `.githooks/pre-push` versehentliche
-Pushes nach **GitHub** (read-only Mirror), direkte Pushes auf `master`/`main` **und** ausgehende Commit-Messages
+Pushes nach **GitHub** (read-only Mirror), **Branch-Namen außerhalb der Allowlist** (`master`, `main`,
+`development`, `renovate/**`, `feature/**`, `dependabot/**` — Branch-Löschungen bleiben erlaubt), direkte
+Pushes auf `master`/`main` **und** ausgehende Commit-Messages
 mit Co-Authoring-/AI-Attribution-Trailern (`Co-authored-by:`, `Assisted-by:`, „Generated with …"-Footer, 🤖).
+Ausnahme für Sonderfälle (einzelner Push): `KIT_BRANCH_PATTERN='<regex>' git push …`.
 Einmalig pro Clone aktivieren:
 
 ```bash
@@ -69,10 +72,14 @@ git config core.hooksPath .githooks
 ### Co-Authoring/AI-Attribution entfernen (commit-msg-Hook)
 
 Der versionierte Hook `.githooks/commit-msg` entfernt solche Trailer **beim Committen** (`.githooks` via
-`core.hooksPath`). In der **Sandbox** wird derselbe Hook als **globaler** Hook für den `agent`-User installiert
-(`~/.config/git/hooks/commit-msg` + `git config --global core.hooksPath`, via `install-tooling-user.sh`), damit
-Agent-Commits in allen Repos bereinigt werden. Hinweis: ein globales `core.hooksPath` ersetzt die Hook-Suche,
-d.h. repo-lokale `.git/hooks` werden in der Sandbox ignoriert (Repos mit eigenem `core.hooksPath` behalten ihre).
+`core.hooksPath`). Die **Sandbox-Kits** (`opencode-v3-agent`, `claude-v3-agent`, `mammouth-agent`,
+`mistral-vibe-agent`, `pi-agent`) installieren dieselben Git-Hooks als **globale** Hooks für den `agent`-User
+(`~/.config/git/hooks/commit-msg` **und** `~/.config/git/hooks/pre-push` + `git config --global core.hooksPath`,
+via `install-tooling-user.sh`), damit Agent-Commits/-Pushes in allen Repos gelten: commit-msg bereinigt Trailer,
+**pre-push erzwingt die Branch-Namen-Allowlist** (`master`, `main`, `development`, `renovate/**`, `feature/**`,
+`dependabot/**`; Override `KIT_BRANCH_PATTERN='<regex>' git push …`). Hinweis: ein globales `core.hooksPath`
+ersetzt die Hook-Suche, d.h. repo-lokale `.git/hooks` werden in der Sandbox ignoriert (Repos mit eigenem
+`core.hooksPath` — wie dieses Repo mit `.githooks` — behalten ihre).
 
 ### Feature Branch mit GitHub-Issue (Zusatzregel)
 
