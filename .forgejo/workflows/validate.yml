@@ -24,11 +24,11 @@ jobs:
     # (2 CPU/4G/5 min Limit). Für einen self-hosted Runner RUNNER_LABEL setzen.
     runs-on: ${{ vars.RUNNER_LABEL || 'codeberg-small' }}
     env:
-      # Sandbox-Template-Versionen (gepinnt, je Familie getrennt — Issue #202): opencode-docker
-      # (OpenCode v3 + Mammouth-Basis) und claude-code-docker (Claude v3). Source of Truth fuer die
-      # --template-Pins der Mixin-Kits und das Mammouth-spec-Image; Updates via Renovate
-      # (auf Codeberg ggf. manuell, siehe docs/codeberg-forgejo.md).
-      TEMPLATE_VERSION_OPENCODE: 0.11.0
+      # Pins (je Familie getrennt): OPENCODE_VERSION (OpenCode-v3-CLI, npm opencode-ai, 1.x; Basis
+      # docker.io/sbx/shell-docker-image:latest, Issue #254) und TEMPLATE_VERSION_CLAUDE
+      # (claude-code-docker). Source of Truth fuer die --template-Pins der Mixin-Kits; Updates via
+      # Renovate (auf Codeberg ggf. manuell, siehe docs/codeberg-forgejo.md).
+      OPENCODE_VERSION: 1.19.5
       TEMPLATE_VERSION_CLAUDE: 0.10.0
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7

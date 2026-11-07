@@ -9,7 +9,7 @@ name: Backup images to Docker Hub
 #   - image: opencode-v3 | claude-v3 | mammouth | mistral-vibe | all
 #   - arch:  amd64 | arm64 | both   (both = native Runner + imagetools-Merge)
 #   - push:  true/false (Build-only)
-#   - tag:   Override; Default = Basis-Pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE) bzw. VIBE_VERSION
+#   - tag:   Override; Default = OPENCODE_VERSION (OpenCode-CLI) / TEMPLATE_VERSION_CLAUDE / VIBE_VERSION
 #
 # Native Runner je Architektur:
 #   amd64 -> ubuntu-latest   |   arm64 -> ubuntu-24.04-arm
@@ -39,7 +39,7 @@ on:
         type: boolean
         default: true
       tag:
-        description: "Image-Tag (leer = Basis-Pin / VIBE_VERSION)"
+        description: "Image-Tag (leer = OPENCODE_VERSION / TEMPLATE_VERSION_CLAUDE / VIBE_VERSION)"
         type: string
         default: ""
 
@@ -78,7 +78,7 @@ jobs:
               opencode-v3)
                 ctx=opencode-v3-agent;  df=opencode-v3-agent/opencode-v3-agent.yaml
                 name=sbx-opencode
-                pin=$(grep -oE 'opencode-docker-[0-9]+(\.[0-9]+)+' opencode-v3-agent/opencode-v3-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
+                pin=$(grep -oE 'OPENCODE_VERSION=[0-9]+(\.[0-9]+)+' opencode-v3-agent/opencode-v3-agent.dockerfile | head -1 | cut -d= -f2);;
               claude-v3)
                 ctx=claude-v3-agent;    df=claude-v3-agent/claude-v3-agent.yaml
                 name=sbx-claude

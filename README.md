@@ -14,7 +14,7 @@ Enthält zusätzlich dedizierte Agent-Kits:
 
 - **Mammouth Code** — `mammouth-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, Entrypoint `mammouth-entrypoint` (seedet die Model-Picker-Favoriten, dann `exec mammouth`).
 - **Mistral Vibe** — `mistral-vibe-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image, Entrypoint `vibe --agent auto-approve`.
-- **OpenCode v3** — `opencode-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-opencode` (baut auf `opencode-docker` auf, CLI aus dem Template).
+- **OpenCode v3** — `opencode-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-opencode` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, OpenCode-CLI via npm `opencode-ai` auf 1.x gepinnt).
 - **Claude Code v3** — `claude-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-claude` (baut auf `claude-code-docker` auf, CLI aus dem Template).
 - **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie die anderen Kits, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
 
@@ -192,27 +192,26 @@ sbx run docker.io/domboeckli/sbx-pi-agent:latest `
 
 ### Template-Version & Tooling-Image-Tags (gepinnt, Renovate-managed)
 
-Alle Kits nutzen gepinnte Sandbox-Template-Versionen — **`TEMPLATE_VERSION_OPENCODE`** (opencode-docker) und
-**`TEMPLATE_VERSION_CLAUDE`** (claude-code-docker), Renovate-managed und bewusst **getrennt** (Docker veröffentlicht
-die Familien nicht mehr in Lockstep, Issue #202):
+Alle Kits nutzen gepinnte bzw. von Docker verwaltete Basis-Images — **`OPENCODE_VERSION`** (OpenCode-CLI, npm
+`opencode-ai`, bewusst 1.x) und **`TEMPLATE_VERSION_CLAUDE`** (claude-code-docker), Renovate-managed:
 
-- **OpenCode v3**: `docker.io/domboeckli/sbx-opencode:<tag>` — v3-Workload-Image (Template + Tooling + Config), Tag = opencode-docker-Basisversion
+- **OpenCode v3**: `docker.io/domboeckli/sbx-opencode:<tag>` — v3-Workload-Image (Basis `docker.io/sbx/shell-docker-image:latest` + Tooling + Config), `<tag>` = OpenCode-CLI-Version (`OPENCODE_VERSION`)
 - **Claude Code v3**: `docker.io/domboeckli/sbx-claude:<tag>` — v3-Workload-Image (Template + Tooling + Config), Tag = claude-code-docker-Basisversion
 - **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — v3-Workload, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
 - **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (schmale Shell-Basis; `<tag>` = Pi-Version)
 
-Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
-`TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
-gleichnamige Variablen in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed) sowie als `ARG BASE_IMAGE`
-in `opencode-v3-agent/opencode-v3-agent.dockerfile` (opencode-docker) bzw.
-`claude-v3-agent/claude-v3-agent.dockerfile` (claude-code-docker); Mammouth, Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles (gemeinsamer shell-Pin).
-`python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
-bei Drift fehl.
+Die Pins werden auf Konsistenz geprüft: `OPENCODE_VERSION` als Dockerfile-`ARG` (`opencode-v3-agent/`), Konstante in
+`local-test/local-test-kits.py` und Variable in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed);
+`TEMPLATE_VERSION_CLAUDE` analog für `claude-v3-agent/`. Die OpenCode-**Basis** ist dagegen bewusst die von Docker
+empfohlene, nightly neu gebaute `docker.io/sbx/shell-docker-image:latest` (kein Semver-Pin — Docker re-installiert
+dafür täglich OS/Security-Fixes). Mammouth, Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles
+(gemeinsamer shell-Pin). `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren
+Docker-Hub-/npm-Versionen und schlägt bei Drift fehl.
 
-**Image-Tags** — Schema für alle Agent-Images; `<version>` = `TEMPLATE_VERSION_OPENCODE` (OpenCode v3/Mammouth)
-bzw. `TEMPLATE_VERSION_CLAUDE` (Claude v3)
-bzw. die Agent-Version (Mistral Vibe), `<branch-slug>` = Branch-Name (lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
+**Image-Tags** — Schema für alle Agent-Images; `<version>` = `OPENCODE_VERSION` (OpenCode v3)
+bzw. `TEMPLATE_VERSION_CLAUDE` (Claude v3) bzw. die Agent-Version (Mistral Vibe), `<branch-slug>` = Branch-Name
+(lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
 
 | Kontext | Tag(s) |
 |---------|--------|
@@ -411,7 +410,7 @@ der Agent wird vom jeweiligen Kit-Image beim `sbx run` bestimmt:
 
 | Agent | Template | Kit |
 |-------|----------|-----|
-| OpenCode v3 | `docker.io/domboeckli/sbx-opencode` (baut auf `opencode-docker-0.x.0` auf) | `opencode-v3-agent/` |
+| OpenCode v3 | `docker.io/domboeckli/sbx-opencode` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, OpenCode-CLI via npm gepinnt) | `opencode-v3-agent/` |
 | Claude Code v3 | `docker.io/domboeckli/sbx-claude` (baut auf `claude-code-docker-0.x.0` auf) | `claude-v3-agent/` |
 | Mammouth Code | `shell-docker` (Pin `0.x.0`) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
 | Mistral Vibe | `shell` (Pin `0.x.0`) | `mistral-vibe-agent/` (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe`) |
@@ -701,10 +700,10 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 > (inkl. Hinweis aufs Regen-Skript).
 >
-> `--validate-only` prüft zusätzlich die **Template-Pins je Familie** (`TEMPLATE_VERSION_OPENCODE`/`_CLAUDE` als
-> Konstanten in `local-test-kits.py`, Drift-Check gegen die gleichnamigen Variablen in
-> `.github/workflows/validate.yml`/`e2e.yml` und die Dockerfile-Base-Pins) gegen die Docker-Hub-Tags
-> (`docker/sandbox-templates`), die
+> `--validate-only` prüft zusätzlich die **Pins je Familie**: `OPENCODE_VERSION` (OpenCode-CLI, npm `opencode-ai`,
+> 1.x) und `TEMPLATE_VERSION_CLAUDE` als Konstanten in `local-test-kits.py`, Drift-Check gegen die gleichnamigen
+> Variablen in `.github/workflows/validate.yml`/`e2e.yml` und die Dockerfile-Pins; die OpenCode-Basis
+> (`docker.io/sbx/shell-docker-image:latest`) wird gegen die erwartete Docker-verwaltete Basis geprüft, die
 > **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
 > und die **Mistral-Vibe-Pin** (`ARG VIBE_VERSION` im Dockerfile, Image-Tag in der spec, shell-Basis-Template)
 > gegen die latest PyPI-Version (`mistral-vibe`) — alle **warnen** (gelb), sobald eine neuere Version
@@ -742,14 +741,14 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 
 | Tool | Version | Installiert in |
 |------|---------|---------------|
-| Node.js | 24.21.0 (LTS) | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
-| Liberica JDK | 25.0.4 | `/usr/local/java` |
-| Apache Maven | 3.9.16 | `/opt/maven` |
-| Docker CLI | 27.5.1 | `/usr/local/bin/docker` |
-| Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
-| kubectl | latest stable | `/usr/local/bin/kubectl` |
+| Node.js | 26.13.0 | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
+| Liberica JDK | 25.0.5+11 | `/usr/local/java` |
+| Apache Maven | 3.10.0 | `/opt/maven` |
+| Docker CLI | 29.9.3 | `/usr/local/bin/docker` (opencode-v3 aus Base; sonst 27.5.1) |
+| Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
+| kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
 | Helm | 4.3.1 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
-| Apache Kafka CLI | 4.3.1 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
+| Apache Kafka CLI | 4.4.0 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
 | ctx7 | latest | npm global |
 | skills | 1.5.21 | npm global (vercel-labs) |
 | renovate | latest | npm global |
@@ -757,6 +756,10 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | MCP Inspector CLI (`mcp-inspector`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | MCP-Verbindungs-CLI (`mcpdo`, gleiches npm-Paket; Subcommands `connect`/`tools/list`/`tools/call`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq | distro | apt (StatusLine-Abhängigkeit) |
+
+> **opencode-v3 (Issue #254):** Basisiert auf `docker.io/sbx/shell-docker-image:latest` — Node/npm, Docker CLI,
+> Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert weiterhin
+> `install-tooling.sh` (wie in den übrigen Kits).
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).

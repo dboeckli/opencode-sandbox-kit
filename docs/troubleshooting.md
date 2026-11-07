@@ -42,7 +42,7 @@ sbx rm <sandbox-name> --force
 ### Veraltete CA-Zertifikate in bestehenden Sandboxes (Issue #202)
 
 `sbx` v0.49.2 behebt die eMudhra-CA-Kompromittierung; die gepinnten Basis-Templates
-(`opencode-docker-0.11.0`, `claude-code-docker-0.10.0`, `shell-docker-0.10.0`) bringen den
+(`docker.io/sbx/shell-docker-image:latest` für OpenCode v3, `claude-code-docker-0.10.0`, `shell-docker-0.10.0`) bringen den
 aktualisierten Trust-Store mit. **Bestehende** Sandboxes behalten ihren alten Trust-Store —
 ein CLI-Update allein genügt nicht. Zwei Wege:
 
@@ -191,16 +191,13 @@ Mistral Vibe wird über das **dedizierte Agent-Kit** (`mistral-vibe-agent/`,
 `setup.install`-Schritt für Vibe. Das Image muss vor dem ersten Start publiziert sein
 (`build-and-publish-mistral-vibe-image.yml`, `workflow_dispatch`).
 
-### Pre-installed Tools im Base Image
+### OpenCode-Version im OpenCode-v3-Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`; für OpenCode v3 gebacken in `docker.io/domboeckli/sbx-opencode`) enthält eine eigene OpenCode CLI
-(aktuell `1.17.11` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
-bei `1.18.11` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
-vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:
-
-```
-npm install -g @opencode-ai/cli
-```
+Das OpenCode-v3-Image basiert auf Dockers `docker.io/sbx/shell-docker-image:latest` (ohne Agent) und
+installiert die OpenCode-CLI beim Image-Build per npm (`opencode-ai@OPENCODE_VERSION`, bewusst 1.x). Die
+Version ist damit über `OPENCODE_VERSION` (Dockerfile + `local-test-kits.py` + Workflows) gepinnt — für ein
+Update den Pin anheben und das Image neu bauen (`build-and-publish-opencode-v3-image.yml`), nicht in der
+Sandbox `npm install -g` ausführen (das würde beim nächsten Start überschrieben/abweichen).
 
 ### Skills landen nicht bei `agent`
 

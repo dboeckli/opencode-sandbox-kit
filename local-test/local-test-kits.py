@@ -146,39 +146,45 @@ INSTALL_SCRIPT_PAIRS = (
 )
 
 # Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
-#   - Explizite Pins der lokalen Tests (dieses Script), Renovate-managed:
-#     TEMPLATE_VERSION_OPENCODE (opencode-docker) und TEMPLATE_VERSION_CLAUDE (claude-code-docker).
-#   - Muessen identisch sein mit TEMPLATE_VERSION_OPENCODE/_CLAUDE in
-#     .github/workflows/validate.yml + e2e.yml sowie den jeweiligen Dockerfile-BASE_IMAGE-Pins
-#     (Mammouth + OpenCode: opencode-docker, Claude: claude-code-docker) — Drift-Check in
+#   - Expliziter Pin der lokalen Tests (dieses Script), Renovate-managed:
+#     TEMPLATE_VERSION_CLAUDE (claude-code-docker).
+#   - Muss identisch sein mit TEMPLATE_VERSION_CLAUDE in .github/workflows/validate.yml + e2e.yml
+#     sowie dem Dockerfile-BASE_IMAGE-Pin (Claude: claude-code-docker) — Drift-Check in
 #     check_template_update().
-#   - Getrennte Pins, weil Docker die Familien nicht mehr in Lockstep veroeffentlicht
-#     (z. B. claude-code-docker 0.10.0 vs. opencode-docker 0.11.0).
+#   - OpenCode-v3 nutzt seit Issue #254 die Docker-verwaltete Basis
+#     `docker.io/sbx/shell-docker-image:latest` (nightly) statt `opencode-docker` und pinnt
+#     stattdessen die OpenCode-CLI (OPENCODE_VERSION, npm `opencode-ai`, 1.x-Linie).
 # Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag je Familie.
-TEMPLATE_VERSION_OPENCODE = "0.11.0"
 TEMPLATE_VERSION_CLAUDE = "0.10.0"
 TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 # Pin je Template-Familie + Name der Workflow-Variable (fuer Fehlermeldungen).
 TEMPLATE_PINS = {
-    "opencode-docker": TEMPLATE_VERSION_OPENCODE,
     "claude-code-docker": TEMPLATE_VERSION_CLAUDE,
 }
 TEMPLATE_WORKFLOW_VARS = {
-    "opencode-docker": "TEMPLATE_VERSION_OPENCODE",
     "claude-code-docker": "TEMPLATE_VERSION_CLAUDE",
 }
 TEMPLATE_CFG_RE = re.compile(
-    r"TEMPLATE_VERSION_(?P<fam>OPENCODE|CLAUDE):\s*(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
+    r"TEMPLATE_VERSION_(?P<fam>CLAUDE):\s*(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
 )
 TEMPLATE_TAG_RE = re.compile(
-    r"^(?P<fam>opencode-docker|claude-code-docker|shell-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$"
+    r"^(?P<fam>claude-code-docker|shell-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$"
 )
 DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
 
-# Mammouth (Issue #137/#240): eigenes Image (mammouth-agent/mammouth-agent.dockerfile, v3) — Basis opencode-docker + Kit-Tooling
-# + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG BASE_IMAGE muss
-# TEMPLATE_VERSION_OPENCODE spiegeln. Update-Check des CLI-Pins gegen das latest GitHub-Release
-# (mammouth-ai/code, Tag v<ver>); warnt (gelb) bei neuerem Release.
+# OpenCode-v3 (Issue #254): Docker-verwaltete Custom-Workload-Basis (nightly, kein Semver-Tag)
+# + OpenCode-CLI-Pin (npm `opencode-ai`, bewusst 1.x-Linie). BASE_IMAGE ist per Docker-Empfehlung
+# `:latest`; Renovate trackt die CLI-Version (nicht die driftende Basis).
+OPENCODE_VERSION = "1.19.5"
+OPENCODE_VERSION_RE = re.compile(r"ARG OPENCODE_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+OPENCODE_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest"
+OPENCODE_WORKFLOW_VAR = "OPENCODE_VERSION"
+OPENCODE_NPM_LATEST_URL = "https://registry.npmjs.org/opencode-ai/latest"
+
+# Mammouth (Issue #137/#240): eigenes Image (mammouth-agent/mammouth-agent.dockerfile, v3) — Basis
+# shell-docker + Kit-Tooling + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG
+# BASE_IMAGE muss dem gemeinsamen shell-docker-Pin (Mistral Vibe) entsprechen. Update-Check des
+# CLI-Pins gegen das latest GitHub-Release (mammouth-ai/code, Tag v<ver>); warnt (gelb) bei neuerem Release.
 MAMMOUTH_DOCKERFILE = "mammouth-agent/mammouth-agent.dockerfile"
 MAMMOUTH_DESCRIPTOR = "mammouth-agent/mammouth-agent.yaml"
 MAMMOUTH_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
@@ -717,7 +723,7 @@ def _template_workflow_version(fam):
 
 
 def _mammouth_base_image_version():
-    """opencode-docker-Basis-Tag im Mammouth-Dockerfile (Mirror von TEMPLATE_VERSION_OPENCODE)."""
+    """shell-docker-Basis-Tag im Mammouth-Dockerfile (gemeinsamer shell-Pin mit Mistral Vibe)."""
     return _dockerfile_base_version(MAMMOUTH_DOCKERFILE, MAMMOUTH_BASE_IMAGE_RE)
 
 
@@ -756,7 +762,7 @@ def _mammouth_cli_pin_version():
 
 
 def _template_latest_per_family():
-    """Neueste Versions-Tags pro Familie (opencode-docker / claude-code-docker)
+    """Neueste Versions-Tags pro Familie (claude-code-docker / shell-docker)
     von der Docker-Hub-API, inkl. Pagination."""
     tags = []
     url = DOCKER_HUB_TEMPLATES_URL
@@ -819,11 +825,10 @@ def check_workflow_job_references():
 
 
 def check_template_update():
-    """Prueft die getrennten Template-Pins je Docker-Hub-Familie (Issue #202):
-    TEMPLATE_VERSION_OPENCODE (opencode-docker: OpenCode v3 + Mammouth) und
+    """Prueft den Template-Pin der Docker-Hub-Familie (Issue #202):
     TEMPLATE_VERSION_CLAUDE (claude-code-docker: Claude v3) gegen validate.yml/e2e.yml.
-    Die BASE_IMAGE-Pins der v3-Workload-Dockerfiles pruefen die eigenen
-    check_*_v3_base_update()-Checks.
+    Den OpenCode-CLI-Pin prueft check_opencode_v3_cli_version(), den Shell-Pin
+    check_vibe_cli_update()/check_mammouth_cli_update()/check_pi_cli_update().
 
     Fehlschlag nur bei echten Fehlern: Pin-Konstante fehlt, Workflow-Variable weicht ab,
     Docker-Hub-Tags nicht abrufbar oder ein Pin-Tag ist nicht publiziert. Warnt (gelb)
@@ -861,8 +866,8 @@ def check_template_update():
     if updates:
         warn(
             f"template version update available ({'; '.join(updates)})",
-            "Optional: TEMPLATE_VERSION_OPENCODE/_CLAUDE in local-test-kits.py + .github/workflows/*.yml "
-            "je Familie erhoehen (Renovate), Dockerfile-BASE_IMAGE-Pins synchronisieren",
+            "Optional: TEMPLATE_VERSION_CLAUDE in local-test-kits.py + .github/workflows/*.yml "
+            "erhoehen (Renovate), Dockerfile-BASE_IMAGE-Pin synchronisieren",
         )
     for p in problems:
         fail(f"template version (Docker Hub: {p})")
@@ -895,21 +900,24 @@ def _docker_template_node_major(image):
 
 
 def check_template_node_baseline():
-    """Warn-Check (Issue #138): liefern die gepinnten Basis-Templates bereits Node >= 24, kann der
+    """Warn-Check (Issue #138): liefern die Basis-Images bereits Node >= 24, kann der
     `install-tooling.sh node`-Step (Node-24-Tarball) + der `nodejs.org`-Allowlist-Eintrag entfallen —
-    die npm-CLIs (renovate >=43) laufen dann auf dem vom Template gelieferten Node. Best-effort ueber
-    Docker (Image-Pull, gecacht); wird uebersprungen, wenn Docker oder ein Image nicht verfuegbar ist."""
-    pins = dict(TEMPLATE_PINS)
-    pins["shell-docker"] = _vibe_base_image_version()
+    die npm-CLIs (renovate >=43) laufen dann auf dem vom Basis-Image gelieferten Node. Prueft die
+    gepinnten `docker/sandbox-templates` (Claude/Shell) plus die Docker-verwaltete OpenCode-Basis
+    `docker.io/sbx/shell-docker-image:latest` (Issue #254). Best-effort ueber Docker (Image-Pull,
+    gecacht); wird uebersprungen, wenn Docker oder ein Image nicht verfuegbar ist."""
+    images = {}
+    for fam, pin in TEMPLATE_PINS.items():
+        if pin:
+            images[fam] = f"docker/sandbox-templates:{fam}-{pin}"
+    shell = _vibe_base_image_version()
+    if shell:
+        images["shell-docker"] = f"docker/sandbox-templates:shell-docker-{shell}"
+    images["opencode-base"] = OPENCODE_BASE_IMAGE_EXPECTED
     if which("docker") is None:
         print("  " + _color("33", "[SKIP] template node baseline — docker nicht im PATH"))
         return
-    versions = {}
-    for fam, pin in pins.items():
-        if not pin:
-            versions[fam] = None
-            continue
-        versions[fam] = _docker_template_node_major(f"docker/sandbox-templates:{fam}-{pin}")
+    versions = {name: _docker_template_node_major(image) for name, image in images.items()}
     unknown = [f for f, m in versions.items() if m is None]
     if unknown:
         print("  " + _color("33", f"[SKIP] template node baseline — Image/node nicht verfuegbar: {', '.join(unknown)}"))
@@ -1064,29 +1072,86 @@ def check_vibe_cli_update():
         pass_(f"mistral-vibe version up-to-date (Pin v{pin}, PyPI latest v{latest})")
 
 
-def _opencode_v3_base_version():
+def _opencode_v3_cli_version():
+    """OpenCode-CLI-Pin (ARG OPENCODE_VERSION) aus dem OpenCode-v3-Dockerfile."""
+    return _dockerfile_base_version(OPENCODE_V3_DOCKERFILE, OPENCODE_VERSION_RE)
+
+
+def _opencode_v3_base_image():
+    """BASE_IMAGE-Wert (ARG BASE_IMAGE=...) aus dem OpenCode-v3-Dockerfile."""
     path = os.path.join(ROOT, OPENCODE_V3_DOCKERFILE)
     if not os.path.isfile(path):
         return None
     with open(path, encoding="utf-8") as f:
-        m = re.search(r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)", f.read())
-    return m.group("v") if m else None
+        m = re.search(r"ARG BASE_IMAGE=(?P<img>\S+)", f.read())
+    return m.group("img") if m else None
 
 
-def check_opencode_v3_base_update():
-    """Prueft den opencode-docker-Basis-Pin des OpenCode-v3-Workloads gegen
-    TEMPLATE_VERSION_OPENCODE. Die OpenCode-CLI selbst kommt aus dem Template."""
-    cur = _opencode_v3_base_version()
+def _workflow_env_version(env_name, files):
+    """Wert einer `NAME: X.Y.Z`-Workflow-Variable aus den uebergebenen YAML-Dateien."""
+    regex = re.compile(re.escape(env_name) + r":\s*(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+    for rel in files:
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            m = regex.search(f.read())
+        if m:
+            return m.group("v")
+    return None
+
+
+def check_opencode_v3_cli_version():
+    """Prueft den OpenCode-CLI-Pin (1.x) des OpenCode-v3-Workloads:
+    - BASE_IMAGE ist die von Docker empfohlene Custom-Workload-Basis
+      (`docker.io/sbx/shell-docker-image:latest`, Issue #254)
+    - ARG OPENCODE_VERSION == OPENCODE_VERSION-Konstante dieses Scripts
+    - OPENCODE_VERSION in validate.yml/e2e.yml == Konstante
+    - Update-Hinweis, falls npm (`opencode-ai`) eine neuere stabile 1.x-Version hat."""
+    cur = _opencode_v3_cli_version()
     if not cur:
-        fail(f"opencode-v3 base image (BASE_IMAGE nicht in {OPENCODE_V3_DOCKERFILE} gefunden)")
+        fail(f"opencode-v3 CLI (ARG OPENCODE_VERSION nicht in {OPENCODE_V3_DOCKERFILE} gefunden)")
         return
-    if cur != TEMPLATE_VERSION_OPENCODE:
+    base = _opencode_v3_base_image()
+    if base != OPENCODE_BASE_IMAGE_EXPECTED:
         fail(
-            f"opencode-v3 base image (opencode-docker-{cur} != TEMPLATE_VERSION_OPENCODE {TEMPLATE_VERSION_OPENCODE})",
-            f"ARG BASE_IMAGE in {OPENCODE_V3_DOCKERFILE} auf opencode-docker-{TEMPLATE_VERSION_OPENCODE} setzen",
+            f"opencode-v3 base image ({base or 'BASE_IMAGE fehlt'} != {OPENCODE_BASE_IMAGE_EXPECTED})",
+            f"ARG BASE_IMAGE in {OPENCODE_V3_DOCKERFILE} auf {OPENCODE_BASE_IMAGE_EXPECTED} setzen "
+            "(Docker-empfohlene Custom-Workload-Basis, Issue #254)",
         )
         return
-    pass_(f"opencode-v3 base image up-to-date (opencode-docker-{cur})")
+    if cur != OPENCODE_VERSION:
+        fail(
+            f"opencode-v3 CLI (Dockerfile-Pin {cur} != OPENCODE_VERSION {OPENCODE_VERSION})",
+            f"ARG OPENCODE_VERSION in {OPENCODE_V3_DOCKERFILE} auf {OPENCODE_VERSION} setzen",
+        )
+        return
+    wf = _workflow_env_version(OPENCODE_WORKFLOW_VAR, TEMPLATE_CFG_FILES)
+    if wf is None:
+        fail(f"opencode-v3 CLI ({OPENCODE_WORKFLOW_VAR} nicht in validate.yml/e2e.yml gefunden)")
+        return
+    if wf != cur:
+        fail(
+            f"opencode-v3 CLI ({OPENCODE_WORKFLOW_VAR} {wf} != OPENCODE_VERSION {cur})",
+            f"{OPENCODE_WORKFLOW_VAR} in .github/workflows/validate.yml + e2e.yml auf {cur} setzen",
+        )
+        return
+    try:
+        data = json.loads(_http_get(OPENCODE_NPM_LATEST_URL))
+        latest = str(data.get("version", ""))
+    except Exception as e:
+        warn(f"opencode-v3 CLI update check skipped (npm latest nicht abrufbar: {e})")
+        pass_(f"opencode-v3 CLI pin up-to-date ({cur}, npm latest unbekannt)")
+        return
+    latest_major = latest.split(".")[0] if latest else ""
+    if latest_major == "1" and _version_newer(latest, cur):
+        warn(
+            f"opencode-v3 CLI update available (Pin {cur}, npm latest 1.x {latest})",
+            f"Optional: OPENCODE_VERSION in {OPENCODE_V3_DOCKERFILE} + local-test-kits.py + "
+            f"validate.yml/e2e.yml auf {latest} heben (Renovate, 1.x-Linie)",
+        )
+    else:
+        pass_(f"opencode-v3 CLI pin up-to-date ({cur}; npm latest {latest or 'n/a'}, bewusst 1.x)")
 
 
 def _claude_v3_base_version():
@@ -1125,7 +1190,7 @@ def _pi_pin_from(rel, regex):
 
 def check_pi_cli_update():
     """Vergleicht den Pi-Pin (Descriptor args.version.default) mit dem Dockerfile-Pin
-    (ARG PI_VERSION), prueft das Basis-Template gegen TEMPLATE_VERSION_OPENCODE und
+    (ARG PI_VERSION), prueft den gemeinsamen shell-docker-Basis-Pin und
     warnt (gelb) bei einer neueren npm-Version (@earendil-works/pi-coding-agent)."""
     pin = _pi_pin_from(PI_DESCRIPTOR, PI_DESCRIPTOR_VERSION_RE)
     if not pin:
@@ -1438,13 +1503,25 @@ def main():
                 return
         fail(f"sbx kit validate ({label})")
 
+    # Kit-Validierung: `--validate-only` und `all` validieren alle Kits (repo-weites
+    # Gate fuer shared Tooling/Pins). Bei einem einzelnen Szenario nur dessen Kit
+    # bauen — sonst wird fuer `local-test-kits.py opencode-v3` unnoetig jedes andere
+    # Kit-Artefakt neu gebaut.
+    kit_specs = [
+        ("opencode-v3-agent", "opencode-v3"),
+        ("claude-v3-agent", "claude-v3"),
+        ("mammouth-agent", "mammouth"),
+        ("mistral-vibe-agent", "mistral-vibe"),
+        ("pi-agent", "pi"),
+    ]
+    if args.validate_only or agent == "all":
+        validate_specs = kit_specs
+    else:
+        validate_specs = [spec for spec in kit_specs if spec[1] == agent]
     if validate_v3_via_builder:
         info("  (v3-Kits: Validierung ueber den Kit-Builder `sbx-kit-builder`; der erste Lauf baut die Artefakte und dauert laenger)")
-    validate_kit("opencode-v3-agent", os.path.join(ROOT, "opencode-v3-agent"), v3=True)
-    validate_kit("claude-v3-agent", os.path.join(ROOT, "claude-v3-agent"), v3=True)
-    validate_kit("mammouth-agent", os.path.join(ROOT, "mammouth-agent"), v3=True)
-    validate_kit("mistral-vibe-agent", os.path.join(ROOT, "mistral-vibe-agent"), v3=True)
-    validate_kit("pi-agent", os.path.join(ROOT, "pi-agent"), v3=True)
+    for kit_name, _ in validate_specs:
+        validate_kit(kit_name, os.path.join(ROOT, kit_name), v3=True)
 
     if args.validate_only:
         print()
@@ -1464,8 +1541,8 @@ def main():
         info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
         check_template_update()
         print()
-        info("==> OpenCode-v3 Basis-Image-Check (opencode-docker gegen TEMPLATE_VERSION_OPENCODE)")
-        check_opencode_v3_base_update()
+        info("==> OpenCode-v3 Base/CLI-Check (shell-docker-image + OPENCODE_VERSION, 1.x)")
+        check_opencode_v3_cli_version()
         print()
         info("==> Claude-v3 Basis-Image-Check (claude-code-docker gegen TEMPLATE_VERSION_CLAUDE)")
         check_claude_v3_base_update()

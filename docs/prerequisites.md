@@ -44,14 +44,14 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 | Tool | Version | Pfad |
 |------|---------|------|
-| Node.js | 24.21.0 (LTS) | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
-| Liberica JDK | 25.0.4 | `/usr/local/java` (`JAVA_HOME`) |
-| Apache Maven | 3.9.16 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
-| Docker CLI | 27.5.1 | `/usr/local/bin/docker` (isolierter Daemon in der Sandbox-VM) |
-| Docker Compose | 5.4.0 (Plugin) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
-| kubectl | latest stable | `/usr/local/bin/kubectl` |
+| Node.js | 26.13.0 | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
+| Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits (auch opencode-v3) |
+| Apache Maven | 3.10.0 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
+| Docker CLI | 29.9.3 | opencode-v3 aus dem Base-Image; sonst 27.5.1 (isolierter Daemon in der Sandbox-VM) |
+| Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
+| kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
 | Helm | 4.3.1 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
-| Apache Kafka CLI | 4.3.1 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
+| Apache Kafka CLI | 4.4.0 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
 | shfmt | 3.14.1 | `/usr/local/bin/shfmt` |
 | ctx7 | latest | npm global (`/usr/local/share/npm-global/bin`) |
 | skills | latest | npm global (vercel-labs) |
@@ -60,6 +60,10 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Bruno CLI (`bru`) | 4.3.0 | npm global (`@usebruno/cli`, gepinnt; Renovate) |
 | MCP Inspector CLI (`mcp-inspector`, `mcpdo`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq, python3, pip, python3-yaml | distro | apt |
+
+> **opencode-v3 (Issue #254):** Basisiert auf `docker.io/sbx/shell-docker-image:latest` — Node/npm, Docker CLI,
+> Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert weiterhin
+> `install-tooling.sh` (wie in den übrigen Kits).
 
 ### Agent-User-Tooling (`install-tooling-user.sh`, user 1000)
 
@@ -73,7 +77,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 | Agent | Zusätzlich installiert | Konfiguration |
 |-------|-----------------------|---------------|
-| OpenCode v3 | v3-Workload (`opencode-v3-agent/`, Image `sbx-opencode`; CLI aus dem opencode-docker-Template) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` + Plugins |
+| OpenCode v3 | v3-Workload (`opencode-v3-agent/`, Image `sbx-opencode`; Basis `docker.io/sbx/shell-docker-image:latest`, OpenCode-CLI via npm `opencode-ai` auf 1.x gepinnt) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` + Plugins |
 | Claude Code v3 | v3-Workload (`claude-v3-agent/`, Image `sbx-claude`; CLI aus dem claude-code-docker-Template); managed-settings + `claude-entrypoint` (Settings/Gateway-Merge) | `~/.claude/settings.json` + `CLAUDE.md` + `~/.claude.json` (MCP-Gateway) |
 | Mammouth Code | v3-Workload (`mammouth-agent/mammouth-agent.yaml`); Image `sbx-mammouth` mit CLI + Tooling | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | v3-Workload-Image (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |

@@ -11,12 +11,13 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     env:
-      # Sandbox-Template-Versionen (gepinnt, je Docker-Hub-Familie getrennt — Issue #202):
-      # opencode-docker (OpenCode v3 + Mammouth-Basis) und claude-code-docker (Claude v3) werden von
-      # Docker nicht mehr in Lockstep veroeffentlicht, daher zwei unabhaengige Pins.
-      # Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
-      # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
-      TEMPLATE_VERSION_OPENCODE: 0.11.0
+      # Pins (Renovate-managed):
+      #  - OPENCODE_VERSION: OpenCode-v3-CLI (npm opencode-ai, bewusst 1.x). Die Basis ist die
+      #    Docker-verwaltete `docker.io/sbx/shell-docker-image:latest` (Issue #254, kein Semver-Pin).
+      #  - TEMPLATE_VERSION_CLAUDE: claude-code-docker-Basis (Claude v3).
+      # Source of Truth fuer die --template-Pins der Mixin-Kits; Updates via Renovate
+      # (customManager in .github/renovate.json).
+      OPENCODE_VERSION: 1.19.5
       TEMPLATE_VERSION_CLAUDE: 0.10.0
       # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
       # session ("not signed in to Docker"); that session needs a Secret Service

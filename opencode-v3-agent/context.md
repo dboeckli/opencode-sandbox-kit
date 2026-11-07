@@ -230,7 +230,7 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 ## Java / Maven
 
 - JDK (Liberica) 25 at `/usr/local/java` (`JAVA_HOME` set), `java`, `javac`
-- Maven 3.9.16 at `/opt/maven`, `mvn`
+- Maven 3.10.0 at `/opt/maven`, `mvn`
 - Spring Boot, Apache Camel, CXF, Commons Lang, HttpClient, Tomcat, POI — see `context7-tools.md`
 
 ## Docker CLI
@@ -243,7 +243,7 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 > (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus
 > der Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 
-Enthält auch das **docker compose**-Plugin (5.4.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
+Enthält auch das **docker compose**-Plugin (5.7.0, `/usr/local/lib/docker/cli-plugins/docker-compose`) — `docker compose up` funktioniert für Projekte mit `compose.yaml`.
 
 **sbx CLI** (auf dem Host via PowerShell): `--help`-Outputs der gepinnten Version offline unter `~/sbx-cli.md` (Kit-Bundle `files/home/sbx-cli.md`, Stand siehe Header); Commands/Manuels auch via `npx ctx7 docs /docker/docs <query>` (Docs-`main`, nicht der Pin).
 
@@ -257,7 +257,7 @@ Helm 4.3.1 at `/usr/local/bin/helm`; `helm4` ist ein Symlink auf dasselbe Binary
 
 ## Kafka CLI
 
-Apache Kafka CLI 4.3.1 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` + `archive.apache.org` (Fallback für ältere, von dlcdn entfernte Releases) sind in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
+Apache Kafka CLI 4.4.0 (Scala 2.13) at `/opt/kafka` — the `kafka-*.sh` scripts are wrapped into `/usr/local/bin` (`kafka-topics.sh`, `kafka-console-producer.sh`, `kafka-console-consumer.sh`, `kafka-consumer-groups.sh`, `kafka-configs.sh`, …). `dlcdn.apache.org` + `archive.apache.org` (Fallback für ältere, von dlcdn entfernte Releases) sind in der Network-Allowlist. No broker is pre-configured; pass a bootstrap server via `--bootstrap-server host:9092` (e.g. Kafka from `docker compose` or the Docker-Desktop cluster).
 
 ## Bruno CLI
 

@@ -8,9 +8,9 @@ name: Build and publish OpenCode v3 workload image
 # This workflow is both directly dispatchable and a reusable workflow
 # (`workflow_call`), so e2e.yml can build the image before its scenario matrix.
 #
-# Tags:
-#   - master / main: `<TEMPLATE_VERSION_OPENCODE>` plus `latest`
-#   - feature/PR:    `<TEMPLATE_VERSION_OPENCODE>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
+# Tags (base = OpenCode CLI pin OPENCODE_VERSION; basis image is shell-docker-image:latest):
+#   - master / main: `<OPENCODE_VERSION>` plus `latest`
+#   - feature/PR:    `<OPENCODE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
 #
 # Multi-arch via NATIVE runners; the arch is part of the repository NAME
 # (`<name>-amd64` / `<name>-arm64`), merged with `docker buildx imagetools create`.
@@ -53,21 +53,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Compute image tags from the base template pin and the branch
+      - name: Compute image tags from the OpenCode CLI pin and the branch
         id: tags
         run: |
           set -euo pipefail
           echo "image_prefix=${IMAGE_PREFIX}" >> "$GITHUB_OUTPUT"
-          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-[0-9]+(\.[0-9]+)+' \
+          pin=$(grep -oE 'ARG OPENCODE_VERSION=[0-9]+(\.[0-9]+)+' \
             opencode-v3-agent/opencode-v3-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
           if [ -z "$pin" ]; then
-            echo "opencode-docker base pin not found in opencode-v3-agent/opencode-v3-agent.dockerfile" >&2
+            echo "OPENCODE_VERSION pin not found in opencode-v3-agent/opencode-v3-agent.dockerfile" >&2
             exit 1
           fi
-          wf_pin=$(grep -oE 'TEMPLATE_VERSION_OPENCODE: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
+          wf_pin=$(grep -oE 'OPENCODE_VERSION: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
           if [ "$wf_pin" != "$pin" ]; then
-            echo "Dockerfile base pin ($pin) != TEMPLATE_VERSION_OPENCODE in validate.yml ($wf_pin)" >&2
+            echo "Dockerfile OPENCODE_VERSION ($pin) != OPENCODE_VERSION in validate.yml ($wf_pin)" >&2
             exit 1
           fi
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
