@@ -34,9 +34,9 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | `sonarcloud` | alle | SonarCloud API-Token (Web-API) — https://sonarcloud.io/account/security |
 | `codeberg` | alle | Codeberg API-Token (Forgejo-API) — https://codeberg.org/user/settings/applications |
 
-## Sandbox (wird vom Kit via `setup.install` installiert)
+## Sandbox (im Kit-Image eingebacken)
 
-Quelle der Wahrheit: `opencode-agent/files/home/.local/bin/install-tooling.sh` + `install-tooling-user.sh`
+Quelle der Wahrheit: `opencode-v3-agent/files/home/.local/bin/install-tooling.sh` + `install-tooling-user.sh`
 (identische Kopien in allen Kits; Drift-Check via `local-test-kits.py --validate-only`).
 Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Tool-Tabelle.
 
@@ -73,9 +73,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 | Agent | Zusätzlich installiert | Konfiguration |
 |-------|-----------------------|---------------|
-| OpenCode | (Basis-Image bringt CLI mit) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` |
 | OpenCode v3 | v3-Workload (`opencode-v3-agent/`, Image `sbx-opencode`; CLI aus dem opencode-docker-Template) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` + Plugins |
-| Claude Code | managed-settings.json in `/etc/claude-code` (statusLine + Hooks, Template-sicher) | `~/.claude/settings.json` + `CLAUDE.md` |
 | Claude Code v3 | v3-Workload (`claude-v3-agent/`, Image `sbx-claude`; CLI aus dem claude-code-docker-Template); managed-settings + `claude-entrypoint` (Settings/Gateway-Merge) | `~/.claude/settings.json` + `CLAUDE.md` + `~/.claude.json` (MCP-Gateway) |
 | Mammouth Code | v3-Workload (`mammouth-agent/mammouth-agent.yaml`); Image `sbx-mammouth` mit CLI + Tooling | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | v3-Workload-Image (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
@@ -83,13 +81,13 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 
-Nur Hosts aus `permissions.network.allow` (`opencode-agent/spec.yaml`) bzw. `network-policy@1` (OpenCode v3/Claude v3/Mammouth/Mistral Vibe/Pi) sind erreichbar.
-Doku: `opencode-agent/files/home/.config/opencode/network-policy.md` (bzw. Claude/Mammouth/Mistral-Vibe-Kopie). Enforced durch den
+Nur Hosts aus `network-policy@1` im jeweiligen v3-Descriptor (OpenCode v3/Claude v3/Mammouth/Mistral Vibe/Pi) sind erreichbar.
+Doku: `network-policy.md` in den `files/home/`-Kopien der Kits. Enforced durch den
 Sandbox-Proxy (`mcp-gateway`), der auch die `proxy-managed`-Credential-Injection übernimmt.
 
 ## Verifikation
 
 - Host-Validierung: `python local-test/local-test-kits.py --validate-only` (bzw. IntelliJ-Config `local-test-kits-validate-only`)
-- Volltest: `python local-test/local-test-kits.py` (alle 7 Szenarien)
+- Volltest: `python local-test/local-test-kits.py` (alle 5 Szenarien)
 - Laufzeit-Checks: `bash ~/.config/sandbox-kit/run-checks.sh` → `[startup-checks] ...`
   (Pi hat kein `run-checks.sh`; der Kit-Check prüft `~/.pi/agent/*` + `pi --version`.)

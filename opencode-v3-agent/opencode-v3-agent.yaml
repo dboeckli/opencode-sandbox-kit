@@ -2,7 +2,6 @@
 #
 # OpenCode as a standalone v3 sandbox workload (issue #242).
 # Descriptor + Dockerfile share the stem: opencode-v3-agent.yaml + opencode-v3-agent.dockerfile.
-# The v1/v2 `opencode-agent/` mixin stays untouched.
 #
 # Build/publish: docker buildx build ./opencode-v3-agent -f ./opencode-v3-agent/opencode-v3-agent.yaml
 # (multi-arch via .github/workflows/build-and-publish-opencode-v3-image.yml).

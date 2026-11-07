@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Standalone Claude Code v3 workload (issue #242). The v1/v2 `opencode-agent/`
-# mixin stays untouched; this image bakes the kit tooling + the Claude config,
+# Standalone Claude Code v3 workload (issue #242). This image bakes the kit tooling + the Claude config,
 # managed settings and guards on top of the versioned `claude-code-docker`
 # template (the Claude Code CLI itself comes from the template).
 #

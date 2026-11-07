@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""local-test-kits.py - automatischer Test der 7 Agent-Szenarien des opencode-sandbox-kit.
+"""local-test-kits.py - automatischer Test der 5 Agent-Szenarien des opencode-sandbox-kit.
 
 Laeuft auf Windows (PowerShell/CMD) und Linux/macOS, sofern `sbx` und ein
 Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus WSL).
 
 Szenarien:
-  1. OpenCode     + opencode-agent      (sbx create opencode --kit ./opencode-agent/)
-  1b. OpenCode v3 + opencode-v3-agent   (sbx create ./opencode-v3-agent/ — v3-Workload)
-  2. Claude       + opencode-agent      (sbx create claude --kit ./opencode-agent/)   — Home (api.anthropic.com)
-  2b. Claude v3   + claude-v3-agent     (sbx create ./claude-v3-agent/ — v3-Workload)
-  3. Mammouth     + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
+  1. OpenCode v3 + opencode-v3-agent   (sbx create ./opencode-v3-agent/ — v3-Workload)
+  2. Claude v3   + claude-v3-agent     (sbx create ./claude-v3-agent/ — v3-Workload)
+  3. Mammouth    + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
   4. Mistral Vibe + mistral-vibe-agent  (sbx create ./mistral-vibe-agent/ — Sandbox-Kit, eigenes gepinntes Image)
-  5. Pi           + pi-agent            (sbx create ./pi-agent/ — v3-Workload, Kit-Spec v3)
+  5. Pi          + pi-agent            (sbx create ./pi-agent/ — v3-Workload, Kit-Spec v3)
 
 Voraussetzungen:
   - Docker laeuft, `sbx` CLI im PATH
@@ -25,10 +23,8 @@ Voraussetzungen:
     PI_IMAGE_TAG fuer ein publiziertes Image gesetzt)
 
 Verwendung:
-  python local-test-kits.py                 # alle 7 Szenarien testen (default: all)
-  python local-test-kits.py opencode        # nur OpenCode testen
+  python local-test-kits.py                 # alle 5 Szenarien testen (default: all)
   python local-test-kits.py opencode-v3     # nur OpenCode v3 testen
-  python local-test-kits.py claude          # nur Claude testen (Home-Szenario)
   python local-test-kits.py claude-v3       # nur Claude v3 testen
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
@@ -37,7 +33,7 @@ Verwendung:
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien (v3 via Kit-Builder)
 
 Optionen:
-  {all,opencode,opencode-v3,claude,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
+  {all,opencode-v3,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -72,8 +68,7 @@ failed = []
 # Version steht in den offline-Doku-Dateien des Kits (Basis-URL api.stackexchange.com/<v>).
 SO_CHANGE_LOG_URL = "https://api.stackexchange.com/docs/change-log"
 SO_CHANGE_LOG_RE = re.compile(r"<h[12][^>]*>\s*Version\s+(\d+\.\d+)\s*</h[12]>")
-SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
-                "mammouth-agent/files/home/stackexchange-api.md",
+SO_DOC_FILES = ("mammouth-agent/files/home/stackexchange-api.md",
                 "mistral-vibe-agent/files/home/stackexchange-api.md",
                 "pi-agent/files/home/stackexchange-api.md",
                 "opencode-v3-agent/files/home/stackexchange-api.md",
@@ -82,9 +77,8 @@ SO_DOC_FILES = ("opencode-agent/files/home/stackexchange-api.md",
 # sbx CLI: die Offline-Referenz (sbx-cli.md) wird aus der Release-Binary generiert
 # (local-test/regenerate-sbx-doc.py). Die dokumentierte Version steht im Header der Datei;
 # Update-Check vergleicht sie mit dem gepinnten SBX_VERSION aus .github/workflows/validate.yml
-# (Source of Truth, Renovate managed). Identische Kopien in allen vier Kit-Bundles.
-SBX_DOC_FILES = ("opencode-agent/files/home/sbx-cli.md",
-                 "mammouth-agent/files/home/sbx-cli.md",
+# (Source of Truth, Renovate managed). Identische Kopien in allen Kit-Bundles.
+SBX_DOC_FILES = ("mammouth-agent/files/home/sbx-cli.md",
                  "mistral-vibe-agent/files/home/sbx-cli.md",
                  "pi-agent/files/home/sbx-cli.md",
                  "opencode-v3-agent/files/home/sbx-cli.md",
@@ -97,25 +91,25 @@ SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 # Kopien muessen identisch bleiben (edit target = eine Kopie, andere per cp syncen;
 # Renovate aktualisiert beide gemeinsam).
 INSTALL_SCRIPT_PAIRS = (
-    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling.sh",
      "mammouth-agent/files/home/.local/bin/install-tooling.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling.sh",
      "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh",
      "mammouth-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh",
      "mistral-vibe-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("opencode-agent/files/home/.local/bin/mcp-check.sh",
+    ("opencode-v3-agent/files/home/.local/bin/mcp-check.sh",
      "mistral-vibe-agent/files/home/.local/bin/mcp-check.sh"),
-    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh",
      "mammouth-agent/files/home/.local/bin/install-apt-packages.sh"),
-    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh",
      "mistral-vibe-agent/files/home/.local/bin/install-apt-packages.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling.sh",
      "pi-agent/files/home/.local/bin/install-tooling.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh",
      "pi-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh",
      "pi-agent/files/home/.local/bin/install-apt-packages.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
      "mammouth-agent/files/home/.local/bin/mammouth-startup-ca.sh"),
@@ -125,25 +119,25 @@ INSTALL_SCRIPT_PAIRS = (
      "mistral-vibe-agent/files/home/.local/bin/vibe-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
      "mistral-vibe-agent/files/home/.local/bin/vibe-startup-maven.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling.sh",
      "opencode-v3-agent/files/home/.local/bin/install-tooling.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh",
      "opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh",
      "opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh"),
-    ("opencode-agent/files/home/.local/bin/mcp-check.sh",
+    ("opencode-v3-agent/files/home/.local/bin/mcp-check.sh",
      "opencode-v3-agent/files/home/.local/bin/mcp-check.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
      "opencode-v3-agent/files/home/.local/bin/opencode-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
      "opencode-v3-agent/files/home/.local/bin/opencode-startup-maven.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling.sh",
      "claude-v3-agent/files/home/.local/bin/install-tooling.sh"),
-    ("opencode-agent/files/home/.local/bin/install-tooling-user.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh",
      "claude-v3-agent/files/home/.local/bin/install-tooling-user.sh"),
-    ("opencode-agent/files/home/.local/bin/install-apt-packages.sh",
+    ("opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh",
      "claude-v3-agent/files/home/.local/bin/install-apt-packages.sh"),
-    ("opencode-agent/files/home/.local/bin/mcp-check.sh",
+    ("opencode-v3-agent/files/home/.local/bin/mcp-check.sh",
      "claude-v3-agent/files/home/.local/bin/mcp-check.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
      "claude-v3-agent/files/home/.local/bin/claude-startup-ca.sh"),
@@ -180,8 +174,6 @@ TEMPLATE_TAG_RE = re.compile(
     r"^(?P<fam>opencode-docker|claude-code-docker|shell-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$"
 )
 DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
-# Template-Familie je Agent. Mammouth (kind:sandbox) fehlt bewusst: dort pinnt das spec-Image.
-AGENT_TEMPLATES = {"opencode": "opencode-docker", "claude": "claude-code-docker"}
 
 # Mammouth (Issue #137/#240): eigenes Image (mammouth-agent/mammouth-agent.dockerfile, v3) — Basis opencode-docker + Kit-Tooling
 # + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG BASE_IMAGE muss
@@ -238,9 +230,6 @@ DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
 # prueft die Gleichheit aller Vorkommen und warnt (gelb) bei einer neueren npm-Version —
 # der Bump kommt via Renovate-Custom-Manager (.github/renovate.json).
 BRUNO_PIN_FILES = [
-    "opencode-agent/spec.yaml",
-    "opencode-agent/opencode/Dockerfile",
-    "opencode-agent/claude/Dockerfile",
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
     "opencode-v3-agent/opencode-v3-agent.dockerfile",
@@ -254,9 +243,6 @@ BRUNO_NPM_URL = "https://registry.npmjs.org/@usebruno/cli/latest"
 # nutzbar (Web/TUI brauchen Browser bzw. Ports). Drift = fail, neueres npm-Release = warn;
 # der Bump kommt via Renovate-Custom-Manager (.github/renovate.json).
 INSPECTOR_PIN_FILES = [
-    "opencode-agent/spec.yaml",
-    "opencode-agent/opencode/Dockerfile",
-    "opencode-agent/claude/Dockerfile",
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
     "opencode-v3-agent/opencode-v3-agent.dockerfile",
@@ -271,31 +257,18 @@ INSPECTOR_NPM_URL = "https://registry.npmjs.org/@modelcontextprotocol/inspector/
 # existiert (dlcdn ODER archive) — faengt einen Renovate-Bump auf eine in Maven
 # Central verfuegbare, aber noch nicht als Distro veroeffentlichte Version ab,
 # bevor der Image-Build bricht (fail-closed Verify: kafka-topics.sh fehlt -> exit 127).
-KAFKA_INSTALL_SCRIPT = "opencode-agent/files/home/.local/bin/install-tooling.sh"
+KAFKA_INSTALL_SCRIPT = "opencode-v3-agent/files/home/.local/bin/install-tooling.sh"
 KAFKA_VER_RE = re.compile(r'KAFKA_VER="(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"')
 KAFKA_SCALA_VER_RE = re.compile(r'KAFKA_SCALA_VER="(?P<v>[0-9]+\.[0-9]+)"')
 KAFKA_CDN_URL = "https://dlcdn.apache.org/kafka/{ver}/kafka_{scala}-{ver}.tgz"
 KAFKA_ARCHIVE_URL = "https://archive.apache.org/dist/kafka/{ver}/kafka_{scala}-{ver}.tgz"
 
-# Tooling-Images (Issue #137): eigene Custom-Template-Builds des opencode-agent-Mixin-Kits
-# mit vorgebackenem Tooling — opencode-agent/opencode/Dockerfile (Basis opencode-docker) und
-# opencode-agent/claude/Dockerfile (Basis claude-code-docker). Die opencode-/claude-Szenarien
-# nutzen sie statt der offiziellen Templates. Die beiden Dockerfiles muessen identisch sein
-# ausser der ARG BASE_IMAGE-Zeile (Drift-Check in check_image_dockerfiles_sync()).
-# Tag: CI/e2e uebergibt den Feature-Tag per `OPENCODE_IMAGE_TAG` / `CLAUDE_IMAGE_TAG`; lokal
-# default `local` (zuletzt per local-test/build-and-publish-<agent>-image.py gebaut/gepusht).
-OPENCODE_DOCKERFILE = "opencode-agent/opencode/Dockerfile"
 OPENCODE_V3_DOCKERFILE = "opencode-v3-agent/opencode-v3-agent.dockerfile"
 OPENCODE_V3_DESCRIPTOR = "opencode-v3-agent/opencode-v3-agent.yaml"
 OPENCODE_V3_IMAGE_NAME = os.environ.get("OPENCODE_V3_IMAGE_NAME", "sbx-opencode")
 CLAUDE_V3_DOCKERFILE = "claude-v3-agent/claude-v3-agent.dockerfile"
 CLAUDE_V3_DESCRIPTOR = "claude-v3-agent/claude-v3-agent.yaml"
 CLAUDE_V3_IMAGE_NAME = os.environ.get("CLAUDE_V3_IMAGE_NAME", "sbx-claude")
-CLAUDE_DOCKERFILE = "opencode-agent/claude/Dockerfile"
-OPENCODE_IMAGE_NAMESPACE = os.environ.get("OPENCODE_IMAGE_NAMESPACE", "domboeckli")
-OPENCODE_IMAGE_NAME = os.environ.get("OPENCODE_IMAGE_NAME", "sbx-opencode-tooling")
-CLAUDE_IMAGE_NAMESPACE = os.environ.get("CLAUDE_IMAGE_NAMESPACE", "domboeckli")
-CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 # Zentraler Registry-Umschalter: vollstaendiger Image-Prefix (Registry + Namespace [+ Repo])
 # ohne Image-Namen. Default Docker Hub (wie die CI, Repo-Variable `IMAGE_PREFIX`); Cloudsmith
 # ist der Ausweich-Registry. Umschalten per Env `IMAGE_PREFIX` (auch in den IntelliJ-Run-Configs
@@ -305,20 +278,11 @@ CLAUDE_IMAGE_NAME = os.environ.get("CLAUDE_IMAGE_NAME", "sbx-claude-tooling")
 # Der Image-Name wird jeweils angehaengt: "<IMAGE_PREFIX>/sbx-<name>:<tag>".
 DEFAULT_IMAGE_PREFIX = "docker.io/domboeckli"
 IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX") or DEFAULT_IMAGE_PREFIX
-OPENCODE_BASE_IMAGE_RE = re.compile(
-    r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
-)
-CLAUDE_BASE_IMAGE_RE = re.compile(
-    r"ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
-)
 
 # Secrets je Szenario: Globale Dienst-Secrets, die das jeweilige Szenario in der Sandbox
-# benötigt (Kit-deklarierte Services aus den Specs credentials[].service + Template-Built-ins
-# wie github/anthropic). openrouter/google verdrahtet nur das opencode-Template.
+# benötigt (Kit-deklarierte Services aus den v3-Deskriptoren credentials[].service).
 # Fehlermeldungen nennen das betroffene Kit.
 SCENARIO_KIT = {
-    "opencode": "opencode-agent",
-    "claude": "opencode-agent",  # Claude-Home-Szenario (claude-code-docker-Template + opencode-agent-Kit)
     "mammouth": "mammouth-agent",
     "mistral-vibe": "mistral-vibe-agent",
     "pi": "pi-agent",
@@ -326,8 +290,6 @@ SCENARIO_KIT = {
     "claude-v3": "claude-v3-agent",
 }
 SCENARIO_SECRETS = {
-    "opencode": ("github", "github-maven", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
-    "claude": ("github", "github-maven", "anthropic", "context7", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mammouth": ("github", "github-maven", "mammouth", "zai", "mistral", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "pi": ("github", "github-maven", "deepseek", "zai", "mistral", "openrouter", "google", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
@@ -598,7 +560,7 @@ def _sbx_doc_version(rel=None):
 
 def check_sbx_doc_update(installed_ver=""):
     """Vergleicht die im Kit dokumentierte sbx-CLI-Version (sbx-cli.md-Header) in allen
-    vier Kit-Kopien mit dem gepinnten SBX_VERSION (validate.yml) und stellt sicher, dass
+    alle Kit-Kopien mit dem gepinnten SBX_VERSION (validate.yml) und stellt sicher, dass
     die Kopien identisch sind. Schlaegt fehl bei Abweichung — die Doku muss den Pin
     spiegeln und wird per regenerate-sbx-doc.py neu erzeugt (Default liest denselben Pin).
     Kein GitHub-API-Zugriff: Source of Truth ist der lokale Pin.
@@ -769,36 +731,6 @@ def _dockerfile_base_version(rel_path, regex):
     return m.group("v") if m else None
 
 
-def _opencode_base_image_version():
-    """opencode-docker-Basis-Tag im OpenCode-Tooling-Dockerfile (Mirror von TEMPLATE_VERSION_OPENCODE)."""
-    return _dockerfile_base_version(OPENCODE_DOCKERFILE, OPENCODE_BASE_IMAGE_RE)
-
-
-def _claude_base_image_version():
-    """claude-code-docker-Basis-Tag im Claude-Tooling-Dockerfile (Mirror von TEMPLATE_VERSION_CLAUDE)."""
-    return _dockerfile_base_version(CLAUDE_DOCKERFILE, CLAUDE_BASE_IMAGE_RE)
-
-
-def _template_image(agent):
-    """Template-Image fuer einen Agent.
-    - opencode: eigenes Tooling-Image (Issue #137), Tag per `OPENCODE_IMAGE_TAG` (default `local`).
-    - claude: eigenes Tooling-Image (Issue #137), Tag per `CLAUDE_IMAGE_TAG` (default `local`).
-    None bei kind:sandbox (Mammouth pinnt im spec-Image)."""
-    if agent == "opencode":
-        tag = os.environ.get("OPENCODE_IMAGE_TAG") or "local"
-        return f"{IMAGE_PREFIX}/{OPENCODE_IMAGE_NAME}:{tag}"
-    if agent == "claude":
-        tag = os.environ.get("CLAUDE_IMAGE_TAG") or "local"
-        return f"{IMAGE_PREFIX}/{CLAUDE_IMAGE_NAME}:{tag}"
-    fam = AGENT_TEMPLATES.get(agent)
-    if not fam:
-        return None
-    pin = TEMPLATE_PINS.get(fam)
-    if not pin:
-        return None
-    return f"docker/sandbox-templates:{fam}-{pin}"
-
-
 KIT_KIND_RE = re.compile(r"^kind:\s*(?P<v>\S+)", re.M)
 
 
@@ -847,46 +779,17 @@ def _template_latest_per_family():
     return latest
 
 
-def check_image_dockerfiles_sync():
-    """opencode-agent/opencode/Dockerfile und opencode-agent/claude/Dockerfile muessen funktional
-    identisch sein (gemeinsame Tooling-Schritte) — Unterschied nur in der ARG BASE_IMAGE-Zeile
-    und den Kopf-Kommentaren. Kommentar-/Leerzeilen werden ignoriert."""
-    base = os.path.join(ROOT, OPENCODE_DOCKERFILE)
-    other = os.path.join(ROOT, CLAUDE_DOCKERFILE)
-    if not os.path.isfile(base) or not os.path.isfile(other):
-        fail("image dockerfiles (opencode-agent/{opencode,claude}/Dockerfile fehlt)")
-        return
-
-    def normalize(path):
-        out = []
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                s = line.strip()
-                if not s or s.startswith("#"):
-                    continue
-                if s.startswith("ARG BASE_IMAGE="):
-                    s = "ARG BASE_IMAGE=<base>"
-                out.append(s)
-        return "\n".join(out)
-
-    if normalize(base) != normalize(other):
-        fail(
-            "image dockerfiles drift (opencode-agent/opencode/Dockerfile != opencode-agent/claude/Dockerfile)",
-            "Beide Dateien funktional identisch halten — nur ARG BASE_IMAGE + Kopf-Kommentare duerfen abweichen",
-        )
-    else:
-        pass_("image dockerfiles in sync (opencode-agent/opencode/Dockerfile == opencode-agent/claude/Dockerfile, ausser ARG BASE_IMAGE)")
-
-
 def check_template_update():
     """Prueft die getrennten Template-Pins je Docker-Hub-Familie (Issue #202):
-    TEMPLATE_VERSION_OPENCODE (opencode-docker: OpenCode + Mammouth) und
-    TEMPLATE_VERSION_CLAUDE (claude-code-docker: Claude Home).
+    TEMPLATE_VERSION_OPENCODE (opencode-docker: OpenCode v3 + Mammouth) und
+    TEMPLATE_VERSION_CLAUDE (claude-code-docker: Claude v3) gegen validate.yml/e2e.yml.
+    Die BASE_IMAGE-Pins der v3-Workload-Dockerfiles pruefen die eigenen
+    check_*_v3_base_update()-Checks.
 
     Fehlschlag nur bei echten Fehlern: Pin-Konstante fehlt, Workflow-Variable weicht ab,
-    Dockerfile-BASE_IMAGE weicht ab, Docker-Hub-Tags nicht abrufbar oder ein Pin-Tag ist
-    nicht publiziert. Warnt (gelb) nur, wenn eine Familie einen neueren Tag hat — die
-    Familien werden von Docker nicht mehr in Lockstep veroeffentlicht."""
+    Docker-Hub-Tags nicht abrufbar oder ein Pin-Tag ist nicht publiziert. Warnt (gelb)
+    nur, wenn eine Familie einen neueren Tag hat — die Familien werden von Docker nicht
+    mehr in Lockstep veroeffentlicht."""
     for fam, pin in TEMPLATE_PINS.items():
         var = TEMPLATE_WORKFLOW_VARS[fam]
         wf_ver = _template_workflow_version(fam)
@@ -900,36 +803,6 @@ def check_template_update():
                 f" (Pin der lokalen Tests ist die Konstante in {os.path.relpath(__file__, ROOT)})",
             )
             return
-
-    pin_open = TEMPLATE_VERSION_OPENCODE
-    for label, rel, cur in (
-        ("opencode", OPENCODE_DOCKERFILE, _opencode_base_image_version()),
-    ):
-        if not cur:
-            fail(f"template version ({rel} BASE_IMAGE nicht gepinnt)",
-                 f"ARG BASE_IMAGE in {rel} auf docker/sandbox-templates:opencode-docker-{pin_open} setzen")
-            return
-        if cur != pin_open:
-            fail(
-                f"template version ({label} Dockerfile BASE_IMAGE v{cur} != TEMPLATE_VERSION_OPENCODE v{pin_open})",
-                f"ARG BASE_IMAGE in {rel} auf docker/sandbox-templates:opencode-docker-{pin_open} anheben"
-                f" (Pin: TEMPLATE_VERSION_OPENCODE in local-test-kits.py + validate.yml/e2e.yml)",
-            )
-            return
-
-    pin_claude = TEMPLATE_VERSION_CLAUDE
-    cc_ver = _claude_base_image_version()
-    if not cc_ver:
-        fail(f"template version ({CLAUDE_DOCKERFILE} BASE_IMAGE nicht gepinnt)",
-             f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin_claude} setzen")
-        return
-    if cc_ver != pin_claude:
-        fail(
-            f"template version (claude Dockerfile BASE_IMAGE v{cc_ver} != TEMPLATE_VERSION_CLAUDE v{pin_claude})",
-            f"ARG BASE_IMAGE in {CLAUDE_DOCKERFILE} auf docker/sandbox-templates:claude-code-docker-{pin_claude} anheben"
-            f" (Pin: TEMPLATE_VERSION_CLAUDE in local-test-kits.py + validate.yml/e2e.yml)",
-        )
-        return
 
     try:
         latest = _template_latest_per_family()
@@ -1454,7 +1327,7 @@ def check_kafka_distro_availability():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode", "opencode-v3", "claude", "claude-v3", "mammouth", "mistral-vibe", "pi"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode-v3", "claude-v3", "mammouth", "mistral-vibe", "pi"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -1528,7 +1401,6 @@ def main():
 
     if validate_v3_via_builder:
         info("  (v3-Kits: Validierung ueber den Kit-Builder `sbx-kit-builder`; der erste Lauf baut die Artefakte und dauert laenger)")
-    validate_kit("opencode-agent", os.path.join(ROOT, "opencode-agent"), v3=False)
     validate_kit("opencode-v3-agent", os.path.join(ROOT, "opencode-v3-agent"), v3=True)
     validate_kit("claude-v3-agent", os.path.join(ROOT, "claude-v3-agent"), v3=True)
     validate_kit("mammouth-agent", os.path.join(ROOT, "mammouth-agent"), v3=True)
@@ -1546,9 +1418,6 @@ def main():
         print()
         info("==> Install-Skripte (Single Source of Truth) sync check")
         check_install_scripts_sync()
-        print()
-        info("==> Tooling-Image Dockerfiles sync check")
-        check_image_dockerfiles_sync()
         print()
         info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
         check_template_update()
@@ -1608,8 +1477,6 @@ def main():
     # Fehlermeldungen nennen das betroffene Kit/Szenario.
     if agent == "all":
         selected = set(SCENARIO_SECRETS)
-    elif agent == "claude":
-        selected = {"claude"}
     else:
         selected = {agent}
     for sname in SECRET_ORDER:
@@ -1640,26 +1507,12 @@ def main():
 
     scenarios = [
         {
-            "name": "kit-test-opencode",
-            "agent": "opencode",
-            "kit": os.path.join(ROOT, "opencode-agent"),
-            "model": "deepseek/deepseek-flash",
-            "config": 'grep -q "deepseek/deepseek-flash" ~/.config/opencode/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc && ! grep -q "host.docker.internal:64342" ~/.config/opencode/opencode.jsonc && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.config/opencode/opencode.jsonc 2>/dev/null || echo UNKNOWN)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "DIRECT=$(grep -c host.docker.internal:64342 ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; exit 1; }',
-        },
-        {
             "name": "kit-test-opencode-v3",
             "agent": "opencode-v3",
             "kit": os.path.join(ROOT, "opencode-v3-agent"),
             "model": "deepseek/deepseek-flash",
             "config_label": "opencode-v3 config (default model, gateway, guard, CLI)",
             "config": 'test -f ~/.config/opencode/opencode.jsonc && grep -q "deepseek/deepseek-flash" ~/.config/opencode/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc && test -f ~/.config/opencode/plugins/intellij-run-config-guard.js && opencode --version >/dev/null 2>&1 && echo CONFIG-OK || { echo "MODEL=$(grep -c deepseek/deepseek-flash ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "GUARD=$(test -f ~/.config/opencode/plugins/intellij-run-config-guard.js && echo 1 || echo 0)"; echo "CLI=$(opencode --version 2>/dev/null || echo MISSING)"; exit 1; }',
-        },
-        {
-            "name": "kit-test-claude",
-            "agent": "claude",
-            "kit": os.path.join(ROOT, "opencode-agent"),
-            "model": "claude-sonnet-4-6",
-            "config": 'grep -q "claude-sonnet-4-6" ~/.claude/settings.json && grep -q "mcp__mcp-gateway__" ~/.claude/settings.json && grep -q "intellij-run-config-guard.sh" /etc/claude-code/managed-settings.json && echo CONFIG-OK || { echo "MODEL=$(jq -r .model ~/.claude/settings.json 2>/dev/null || echo UNKNOWN)"; echo "KIT_FILE=$(jq -r .model ~/.claude/settings.kit.json 2>/dev/null || echo MISSING)"; echo "GUARD=$(grep -c intellij-run-config-guard.sh /etc/claude-code/managed-settings.json 2>/dev/null || echo 0)"; exit 1; }',
         },
         {
             "name": "kit-test-claude-v3",
@@ -1733,20 +1586,13 @@ def main():
 
         ws = workspace
         info(f"  Sandbox erzeugen (Workspace: {ws}) ...")
-        # Tooling-Images (Issue #137, Tooling vorgebacken), alle unter IMAGE_PREFIX
-        # (Default Docker Hub `docker.io/domboeckli`, per `IMAGE_PREFIX`-Env umschaltbar):
-        #   - opencode: <IMAGE_PREFIX>/sbx-opencode-tooling:<tag> (OPENCODE_IMAGE_TAG, default `local`)
-        #   - claude:   <IMAGE_PREFIX>/sbx-claude-tooling:<tag>   (CLAUDE_IMAGE_TAG, default `local`)
-        #   - mammouth: <IMAGE_PREFIX>/sbx-mammouth:<tag>         (v3, MAMMOUTH_IMAGE_TAG, default `local`)
+        # v3-Workloads/Sandbox-Kits unter IMAGE_PREFIX (Default Docker Hub
+        # `docker.io/domboeckli`, per `IMAGE_PREFIX`-Env umschaltbar):
+        #   - opencode-v3: <IMAGE_PREFIX>/sbx-opencode:<tag>  (OPENCODE_V3_IMAGE_TAG, default `local`)
+        #   - claude-v3:   <IMAGE_PREFIX>/sbx-claude:<tag>    (CLAUDE_V3_IMAGE_TAG, default `local`)
+        #   - mammouth:    <IMAGE_PREFIX>/sbx-mammouth:<tag>  (MAMMOUTH_IMAGE_TAG, default `local`)
         #   - mistral-vibe: <IMAGE_PREFIX>/sbx-mistral-vibe:<tag> (VIBE_IMAGE_TAG, default `local`)
-        #     v3-Workloads (Mammouth/Pi) per Image-Ref, Mistral Vibe per --kit-arg.
-        template_fam = AGENT_TEMPLATES.get(s["agent"])
-        template_image = _template_image(s["agent"]) if template_fam else None
-        if template_fam and not template_image:
-            sfail("template pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE-Konstante fehlt)")
-            continue
-        # v3-Pi-Workload: lokal das Kit-Verzeichnis (sbx baut es), in CI das publizierte
-        # Image (PI_IMAGE_TAG). v2-Sandbox-Kits nutzen immer das Verzeichnis.
+        # Pi: lokal das Kit-Verzeichnis (sbx baut es), in CI das publizierte Image (PI_IMAGE_TAG).
         kit_target = s["kit"]
         if s["agent"] == "pi":
             pi_tag = os.environ.get("PI_IMAGE_TAG")
@@ -1865,7 +1711,7 @@ def main():
         required_tools = ["ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka"]
         if s["agent"] == "pi":
             required_tools.append("pi")
-        if s["agent"] in ("opencode", "opencode-v3"):
+        if s["agent"] == "opencode-v3":
             required_tools.append("opencode")
         if s["agent"] == "claude-v3":
             required_tools.append("claude")
@@ -1967,16 +1813,16 @@ def main():
 
         openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
-        if s["agent"] in ("opencode", "opencode-v3", "pi"):
+        if s["agent"] in ("opencode-v3", "pi"):
             if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
                 pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
             else:
                 sfail("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)", out)
         else:
             if c2 == 0 and "OPENROUTER_API_KEY=<unset>" in out:
-                pass_("openrouter not wired (only opencode template declares openrouter)")
+                pass_("openrouter not wired (only opencode-v3/pi declare openrouter)")
             else:
-                sfail("openrouter not wired (only opencode template declares openrouter)", out)
+                sfail("openrouter not wired (only opencode-v3/pi declare openrouter)", out)
 
         # Built-in google service: the opencode template injects the placeholder
         # under GOOGLE_GENERATIVE_AI_API_KEY (the env name the AI SDK's google
@@ -1992,19 +1838,19 @@ def main():
                 sfail("google proxy env wiring (GEMINI_API_KEY=proxy-managed)", out)
         else:
             c2, out = exec_sandbox(s["name"], google_env_cmd)
-        if s["agent"] in ("opencode", "opencode-v3"):
+        if s["agent"] == "opencode-v3":
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
                 pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
             else:
                 sfail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
         elif s["agent"] not in ("pi",):
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
-                pass_("google not wired (only opencode template declares google)")
+                pass_("google not wired (only opencode-v3 declares google)")
             else:
-                sfail("google not wired (only opencode template declares google)", out)
+                sfail("google not wired (only opencode-v3 declares google)", out)
 
-        # Kit-deklarierter zai-Service: vom opencode-agent-Kit (OpenCode + Claude),
-        # vom mammouth-agent-Kit und vom mistral-vibe-agent-Kit deklariert.
+        # Kit-deklarierter zai-Service: von opencode-v3/claude-v3, mammouth-agent
+        # und mistral-vibe-agent deklariert.
         # (mistral-vibe hat eigene zai-Checks im Kit-spezifischen Block.)
         if s["agent"] != "mistral-vibe":
             zai_env_cmd = 'echo "ZAI_API_KEY=${ZAI_API_KEY:-<unset>}"'
@@ -2014,8 +1860,8 @@ def main():
             else:
                 sfail("zai proxy env wiring (ZAI_API_KEY=proxy-managed)", out)
 
-        # Kit-deklarierter mistral-Service: opencode-agent (OpenCode + Claude) und
-        # mammouth-agent; das mistral-vibe-Kit prueft es im eigenen Block.
+        # Kit-deklarierter mistral-Service: opencode-v3/claude-v3 und mammouth-agent;
+        # das mistral-vibe-Kit prueft es im eigenen Block.
         if s["agent"] != "mistral-vibe":
             mistral_env_cmd = 'echo "MISTRAL_API_KEY=${MISTRAL_API_KEY:-<unset>}"'
             c2, out = exec_sandbox(s["name"], mistral_env_cmd)

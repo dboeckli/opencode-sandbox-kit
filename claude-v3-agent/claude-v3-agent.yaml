@@ -2,7 +2,6 @@
 #
 # Claude Code as a standalone v3 sandbox workload (issue #242).
 # Descriptor + Dockerfile share the stem: claude-v3-agent.yaml + claude-v3-agent.dockerfile.
-# The v1/v2 `opencode-agent/` mixin stays untouched.
 #
 # Build/publish: docker buildx build ./claude-v3-agent -f ./claude-v3-agent/claude-v3-agent.yaml
 # (multi-arch via .github/workflows/build-and-publish-claude-v3-image.yml).

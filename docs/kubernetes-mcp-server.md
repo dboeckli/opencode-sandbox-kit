@@ -157,9 +157,7 @@ sbx mcp ls
 Beim Erstellen der Sandbox als statischen MCP-Server mitgeben (neben dem IntelliJ-MCP):
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s
 ```
@@ -172,9 +170,7 @@ Vollständiges Startbeispiel mit Host-Maven-Cache (Issue #87) — der `.kube:ro`
 der MCP-Server liest die Host-kubeconfig:
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s `
     . `

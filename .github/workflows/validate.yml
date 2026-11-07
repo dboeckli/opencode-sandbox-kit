@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Sandbox-Template-Versionen (gepinnt, je Docker-Hub-Familie getrennt — Issue #202):
-      # opencode-docker (OpenCode + Mammouth) und claude-code-docker (Claude Home) werden von
+      # opencode-docker (OpenCode v3 + Mammouth-Basis) und claude-code-docker (Claude v3) werden von
       # Docker nicht mehr in Lockstep veroeffentlicht, daher zwei unabhaengige Pins.
       # Source of Truth fuer die --template-Pins der Mixin-Kits und das Mammouth-spec-Image;
       # Updates via Renovate (customManager docker/sandbox-templates in .github/renovate.json).
@@ -110,10 +110,6 @@ jobs:
           TOKEN_CLEAN=$(printf '%s' "$DOCKER_PAT"    | tr -d '[:space:]')
           printf '%s' "$TOKEN_CLEAN" | sbx login --username "$USER_CLEAN" --password-stdin
 
-      - name: Validate OpenCode agent kit spec
-        if: env.CAN_VALIDATE == 'true'
-        run: sbx kit validate ./opencode-agent/
-
       - name: Validate OpenCode v3 agent kit (v3 workload)
         if: env.CAN_VALIDATE == 'true'
         # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
@@ -192,11 +188,13 @@ jobs:
           set -euo pipefail
           # Mammouth/Pi mcp-check.sh weichen bewusst ab (Agent-Config-Pfade).
           for f in install-tooling.sh install-tooling-user.sh install-apt-packages.sh; do
-            cmp "opencode-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
-            cmp "opencode-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
-            cmp "opencode-agent/files/home/.local/bin/$f" "pi-agent/files/home/.local/bin/$f"
+            cmp "opencode-v3-agent/files/home/.local/bin/$f" "claude-v3-agent/files/home/.local/bin/$f"
+            cmp "opencode-v3-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
+            cmp "opencode-v3-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
+            cmp "opencode-v3-agent/files/home/.local/bin/$f" "pi-agent/files/home/.local/bin/$f"
           done
-          cmp "opencode-agent/files/home/.local/bin/mcp-check.sh" "mistral-vibe-agent/files/home/.local/bin/mcp-check.sh"
+          cmp "opencode-v3-agent/files/home/.local/bin/mcp-check.sh" "claude-v3-agent/files/home/.local/bin/mcp-check.sh"
+          cmp "opencode-v3-agent/files/home/.local/bin/mcp-check.sh" "mistral-vibe-agent/files/home/.local/bin/mcp-check.sh"
 
       - name: Check Mistral Vibe image tag matches the Dockerfile pin
         # args.version.default im Descriptor muss exakt den VIBE_VERSION-Pin aus dem Dockerfile

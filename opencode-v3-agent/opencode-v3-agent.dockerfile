@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Standalone OpenCode v3 workload (issue #242). The v1/v2 `opencode-agent/`
-# mixin stays untouched; this image bakes the kit tooling + the OpenCode config,
+# Standalone OpenCode v3 workload (issue #242). This image bakes the kit tooling + the OpenCode config,
 # plugins and guards on top of the versioned `opencode-docker` template.
 #
 # Build/publish (descriptor is the Dockerfile frontend):

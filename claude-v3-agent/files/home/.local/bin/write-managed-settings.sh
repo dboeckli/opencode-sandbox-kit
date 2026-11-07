@@ -5,8 +5,8 @@ set -euo pipefail
 # settings the template does not overwrite at session start: statusLine + PreToolUse
 # (run-config guard) + SessionStart (run-checks) hooks, so they are always configured.
 #
-# Referenced by setup.install in the opencode-agent kit spec.
-# Bundled via files/home/.local/bin/, executed by setup.install as root.
+# Baked into the claude-v3-agent image (executed at image build as root);
+# bundled via files/home/.local/bin/.
 
 mkdir -p /etc/claude-code
 cat > /etc/claude-code/managed-settings.json <<'EOF'

@@ -8,25 +8,25 @@
 > pushes/PRs there are ignored and overwritten on the next sync. Please use **Codeberg** for issues,
 > pull requests and releases.
 
-Docker Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe / Pi, tailored to the Spring Boot ecosystem — ctx7 plus IntelliJ/Kubernetes/Host-Docker MCP via the sbx MCP Gateway, with pre-baked Java/Maven build tooling.
+Docker Sandbox Kit for OpenCode / Mammouth Code / Claude Code / Mistral Vibe / Pi (Kit-Spec v3), tailored to the Spring Boot ecosystem — ctx7 plus IntelliJ/Kubernetes/Host-Docker MCP via the sbx MCP Gateway, with pre-baked Java/Maven build tooling.
 
 Enthält zusätzlich dedizierte Agent-Kits:
 
 - **Mammouth Code** — `mammouth-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, Entrypoint `mammouth-entrypoint` (seedet die Model-Picker-Favoriten, dann `exec mammouth`).
 - **Mistral Vibe** — `mistral-vibe-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image, Entrypoint `vibe --agent auto-approve`.
-- **OpenCode v3** — `opencode-v3-agent/` (**Kit-Spec v3**, `kind: workload`, Pilot für die Migration), eigenes Image `docker.io/domboeckli/sbx-opencode`; das v2-Mixin `opencode-agent/` bleibt unverändert.
-- **Claude Code v3** — `claude-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-claude` (baut auf `claude-code-docker` auf, CLI aus dem Template); das Claude-Home-Szenario im Mixin bleibt parallel verfügbar.
+- **OpenCode v3** — `opencode-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-opencode` (baut auf `opencode-docker` auf, CLI aus dem Template).
+- **Claude Code v3** — `claude-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-claude` (baut auf `claude-code-docker` auf, CLI aus dem Template).
 - **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie die anderen Kits, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
 
 > **Setup-Anleitung:** [`INSTALL.md`](INSTALL.md) — Voraussetzungen, Docker-Desktop-Setup, IntelliJ MCP, Secrets (`sbx secret set`), Verifikation.
 
-> **Troubleshooting & Caveats:** [`docs/troubleshooting.md`](docs/troubleshooting.md) — KVM/WSL2, IntelliJ-MCP, Mistral-Rate-Limits, Kit-Spec v2, Skills.
+> **Troubleshooting & Caveats:** [`docs/troubleshooting.md`](docs/troubleshooting.md) — KVM/WSL2, IntelliJ-MCP, Mistral-Rate-Limits, Kit-Spec v3, Skills.
 
 ## Quickstart
 
 ### Lokale Entwicklung (opencode-sandbox-kit)
 
-Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`) sind relativ:
+Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`, `./pi-agent/`) sind relativ:
 
 ```powershell
 cd C:\development\projects\opencode-sandbox-kit
@@ -34,25 +34,11 @@ cd C:\development\projects\opencode-sandbox-kit
 
 Vor dem lokalen Start einmalig die Run-Config `build-and-publish-<agent>-image` ausführen — sie baut/pusht den Tag `:local`:
 
-- [`build-and-publish-opencode-image`](.run/build-and-publish-opencode-image.run.xml)
 - [`build-and-publish-opencode-v3-image`](.run/build-and-publish-opencode-v3-image.run.xml)
 - [`build-and-publish-claude-v3-image`](.run/build-and-publish-claude-v3-image.run.xml)
-- [`build-and-publish-claude-image`](.run/build-and-publish-claude-image.run.xml)
 - [`build-and-publish-mammouth-image`](.run/build-and-publish-mammouth-image.run.xml)
 - [`build-and-publish-mistral-vibe-image`](.run/build-and-publish-mistral-vibe-image.run.xml)
 - [`build-and-publish-pi-image`](.run/build-and-publish-pi-image.run.xml)
-
-**OpenCode:**
-
-```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
-    --skills=off `
-    --static-mcp idea,k8s,docker `
-    . `
-    "C:\development\maven-repo:ro"
-```
 
 **OpenCode v3** (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-opencode:<basever>`):
 
@@ -88,18 +74,6 @@ Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
 
 ```powershell
 sbx run ./claude-v3-agent/ `
-    --skills=off `
-    --static-mcp idea,k8s,docker `
-    . `
-    "C:\development\maven-repo:ro"
-```
-
-**Claude Code:**
-
-```powershell
-sbx run claude `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-claude-tooling:local `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -176,34 +150,10 @@ Ins Projekt wechseln (wird als Workspace gemountet):
 cd C:\development\projects\mein-projekt
 ```
 
-**OpenCode:**
-
-```powershell
-sbx run opencode `
-    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker.io/domboeckli/sbx-opencode-tooling:latest `
-    --skills=off `
-    --static-mcp idea,k8s,docker `
-    . `
-    "C:\development\maven-repo:ro"
-```
-
 **OpenCode v3** (v3-Workload, Release-Image):
 
 ```powershell
 sbx run docker.io/domboeckli/sbx-opencode:latest `
-    --skills=off `
-    --static-mcp idea,k8s,docker `
-    . `
-    "C:\development\maven-repo:ro"
-```
-
-**Claude Code:**
-
-```powershell
-sbx run claude `
-    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" `
-    --template docker.io/domboeckli/sbx-claude-tooling:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -246,9 +196,8 @@ Alle Kits nutzen gepinnte Sandbox-Template-Versionen — **`TEMPLATE_VERSION_OPE
 **`TEMPLATE_VERSION_CLAUDE`** (claude-code-docker), Renovate-managed und bewusst **getrennt** (Docker veröffentlicht
 die Familien nicht mehr in Lockstep, Issue #202):
 
-- **OpenCode**: `docker.io/domboeckli/sbx-opencode-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:opencode-docker-0.x.0` auf (Tooling vorgebacken, Issue #137)
 - **OpenCode v3**: `docker.io/domboeckli/sbx-opencode:<tag>` — v3-Workload-Image (Template + Tooling + Config), Tag = opencode-docker-Basisversion
-- **Claude (Home)**: `docker.io/domboeckli/sbx-claude-tooling:<tag>` — eigenes Tooling-Image, baut auf `docker/sandbox-templates:claude-code-docker-0.x.0` auf (Issue #137)
+- **Claude Code v3**: `docker.io/domboeckli/sbx-claude:<tag>` — v3-Workload-Image (Template + Tooling + Config), Tag = claude-code-docker-Basisversion
 - **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — v3-Workload, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (Tooling **+ Mammouth-CLI** vorgebacken)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (`<tag>` = Vibe-Version)
 - **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker/sandbox-templates:shell-docker-0.x.0` auf (schmale Shell-Basis; `<tag>` = Pi-Version)
@@ -256,13 +205,13 @@ die Familien nicht mehr in Lockstep, Issue #202):
 Die Base-Versionen sind je Familie mehrfach gepinnt und werden auf Konsistenz geprüft: als Konstanten
 `TEMPLATE_VERSION_OPENCODE`/`TEMPLATE_VERSION_CLAUDE` in `local-test/local-test-kits.py` (Renovate-managed), als
 gleichnamige Variablen in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed) sowie als `ARG BASE_IMAGE`
-in `opencode-agent/opencode/Dockerfile` (opencode-docker) bzw.
-`opencode-agent/claude/Dockerfile` (claude-code-docker); Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles (gemeinsamer shell-Pin).
+in `opencode-v3-agent/opencode-v3-agent.dockerfile` (opencode-docker) bzw.
+`claude-v3-agent/claude-v3-agent.dockerfile` (claude-code-docker); Mammouth, Mistral Vibe und Pi pinnen `shell-docker` in ihren Dockerfiles (gemeinsamer shell-Pin).
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-Tags und schlägt
 bei Drift fehl.
 
-**Image-Tags** — Schema für alle Tooling-/Agent-Images; `<version>` = `TEMPLATE_VERSION_OPENCODE` (OpenCode/Mammouth)
-bzw. `TEMPLATE_VERSION_CLAUDE` (Claude)
+**Image-Tags** — Schema für alle Agent-Images; `<version>` = `TEMPLATE_VERSION_OPENCODE` (OpenCode v3/Mammouth)
+bzw. `TEMPLATE_VERSION_CLAUDE` (Claude v3)
 bzw. die Agent-Version (Mistral Vibe), `<branch-slug>` = Branch-Name (lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
 
 | Kontext | Tag(s) |
@@ -331,24 +280,20 @@ Windows-Pfade im WSL-Format (`/mnt/c/...`) verwenden; ins Projekt wechseln (wird
 cd /mnt/c/development/projects/spring-6-reactive
 ```
 
-**OpenCode:**
+**OpenCode v3** (v3-Workload, Release-Image):
 
 ```bash
-sbx run opencode \
-    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
-    --template docker.io/domboeckli/sbx-opencode-tooling:latest \
+sbx run docker.io/domboeckli/sbx-opencode:latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
     . \
     "/mnt/c/development/maven-repo:ro"
 ```
 
-**Claude Code:**
+**Claude Code v3** (v3-Workload, Release-Image):
 
 ```bash
-sbx run claude \
-    --kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent" \
-    --template docker.io/domboeckli/sbx-claude-tooling:latest \
+sbx run docker.io/domboeckli/sbx-claude:latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
     . \
@@ -375,17 +320,6 @@ sbx run docker.io/domboeckli/sbx-mistral-vibe:latest \
     "/mnt/c/development/maven-repo:ro"
 ```
 
-### Kit auf eine bestehende Sandbox anwenden
-
-`sbx kit add` funktioniert nur für **Mixins** (OpenCode/Claude, v2); es restartet die Sandbox, der VM-State bleibt:
-
-```powershell
-sbx kit add <sandbox-name> `
-    "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"
-```
-
-Die v3-Workloads (Mammouth/Mistral Vibe/Pi) sind eigenständige Images — dafür die Sandbox mit `sbx run <IMAGE_PREFIX>/sbx-<name>:latest` (bzw. lokal: `:local`) neu erstellen.
-
 Die Sandbox ist eine MicroVM (nerdbox) mit Hypervisor-Isolation, die `sbx` über Docker Desktop orchestriert — kein Container im Host-Daemon. Der IntelliJ-MCP-Server läuft auf dem Host (`localhost:64615`, Port 64615 seit IDEA 2026.2.2) und wird über den **sbx MCP Gateway** (`mcp-gateway.docker.internal`, host-seitig registriert via `sbx mcp add`) in die Sandbox geliefert.
 
 ## Architektur
@@ -411,7 +345,7 @@ flowchart TB
                 Agent["🤖 AI Coding Agent\n(opencode / claude / mammouth / mistral-vibe)"]
                 Dockerd["🐳 Isolierter Docker Daemon"]
                 FS["📂 Filesystem Passthrough\n(selber Pfad wie Host)"]
-                Kit["🔌 Kit (Mixin / sandbox)\n(Tools, Skills, Config, Vibe-Image)"]
+                Kit["🔌 Kit (v3-Workload)\n(Tools, Skills, Config)"]
 
                 Agent -->|"docker CLI"| Dockerd
                 Agent -->|"liest / schreibt"| FS
@@ -447,9 +381,10 @@ flowchart TB
 
 Drei host-seitige MCP-Server werden über den **sbx MCP Gateway** in die Sandbox geliefert. Die Client-Verdrahtung
 (`mcp-gateway` → `http://mcp-gateway.docker.internal/mcp`) legt `sbx` nur für die **unterstützten** Agenten an
-(OpenCode: `~/.config/opencode/opencode.json`, Claude Code: `~/.claude.json`); **Mammouth** und **Mistral Vibe**
-bringen sie in ihrer Kit-Config selbst mit (`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`,
-`mistral-vibe-agent/files/home/.vibe/config.toml`, Issue #139). Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
+**OpenCode v3** (`~/.config/opencode/opencode.jsonc`), **Claude Code v3** (`~/.claude.json`), **Mammouth**
+(`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`) und **Mistral Vibe**
+(`mistral-vibe-agent/files/home/.vibe/config.toml`, Issue #139) bringen sie in ihrer Kit-Config selbst mit.
+Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 
 | Server | Host | Registrierung (einmalig, PowerShell) |
 |--------|------|--------------------------------------|
@@ -458,9 +393,7 @@ bringen sie in ihrer Kit-Config selbst mit (`mammouth-agent/files/home/.config/m
 | **Docker** | `ckreiling/mcp-server-docker` via `uvx` (steuert den Host-Docker-Daemon) | `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"` |
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker
 ```
@@ -473,15 +406,13 @@ Details: [Kubernetes-MCP-Server](docs/kubernetes-mcp-server.md) · [Docker-MCP-S
 
 ## Dual Agent Support
 
-Das Kit funktioniert mit **OpenCode (v2-Mixin oder v3-Workload), Claude Code, Mammouth Code, Mistral Vibe und Pi** – der Agent wird nicht vom Kit bestimmt,
-sondern vom Template bzw. dem Kit-Image beim `sbx run`:
+Das Kit funktioniert mit **OpenCode v3, Claude Code v3, Mammouth Code, Mistral Vibe und Pi** (alles v3-Workloads) –
+der Agent wird vom jeweiligen Kit-Image beim `sbx run` bestimmt:
 
 | Agent | Template | Kit |
 |-------|----------|-----|
-| OpenCode | `docker.io/domboeckli/sbx-opencode-tooling` (baut auf `opencode-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
-| OpenCode v3 | `docker.io/domboeckli/sbx-opencode` (v3-Workload) | `opencode-v3-agent/` |
-| Claude Code v3 | `docker.io/domboeckli/sbx-claude` (v3-Workload, baut auf `claude-code-docker-0.x.0` auf) | `claude-v3-agent/` |
-| Claude Code | `docker.io/domboeckli/sbx-claude-tooling` (baut auf `claude-code-docker-0.x.0` auf) | `opencode-agent/` (Mixin) |
+| OpenCode v3 | `docker.io/domboeckli/sbx-opencode` (baut auf `opencode-docker-0.x.0` auf) | `opencode-v3-agent/` |
+| Claude Code v3 | `docker.io/domboeckli/sbx-claude` (baut auf `claude-code-docker-0.x.0` auf) | `claude-v3-agent/` |
 | Mammouth Code | `shell-docker` (Pin `0.x.0`) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
 | Mistral Vibe | `shell` (Pin `0.x.0`) | `mistral-vibe-agent/` (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-mistral-vibe`) |
 
@@ -497,13 +428,13 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 > Sandbox per `curl` erreichbar (Restrisiko, Issue #229). Dasselbe gilt für die mitgelieferte MCP-Inspector-CLI
 > (`mcp-inspector --cli`, Issue #231): sie spricht den Gateway direkt an und ist damit ebenfalls ein Weg an der
 > Whitelist vorbei — Werkzeug, keine Grenze.
-> Alle sieben erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, Skills, ctx7) und die
+> Alle fünf erhalten dieselben Tools (JDK, Maven, Docker CLI, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, Skills, ctx7) und die
 > Host-MCP-Server (IntelliJ/Kubernetes/Docker) über den Gateway
 > (`mcp-gateway_<tool>` in OpenCode/OpenCode v3/Mammouth/Mistral Vibe, `mcp__mcp-gateway__<tool>` in Claude Code, `mcp__mcp_gateway__<tool>` in Pi). Die jeweilige
 > Konfiguration wird automatisch gelesen:
 
-- **OpenCode / OpenCode v3**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash); Zusatz-Provider `openrouter`, `google`, `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit einer **Favorites**-Sektion der direkt angebundenen Modelle (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet via `setup.startup` in `~/.local/state/opencode/model.json` (bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
-- **Claude Code**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md`
+- **OpenCode v3**: `~/.config/opencode/opencode.jsonc` + `~/.config/opencode/AGENTS.md` — Modell `deepseek/deepseek-flash` (DeepSeek V4.1 Flash); Zusatz-Provider `openrouter`, `google`, `zai` (GLM-5.3-Flash/GLM-5.3 sowie das **gratis** GLM-4.7-Flash via `ZAI_API_KEY`, `sbx secret set zai`) und `mistral` (Mistral-hosted GLM-5.3 `zai-glm-5-3` via `MISTRAL_API_KEY`, `sbx secret set mistral`). Der Model-Picker startet mit einer **Favorites**-Sektion der direkt angebundenen Modelle (DeepSeek V4.1 Flash/V4 Pro, GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash (gratis) via Z.AI, Mistral-hosted GLM-5.3), geseedet im Entrypoint/Build in `~/.local/state/opencode/model.json` (bestehende Favoriten/Reihenfolge bleiben erhalten, fehlende Seed-Modelle werden bei jedem Start ergänzt)
+- **Claude Code v3**: `~/.claude/settings.json` + `~/.claude/CLAUDE.md` + `~/.claude.json` (MCP-Gateway)
 - **Mammouth Code**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 - **Mistral Vibe**: `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md`
 - **Pi**: `~/.pi/agent/settings.json` (Default-Modell) + `~/.pi/agent/mcp.json` (MCP-Gateway) + `~/.pi/agent/extensions/mcp-guard.ts` (Read-only-Guard) + `~/.pi/agent/AGENTS.md`
@@ -519,7 +450,7 @@ v3-Workload** (`kind: workload`, Name `mammouth`) – analog zum Pi-Kit:
 - **Entrypoint**: `mammouth-entrypoint` (seedet Favoriten, dann `exec mammouth`)
 - **Auth**: `credential@1` für `api.mammouth.ai` (`name: MAMMOUTH_API_KEY`, `proxyManaged: true`,
   `inject` als `Authorization: Bearer`) — kit-spec v3
-- **Tools**: installiert dieselben Tools wie das Mixin-Kit (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, ctx7, Skills)
+- **Tools**: installiert dieselben Tools wie die anderen Kits (JDK, Maven, Docker CLI, kubectl, Helm, Apache Kafka CLI, Bruno CLI, MCP-Inspector CLI, ctx7, Skills)
 - **Config**: `~/.config/mammouth/opencode.jsonc` + `~/.config/mammouth/AGENTS.md`
 
 Die Konfiguration liegt unter `~/.config/mammouth/` (XDG-app `mammouth`):
@@ -666,19 +597,17 @@ v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.50.1). **v3-Kits lassen sich nicht mi
   Template-sicher, kein Settings-Race beim Start, siehe [session-start-hook-fix.md](docs/session-start-hook-fix.md))
 - **Permission-Whitelist + Run-Config-Guard**: siehe Abschnitt "IntelliJ MCP Zugriff einschränken"
 
-> **Hinweis:** Das claude-code-docker-Template überschreibt `~/.claude/settings.json` beim Start (u.a. mit
-> `apiKeyHelper: echo proxy-managed`, `defaultMode: bypassPermissions`). Der `setup.startup`-Merge stellt danach
-> die Kit-Felder aus `settings.kit.json` sicher — u.a. `defaultMode: default` (damit `permissions.ask` für die
-> K8s-Schreib-/Exec-Tools greift) und die Permission-Listen. Das Modell wird zusätzlich fest über die
-> Env-Variablen erzwungen. Nach Änderungen am Kit die Sandbox neu erstellen (bzw. `sbx kit add`), damit die
-> Env-Variablen greifen.
+> **Hinweis:** Der Entrypoint `claude-entrypoint` merged die Kit-Felder aus `settings.kit.json` (und das
+> MCP-Gateway in `~/.claude.json`) **vor** dem CLI-Start — u.a. `defaultMode: default` (damit `permissions.ask`
+> für die K8s-Schreib-/Exec-Tools greift) und die Permission-Listen. Das Modell wird zusätzlich fest über die
+> Env-Variablen erzwungen. Nach Änderungen am Kit das Image neu bauen (`build-and-publish-claude-v3-image`).
 
 Die StatusLine (`~/.claude/statusline.sh`) wird beim Sandbox-Build aus
 [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai-agent-skills) installiert.
 
 ## Automatisierter Kit-Test
 
-Die 7 Agent-Szenarien (OpenCode, OpenCode v3, Claude Home, Claude v3, Mammouth, Mistral Vibe, Pi) lassen sich lokal automatisiert testen —
+Die 5 Agent-Szenarien (OpenCode v3, Claude v3, Mammouth, Mistral Vibe, Pi) lassen sich lokal automatisiert testen —
 `local-test-kits.py` (cross-platform, Windows + Linux/macOS) validiert alle Kits, prüft die
 Secrets, baut pro Szenario eine Sandbox, prüft Tools/Config/Startup-Checks und räumt danach auf.
 
@@ -686,7 +615,7 @@ Als **Workspace** mounten die Szenarien den **Repo-Root** (`--workspace <pfad>` 
 übersteuert; Default ist nicht das Aufrufverzeichnis). Der Test startet den Agenten nicht und schreibt
 nichts ins Workspace.
 
-Alle 7 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
+Alle 5 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
 
 ```bash
 python local-test/local-test-kits.py
@@ -706,7 +635,7 @@ python local-test/local-test-kits.py --validate-only
 
 Lokales Testen in **Windows PowerShell** (Docker Desktop nativ):
 
-Alle 7 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
+Alle 5 Szenarien (ohne `--keep`: Sandboxes werden wieder entfernt):
 
 ```powershell
 python .\local-test\local-test-kits.py
@@ -735,12 +664,13 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
   (`SBX_VERSION`, aktuell `v0.50.1`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
-  übersprungen, da keine Secrets), validiert alle Kits (`sbx kit validate ./opencode-agent/`,
-  `./mammouth-agent/`, `./mistral-vibe-agent/`) und prüft, dass die Install-Skript-Kopien
+  übersprungen, da keine Secrets), validiert die v3-Kits über den Kit-Builder (`sbx kit validate` ohne
+  `--offline`; `./opencode-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`,
+  `./pi-agent/`) und prüft, dass die Install-Skript-Kopien
   (`files/home/.local/bin/`) in allen Kits identisch sind, sowie dass der Vibe-Image-Tag in
   `args.version.default` im Descriptor zum `ARG VIBE_VERSION` im Dockerfile passt.
 - **`e2e.yml`** — bei jedem Push/PR + wöchentlich Montag (03:05 UTC, nach `validate.yml`): baut echte Sandboxes für
-  alle 7 Szenarien (`local-test-kits.py opencode|opencode-v3|claude|claude-v3|mammouth|mistral-vibe|pi --ci`) mit KVM-Zugriff,
+  alle 5 Szenarien (`local-test-kits.py opencode-v3|claude-v3|mammouth|mistral-vibe|pi --ci --skip-v3-builder`) mit KVM-Zugriff,
   `sbx login` (`DOCKER_USERNAME`/`DOCKER_PAT`) + Cloudsmith-Registry-Credential (`CLOUDSMITH_USERNAME`/`CLOUDSMITH_API_KEY`, nur wenn `IMAGE_PREFIX` auf Cloudsmith zeigt) und Fake-API-Keys (nur Proxy-Wiring, keine echten Calls).
   Fork-PRs laufen nicht (keine Secrets-Exposition).
 - **`build-and-publish-mistral-vibe-image.yml`** — baut/publiziert das gepinnte Vibe-Image (multi-arch amd64+arm64 über native Runner + `imagetools create`)
@@ -765,7 +695,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > Die **gepinnte `sbx`-Version** (`SBX_VERSION`) wird von Renovate aktualisiert
 > (`customManager` für `docker/sbx-releases`, `github-releases`-Datasource).
 >
-> Die Offline-Referenz `opencode-agent/files/home/sbx-cli.md` (→ `~/sbx-cli.md` in der Sandbox) wird per
+> Die Offline-Referenz `opencode-v3-agent/files/home/sbx-cli.md` (→ `~/sbx-cli.md` in der Sandbox) wird per
 > `python local-test/regenerate-sbx-doc.py [<version>]` aus der Release-Binary neu erzeugt
 > (Default: `SBX_VERSION` aus `validate.yml`). `local-test-kits.py --validate-only` vergleicht die
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
@@ -879,7 +809,7 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp-gateway-security.md)
 - [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
-- [sbx CLI Offline-Referenz](opencode-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.50.1 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.50.1 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
 - [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
