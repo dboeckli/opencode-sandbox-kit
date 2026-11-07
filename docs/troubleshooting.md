@@ -150,7 +150,7 @@ Sandbox **nicht** mehr nötig (Issue #163).
 ### Kit-Spec v3 und die sbx-Version
 
 Alle Kits sind **v3-Workloads** (`schemaVersion: "3"`, `kind: workload`, Descriptor + Dockerfile) und
-brauchen **sbx v0.45+** (Repo-Pin `v0.50.1`). v3-Kits sind nicht mit v1/v2-Kits kombinierbar
+brauchen **sbx v0.45+** (Repo-Pin `v0.51.0`). v3-Kits sind nicht mit v1/v2-Kits kombinierbar
 (`--template`/`--kit` entfallen). Validierung über den Kit-Builder:
 
 ```bash
