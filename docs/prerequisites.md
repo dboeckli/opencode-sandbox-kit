@@ -61,9 +61,9 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | MCP Inspector CLI (`mcp-inspector`, `mcpdo`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq, python3, pip, python3-yaml | distro | apt |
 
-> **opencode-v3 (Issue #254):** Basisiert auf `docker.io/sbx/shell-docker-image:latest` — Node/npm, Docker CLI,
-> Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert weiterhin
-> `install-tooling.sh` (wie in den übrigen Kits).
+> **opencode-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle vier basieren auf `docker.io/sbx/shell-docker-image:latest` —
+> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert
+> weiterhin `install-tooling.sh` (wie in allen Kits).
 
 ### Agent-User-Tooling (`install-tooling-user.sh`, user 1000)
 
@@ -78,10 +78,10 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Agent | Zusätzlich installiert | Konfiguration |
 |-------|-----------------------|---------------|
 | OpenCode v3 | v3-Workload (`opencode-v3-agent/`, Image `sbx-opencode`; Basis `docker.io/sbx/shell-docker-image:latest`, OpenCode-CLI via npm `opencode-ai` auf 1.x gepinnt) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` + Plugins |
-| Claude Code v3 | v3-Workload (`claude-v3-agent/`, Image `sbx-claude`; CLI aus dem claude-code-docker-Template); managed-settings + `claude-entrypoint` (Settings/Gateway-Merge) | `~/.claude/settings.json` + `CLAUDE.md` + `~/.claude.json` (MCP-Gateway) |
+| Claude Code v3 | v3-Workload (`claude-v3-agent/`, Image `sbx-claude`; Basis `docker.io/sbx/shell-docker-image:latest`, Claude-CLI via npm `@anthropic-ai/claude-code` gepinnt); managed-settings + `claude-entrypoint` (Settings/Gateway-Merge) | `~/.claude/settings.json` + `CLAUDE.md` + `~/.claude.json` (MCP-Gateway) |
 | Mammouth Code | v3-Workload (`mammouth-agent/mammouth-agent.yaml`); Image `sbx-mammouth` mit CLI + Tooling | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | v3-Workload-Image (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
-| Pi | v3-Workload-Image (`shell-docker`-Basis + Kit-Tooling + `@earendil-works/pi-coding-agent`, `docker.io/domboeckli/sbx-pi-agent:<pin>`; kein OpenCode im Image) | `~/.pi/agent/settings.json` + `mcp.json` (MCP-Gateway) + `extensions/mcp-guard.ts` (Read-only-Guard, gemeinsame Allow-Liste) + `AGENTS.md` |
+| Pi | v3-Workload-Image (`docker.io/sbx/shell-docker-image:latest`-Basis + Kit-Tooling + `@earendil-works/pi-coding-agent`, `docker.io/domboeckli/sbx-pi-agent:<pin>`; kein OpenCode im Image) | `~/.pi/agent/settings.json` + `mcp.json` (MCP-Gateway) + `extensions/mcp-guard.ts` (Read-only-Guard, gemeinsame Allow-Liste) + `AGENTS.md` |
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 

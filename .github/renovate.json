@@ -42,16 +42,10 @@
       "allowedVersions": "/^1\\./"
     },
     {
-      "description": "claude-code-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_CLAUDE in validate.yml/e2e.yml + local-test-kits.py + Dockerfile ARG BASE_IMAGE (claude-v3-agent)",
-      "matchDatasources": ["docker"],
-      "matchDepNames": ["sandbox-templates-claude"],
-      "groupName": "sandbox-templates-claude"
-    },
-    {
-      "description": "shell-docker-Pin (Mistral Vibe) in EINEM PR gruppieren: Dockerfile ARG BASE_IMAGE (mistral-vibe-agent)",
-      "matchDatasources": ["docker"],
-      "matchDepNames": ["sandbox-templates-shell"],
-      "groupName": "sandbox-templates-shell"
+      "description": "Claude-Code-CLI-Pin (npm @anthropic-ai/claude-code) in EINEM PR gruppieren: Dockerfile ARG CLAUDE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis docker.io/sbx/shell-docker-image:latest ist nightly und wird nicht versioniert (Issue #254).",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["@anthropic-ai/claude-code"],
+      "groupName": "claude-cli"
     },
     {
       "description": "Kubernetes MCP server: host-side install instructions in the PR body (binary is installed on the Windows host, not part of the sandbox image)",
@@ -184,25 +178,19 @@
     },
     {
       "customType": "regex",
-      "description": "claude-code-docker-Pin (claude-v3-agent/claude-v3-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-<v>; muss TEMPLATE_VERSION_CLAUDE spiegeln)",
+      "description": "Claude-Code-CLI-Pin (claude-v3-agent/claude-v3-agent.dockerfile ARG CLAUDE_VERSION; npm @anthropic-ai/claude-code — Issue #254)",
       "managerFilePatterns": ["claude-v3-agent/claude-v3-agent.dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-claude",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "matchStrings": ["ARG CLAUDE_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@anthropic-ai/claude-code",
+      "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
-      "description": "claude-code-docker-Pin (.github/workflows/e2e.yml, validate.yml: TEMPLATE_VERSION_CLAUDE) — getrennt vom OpenCode-CLI-Pin (OPENCODE_VERSION, Issue #202/#254)",
+      "description": "Claude-Code-CLI-Pin (.github/workflows/e2e.yml, validate.yml; .forgejo: CLAUDE_VERSION; npm @anthropic-ai/claude-code — Issue #254)",
       "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
-      "matchStrings": ["TEMPLATE_VERSION_CLAUDE: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-claude",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "matchStrings": ["CLAUDE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@anthropic-ai/claude-code",
+      "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
@@ -214,25 +202,11 @@
     },
     {
       "customType": "regex",
-      "description": "claude-code-docker-Pin (local-test-kits.py TEMPLATE_VERSION_CLAUDE-Konstante; muss mit validate.yml/e2e.yml + dem Dockerfile-Base-Pin uebereinstimmen)",
+      "description": "Claude-Code-CLI-Pin (local-test-kits.py CLAUDE_VERSION-Konstante; npm @anthropic-ai/claude-code — Issue #254)",
       "managerFilePatterns": ["local-test/local-test-kits.py"],
-      "matchStrings": ["TEMPLATE_VERSION_CLAUDE = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
-      "depNameTemplate": "sandbox-templates-claude",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
-      "description": "shell-docker-Pin (mammouth-agent/mammouth-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-<v>; muss dem Mistral-Vibe-shell-Pin entsprechen)",
-      "managerFilePatterns": ["mammouth-agent/mammouth-agent.dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-shell",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "matchStrings": ["CLAUDE_VERSION = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "@anthropic-ai/claude-code",
+      "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
@@ -277,17 +251,6 @@
       "matchStrings": ["version:\\s*\\n\\s+default: \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "mistral-vibe",
       "datasourceTemplate": "pypi"
-    },
-    {
-      "customType": "regex",
-      "description": "shell-docker-Pin (mistral-vibe-agent/mistral-vibe-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-<v>; eigener Pin, unabhaengig von opencode/claude)",
-      "managerFilePatterns": ["mistral-vibe-agent/mistral-vibe-agent.dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-shell",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
     },
     {
       "customType": "regex",
@@ -337,17 +300,6 @@
       "matchStrings": ["ARG PI_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@earendil-works/pi-coding-agent",
       "datasourceTemplate": "npm"
-    },
-    {
-      "customType": "regex",
-      "description": "shell-docker-Pin (pi-agent/pi-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-<v>; muss dem Mistral-Vibe-shell-Pin entsprechen)",
-      "managerFilePatterns": ["pi-agent/pi-agent.dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-shell",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^shell-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
     }
   ],
   "customDatasources": {

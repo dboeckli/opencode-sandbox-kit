@@ -1,5 +1,10 @@
 # SessionStart-Hook / statusLine: Warum `managed-settings.json`?
 
+> **Hinweis Issue #254:** Seit der Migration auf `docker.io/sbx/shell-docker-image:latest` überschreibt
+> die Basis `~/.claude/settings.json` nicht mehr beim Start. Die `managed-settings.json` bleiben trotzdem
+> der richtige Ort für Hooks/`statusLine` (höchste Precedence, unabhängig vom User-Settings-Merge) — der
+> historische Template-Overwrite unten ist nur noch Hintergrund.
+
 ## Problem
 
 Das `claude-code-docker`-Template überschreibt `~/.claude/settings.json` beim Start jeder

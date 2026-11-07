@@ -45,7 +45,7 @@ Das Image nutzt dieselben Skripte und Versionen wie die anderen Kits:
   Compose 5.7.0, kubectl (stable), Helm 4.3.1, Kafka 4.4.0
 - apt: `jq`, `python3`, `python3-pip`, `python3-yaml`, `libatomic1`
 - `fd` + `ripgrep` (Pi lädt sie sonst beim ersten Start nach `~/.pi/agent/bin`)
-- Node 26 (via `install-tooling.sh node`; die shell-docker-Basis bringt Node 22 mit)
+- Node 26 (via `install-tooling.sh node`; die shell-docker-image-Basis bringt Node 22 mit)
 - npm: `ctx7`, `skills`, `prettier`, `renovate`, `@usebruno/cli`, `@modelcontextprotocol/inspector`,
   `@earendil-works/pi-coding-agent`
 - Agent-User: git-`commit-msg`-Hook, Superpowers + dboeckli-Skills (`~/.agents/skills`, Pi erkennt
@@ -139,8 +139,8 @@ python local-test\local-test-kits.py --validate-only   # Kit + Pins + Drift
 python local-test\local-test-kits.py pi                # Sandbox-Szenario
 ```
 
-Der Validate-Lauf prüft den Pi-Pin (Descriptor == Dockerfile-ARG), das Basis-Template, die
-MCP-Guard-Unit-Tests und warnt bei neuerer npm-Version. **v3-Quellkits** validiert `--validate-only`
+Der Validate-Lauf prüft den Pi-Pin (Descriptor == Dockerfile-ARG), die gemeinsame
+Custom-Workload-Basis, die MCP-Guard-Unit-Tests und warnt bei neuerer npm-Version. **v3-Quellkits** validiert `--validate-only`
 über den Kit-Builder: `sbx kit validate ./pi-agent/` **ohne** `--offline` (Builder-Sandbox
 `sbx-kit-builder`, Docker/KVM nötig). Mit `--offline` meldet sbx `no kit builder configured`; in
 diesem Fall fällt der Lauf auf den Offline-Probe zurück und warnt (kein FAIL). Die

@@ -1,9 +1,12 @@
 # syntax=docker/dockerfile:1
 #
-# Pinned Pi Coding Agent image for the `pi-agent` v3 sandbox workload (issue #236).
-# Bakes the kit tooling on top of the plain `shell-docker` template, so Pi has full
-# tooling parity (JDK, Maven, Docker CLI, Compose, kubectl, Helm, Kafka CLI,
-# Node.js, npm CLIs, agent-user tooling) and no runtime installs.
+# Pinned Pi Coding Agent image for the `pi-agent` v3 sandbox workload (issue #236;
+# base migrated to the Docker-provided shell image in issue #254).
+# Bakes the kit tooling on top of Docker's official `shell-docker-image`, so Pi has full
+# tooling parity (Liberica JDK, Maven, kubectl, Helm, Kafka CLI, Node.js, npm CLIs,
+# agent-user tooling) and no runtime installs. The base already ships Node/npm, Python, Go,
+# uv and the Docker CLI + compose + buildx — those are NOT re-installed (versions are
+# verified below).
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./pi-agent -f ./pi-agent/pi-agent.yaml \
@@ -13,17 +16,12 @@
 #   docker buildx build ./pi-agent -f ./pi-agent/pi-agent.yaml \
 #     -t <IMAGE_PREFIX>/sbx-pi-agent:local --load
 #
-# ARG BASE_IMAGE uses the shell-docker pin (same as Mistral Vibe; Renovate-managed);
+# ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly) —
+# Node/npm, Python, Go, uv and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG PI_VERSION is the Pi pin (Renovate, npm @earendil-works/pi-coding-agent).
 
-ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
 FROM ${BASE_IMAGE}
-
-# The plain shell template does not set an npm global prefix.
-# Keep the shared kit convention so install-tooling-user.sh finds the CLIs at
-# /usr/local/share/npm-global/bin.
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=/usr/local/share/npm-global/bin:${PATH}
 
 ARG PI_VERSION=1.5.0
 
@@ -34,17 +32,20 @@ COPY files/home/.local/bin/install-apt-packages.sh /tmp/kit/install-apt-packages
 COPY files/home/.local/bin/install-tooling.sh /tmp/kit/install-tooling.sh
 COPY files/home/.local/bin/install-tooling-user.sh /tmp/kit/install-tooling-user.sh
 
-# Root-level tooling. install-tooling.sh is fail-open by design (for the runtime
-# `setup.install` in v2 kits); the explicit verification step below makes the
-# build fail loud.
-RUN chmod +x /tmp/kit/*.sh \
+# Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
+# buildx, Python, Go and uv — those are not re-installed. The JDK is installed as
+# Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
+# JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
+# even if the base ever provides its own /usr/local/java. install-tooling.sh is
+# fail-open by design; the explicit verification step below makes the build fail loud.
+RUN rm -rf /usr/local/java \
+ && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && bash /tmp/kit/install-tooling.sh all
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
 
-# npm-global CLIs (install-tooling.sh installed Node 26; npm prefix is /usr/local).
-# Same npm CLI set as the other kit images, plus Pi itself. Retry the install:
-# the npm registry occasionally serves metadata for a just-published dependency
-# before all its versions resolve (transient ETARGET), which fails a single run.
+# npm-global CLIs. Same npm CLI set as the other kit images, plus Pi itself. Retry the
+# install: the npm registry occasionally serves metadata for a just-published
+# dependency before all its versions resolve (transient ETARGET).
 RUN set -e; \
     for attempt in 1 2 3; do \
       if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
@@ -59,26 +60,30 @@ RUN set -e; \
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
 # Node must satisfy Pi's floor (>= 22.19) — install-tooling.sh installs the
-# shared Node pin (26.x), so this also proves tooling parity.
-RUN shfmt --version \
- && java -version \
- && mvn -v \
- && docker --version \
- && docker compose version \
- && kubectl version --client \
- && helm version --short \
- && helm4 version --short \
- && kafka-topics.sh --version \
- && node --version \
- && [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ] \
- && command -v ctx7 \
- && command -v skills \
- && command -v prettier \
- && command -v renovate \
- && bru --version \
- && command -v mcp-inspector \
- && pi --version \
- && pi --version | grep -F "${PI_VERSION}"
+# shared Node pin (26.x), so this also proves tooling parity. Base-provided tools
+# (Docker CLI, compose) and the Liberica JDK are verified here (Issue #254).
+RUN set -eux; \
+    node --version; \
+    [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
+    java -version; \
+    [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ]; \
+    /usr/local/java/bin/java -version; \
+    mvn -v; \
+    docker --version; \
+    docker compose version; \
+    kubectl version --client; \
+    helm version --short; \
+    helm4 version --short; \
+    kafka-topics.sh --version; \
+    shfmt --version; \
+    command -v ctx7; \
+    command -v skills; \
+    command -v prettier; \
+    command -v renovate; \
+    bru --version; \
+    command -v mcp-inspector; \
+    pi --version; \
+    pi --version | grep -F "${PI_VERSION}"
 
 # Global git hook must exist before install-tooling-user.sh sets core.hooksPath.
 COPY --chown=agent:agent files/home/.config/git/hooks/commit-msg /home/agent/.config/git/hooks/commit-msg
