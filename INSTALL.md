@@ -100,9 +100,7 @@ sbx mcp ls          # erwartet: idea   remote   ✓ ready
 sbx mcp inspect idea # erwartet: URL http://localhost:<port>/stream, Transport: streamable-http
 
 # 3. Sandbox mit --static-mcp idea erzeugen (oder nachträglich sbx mcp load idea --sandbox <name>)
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea
 ```
@@ -124,7 +122,7 @@ sbx run opencode `
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
-Für **OpenCode (Mixin-Kit), Claude Code, Mammouth Code, Mistral Vibe und Pi (Agent-Kits)** ist der Zugriff auf die
+Für **OpenCode v3, Claude Code v3, Mammouth Code, Mistral Vibe und Pi (Agent-Kits)** ist der Zugriff auf die
 über den Gateway gelieferten IntelliJ-Tools per **Whitelist** geregelt (Deny-by-Default, nur lesende Operationen
 erlaubt). Die Tools kommen durch den Gateway-Namespace: `mcp-gateway_<tool>` (OpenCode/Mammouth/Mistral Vibe) bzw. `mcp__mcp-gateway__<tool>` (Claude Code)
 bzw. `mcp__mcp_gateway__<tool>` (Pi). Die Config liegt je Agent-Location vor:
@@ -184,7 +182,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 ## 4. Kit-Quellen freigeben (Remote-Git-Kits)
 
 Einmalig nötig, bevor Kits direkt aus Codeberg (kanonisch; GitHub-Mirror ebenfalls erlaubt) bezogen werden
-(`--kit "git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git#dir=opencode-agent"`):
+(z. B. `sbx run docker.io/domboeckli/sbx-opencode:latest` — die v3-Workloads kommen aus der Registry):
 
 ```powershell
 sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"
@@ -201,7 +199,7 @@ sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\
 |---------|--------|--------|--------------|
 | GitHub | persönliches Token (`opencode-sandbox-kit-github-token`) | `sbx secret set github -t "<token>"` | `gh` CLI |
 | GitHub Packages Maven | klassisches PAT, Scope `read:packages` | `sbx secret set github-maven -t "<pat>"` | Maven-Builds mit GitHub-Packages-Dependency |
-| Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code (Home) |
+| Anthropic | Anthropic API-Key | `sbx secret set anthropic` | Claude Code v3 |
 | Mammouth | Mammouth API-Key | `sbx secret set mammouth` | Mammouth Code |
 | Mistral | Mistral API-Key (Built-in-Service) | `sbx secret set mistral` | Mistral Vibe, OpenCode + Mammouth (Mistral-hosted GLM `zai-glm-5-3`) |
 | Z.AI | Z.AI API-Key | `sbx secret set zai` | OpenCode, Mammouth, Mistral Vibe (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash) |
@@ -287,8 +285,7 @@ Um den lokal gefüllten Maven-Cache des Hosts zu nutzen (statt Neu-Download je S
 `~/.m2/repository` **read-only** mitmounten (keine Credentials, nur Artefakte):
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -405,8 +402,8 @@ sbx secret set zai
 > **Credential-Binding:** vorab `zai: apiKey.domains: [api.z.ai]` in `~/.config/sbx/credentials.yaml`
 > (bzw. `%APPDATA%\sbx\credentials.yaml`) bestätigen/hinterlegen.
 >
-> **Gilt auch für OpenCode und Mammouth:** dasselbe `zai`-Secret aktiviert den Provider `zai`
-> (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash) in den Configs `opencode-agent/files/home/.config/opencode/opencode.jsonc`
+> **Gilt auch für OpenCode v3, Claude v3 und Mammouth:** dasselbe `zai`-Secret aktiviert den Provider `zai`
+> (GLM-5.3-Flash/GLM-5.3/GLM-4.7-Flash) in den Configs `opencode-v3-agent/files/home/.config/opencode/opencode.jsonc`
 > und `mammouth-agent/files/home/.config/mammouth/opencode.jsonc` (`provider.zai`, `ZAI_API_KEY`) — Modelle dort
 > auswählbar und als Favoriten geseedet.
 
@@ -459,18 +456,16 @@ sbx exec opencode-sandbox bash -c 'npx ctx7 docs /vercel/next.js "app router"'
 
 OpenRouter bietet Zugriff auf viele Modelle (Anthropic, OpenAI, Google, DeepSeek, ...) über einen
 einheitlichen Endpoint mit Failover — in OpenCode als zusätzlicher Provider konfiguriert
-(`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
+(`opencode-v3-agent/files/home/.config/opencode/opencode.jsonc` → `provider.openrouter`, DeepSeek bleibt Default-Modell).
 Doku: https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration
 
-`openrouter` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.io/domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
-— das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (eine zweite Deklaration führt zu
-`credential for service "openrouter" defined in both "opencode" and ...`). Es reicht, den Key als
-Secret zu registrieren; das Template setzt `OPENROUTER_API_KEY` auf den Platzhalter `proxy-managed`
-und der Proxy injiziert den echten Key bei Requests an `openrouter.ai` — der Key liegt nie im
-Sandbox-Filesystem:
+`openrouter` ist als **Kit-deklariertes Credential** im v3-Deskriptor
+(`opencode-v3-agent/opencode-v3-agent.yaml` → `credential@1`, `proxyManaged: true`) hinterlegt.
+Es reicht, den Key als Secret zu registrieren; der Deskriptor setzt `OPENROUTER_API_KEY` auf den
+Platzhalter `proxy-managed` und der Proxy injiziert den echten Key bei Requests an `openrouter.ai` —
+der Key liegt nie im Sandbox-Filesystem:
 
 ```powershell
-# Built-in-Service (wie sbx secret set anthropic / github)
 sbx secret set openrouter
 ```
 
@@ -494,12 +489,12 @@ Modellwechsel in OpenCode via `/models` (z. B. `openrouter/~anthropic/claude-son
 #### Google AI Studio API-Key (optional)
 
 Google Gemini bietet einen generösen Free-Tier (Flash-Modelle) und einen günstigen Pro-Tier — in OpenCode als
-zusätzlicher Provider konfiguriert (`opencode-agent/files/home/.config/opencode/opencode.jsonc` → `provider.google`,
+zusätzlicher Provider konfiguriert (`opencode-v3-agent/files/home/.config/opencode/opencode.jsonc` → `provider.google`,
 DeepSeek bleibt Default-Modell). Doku: https://aistudio.google.com/apikey
 
-`google` ist ein **Built-in-Service des `opencode`-Templates** (Basis von `docker.io/domboeckli/sbx-opencode-tooling`, das auf `docker/sandbox-templates:opencode-docker` aufbaut)
-— das Kit deklariert ihn **bewusst nicht** in `opencode-agent/spec.yaml` (wie `openrouter`, gleiche Double-Deklarations-Problematik).
-Es reicht, den Key als Secret zu registrieren; das Template setzt den Platzhalter `proxy-managed` unter
+`google` ist als **Kit-deklariertes Credential** im v3-Deskriptor
+(`opencode-v3-agent/opencode-v3-agent.yaml` → `credential@1`, `proxyManaged: true`) hinterlegt (wie `openrouter`).
+Es reicht, den Key als Secret zu registrieren; der Deskriptor setzt den Platzhalter `proxy-managed` unter
 `GOOGLE_GENERATIVE_AI_API_KEY` (der Env-Name, den OpenCodes Google-Provider standardmäßig liest) und der
 Proxy injiziert den echten Key bei Requests an
 `generativelanguage.googleapis.com` — der Key liegt nie im Sandbox-Filesystem:
@@ -550,7 +545,7 @@ sbx secret set stackoverflow
 > transparent bei Outbound-Requests an `api.stackexchange.com`. Das ist gewollt, kein Fehler.
 > `echo $STACKOVERFLOW_API_KEY` zeigt `proxy-managed` (nie den echten Key).
 
-Die API-Doku liegt **offline im Kit**: `opencode-agent/files/home/stackexchange-api.md` → `~/stackexchange-api.md`
+Die API-Doku liegt **offline im Kit**: `opencode-v3-agent/files/home/stackexchange-api.md` → `~/stackexchange-api.md`
 (kompakte Endpoint-Tabelle, generische Parameter, API-Version `api_revision`); Detail-Doku mit allen
 Parametern je Methode in `~/stackexchange-api-detail.md` (nur bei Bedarf lesen). Das spart Kontext —
 die Website https://api.stackexchange.com/docs wird nur noch bei Unklarheiten abgerufen. Die
@@ -559,7 +554,7 @@ Der **Update-Check** läuft im Validate-Script (`local-test/local-test-kits.py -
 IntelliJ-Config `local-test-kits-validate-only`): er vergleicht die dokumentierte Version in den
 Doku-Dateien mit dem offiziellen Change-Log (`https://api.stackexchange.com/docs/change-log`) und
 **schlägt fehl**, wenn eine neuere Version existiert (Doku-Dateien + `api_revision` aktualisieren).
-Beide Kits führen identische Kopien (`opencode-agent/files/home/`, `mammouth-agent/files/home/`),
+Alle Kits führen identische Kopien (`opencode-v3-agent/files/home/`, `mammouth-agent/files/home/`, ...),
 weil jeder Agent sein eigenes
 `files/home/`-Mapping hat.
 
@@ -654,17 +649,10 @@ curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/us
 > für bereits laufende Sandboxes; die `--static-mcp`-Menge ist beim Erstellen fixiert).
 
 ```powershell
-# Template-Version gepinnt auf 0.x.0 (alle Kits, gleiche Version). OpenCode/Claude nutzen eigene
-# Tooling-Images (OpenCode v3/Claude v3 eigene Workload-Images aus dem Template) mit dem lokal gebauten Tag :local (vorher Run-Config build-and-publish-opencode-image /
-# build-and-publish-claude-image ausfuehren; der Release-Tag :<version>/:latest entsteht erst beim
-# Master-Publish); Mammouth/Mistral Vibe via spec-Image, kein --template noetig.
-
-# OpenCode (Home-Standard)
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
-    --skills=off `
-    --static-mcp idea,k8s,docker
+# Alle Kits sind v3-Workloads mit eigenen Images (Template + Tooling + Config), lokal gebauter
+# Tag :local (vorher Run-Config build-and-publish-<name>-v3-image bzw. build-and-publish-mammouth-image /
+# build-and-publish-mistral-vibe-image / build-and-publish-pi-image ausfuehren; der Release-Tag
+# :<version>/:latest entsteht erst beim Master-Publish).
 
 # OpenCode v3 (v3-Workload): lokaler Build-Tag :local
 # (vorher Run-Config build-and-publish-opencode-v3-image); Release-Image via Workflow build-and-publish-opencode-v3-image.yml
@@ -675,13 +663,6 @@ sbx run docker.io/domboeckli/sbx-opencode:local `
 # Claude Code v3 (v3-Workload): lokaler Build-Tag :local
 # (vorher Run-Config build-and-publish-claude-v3-image); Release-Image via Workflow build-and-publish-claude-v3-image.yml
 sbx run docker.io/domboeckli/sbx-claude:local `
-    --skills=off `
-    --static-mcp idea,k8s,docker
-
-# Claude Code (Home, gegen api.anthropic.com)
-sbx run claude `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-claude-tooling:local `
     --skills=off `
     --static-mcp idea,k8s,docker
 
@@ -707,23 +688,21 @@ sbx run ./pi-agent/ `
 Projekt einbinden + Kubernetes-/Host-Docker-Support:
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     "C:\development\projects\dein-projekt" `
     "C:\development\maven-repo:ro"
 ```
 
-Weitere Varianten (Remote-Git-Kit, `sbx kit add`, Ubuntu-WSL-Pfade): [`AGENTS.md`](AGENTS.md#commands) und
+Weitere Varianten (Remote-Git-Kit/Registry-Image, Ubuntu-WSL-Pfade): [`AGENTS.md`](AGENTS.md#commands) und
 [`README.md`](README.md#quickstart).
 
 ## 7. Verifikation
 
 ```powershell
 python local-test\local-test-kits.py --validate-only   # Kit-Validierung (alle Kits) + Drift-Checks
-python local-test\local-test-kits.py                   # Volltest (OpenCode/OpenCode v3/Claude/Claude v3/Mammouth/Mistral Vibe/Pi)
+python local-test\local-test-kits.py                   # Volltest (OpenCode v3/Claude v3/Mammouth/Mistral Vibe/Pi)
 ```
 
 IntelliJ Run-Configs (alternativ): `local-test-kits-validate-only`, `local-test-kits-full` (siehe `.run/`).

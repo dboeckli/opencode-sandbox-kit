@@ -67,14 +67,14 @@ sbx exec opencode-sandbox -- tail -f /var/log/sbx-kit-install.log
 ### Log-Format erweitern / ändern
 
 Die Timestamp-Logik steckt in `log_step()`, `log_phase_start()`, `log_phase_done()` und im
-Fail-open-Wrapper `run_step()` von `opencode-agent/files/home/.local/bin/install-tooling.sh`. Die
-Phasen-Commands referenzieren die Specs (`opencode-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`).
-**Alle Kit-Kopien identisch halten** (`opencode-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`) — der
+Fail-open-Wrapper `run_step()` von `opencode-v3-agent/files/home/.local/bin/install-tooling.sh`. Die
+Phasen-Commands laufen in den Publish-Dockerfiles der Kits.
+**Alle Kit-Kopien identisch halten** (`opencode-v3-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`, ...) — der
 Drift-Check schlägt sonst fehl:
 
 ```powershell
-cp opencode-agent\files\home\.local\bin\install-tooling.sh mammouth-agent\files\home\.local\bin\install-tooling.sh
-cp opencode-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh mammouth-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\files\home\.local\bin\install-tooling.sh
 ```
 
 ## Analyzing
@@ -82,7 +82,7 @@ cp opencode-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\fi
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
 Alle `--help`-Outputs der v0.50.1-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
-`opencode-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — Context7 deckt die sbx-Commands
+`opencode-v3-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — Context7 deckt die sbx-Commands
 inzwischen ab (`/docker/docs`: Manuels + generierte CLI-Referenz `data/sbx_cli/*.yaml`; `/docker/sbx-releases`:
 nur Installation/Releases), indexiert aber den Docs-`main`-Branch statt unseres Pins. Die exakten `--help`-Dumps
 der gepinnten Version liefert nur diese Offline-Referenz. Hintergrunddoku (Kits, Policy, Proxy):
@@ -99,10 +99,10 @@ vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schläg
 Läuft auf dem Host (Docker Desktop) — `sbx` ist **nicht** im Sandbox-Image installiert:
 
 ```powershell
-sbx kit validate ./opencode-agent             # Mixin-Kit (OpenCode/Claude Home)
+sbx kit validate ./opencode-v3-agent          # v3-Workload (via Kit-Builder)
 sbx kit validate ./mammouth-agent             # Mammouth Agent-Kit
 sbx kit validate ./mistral-vibe-agent         # Mistral Vibe Agent-Kit
-sbx kit inspect ./opencode-agent --json | jq '.warnings'   # erwartet: []
+sbx kit inspect ./opencode-v3-agent --json | jq '.warnings'   # erwartet: []
 ```
 
 > **Docker-Session nötig:** Ab sbx **v0.47.0** verlangt `sbx kit validate` eine Docker-Account-Session
@@ -122,10 +122,10 @@ python local-test\local-test-kits.py --validate-only
 `local-test-kits.py` prüft, dass die Install-Skripte in allen Kit-Kopien identisch sind
 (`check_install_scripts_sync`). Nur diese Kopien anfassen und synchron halten:
 
-- `opencode-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `mistral-vibe-agent/…`
-- `opencode-agent/files/home/.local/bin/install-tooling-user.sh` → dito
-- `opencode-agent/files/home/.local/bin/mcp-check.sh` → dito
-- `opencode-agent/files/home/.local/bin/install-apt-packages.sh` → dito
+- `opencode-v3-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `mistral-vibe-agent/…`, `claude-v3-agent/…`, `pi-agent/…`
+- `opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh` → dito
+- `opencode-v3-agent/files/home/.local/bin/mcp-check.sh` → dito
+- `opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh` → dito
 
 ### Startup-Checks
 
@@ -155,7 +155,7 @@ sbx policy log opencode-sandbox
 `local-test-kits.py --validate-only` vergleicht die in `~/stackexchange-api.md` dokumentierte
 API-Version mit dem offiziellen Change-Log — schlägt fehl, wenn eine neuere Version existiert
 (Doku-Dateien + `api_revision` aktualisieren). Alle Kit-Kopien
-(`opencode-agent/files/home/`, `mammouth-agent/files/home/`, `mistral-vibe-agent/files/home/`) identisch halten.
+(`opencode-v3-agent/files/home/`, `mammouth-agent/files/home/`, `mistral-vibe-agent/files/home/`, ...) identisch halten.
 
 ### IntelliJ: Probleme statisch analysieren
 
@@ -230,13 +230,13 @@ schreibt der **Dispatcher des Base-Templates** — Timestamps pro Zeile kann das
 | `002-startup-opencode-sandbox-kit/000-cmd.sh` | Kit `setup.startup` (agent) | `~/.claude/settings.json` mit `settings.kit.json` mergen (nach Template-Overwrite — Python-Merge, korrekte Array-Behandlung) |
 
 Das `002-…-sandbox-kit`-Verzeichnis wird vom Template aus dem `setup.startup`-Abschnitt der Kit-Spec
-generiert (`opencode-agent/spec.yaml`) bzw. `lifecycle@1`-Capabilities (Mammouth/Mistral Vibe/Pi); die
+generiert (`lifecycle@1`-Capabilities in den v3-Deskriptoren); die
 Hook-Skripte landen als `000-cmd.sh`, `001-cmd.sh`, … in Namensreihenfolge.
 
 ### Kit-Spec v2 / sbx-Version
 
 v2-Grammatik verlangt **sbx v0.38+** — ein v1-Feld in einer `"2"`-Spec ist ein harter Decode-Fehler.
-Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --json | jq '.warnings'` (erwartet `[]`).
+Diagnose: `sbx kit validate ./opencode-v3-agent` + `sbx kit inspect ./opencode-v3-agent --json | jq '.warnings'` (erwartet `[]`).
 
 ## Zusammenfassung der Kommandos
 
@@ -245,7 +245,7 @@ Diagnose: `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agen
 | Install-Log ansehen | `sbx exec <sandbox> cat /var/log/sbx-kit-install.log` |
 | Install-Log live folgen | `sbx exec <sandbox> -- tail -f /var/log/sbx-kit-install.log` |
 | Startup-Hooks prüfen | `sbx exec <sandbox> cat /var/log/sbx-kit-startup.log` |
-| Kit validieren | `sbx kit validate ./opencode-agent` + `sbx kit inspect ./opencode-agent --json \| jq '.warnings'` |
+| Kit validieren | `sbx kit validate ./opencode-v3-agent` + `sbx kit inspect ./opencode-v3-agent --json \| jq '.warnings'` |
 | Drift + SO-API-Check | `python local-test\local-test-kits.py --validate-only` |
 | Blocked requests | `sbx policy log <sandbox>` |
 | Startup-Checks (in Sandbox) | `bash ~/.config/sandbox-kit/run-checks.sh` |

@@ -92,9 +92,7 @@ sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check
 Sandbox mit dem MCP-Gateway erzeugen:
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea
 ```
@@ -149,17 +147,18 @@ Sandbox **nicht** mehr nötig (Issue #163).
 
 ## Caveats
 
-### Kit-Spec v2 und die sbx-Version
+### Kit-Spec v3 und die sbx-Version
 
-Alle Kits (`opencode-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`) sind auf die
-**v2-Kit-Grammatik** migriert:
-`schemaVersion: "2"`, `permissions.network.allow`, `credentials[].apiKey` (`apiKey.name` + `inject`),
-`setup.install` und `setup.startup`, Top-Level `environment.variables`, `agentInstructions` sowie flacher
-`sandbox.entrypoint`. Die Migration verlangt **sbx v0.38+** (strikte v2-Grammatik mit hartem
-Decode-Fehler für v1-Felder in einer `"2"`-Spec). Validierung:
+Alle Kits sind **v3-Workloads** (`schemaVersion: "3"`, `kind: workload`, Descriptor + Dockerfile) und
+brauchen **sbx v0.45+** (Repo-Pin `v0.50.1`). v3-Kits sind nicht mit v1/v2-Kits kombinierbar
+(`--template`/`--kit` entfallen). Validierung über den Kit-Builder:
 
 ```bash
-sbx kit validate ./opencode-agent
+sbx kit validate ./opencode-v3-agent
+```
+
+```bash
+sbx kit validate ./claude-v3-agent
 ```
 
 ```bash
@@ -171,29 +170,18 @@ sbx kit validate ./mistral-vibe-agent
 ```
 
 ```bash
-sbx kit inspect ./opencode-agent --json | jq '.warnings'
+sbx kit inspect ./opencode-v3-agent --json | jq '.warnings'
 ```
 
-Erwartet: `[]` bzw. `null`.
-
-Migration auf das offizielle Skript aus `docker/sbx-kits-contrib`:
-
-```bash
-git clone --depth 1 https://github.com/docker/sbx-kits-contrib.git
-go run scripts/migrate-v1-to-v2.go <kit-dir>
-```
-
-Offizielle v2-Referenz: https://github.com/docker/sbx-kits-contrib/blob/main/spec/SPEC-v2.md
-(enthalten im `sbx-kits-contrib`-Repo; nicht in Context7, `docker/docs` dokumentiert noch v1).
+Erwartet: `[]` bzw. `null`. (Ohne Kit-Builder-Sandbox meldet `sbx kit validate` bei v3-Quellkits
+`no kit builder configured` — der Buildx-Kit-Frontend-Build im Publish/e2e ist die Validierung.)
 
 ### Mammouth Code wird ausschließlich über das Agent-Kit betrieben
 
 Mammouth Code wird über das **dedizierte Agent-Kit** (`mammouth-agent/`,
 `sbx run --skills=off ./mammouth-agent/`) betrieben; das eigene Image `docker.io/domboeckli/sbx-mammouth`
 backt Mammouth beim **Image-Build** (gepinnt auf **v1.18.31.2** via `ARG MAMMOUTH_VERSION` +
-Symlink; Pin via Renovate). Das
-`opencode-agent/`-Kit (`sbx run --skills=off opencode/claude --kit ./opencode-agent/`) ist bewusst auf OpenCode und
-Claude Code fokussiert und enthält keine Mammouth-Konfiguration.
+Symlink; Pin via Renovate).
 
 ### Mistral Vibe wird ausschließlich über das Agent-Kit betrieben
 
@@ -205,7 +193,7 @@ Mistral Vibe wird über das **dedizierte Agent-Kit** (`mistral-vibe-agent/`,
 
 ### Pre-installed Tools im Base Image
 
-Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`; für OpenCode gebacken in `docker.io/domboeckli/sbx-opencode-tooling:0.x.0`) enthält eine eigene OpenCode CLI
+Das Sandbox Base-Image (`docker/sandbox-templates:opencode-docker-0.x.0`; für OpenCode v3 gebacken in `docker.io/domboeckli/sbx-opencode`) enthält eine eigene OpenCode CLI
 (aktuell `1.17.11` in der Sandbox). Das Kit überschreibt diese Version **nicht**. OpenCode ist inzwischen
 bei `1.18.11` – falls nach dem Kit-Build eine ältere Version angezeigt wird, liegt das an der
 vorinstallierten Version im Base-Image. Zum Aktualisieren in der Sandbox:

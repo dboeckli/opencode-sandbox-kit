@@ -6,7 +6,7 @@ name: Backup images to Docker Hub
 # (`docker/sandbox-templates:*`) + den Kit-Dockerfiles.
 #
 # Auswahl beim Start:
-#   - image: opencode | claude | mammouth | mistral-vibe | all
+#   - image: opencode-v3 | claude-v3 | mammouth | mistral-vibe | all
 #   - arch:  amd64 | arm64 | both   (both = native Runner + imagetools-Merge)
 #   - push:  true/false (Build-only)
 #   - tag:   Override; Default = Basis-Pin (TEMPLATE_VERSION_OPENCODE/_CLAUDE) bzw. VIBE_VERSION
@@ -27,8 +27,8 @@ on:
       image:
         description: "Kit / Image"
         type: choice
-        options: [opencode, claude, mammouth, mistral-vibe, all]
-        default: opencode
+        options: [opencode-v3, claude-v3, mammouth, mistral-vibe, all]
+        default: opencode-v3
       arch:
         description: "Architektur"
         type: choice
@@ -67,7 +67,7 @@ jobs:
           set -euo pipefail
 
           images="$IMAGE"
-          [ "$images" = "all" ] && images="opencode claude mammouth mistral-vibe"
+          [ "$images" = "all" ] && images="opencode-v3 claude-v3 mammouth mistral-vibe"
 
           both="false"; archs="$ARCH"
           if [ "$archs" = "both" ]; then archs="amd64 arm64"; both="true"; fi
@@ -75,14 +75,14 @@ jobs:
           build='[]'; merge='[]'
           for img in $images; do
             case "$img" in
-              opencode)
-                ctx=opencode-agent;     df=opencode-agent/opencode/Dockerfile
-                name=sbx-opencode-tooling
-                pin=$(grep -oE 'opencode-docker-[0-9]+(\.[0-9]+)+' "$df" | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
-              claude)
-                ctx=opencode-agent;     df=opencode-agent/claude/Dockerfile
-                name=sbx-claude-tooling
-                pin=$(grep -oE 'claude-code-docker-[0-9]+(\.[0-9]+)+' "$df" | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
+              opencode-v3)
+                ctx=opencode-v3-agent;  df=opencode-v3-agent/opencode-v3-agent.yaml
+                name=sbx-opencode
+                pin=$(grep -oE 'opencode-docker-[0-9]+(\.[0-9]+)+' opencode-v3-agent/opencode-v3-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
+              claude-v3)
+                ctx=claude-v3-agent;    df=claude-v3-agent/claude-v3-agent.yaml
+                name=sbx-claude
+                pin=$(grep -oE 'claude-code-docker-[0-9]+(\.[0-9]+)+' claude-v3-agent/claude-v3-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$');;
               mammouth)
                 ctx=mammouth-agent;     df=mammouth-agent/mammouth-agent.yaml
                 name=sbx-mammouth

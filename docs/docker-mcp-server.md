@@ -86,9 +86,7 @@ sbx mcp inspect docker
 ## 4. Sandbox mit Docker-MCP starten
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template docker.io/domboeckli/sbx-opencode-tooling:local `
+sbx run ./opencode-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `

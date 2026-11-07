@@ -10,8 +10,9 @@ nutzt nicht mehr `bypassPermissions`, damit `permissions.ask` (K8s-Schreib-/Exec
 
 ## Race Condition
 
-Für die meisten Kit-Felder reicht der `setup.startup`-Hook-Merge (Python, `settings.kit.json`
-in `~/.claude/settings.json` mergen, siehe `opencode-agent/spec.yaml:157-180`). **Hooks und `statusLine`
+Für die meisten Kit-Felder reicht der Settings-Merge (`settings.kit.json`
+in `~/.claude/settings.json` mergen; im claude-v3-Agent-Kit macht das der `claude-entrypoint`
+**vor** dem CLI-Start, im v2-Mixin war es ein `setup.startup`-Hook). **Hooks und `statusLine`
 reichen damit nicht**: Der Merge ist asynchron zum Session-Start, die Hooks würden erst ab der
 nächsten Session greifen bzw. teils gar nicht — unzuverlässig und nicht Template-sicher.
 
@@ -20,7 +21,7 @@ nächsten Session greifen bzw. teils gar nicht — unzuverlässig und nicht Temp
 Hooks + `statusLine` gehören in die **`managed-settings.json`** unter `/etc/claude-code/`:
 
 - Höchste Precedence — wird vom Template nicht überschrieben.
-- Wird bei `setup.install` geschrieben (`opencode-agent/spec.yaml:122-156`) und existiert bereits beim ersten
+- Wird beim Image-Build geschrieben (`write-managed-settings.sh` im claude-v3-Agent-Kit) und existiert bereits beim ersten
   Session-Start, bevor der Template-Overwrite stattfinden kann.
 
 ```json
@@ -58,8 +59,8 @@ Hooks + `statusLine` gehören in die **`managed-settings.json`** unter `/etc/cla
 
 ## Konsequenzen
 
-- `opencode-agent/files/home/.claude/settings.json` und `settings.kit.json` tragen bewusst **keine**
-  `hooks`/`statusLine` mehr — nur der Setup-Hook schreibt sie nach `/etc/claude-code/`.
+- `claude-v3-agent/files/home/.claude/settings.json` und `settings.kit.json` tragen bewusst **keine**
+  `hooks`/`statusLine` mehr — sie liegen ausschließlich in der `/etc/claude-code/managed-settings.json`.
 - **SessionStart-Hook**: `~/.config/sandbox-kit/run-checks-hook.sh` — führt die
   Sandbox-Checks aus und übergibt den Report als System-Message.
 - **PreToolUse-Guard**: `~/.config/sandbox-kit/intellij-run-config-guard.sh` — erlaubt

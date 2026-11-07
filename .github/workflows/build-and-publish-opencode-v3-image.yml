@@ -1,6 +1,6 @@
 name: Build and publish OpenCode v3 workload image
 # Builds and publishes `sbx-opencode` — the standalone OpenCode v3 workload
-# (issue #242). The v1/v2 `opencode-agent/` mixin stays untouched.
+# (issue #242).
 #
 # The v3 descriptor is the Dockerfile frontend; buildx is called with
 # `-f opencode-v3-agent/opencode-v3-agent.yaml`.

@@ -13,11 +13,12 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 - Die Cloudsmith-OSS-Quote ist **pro Namespace** (`dboeckli`) und war zuletzt
   ausgeschöpft → Downloads/Blobs liefern **HTTP 402** (Reset: siehe
   `GET /v1/quota/oss/history/dboeckli/`).
-- Betroffene Images (4):
-  - `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling`
-  - `docker.cloudsmith.io/dboeckli/sbx/sbx-claude-tooling`
+- Betroffene Images:
+  - `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode`
+  - `docker.cloudsmith.io/dboeckli/sbx/sbx-claude`
   - `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`
   - `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe`
+  - `docker.cloudsmith.io/dboeckli/sbx/sbx-pi-agent`
 - **Ein Copy (`skopeo copy`/`crane copy`/`docker pull`+`tag`+`push`) ist derzeit nicht
   möglich**, weil er die Cloudsmith-Blobs liest (402).
 - **Ausweg:** Die Images aus den lokal gecachten Docker-Hub-**Basis-Images** + Kit-Dockerfiles
@@ -50,37 +51,22 @@ docker login
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
 | opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=opencode-docker-0.11.0` |
-| claude | `opencode-agent` | `opencode-agent/claude/Dockerfile` | `BASE_IMAGE=claude-code-docker-0.10.0` |
 | claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=claude-code-docker-0.10.0` |
 | mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `MAMMOUTH_VERSION=1.18.31.2` |
 | mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.4` |
 
-## 1. opencode — kein Build nötig (lokal gecacht)
-
-```powershell
-docker tag docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local "$DH/sbx-opencode-tooling:$TAG_OPENCODE"
-docker push "$DH/sbx-opencode-tooling:$TAG_OPENCODE"
-```
-
-## 1b. opencode-v3 — bauen + pushen
+## 1. opencode-v3 — bauen + pushen
 
 ```powershell
 docker build -f opencode-v3-agent/opencode-v3-agent.yaml -t "$DH/sbx-opencode:$TAG_OPENCODE" opencode-v3-agent
 docker push  "$DH/sbx-opencode:$TAG_OPENCODE"
 ```
 
-## 1c. claude-v3 — bauen + pushen
+## 2. claude-v3 — bauen + pushen
 
 ```powershell
 docker build -f claude-v3-agent/claude-v3-agent.yaml -t "$DH/sbx-claude:$TAG_CLAUDE" claude-v3-agent
 docker push  "$DH/sbx-claude:$TAG_CLAUDE"
-```
-
-## 2. claude — bauen + pushen
-
-```powershell
-docker build -f opencode-agent/claude/Dockerfile -t "$DH/sbx-claude-tooling:$TAG_CLAUDE" opencode-agent
-docker push  "$DH/sbx-claude-tooling:$TAG_CLAUDE"
 ```
 
 ## 3. mammouth — bauen + pushen
@@ -100,10 +86,10 @@ docker push  "$DH/sbx-mistral-vibe:$TAG_VIBE"
 ## Verifikation
 
 ```powershell
-docker image inspect "$DH/sbx-claude-tooling:$TAG_CLAUDE" --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-mammouth:$TAG_OPENCODE"      --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-mistral-vibe:$TAG_VIBE"      --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-opencode-tooling:$TAG_OPENCODE" --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-opencode:$TAG_OPENCODE"     --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-claude:$TAG_CLAUDE"         --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-mammouth:$TAG_SHELL"        --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-mistral-vibe:$TAG_VIBE"     --format '{{.Id}} {{.Architecture}}'
 ```
 
 Oder über die Docker-Hub-API:
@@ -117,7 +103,7 @@ curl -s "https://hub.docker.com/v2/repositories/$DH/sbx-mistral-vibe/tags/?page_
 Für **amd64+arm64** statt manuellem amd64-Build:
 `.github/workflows/backup-images-dockerhub.yml` (manueller Trigger) mit Auswahl
 
-- `image`: `opencode` | `claude` | `mammouth` | `mistral-vibe` | `all`
+- `image`: `opencode-v3` | `claude-v3` | `mammouth` | `mistral-vibe` | `all`
 - `arch`: `amd64` | `arm64` | `both`
 - `push`: `true`/`false`
 - `tag`: Override (Default = Basis-Pin `TEMPLATE_VERSION_OPENCODE`/`_CLAUDE` bzw. `VIBE_VERSION`)
@@ -128,25 +114,21 @@ nötig. Credentials: repo-Variable `DOCKER_USERNAME` + repo-Secret `DOCKER_PAT`.
 
 ## Verwendung der Backup-Images (sbx run)
 
-Drop-in für das jeweilige Tooling-Template. `<tag>` = Backup-Tag der jeweiligen Familie
-(z. B. `0.11.0` für OpenCode/Mammouth, `0.10.0` für Claude/Mistral Vibe).
+Drop-in als Image-Ref. `<tag>` = Backup-Tag der jeweiligen Familie
+(z. B. `0.11.0` für OpenCode v3/Mammouth, `0.10.0` für Claude v3/Mistral Vibe).
 
-**OpenCode** (Mixin-Kit):
+**OpenCode v3** (v3-Workload):
 
 ```powershell
-sbx run opencode `
-    --kit ./opencode-agent/ `
-    --template domboeckli/sbx-opencode-tooling:<tag> `
+sbx run docker.io/domboeckli/sbx-opencode:<tag> `
     --skills=off `
     --static-mcp idea,k8s,docker
 ```
 
-**Claude Code** (Mixin-Kit):
+**Claude Code v3** (v3-Workload):
 
 ```powershell
-sbx run claude `
-    --kit ./opencode-agent/ `
-    --template domboeckli/sbx-claude-tooling:<tag> `
+sbx run docker.io/domboeckli/sbx-claude:<tag> `
     --skills=off `
     --static-mcp idea,k8s,docker
 ```
@@ -166,11 +148,7 @@ sbx run docker.io/domboeckli/sbx-mistral-vibe:<tag> `
     --skills=off `
     --static-mcp idea,k8s,docker
 ```
-
-> Bei den Agent-Kits steht das Image im v3-Descriptor (`mammouth-agent.yaml`,
-> `mistral-vibe-agent.yaml`). Immer `--skills=off` setzen; das
-> `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
-> Immer `--skills=off` setzen; das `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
+> Immer `--skills=off` setzen; `.`-Workspace/`:ro`-Mounts wie gewohnt ergänzen.
 
 ## Hinweise
 

@@ -7,8 +7,8 @@ the tag is derived from the opencode-docker base pin (TEMPLATE_VERSION_OPENCODE)
 the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
 moving `local` tag:
 
-    <IMAGE_PREFIX>/sbx-opencode-tooling:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
-    <IMAGE_PREFIX>/sbx-opencode-tooling:local
+    <IMAGE_PREFIX>/sbx-opencode:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <IMAGE_PREFIX>/sbx-opencode:local
 
 Run via the IntelliJ run config `build-and-publish-opencode-image` (or directly):
     python local-test/build-and-publish-opencode-image.py            # build + push + load locally (linux/amd64)
@@ -23,7 +23,7 @@ the docker/buildx output) is additionally written to
 `target/build-and-publish-opencode-image.log` (gitignored) for later inspection.
 
 `local-test-kits.py opencode` uses the moving `local` tag by default
-(`--template <IMAGE_PREFIX>/sbx-opencode-tooling:local`), so a local run after
+(the `sbx-opencode:local` workload image ref), so a local run after
 this script tests exactly this build. CI passes a feature tag via `OPENCODE_IMAGE_TAG`.
 
 Environment overrides: IMAGE_PREFIX, OPENCODE_V3_IMAGE_NAME, OPENCODE_V3_BUILDX_BUILDER.

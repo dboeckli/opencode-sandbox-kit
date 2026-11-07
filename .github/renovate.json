@@ -35,13 +35,13 @@
       "groupName": "mammouth"
     },
     {
-      "description": "opencode-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_OPENCODE in validate.yml/e2e.yml + local-test-kits.py sowie die Dockerfile-ARG-BASE_IMAGE-Pins von opencode-agent/opencode und mammouth-agent. Bewusst NICHT mit claude-code-docker gruppiert: Docker veroeffentlicht die Familien nicht mehr in Lockstep (Issue #202)",
+      "description": "opencode-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_OPENCODE in validate.yml/e2e.yml + local-test-kits.py sowie die Dockerfile-ARG-BASE_IMAGE-Pins von opencode-v3-agent und mammouth-agent. Bewusst NICHT mit claude-code-docker gruppiert: Docker veroeffentlicht die Familien nicht mehr in Lockstep (Issue #202)",
       "matchDatasources": ["docker"],
       "matchDepNames": ["sandbox-templates-opencode"],
       "groupName": "sandbox-templates-opencode"
     },
     {
-      "description": "claude-code-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_CLAUDE in validate.yml/e2e.yml + local-test-kits.py + Dockerfile ARG BASE_IMAGE (opencode-agent/claude + claude-v3-agent)",
+      "description": "claude-code-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_CLAUDE in validate.yml/e2e.yml + local-test-kits.py + Dockerfile ARG BASE_IMAGE (claude-v3-agent)",
       "matchDatasources": ["docker"],
       "matchDepNames": ["sandbox-templates-claude"],
       "groupName": "sandbox-templates-claude"
@@ -96,7 +96,7 @@
     {
       "customType": "regex",
       "description": "Liberica JDK version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["LIBERICA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+)\""],
       "depNameTemplate": "bell-sw/Liberica",
       "datasourceTemplate": "github-releases",
@@ -105,7 +105,7 @@
     {
       "customType": "regex",
       "description": "Apache Maven version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["MAVEN_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "org.apache.maven:apache-maven",
       "datasourceTemplate": "maven"
@@ -113,7 +113,7 @@
     {
       "customType": "regex",
       "description": "Docker CLI version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["DOCKER_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/cli",
       "datasourceTemplate": "github-releases",
@@ -122,7 +122,7 @@
     {
       "customType": "regex",
       "description": "Docker Compose plugin version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["COMPOSE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "docker/compose",
       "datasourceTemplate": "github-releases",
@@ -131,7 +131,7 @@
     {
       "customType": "regex",
       "description": "Helm 4 version (install-tooling.sh, alle Kit-Kopien) — einziges Binary `helm`, siehe packageRules",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["HELM_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "helm/helm",
       "datasourceTemplate": "github-releases",
@@ -140,7 +140,7 @@
     {
       "customType": "regex",
       "description": "Node.js version (install-tooling.sh, alle Kit-Kopien) — node-version-Datasource + node-Versioning ⇒ LTS-Awareness: Current-Majors (z. B. 26) werden erst ab ihrem LTS-Termin vorgeschlagen; npm CLIs (renovate >=43) benötigen Node ^24.11",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["NODE_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "node",
       "datasourceTemplate": "node-version"
@@ -148,7 +148,7 @@
     {
       "customType": "regex",
       "description": "shfmt version (install-tooling.sh, alle Kit-Kopien)",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["SHFMT_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "mvdan/sh",
       "datasourceTemplate": "github-releases",
@@ -157,7 +157,7 @@
     {
       "customType": "regex",
       "description": "Apache Kafka distribution version (install-tooling.sh, alle Kit-Kopien). Quelle = die distro-Verzeichnisliste auf dlcdn (custom Datasource `custom.apache-kafka`), NICHT Maven Central: die Maven-Artifacts (org.apache.kafka:kafka_2.13) werden publiziert, bevor der Binary-Tarball auf den Apache-Mirrors liegt — ein Maven-Bump auf eine noch nicht veröffentlichte Distro bricht den Image-Build.",
-      "managerFilePatterns": ["opencode-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["KAFKA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
       "depNameTemplate": "apache/kafka",
       "datasourceTemplate": "custom.apache-kafka",
@@ -299,28 +299,6 @@
     },
     {
       "customType": "regex",
-      "description": "opencode-docker-Pin (opencode-agent/opencode/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION_OPENCODE spiegeln)",
-      "managerFilePatterns": ["opencode-agent/opencode/Dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-opencode",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
-      "description": "claude-code-docker-Pin (opencode-agent/claude/Dockerfile ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-<v>; muss TEMPLATE_VERSION_CLAUDE spiegeln)",
-      "managerFilePatterns": ["opencode-agent/claude/Dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-claude",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^claude-code-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
       "description": "Kubernetes MCP server version (local-scripts/install-kubernetes-mcp-server.ps1 host install script, pinned -Version default; not part of the sandbox image)",
       "managerFilePatterns": ["local-scripts/install-kubernetes-mcp-server.ps1"],
       "matchStrings": ["\\[string\\]\\$Version = \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
@@ -339,7 +317,7 @@
     {
       "customType": "regex",
       "description": "Bruno CLI (@usebruno/cli) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #257 im spring-6-gateway-Repo",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile"],
+      "managerFilePatterns": ["mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile"],
       "matchStrings": ["@usebruno/cli@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@usebruno/cli",
       "datasourceTemplate": "npm"
@@ -347,7 +325,7 @@
     {
       "customType": "regex",
       "description": "MCP Inspector CLI (@modelcontextprotocol/inspector) Pin — setup.install in allen drei Kit-Specs + npm-global CLIs in den Tooling-Images (opencode/claude/mammouth Dockerfile); Issue #231",
-      "managerFilePatterns": ["opencode-agent/spec.yaml", "opencode-agent/opencode/Dockerfile", "opencode-agent/claude/Dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile"],
+      "managerFilePatterns": ["mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile", "opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile"],
       "matchStrings": ["@modelcontextprotocol/inspector@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@modelcontextprotocol/inspector",
       "datasourceTemplate": "npm"
