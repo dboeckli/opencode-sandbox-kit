@@ -1,7 +1,7 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.50.1**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.51.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
 (deckt Commands/Flags + Manuels ab, indexiert aber den Docs-`main`-Branch statt des Pins;
@@ -59,11 +59,15 @@ Other Commands:
   version     Show Docker Sandboxes version information
 
 Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
-  -h, --help    help for sbx
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+  -h, --help       help for sbx
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
+      --version    Show version information
 
 Use "sbx COMMAND --help" for more information about a command.
+
+For more help, see https://docs.docker.com/ai/sandboxes/
 ```
 
 ## sbx attach --help
@@ -92,8 +96,9 @@ Flags:
   -h, --help                 help for attach
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx cp --help
@@ -104,13 +109,20 @@ Description:
   ID (sbx_*) or name from "sbx --cloud ls". Cloud transfers go through the Docker
   Sandboxes Cloud file API instead of the local sandboxd.
 
+  Cloud copies transfer files, not symbolic links or empty directories. A symbolic
+  link passed as SRC is always followed on upload. Links inside an uploaded
+  directory are skipped unless --follow-link is set. On download, --follow-link
+  follows SRC only when it names a symbolic link to a file. Downloads of directories
+  skip symbolic links even with --follow-link.
+
   When copying a directory, the directory itself is placed at the destination.
   If the destination path does not exist it is created; if it already exists
   as a directory, the source is placed inside it.
 
-  When a local path is inside a sandbox workspace, sbx cp refuses symbolic
-  links that lead out of the workspace, even with --follow-link, including
-  when the workspace is reached through a symbolic link or junction to it.
+  For local paths inside workspace directories or other host directories mounted
+  into the sandbox, sbx cp refuses symbolic links that escape those directories,
+  even with --follow-link, including when a directory is reached through a
+  symbolic link, junction or substituted drive.
 
 Usage:
   sbx cp SRC DST [flags]
@@ -130,12 +142,13 @@ Examples:
   sbx --cloud cp sbx_abc:/workspace/out.log ./
 
 Flags:
-  -L, --follow-link   Follow symbolic links in the source path
+  -L, --follow-link   Follow symbolic links in the source path (cloud: does not follow links inside downloaded directories)
   -h, --help          help for cp
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx create --help
@@ -147,7 +160,7 @@ Description:
   reference. Sandbox kit references may be local directories, ZIP files, git
   repositories, or OCI references. Relative local references must be explicit
   paths such as ./my-kit or ../my-kit.zip. A kit.shortcuts.<agent> setting
-  (sbx settings set kit.shortcuts.claude sbx/claude:latest) makes that agent name
+  (sbx settings set kit.shortcuts.claude myorg/claude:latest) makes that agent name
   resolve to the configured kit reference instead for local sandboxes; cloud
   sandboxes ignore it.
 
@@ -187,6 +200,9 @@ Examples:
   # Create with additional read-only workspaces
   sbx create claude . /path/to/docs:ro
 
+  # Mount an additional workspace at a chosen path inside the sandbox
+  sbx create claude . /path/to/data:/workspace/data
+
   # Create without a workspace bind mount
   sbx create claude
 
@@ -209,14 +225,7 @@ Examples:
   sbx --cloud create -t TEMPLATE
 
 Available Commands:
-  claude         Create a sandbox for claude
-  codex          Create a sandbox for codex
-  cursor         Create a sandbox for cursor
-  devin          Create a sandbox for devin
-  docker-agent   Create a sandbox for docker-agent
   gemini         Create a sandbox for gemini
-  opencode       Create a sandbox for opencode
-  shell          Create a sandbox for shell
 
 Flags:
       --allow-network strings       Network pattern to allow for cloud sandbox egress (cloud only; can be specified multiple times)
@@ -230,7 +239,7 @@ Flags:
       --kit strings                 (Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple times
       --kit-arg stringArray         (Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be repeated)
       --kit-args-file stringArray   (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
-  -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
+  -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: host memory. Warns above 75% of host memory
       --mount stringArray           Bind a host directory to a kit host-mount@1 path (can be repeated): HOST:SANDBOX_PATH. Can only be used when creating a new sandbox.
       --name string                 Name for the sandbox (defaults to <agent>-<workdir>; at least two characters, starting with a letter or number, containing only letters, numbers, hyphens and periods (periods are rejected with --cloud); 'default' is reserved)
       --no-progress                 Suppress progress output
@@ -240,14 +249,15 @@ Flags:
   -p, --publish stringArray         Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]
       --pull string                 Image pull policy (always|missing|never; default: never for saved local snapshots, missing for v3 kit compositions, otherwise always)
       --skills string               Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in read-only, directory stays writable), or readwrite (store mounted over it, writes are shared). Default: readonly, or the configured skills.defaultMode setting.
-      --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. The set is chosen once at creation time. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
+      --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. Use none for a static set with no servers, local sandboxes only. The set is chosen once at creation time. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
   -t, --template string             Container image to use for the sandbox (default: agent-specific image)
       --ttl duration                Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only; default: server-side)
   -v, --volume stringArray          (Experimental) Attach an existing persistent volume, NAME:MOUNTPATH (cloud only, experimental; repeatable)
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx create COMMAND --help" for more information about a command.
 ```
@@ -294,8 +304,9 @@ Flags:
   -w, --workdir string         Working directory inside the container
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx ls --help
@@ -325,8 +336,9 @@ Flags:
   -q, --quiet           Only display sandbox names
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx move --help
@@ -411,11 +423,12 @@ Flags:
       --name string         Name for the destination sandbox (default: 'moved-' + the source name; a cloud destination always adds a short unique suffix, a local one only when that name is already taken)
       --on-timeout string   What happens to the destination cloud sandbox when its TTL lapses: 'stop' stops it in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Not every sandbox supports 'stop', and an explicit request the server refuses fails the move after the source has been stopped and uploaded, so the sandbox is restored but the transfer is spent. With 'restart' a supplied --ttl must be at least 1h. Default: stop when the sandbox supports it, else the server default (delete). Only with --to cloud
       --to string           Destination of the move: 'local' (cloud to local) or 'cloud' (local to cloud)
-      --ttl duration        Time-to-live for the destination cloud sandbox (15s to 24h, e.g. 30m, 2h; only with --to cloud; default: server-side)
+      --ttl duration        Time-to-live for the destination cloud sandbox (15s to 24h, e.g. 30m, 2h; units are case-insensitive; only with --to cloud; default: server-side)
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx ports --help
@@ -480,12 +493,13 @@ Flags:
       --format string           Output format: table, json or yaml
   -h, --help                    help for ports
       --json                    Output in JSON format
-      --publish stringArray     Publish a port (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL] (local) or SANDBOX_PORT[/tcp] (cloud)
+  -p, --publish stringArray     Publish a port (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL] (local) or SANDBOX_PORT[/tcp] (cloud)
       --unpublish stringArray   Unpublish a port (can be repeated): [HOST_IP:]HOST_PORT:SANDBOX_PORT[/PROTOCOL] (local) or SANDBOX_PORT[/tcp] (cloud)
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx prune --help
@@ -537,8 +551,9 @@ Flags:
       --json                 Output in JSON format
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx rm --help
@@ -587,8 +602,9 @@ Flags:
       --json            Output in JSON format
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx run --help
@@ -601,16 +617,18 @@ Description:
   directories, ZIP files, git repositories, or OCI references. Relative local
   references must be explicit paths such as ./my-kit or ../my-kit.zip; bare values
   retain their agent or sandbox-name meaning. A kit.shortcuts.<agent> setting (sbx
-  settings set kit.shortcuts.claude sbx/claude:latest) makes that agent name
+  settings set kit.shortcuts.claude myorg/claude:latest) makes that agent name
   resolve to the configured kit reference instead for local sandboxes; cloud
   sandboxes ignore it. To re-attach to an existing sandbox
   by name, use --name; the agent positional is optional when the named sandbox
   already exists and is read from its spec.
 
   Pass agent arguments after the "--" separator. Additional workspaces can be
-  provided as extra arguments. Append ":ro" to mount them read-only; a read-only
-  argument may name a single file, which holds that one path out of reach inside a
-  workspace the sandbox can otherwise write.
+  provided as extra arguments of the form PATH[:TARGET][:ro]. TARGET is an
+  absolute path inside the sandbox; omit it to mount PATH at the same path as on
+  the host. Append ":ro" to mount a workspace read-only; a read-only argument may
+  name a single file, which holds that one path out of reach inside a workspace
+  the sandbox can otherwise write.
 
   Omit the path to mount the current directory. Pass a path to mount a different
   workspace.
@@ -640,6 +658,10 @@ Description:
   --detach is refused, so scripts pass --detach (e.g.
   sbx --cloud run -d claude && sbx --cloud exec ...).
 
+  With --cloud, --env and --env-file only apply when creating a sandbox.
+  Existing sandboxes keep their original environment; drop these flags to
+  reattach, or pass --new to create a sandbox with the new values.
+
   Sizing comes from --cpus and --memory and must land on a billable shape; without
   them a cloud sandbox gets 2 CPUs and 4 GiB. A template named with -t / --template
   must already exist in the cloud registry; the CLI does not upload it. See
@@ -663,6 +685,9 @@ Examples:
 
   # Create and run with additional workspaces (read-only)
   sbx run claude . /path/to/docs:ro
+
+  # Mount an additional workspace at a chosen path inside the sandbox
+  sbx run claude . /path/to/data:/workspace/data
 
   # Re-attach to an existing sandbox by name (agent read from its spec)
   sbx run --name existing-sandbox
@@ -699,10 +724,11 @@ Flags:
       --kit strings                 (Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple times
       --kit-arg stringArray         (Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be repeated)
       --kit-args-file stringArray   (Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides
-  -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: max(75% of host memory, 512 MiB)
+  -m, --memory string               Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32 GiB. Maximum: host memory. Warns above 75% of host memory
       --mount stringArray           Bind a host directory to a kit host-mount@1 path (can be repeated): HOST:SANDBOX_PATH. Can only be used when creating a new sandbox.
       --name string                 Name for the sandbox (default: <agent>-<workdir>)
       --new                         Always create a new cloud sandbox instead of prompting to reuse an existing one (cloud only)
+      --no-progress                 Suppress progress output
       --on-timeout string           What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Omit the flag and the server stops the sandbox when it can be started again later, and deletes it otherwise. With 'restart' a supplied --ttl must be at least 1h (cloud only).
       --platform string             Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform. With a sandbox kit, the kit's template is built for this platform and cached apart from other platforms; omitting it keeps the server's choice.
       --profile string              Governance profile to assign to the sandbox
@@ -710,14 +736,16 @@ Flags:
       --pull string                 Image pull policy (always|missing|never; default: never for saved local snapshots, missing for v3 kit compositions, otherwise always)
       --rm                          Remove the sandbox after the agent session exits
       --skills string               Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in read-only, directory stays writable), or readwrite (store mounted over it, writes are shared). Default: readonly, or the configured skills.defaultMode setting. Can only be used when creating a new sandbox.
-      --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. The set is chosen once at creation time and cannot be changed when re-attaching to an existing sandbox. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
+      --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. Use none for a static set with no servers, local sandboxes only. The set is chosen once at creation time and cannot be changed when re-attaching to an existing sandbox. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
   -t, --template string             Container image to use for the sandbox (default: agent-specific image)
       --ttl duration                Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only; default: server-side)
   -v, --volume stringArray          (Experimental) Attach an existing persistent volume, NAME:MOUNTPATH (cloud only, experimental; repeatable)
+  -w, --workdir string              Directory to start the agent session in: absolute, or relative to the sandbox workspace. Applies to this session only, so it works on a re-attach too
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx stop --help
@@ -756,8 +784,9 @@ Flags:
       --json            Output in JSON format
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx ttl --help
@@ -794,8 +823,9 @@ Flags:
       --json            Output in JSON format
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx daemon --help
@@ -817,8 +847,9 @@ Flags:
   -h, --help   help for daemon
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx daemon COMMAND --help" for more information about a command.
 ```
@@ -847,8 +878,9 @@ Flags:
       --upload          Upload diagnostics to Docker support
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx mcp --help
@@ -872,8 +904,9 @@ Flags:
   -h, --help   help for mcp
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx mcp COMMAND --help" for more information about a command.
 ```
@@ -907,8 +940,9 @@ Flags:
   -h, --help   help for policy
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx policy COMMAND --help" for more information about a command.
 ```
@@ -923,7 +957,7 @@ Description:
   - Clear image cache
   - Clear all internal registries
   - Delete all sandbox state
-  - Remove all policies
+  - Remove all local policy rules
   - Remove the managed SSH configuration
   - Clear the Gordon assistant's sessions and history
   - Delete all stored secrets
@@ -955,8 +989,9 @@ Flags:
       --preserve-secrets   Keep stored secrets
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx secret --help
@@ -993,8 +1028,9 @@ Flags:
   -h, --help   help for secret
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx secret COMMAND --help" for more information about a command.
 ```
@@ -1024,8 +1060,9 @@ Flags:
   -h, --help   help for settings
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx settings COMMAND --help" for more information about a command.
 ```
@@ -1060,8 +1097,9 @@ Flags:
   -h, --help   help for template
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx template COMMAND --help" for more information about a command.
 ```
@@ -1081,8 +1119,9 @@ Flags:
   -h, --help   help for tui
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx volume --help
@@ -1110,8 +1149,9 @@ Flags:
   -h, --help   help for volume
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx volume COMMAND --help" for more information about a command.
 ```
@@ -1168,8 +1208,9 @@ Flags:
   -h, --help   help for env
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx env COMMAND --help" for more information about a command.
 ```
@@ -1204,8 +1245,9 @@ Flags:
   -h, --help   help for kit
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx kit COMMAND --help" for more information about a command.
 ```
@@ -1233,8 +1275,9 @@ Flags:
   -h, --help   help for setup
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx setup COMMAND --help" for more information about a command.
 ```
@@ -1270,8 +1313,9 @@ Flags:
   -h, --help   help for skills
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx skills COMMAND --help" for more information about a command.
 ```
@@ -1295,8 +1339,9 @@ Flags:
   -h, --help   help for completion
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 
 Use "sbx completion COMMAND --help" for more information about a command.
 ```
@@ -1314,8 +1359,9 @@ Flags:
   -h, --help   help for help
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx login --help
@@ -1338,8 +1384,9 @@ Flags:
       --username string   Docker username for non-interactive login
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx logout --help
@@ -1361,8 +1408,9 @@ Flags:
   -h, --help    help for logout
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
 ## sbx version --help
@@ -1385,6 +1433,7 @@ Flags:
       --json            Output in JSON format
 
 Global Flags:
-      --cloud   Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
-  -D, --debug   Enable debug logging
+      --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
+  -D, --debug      Enable debug logging
+      --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```

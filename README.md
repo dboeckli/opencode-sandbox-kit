@@ -556,7 +556,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 [Pi](https://pi.dev) (`@earendil-works/pi-coding-agent`) ist ein minimaler, erweiterbarer Coding-Agent.
 Das Kit liegt unter `pi-agent/` und ist bewusst als **Kit-Spec v3** umgesetzt (`# syntax=docker/sandbox-kit:3`,
 `schemaVersion: "3"`, `kind: workload`) — Descriptor `pi-agent/pi-agent.yaml` + `pi-agent/pi-agent.dockerfile`.
-v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.50.1). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
+v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.51.0). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
 (`--template` entfällt); das Pi-Kit ist ein eigenständiger Workload.
 
 - **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker/sandbox-templates:shell-docker-0.x.0`
@@ -662,7 +662,7 @@ Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IM
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.50.1`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
+  (`SBX_VERSION`, aktuell `v0.51.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
   übersprungen, da keine Secrets), validiert die v3-Kits über den Kit-Builder (`sbx kit validate` ohne
   `--offline`; `./opencode-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`,
@@ -809,7 +809,7 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp-gateway-security.md)
 - [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
-- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.50.1 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.51.0 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
 - [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
