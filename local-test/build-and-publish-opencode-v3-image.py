@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build and push the OpenCode tooling image locally (docker buildx).
 
-Local counterpart of .github/workflows/build-and-publish-opencode-image.yml. The image is the
-official `opencode-docker` sandbox template with the kit tooling baked in (issue #137);
-the tag is derived from the opencode-docker base pin (TEMPLATE_VERSION_OPENCODE). The tag scheme mirrors
-the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
+Local counterpart of .github/workflows/build-and-publish-opencode-image.yml. The image is built
+on Docker's `shell-docker-image` base with the kit tooling baked in and OpenCode pinned via npm
+(`opencode-ai`, 1.x — issue #254); the tag base is the OpenCode CLI pin (OPENCODE_VERSION). The tag
+scheme mirrors the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
 moving `local` tag:
 
     <IMAGE_PREFIX>/sbx-opencode:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
@@ -95,11 +95,11 @@ def run(cmd):
 def base_version():
     with open(os.path.join(CONTEXT, "opencode-v3-agent.dockerfile"), encoding="utf-8") as f:
         m = re.search(
-            r"ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-([0-9]+(?:\.[0-9]+)+)",
+            r"ARG OPENCODE_VERSION=([0-9]+(?:\.[0-9]+)+)",
             f.read(),
         )
     if not m:
-        sys.exit("opencode-docker BASE_IMAGE pin not found in opencode-v3-agent/opencode-v3-agent.dockerfile")
+        sys.exit("OPENCODE_VERSION pin not found in opencode-v3-agent/opencode-v3-agent.dockerfile")
     return m.group(1)
 
 

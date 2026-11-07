@@ -35,10 +35,11 @@
       "groupName": "mammouth"
     },
     {
-      "description": "opencode-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_OPENCODE in validate.yml/e2e.yml + local-test-kits.py sowie die Dockerfile-ARG-BASE_IMAGE-Pins von opencode-v3-agent und mammouth-agent. Bewusst NICHT mit claude-code-docker gruppiert: Docker veroeffentlicht die Familien nicht mehr in Lockstep (Issue #202)",
-      "matchDatasources": ["docker"],
-      "matchDepNames": ["sandbox-templates-opencode"],
-      "groupName": "sandbox-templates-opencode"
+      "description": "OpenCode-v3 CLI-Pin (npm opencode-ai, bewusst 1.x-Linie) in EINEM PR gruppieren: Dockerfile ARG OPENCODE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis docker.io/sbx/shell-docker-image:latest ist nightly und wird nicht versioniert (Issue #254).",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["opencode-ai"],
+      "groupName": "opencode-cli",
+      "allowedVersions": "/^1\\./"
     },
     {
       "description": "claude-code-docker-Pin in EINEM PR gruppieren: TEMPLATE_VERSION_CLAUDE in validate.yml/e2e.yml + local-test-kits.py + Dockerfile ARG BASE_IMAGE (claude-v3-agent)",
@@ -175,14 +176,11 @@
     },
     {
       "customType": "regex",
-      "description": "opencode-docker-Pin (.github/workflows/e2e.yml, validate.yml: TEMPLATE_VERSION_OPENCODE) — getrennt von claude-code-docker (Issue #202)",
+      "description": "OpenCode-v3 CLI-Pin (.github/workflows/validate.yml + e2e.yml, .forgejo/: OPENCODE_VERSION; npm opencode-ai, 1.x — Issue #254)",
       "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
-      "matchStrings": ["TEMPLATE_VERSION_OPENCODE: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-opencode",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "matchStrings": ["OPENCODE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "opencode-ai",
+      "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
@@ -197,7 +195,7 @@
     },
     {
       "customType": "regex",
-      "description": "claude-code-docker-Pin (.github/workflows/e2e.yml, validate.yml: TEMPLATE_VERSION_CLAUDE) — getrennt von opencode-docker (Issue #202)",
+      "description": "claude-code-docker-Pin (.github/workflows/e2e.yml, validate.yml: TEMPLATE_VERSION_CLAUDE) — getrennt vom OpenCode-CLI-Pin (OPENCODE_VERSION, Issue #202/#254)",
       "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
       "matchStrings": ["TEMPLATE_VERSION_CLAUDE: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "sandbox-templates-claude",
@@ -208,14 +206,11 @@
     },
     {
       "customType": "regex",
-      "description": "opencode-docker-Pin (local-test-kits.py TEMPLATE_VERSION_OPENCODE-Konstante; muss mit validate.yml/e2e.yml + den Dockerfile-Base-Pins uebereinstimmen)",
+      "description": "OpenCode-v3 CLI-Pin (local-test-kits.py OPENCODE_VERSION-Konstante; npm opencode-ai, 1.x — Issue #254)",
       "managerFilePatterns": ["local-test/local-test-kits.py"],
-      "matchStrings": ["TEMPLATE_VERSION_OPENCODE = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
-      "depNameTemplate": "sandbox-templates-opencode",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "matchStrings": ["OPENCODE_VERSION = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "opencode-ai",
+      "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
@@ -241,14 +236,11 @@
     },
     {
       "customType": "regex",
-      "description": "opencode-docker-Pin (opencode-v3-agent/opencode-v3-agent.dockerfile ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-<v>; muss TEMPLATE_VERSION_OPENCODE spiegeln)",
+      "description": "OpenCode-v3 CLI-Pin (opencode-v3-agent/opencode-v3-agent.dockerfile ARG OPENCODE_VERSION; npm opencode-ai, 1.x — Issue #254)",
       "managerFilePatterns": ["opencode-v3-agent/opencode-v3-agent.dockerfile"],
-      "matchStrings": ["ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "sandbox-templates-opencode",
-      "packageNameTemplate": "docker/sandbox-templates",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^opencode-docker-(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "matchStrings": ["ARG OPENCODE_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "opencode-ai",
+      "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",

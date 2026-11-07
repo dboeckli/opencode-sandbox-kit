@@ -110,11 +110,12 @@ jobs:
       matrix:
         scenario: [opencode-v3, claude-v3, mammouth, mistral-vibe, pi]
     env:
-      # Sandbox-Template-Versionen (gepinnt, je Familie getrennt — Issue #202) — muessen mit
-      # validate.yml identisch sein; Basis der v3-Workload-Images (opencode-v3-agent/ bzw.
-      # claude-v3-agent/ Dockerfile ARG BASE_IMAGE, Mammouth/Vibe/Pi shell-docker). Updates via Renovate
-      # (customManager docker/sandbox-templates).
-      TEMPLATE_VERSION_OPENCODE: 0.11.0
+      # Pins (muessen mit validate.yml identisch sein, Renovate-managed):
+      #  - OPENCODE_VERSION: OpenCode-v3-CLI (npm opencode-ai, 1.x); Basis ist die Docker-verwaltete
+      #    `docker.io/sbx/shell-docker-image:latest` (Issue #254).
+      #  - TEMPLATE_VERSION_CLAUDE: claude-code-docker-Basis (Claude v3).
+      #  - Mammouth/Vibe/Pi nutzen shell-docker (eigene Pins in den Dockerfiles).
+      OPENCODE_VERSION: 1.19.5
       TEMPLATE_VERSION_CLAUDE: 0.10.0
     steps:
       - uses: actions/checkout@v7

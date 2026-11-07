@@ -1,7 +1,20 @@
 # syntax=docker/dockerfile:1
 #
-# Standalone OpenCode v3 workload (issue #242). This image bakes the kit tooling + the OpenCode config,
-# plugins and guards on top of the versioned `opencode-docker` template.
+# Standalone OpenCode v3 workload (issue #242; base migrated to the Docker-provided
+# shell images in issue #254). Bakes the kit tooling + OpenCode config, plugins and
+# guards on top of Docker's official `shell-docker-image`.
+#
+# Base: `docker.io/sbx/shell-docker-image:latest` — the Docker-recommended base for
+# custom workloads that need Docker Engine (docs: customize/author/base-images.md).
+# Docker rebuilds it nightly (Ubuntu 26.04 + Node/npm, Python, Go, headless JDK, uv,
+# Docker CLI + compose + buildx). We do NOT re-install Node/Docker CLI/compose/buildx
+# (avoids double installation; versions are verified below). The JDK is installed as
+# Liberica via install-tooling.sh so all kits share the same JDK vendor/build.
+#
+# OpenCode itself is NOT part of the base: it is installed from npm and pinned to the
+# 1.x line via ARG OPENCODE_VERSION (Renovate-managed). The official installer
+# (opencode.ai/v2/install) only serves 1.x up to 1.18.18; the npm package
+# `opencode-ai` carries the last 1.x (1.19.5).
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./opencode-v3-agent -f ./opencode-v3-agent/opencode-v3-agent.yaml \
@@ -11,11 +24,14 @@
 #   docker buildx build ./opencode-v3-agent -f ./opencode-v3-agent/opencode-v3-agent.yaml \
 #     -t <IMAGE_PREFIX>/sbx-opencode:local --load
 #
-# ARG BASE_IMAGE must mirror TEMPLATE_VERSION_OPENCODE (Renovate-managed).
-# The OpenCode CLI itself comes from the template (currently 1.19.5).
+# ARG OPENCODE_VERSION must mirror OPENCODE_VERSION in local-test-kits.py and
+# validate.yml/e2e.yml (Renovate-managed; 1.x line).
 
-ARG BASE_IMAGE=docker/sandbox-templates:opencode-docker-0.11.0
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
 FROM ${BASE_IMAGE}
+
+# OpenCode CLI pin (npm `opencode-ai`, 1.x). Available to the RUN steps below.
+ARG OPENCODE_VERSION=1.19.5
 
 # The base image runs as the unprivileged `agent` user; installs need root.
 USER root
@@ -35,19 +51,26 @@ COPY files/home/.local/bin/seed-opencode-model-favorites.py /usr/local/bin/seed-
 COPY files/home/.local/bin/opencode-entrypoint.sh /usr/local/bin/opencode-entrypoint
 RUN chmod +x /usr/local/bin/seed-opencode-model-favorites.py /usr/local/bin/opencode-entrypoint
 
-# Root-level tooling. install-tooling.sh is fail-open by design; the explicit
-# verification step below makes the build fail loud.
-RUN chmod +x /tmp/kit/*.sh \
+# Root-level tooling. The base already ships Node/npm, Docker CLI + compose + buildx
+# — those are not re-installed (no double installation). The JDK is installed as
+# Liberica (install-tooling.sh jdk) so all kits share the same JDK vendor/build at
+# JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
+# even if the base (or a base update) ever provides its own /usr/local/java.
+# `node` keeps its idempotency guard: it installs the pinned Node only when the base
+# Node is < 24 (npm CLIs such as renovate require >= 24).
+RUN rm -rf /usr/local/java \
+ && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && bash /tmp/kit/install-tooling.sh all
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
 
-# npm-global CLIs (NPM_CONFIG_PREFIX inherited from the opencode base).
+# npm-global CLIs (NPM_CONFIG_PREFIX inherited from the shell base).
+# OpenCode is pinned to the 1.x line via `opencode-ai@${OPENCODE_VERSION}`.
 # Retry: the npm registry occasionally serves metadata for a just-published
 # dependency before all its versions resolve (transient ETARGET).
 RUN set -e; \
     for attempt in 1 2 3; do \
       if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
-           @modelcontextprotocol/inspector@2.13.0; then \
+           @modelcontextprotocol/inspector@2.13.0 "opencode-ai@${OPENCODE_VERSION}"; then \
         break; \
       fi; \
       if [ "${attempt}" = "3" ]; then exit 1; fi; \
@@ -55,25 +78,31 @@ RUN set -e; \
       sleep 10; \
     done
 
-# Fail-closed verification: abort the build if any tool is missing or wrong.
-RUN shfmt --version \
- && java -version \
- && mvn -v \
- && docker --version \
- && docker compose version \
- && kubectl version --client \
- && helm version --short \
- && helm4 version --short \
- && kafka-topics.sh --version \
- && node --version \
- && [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ] \
- && command -v ctx7 \
- && command -v skills \
- && command -v prettier \
- && command -v renovate \
- && bru --version \
- && command -v mcp-inspector \
- && opencode --version
+# Fail-closed verification. Base-provided tools (Docker CLI, compose) and the
+# install-tooling tools (Node, Liberica JDK, Maven, …) are verified here; the build
+# fails if a version no longer fits the kit's requirements (issue #254).
+RUN set -eux; \
+    node --version; \
+    [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
+    java -version; \
+    [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ]; \
+    /usr/local/java/bin/java -version; \
+    mvn -v; \
+    docker --version; \
+    docker compose version; \
+    kubectl version --client; \
+    helm version --short; \
+    helm4 version --short; \
+    kafka-topics.sh --version; \
+    shfmt --version; \
+    command -v ctx7; \
+    command -v skills; \
+    command -v prettier; \
+    command -v renovate; \
+    bru --version; \
+    command -v mcp-inspector; \
+    opencode --version; \
+    opencode --version | grep -Fq "${OPENCODE_VERSION}"
 
 # Agent-user tooling (skills, Claude statusline, repsy docs) as uid 1000 / `agent`.
 RUN runuser -u agent -- env HOME=/home/agent bash /tmp/kit/install-tooling-user.sh

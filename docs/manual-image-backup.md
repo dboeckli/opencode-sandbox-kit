@@ -28,18 +28,18 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 
 - Windows-Host mit **Docker Desktop** und Docker-Hub-Login (`docker login`).
 - Kit-Repo unter `C:\development\projects\opencode-sandbox-kit`.
-- Basis-Images auf Docker Hub (lokal gecacht oder werden gezogen), Pins je Familie
-  getrennt (Issue #202): `docker/sandbox-templates:opencode-docker-0.11.0`,
-  `:claude-code-docker-0.10.0`, `:shell-docker-0.10.0`.
+- Basis-Images auf Docker Hub (lokal gecacht oder werden gezogen): OpenCode v3 nutzt die
+  Docker-verwaltete `docker.io/sbx/shell-docker-image:latest` (Issue #254), Claude `docker/sandbox-templates:claude-code-docker-0.10.0`,
+  Mammouth/Vibe/Pi `docker/sandbox-templates:shell-docker-0.10.0`.
 - Docker-Hub-Namespace = `DOCKER_USER` (z. B. `domboeckli`).
 
 ## Variablen (PowerShell)
 
 ```powershell
 $DH  = "domboeckli"       # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
-# Backup-Tag = Basis-Pin je Template-Familie (getrennt, Issue #202):
-$TAG_OPENCODE = "0.11.0"  # TEMPLATE_VERSION_OPENCODE (opencode-docker)
-$TAG_SHELL = "0.10.0"     # TEMPLATE_VERSION (shell-docker) — Mistral Vibe/Mammouth
+# Backup-Tag = OpenCode-CLI-Pin bzw. Basis-Pin je Template-Familie:
+$TAG_OPENCODE = "1.19.5"  # OPENCODE_VERSION (OpenCode-CLI, npm opencode-ai, 1.x)
+$TAG_SHELL = "0.10.0"     # shell-docker — Mistral Vibe/Mammouth
 $TAG_CLAUDE   = "0.10.0"  # TEMPLATE_VERSION_CLAUDE (claude-code-docker)
 $TAG_VIBE     = "0.10.0"  # shell-docker (Mistral Vibe)
 cd C:\development\projects\opencode-sandbox-kit
@@ -50,7 +50,7 @@ docker login
 
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
-| opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=opencode-docker-0.11.0` |
+| opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `OPENCODE_VERSION=1.19.5` |
 | claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=claude-code-docker-0.10.0` |
 | mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `MAMMOUTH_VERSION=1.18.31.2` |
 | mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.4` |
@@ -106,7 +106,7 @@ Für **amd64+arm64** statt manuellem amd64-Build:
 - `image`: `opencode-v3` | `claude-v3` | `mammouth` | `mistral-vibe` | `all`
 - `arch`: `amd64` | `arm64` | `both`
 - `push`: `true`/`false`
-- `tag`: Override (Default = Basis-Pin `TEMPLATE_VERSION_OPENCODE`/`_CLAUDE` bzw. `VIBE_VERSION`)
+- `tag`: Override (Default = `OPENCODE_VERSION` / `TEMPLATE_VERSION_CLAUDE` bzw. `VIBE_VERSION`)
 
 Baut auf **nativen** Runnern (`ubuntu-latest` / `ubuntu-24.04-arm`) und mergt bei `both`
 per `docker buildx imagetools create` zu `<namespace>/sbx-<name>:<tag>`. Kein Cloudsmith
@@ -115,7 +115,7 @@ nötig. Credentials: repo-Variable `DOCKER_USERNAME` + repo-Secret `DOCKER_PAT`.
 ## Verwendung der Backup-Images (sbx run)
 
 Drop-in als Image-Ref. `<tag>` = Backup-Tag der jeweiligen Familie
-(z. B. `0.11.0` für OpenCode v3/Mammouth, `0.10.0` für Claude v3/Mistral Vibe).
+(z. B. `1.19.5` für OpenCode v3, `0.10.0` für Claude v3/Mistral Vibe/Mammouth).
 
 **OpenCode v3** (v3-Workload):
 
