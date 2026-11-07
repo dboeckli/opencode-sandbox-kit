@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Build and push the Claude Code v3 workload image locally (docker buildx).
+
+Local counterpart of .github/workflows/build-and-publish-claude-v3-image.yml. The image is the
+official `claude-code-docker` sandbox template with the kit tooling baked in (issue #137);
+the tag is derived from the claude-code-docker base pin (TEMPLATE_VERSION_CLAUDE). The tag scheme mirrors
+the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
+moving `local` tag:
+
+    <IMAGE_PREFIX>/sbx-claude:<basever>-<branch-slug>.<YYYYMMDDHHMMSS>
+    <IMAGE_PREFIX>/sbx-claude:local
+
+Run via the IntelliJ run config `build-and-publish-claude-v3-image` (or directly):
+    python local-test/build-and-publish-claude-v3-image.py            # build + push + load locally (linux/amd64)
+    python local-test/build-and-publish-claude-v3-image.py --build-only
+    python local-test/build-and-publish-claude-v3-image.py --no-load   # push only, don't load into local Docker
+    python local-test/build-and-publish-claude-v3-image.py --platform linux/arm64   # arm64 host only
+
+Besides pushing the image to the registry, it loads the image into the
+local Docker daemon (a second, cache-backed build, since the docker exporter
+cannot carry attestations). The full console output (including
+the docker/buildx output) is additionally written to
+`target/build-and-publish-claude-v3-image.log` (gitignored) for later inspection.
+
+`local-test-kits.py claude-v3` uses the moving `local` tag by default
+(the `sbx-claude:local` workload image ref), so a local run after
+this script tests exactly this build. CI passes a feature tag via `CLAUDE_V3_IMAGE_TAG`.
+
+Environment overrides: IMAGE_PREFIX, CLAUDE_V3_IMAGE_NAME, CLAUDE_V3_BUILDX_BUILDER.
+Requires `docker` (Docker Desktop) with a logged-in Docker Hub session.
+"""
+
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from shutil import which
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONTEXT = os.path.join(ROOT, "claude-v3-agent")
+DESCRIPTOR = os.path.join(CONTEXT, "claude-v3-agent.yaml")
+TARGET = os.path.join(ROOT, "target")
+LOG_FILE = os.path.join(TARGET, "build-and-publish-claude-v3-image.log")
+NAME = os.environ.get("CLAUDE_V3_IMAGE_NAME", "sbx-claude")
+# Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
+IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
+IMAGE = f"{IMAGE_PREFIX}/{NAME}"
+BUILDER = os.environ.get("CLAUDE_V3_BUILDX_BUILDER", "sbx-claude-v3")
+
+
+class Tee:
+    """Write to several streams at once (original stdout/stderr + the log file)."""
+
+    def __init__(self, *streams):
+        self._streams = streams
+
+    def write(self, data):
+        for stream in self._streams:
+            if stream is None or getattr(stream, "closed", False):
+                continue
+            stream.write(data)
+            stream.flush()
+
+    def flush(self):
+        for stream in self._streams:
+            if stream is None or getattr(stream, "closed", False):
+                continue
+            stream.flush()
+
+    def isatty(self):
+        return False
+
+
+def run(cmd):
+    """Run a command, streaming its combined output through Python (so the Tee captures it)."""
+    print("+ " + " ".join(cmd), flush=True)
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
+    )
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        print(line, end="")
+    proc.wait()
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd)
+
+
+def base_version():
+    with open(os.path.join(CONTEXT, "claude-v3-agent.dockerfile"), encoding="utf-8") as f:
+        m = re.search(
+            r"ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-([0-9]+(?:\.[0-9]+)+)",
+            f.read(),
+        )
+    if not m:
+        sys.exit("claude-code-docker BASE_IMAGE pin not found in claude-v3-agent/claude-v3-agent.dockerfile")
+    return m.group(1)
+
+
+def branch_slug():
+    try:
+        ref = subprocess.check_output(
+            ["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"],
+            text=True, encoding="utf-8", errors="replace",
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        ref = "local"
+    slug = re.sub(r"[^a-z0-9_.-]+", "-", ref.lower()).strip("-")
+    return slug or "local"
+
+
+def ensure_builder():
+    """Ensure a docker-container buildx builder (needed for multi-platform push)."""
+    listing = subprocess.run(
+        ["docker", "buildx", "ls", "--format", "{{.Name}}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout
+    if re.search(rf"^{re.escape(BUILDER)}\s*$", listing, re.M):
+        run(["docker", "buildx", "use", BUILDER])
+    else:
+        run(["docker", "buildx", "create", "--name", BUILDER,
+             "--driver", "docker-container", "--use", "--bootstrap"])
+
+
+def main():
+    os.makedirs(TARGET, exist_ok=True)
+    log_file = open(LOG_FILE, "w", encoding="utf-8", errors="replace", buffering=1)
+    orig_stdout, orig_stderr = sys.stdout, sys.stderr
+    sys.stdout = Tee(orig_stdout, log_file)
+    sys.stderr = Tee(orig_stderr, log_file)
+    try:
+        print(f"Log: {LOG_FILE}")
+
+        if which("docker") is None:
+            sys.exit("docker not found on PATH")
+        argv = sys.argv[1:]
+        build_only = "--build-only" in argv
+        no_load = "--no-load" in argv
+        platform = "linux/amd64"
+        if "--platform" in argv:
+            platform = argv[argv.index("--platform") + 1]
+        version = base_version()
+        slug = branch_slug()
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        version_tag = f"{IMAGE}:{version}-{slug}.{ts}"
+        local_tag = f"{IMAGE}:local"
+        print(f"Version tag: {version_tag}")
+        print(f"Moving tag:  {local_tag}")
+        print(f"Platform:    {platform}")
+        print(f"Descriptor:  {DESCRIPTOR}")
+        ensure_builder()
+
+        # Registry build. Explicit -f: the Dockerfile
+        # lives in a subfolder (IntelliJ-friendly canonical name), context is the kit dir.
+        push_cmd = ["docker", "buildx", "build",
+                    "-f", DESCRIPTOR,
+                    "--platform", platform,
+                    "-t", version_tag,
+                    "-t", local_tag]
+        if not build_only:
+            push_cmd += ["--push"]
+        push_cmd += [CONTEXT]
+        run(push_cmd)
+        print("Built (not pushed)." if build_only else "Pushed to registry.")
+
+        # Also load into the local Docker daemon (cache-backed second build).
+        if not build_only and not no_load:
+            load_cmd = ["docker", "buildx", "build",
+                        "-f", DESCRIPTOR,
+                        "--platform", platform,
+                        "--load",
+                        "-t", version_tag,
+                        "-t", local_tag,
+                        CONTEXT]
+            run(load_cmd)
+            print(f"Loaded locally: {version_tag} + {local_tag}")
+
+        print(f"Done. Log written to: {LOG_FILE}")
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # Restore the real streams before closing the log file: otherwise the
+        # interpreter's final sys.stdout flush would hit the closed log file
+        # ("Exception ignored while flushing sys.stdout").
+        sys.stdout, sys.stderr = orig_stdout, orig_stderr
+        log_file.close()
+
+
+if __name__ == "__main__":
+    main()

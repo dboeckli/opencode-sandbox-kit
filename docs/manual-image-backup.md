@@ -49,7 +49,9 @@ docker login
 
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
+| opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=opencode-docker-0.11.0` |
 | claude | `opencode-agent` | `opencode-agent/claude/Dockerfile` | `BASE_IMAGE=claude-code-docker-0.10.0` |
+| claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=claude-code-docker-0.10.0` |
 | mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `MAMMOUTH_VERSION=1.18.31.2` |
 | mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.4` |
 
@@ -58,6 +60,20 @@ docker login
 ```powershell
 docker tag docker.cloudsmith.io/dboeckli/sbx/sbx-opencode-tooling:local "$DH/sbx-opencode-tooling:$TAG_OPENCODE"
 docker push "$DH/sbx-opencode-tooling:$TAG_OPENCODE"
+```
+
+## 1b. opencode-v3 — bauen + pushen
+
+```powershell
+docker build -f opencode-v3-agent/opencode-v3-agent.yaml -t "$DH/sbx-opencode:$TAG_OPENCODE" opencode-v3-agent
+docker push  "$DH/sbx-opencode:$TAG_OPENCODE"
+```
+
+## 1c. claude-v3 — bauen + pushen
+
+```powershell
+docker build -f claude-v3-agent/claude-v3-agent.yaml -t "$DH/sbx-claude:$TAG_CLAUDE" claude-v3-agent
+docker push  "$DH/sbx-claude:$TAG_CLAUDE"
 ```
 
 ## 2. claude — bauen + pushen

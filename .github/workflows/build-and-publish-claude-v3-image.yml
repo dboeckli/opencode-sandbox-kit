@@ -1,0 +1,184 @@
+name: Build and publish Claude Code v3 workload image
+# Builds and publishes `sbx-claude` — the standalone Claude Code v3 workload
+# (issue #242). The v1/v2 `opencode-agent/` mixin stays untouched.
+#
+# The v3 descriptor is the Dockerfile frontend; buildx is called with
+# `-f claude-v3-agent/claude-v3-agent.yaml`.
+#
+# This workflow is both directly dispatchable and a reusable workflow
+# (`workflow_call`), so e2e.yml can build the image before its scenario matrix.
+#
+# Tags:
+#   - master / main: `<TEMPLATE_VERSION_CLAUDE>` plus `latest`
+#   - feature/PR:    `<TEMPLATE_VERSION_CLAUDE>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
+#
+# Multi-arch via NATIVE runners; the arch is part of the repository NAME
+# (`<name>-amd64` / `<name>-arm64`), merged with `docker buildx imagetools create`.
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push the image to the configured registry (off = build only)"
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      push:
+        description: "Push the image to the configured registry (off = build only)"
+        type: boolean
+        default: true
+    outputs:
+      version_tag:
+        description: "Image version tag that was built/pushed"
+        value: ${{ jobs.prepare.outputs.version_tag }}
+
+permissions:
+  contents: read
+
+# Zentraler Registry-Umschalter: Repo-Variable IMAGE_PREFIX (voller Prefix ohne Image-Namen).
+#   Cloudsmith (Default): docker.cloudsmith.io/dboeckli/sbx
+#   Docker Hub:           docker.io/<dockerhub-user>   (z. B. docker.io/domboeckli)
+# Umschalten = Repo-Variable IMAGE_PREFIX setzen; zurueck = Variable loeschen (Default).
+env:
+  IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || 'docker.io/domboeckli' }}
+  IMAGE_NAME: sbx-claude
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version_tag: ${{ steps.tags.outputs.version_tag }}
+      extra_tag: ${{ steps.tags.outputs.extra_tag }}
+      image_prefix: ${{ steps.tags.outputs.image_prefix }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compute image tags from the base template pin and the branch
+        id: tags
+        run: |
+          set -euo pipefail
+          echo "image_prefix=${IMAGE_PREFIX}" >> "$GITHUB_OUTPUT"
+          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-[0-9]+(\.[0-9]+)+' \
+            claude-v3-agent/claude-v3-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
+          if [ -z "$pin" ]; then
+            echo "claude-code-docker base pin not found in claude-v3-agent/claude-v3-agent.dockerfile" >&2
+            exit 1
+          fi
+          wf_pin=$(grep -oE 'TEMPLATE_VERSION_CLAUDE: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
+            | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
+          if [ "$wf_pin" != "$pin" ]; then
+            echo "Dockerfile base pin ($pin) != TEMPLATE_VERSION_CLAUDE in validate.yml ($wf_pin)" >&2
+            exit 1
+          fi
+          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$ref" = "master" ] || [ "$ref" = "main" ]; then
+            version_tag="$pin"
+            extra_tag="latest"
+          else
+            slug=$(printf '%s' "$ref" | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's#[^a-z0-9_.-]+#-#g; s#^-+##; s#-+$##')
+            ts=$(date -u +%Y%m%d%H%M%S)
+            version_tag="${pin}-${slug}.${ts}"
+            extra_tag="$slug"
+          fi
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "extra_tag=$extra_tag" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$version_tag extra_tag=$extra_tag"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub (base image pulls / Docker Hub push)
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Log in to Cloudsmith (image push)
+        if: ${{ inputs.push && startsWith(env.IMAGE_PREFIX, 'docker.cloudsmith.io') }}
+        uses: docker/login-action@v4
+        with:
+          registry: docker.cloudsmith.io
+          username: ${{ vars.CLOUDSMITH_USERNAME }}
+          password: ${{ secrets.CLOUDSMITH_API_KEY }}
+
+      - name: Build and push ${{ matrix.arch }}
+        uses: docker/build-push-action@v7
+        with:
+          context: claude-v3-agent
+          file: ./claude-v3-agent/claude-v3-agent.yaml
+          platforms: ${{ matrix.platform }}
+          # Keine provenance/SBOM-Attestations: die erzeugen pro Build zusaetzliche
+          # untagged Attestation-Manifeste (Package-Bloat); fuer die Tooling-Images nicht noetig.
+          provenance: false
+          sbom: false
+          push: ${{ inputs.push }}
+          tags: ${{ needs.prepare.outputs.image_prefix }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.prepare.outputs.version_tag }}
+
+  merge:
+    needs: [prepare, build]
+    if: ${{ inputs.push }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub (Docker Hub push)
+        if: ${{ !startsWith(env.IMAGE_PREFIX, 'docker.cloudsmith.io') }}
+        uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Log in to Cloudsmith (image push)
+        if: ${{ startsWith(env.IMAGE_PREFIX, 'docker.cloudsmith.io') }}
+        uses: docker/login-action@v4
+        with:
+          registry: docker.cloudsmith.io
+          username: ${{ vars.CLOUDSMITH_USERNAME }}
+          password: ${{ secrets.CLOUDSMITH_API_KEY }}
+
+      - name: Create multi-arch manifest list
+        env:
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+          EXTRA_TAG: ${{ needs.prepare.outputs.extra_tag }}
+        run: |
+          set -euo pipefail
+          image="${{ needs.prepare.outputs.image_prefix }}/${{ env.IMAGE_NAME }}"
+          # Cloudsmith ist eventual-consistent: direkt nach dem per-arch Push sind Config-/Layer-
+          # Blobs kurzzeitig nicht abrufbar -> Retry mit Backoff.
+          retry() {
+            local n=0 max=6
+            until "$@"; do
+              n=$((n + 1))
+              if [ "$n" -ge "$max" ]; then return 1; fi
+              echo "retry $n/$max: $*" >&2
+              sleep $((n * 5))
+            done
+          }
+          retry docker buildx imagetools create \
+            -t "${image}:${VERSION_TAG}" \
+            "${image}-amd64:${VERSION_TAG}" \
+            "${image}-arm64:${VERSION_TAG}"
+          if [ -n "${EXTRA_TAG}" ]; then
+            retry docker buildx imagetools create \
+              -t "${image}:${EXTRA_TAG}" \
+              "${image}:${VERSION_TAG}"
+          fi
+          retry docker buildx imagetools inspect "${image}:${VERSION_TAG}"

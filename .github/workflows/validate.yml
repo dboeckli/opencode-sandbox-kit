@@ -114,6 +114,32 @@ jobs:
         if: env.CAN_VALIDATE == 'true'
         run: sbx kit validate ./opencode-agent/
 
+      - name: Validate OpenCode v3 agent kit (v3 workload)
+        if: env.CAN_VALIDATE == 'true'
+        # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Validierung via buildx-Kit-Frontend/e2e.
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./opencode-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+
+      - name: Validate Claude Code v3 agent kit (v3 workload)
+        if: env.CAN_VALIDATE == 'true'
+        # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Validierung via buildx-Kit-Frontend/e2e.
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./claude-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+
       - name: Validate Mammouth agent kit (v3 workload)
         if: env.CAN_VALIDATE == 'true'
         # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
@@ -123,7 +149,7 @@ jobs:
           out=$(sbx kit validate --offline ./mammouth-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
@@ -136,7 +162,7 @@ jobs:
           out=$(sbx kit validate --offline ./mistral-vibe-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
@@ -150,13 +176,13 @@ jobs:
           out=$(sbx kit validate --offline ./pi-agent/ 2>&1) && { echo "$out"; exit 0; }
           echo "$out"
           case "$out" in
-            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit builder (validated via buildx frontend)"; exit 0 ;;
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
             *) exit 1 ;;
           esac
 
       - name: Sign out of Docker Hub via sbx
         if: always() && env.CAN_VALIDATE == 'true'
-        run: sbx logout --yes || true
+        run: sbx logout --force || true
 
       - name: Check install-script copies are in sync
         # setup.install konsumiert die Skripte aus files/home/.local/bin/ (alle Kits);
