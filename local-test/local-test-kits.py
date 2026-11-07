@@ -779,6 +779,45 @@ def _template_latest_per_family():
     return latest
 
 
+def check_workflow_job_references():
+    """e2e.yml-Integritaet: jede `needs`-Referenz muss als Job im selben Workflow existieren und
+    jedes lokale `uses: ./.github/workflows/*.yml` muss eine vorhandene Datei sein. Haette den
+    CI-Parse-Fehler 'needs: build-and-publish-claude-v3-image ohne Job-Definition' gefunden
+    (regex-basiert, keine PyYAML-Abhaengigkeit)."""
+    path = os.path.join(ROOT, ".github/workflows/e2e.yml")
+    if not os.path.isfile(path):
+        fail("workflow references (e2e.yml fehlt)")
+        return
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    # Top-Level-Job-Keys: zwei Leerzeichen Einzug unter `jobs:` (Superset inkl. on/env-Keys ist ok —
+    # entscheidend ist, dass jede needs-Referenz im Set vorkommt).
+    jobs = set(re.findall(r"(?m)^  ([a-zA-Z0-9_-]+):\s*(?:#.*)?$", text))
+    missing_jobs = set()
+    for m in re.finditer(r"(?m)^\s*needs:\s*\[([^\]]+)\]", text):
+        for ref in m.group(1).split(","):
+            ref = ref.strip()
+            if ref and ref not in jobs:
+                missing_jobs.add(ref)
+    for m in re.finditer(r"(?m)^\s*needs:\s*([a-zA-Z0-9_-]+)\s*$", text):
+        if m.group(1) not in jobs:
+            missing_jobs.add(m.group(1))
+    missing_files = []
+    for m in re.finditer(r"(?m)^\s*uses:\s*(\./\.github/[^\s]+)\s*$", text):
+        rel = m.group(1)[2:]
+        if not os.path.isfile(os.path.join(ROOT, rel)):
+            missing_files.append(rel)
+    if missing_jobs or missing_files:
+        detail = []
+        if missing_jobs:
+            detail.append("needs ohne Job-Definition: " + ", ".join(sorted(missing_jobs)))
+        if missing_files:
+            detail.append("uses ohne Workflow-Datei: " + ", ".join(sorted(missing_files)))
+        fail("workflow references (e2e.yml)", "; ".join(detail))
+        return
+    pass_(f"workflow references (e2e.yml: needs/uses aufgeloest, {len(jobs)} Top-Level-Keys)")
+
+
 def check_template_update():
     """Prueft die getrennten Template-Pins je Docker-Hub-Familie (Issue #202):
     TEMPLATE_VERSION_OPENCODE (opencode-docker: OpenCode v3 + Mammouth) und
@@ -1418,6 +1457,9 @@ def main():
         print()
         info("==> Install-Skripte (Single Source of Truth) sync check")
         check_install_scripts_sync()
+        print()
+        info("==> e2e.yml Workflow-Referenzen (needs/uses)")
+        check_workflow_job_references()
         print()
         info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
         check_template_update()
