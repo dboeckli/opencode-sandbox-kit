@@ -66,7 +66,14 @@ RUN rm -rf /usr/local/java \
       echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
       grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
       exit 1; \
-    fi
+    fi \
+ && java -version \
+ && [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ] \
+ && javac -version \
+ && [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ] \
+ && jar --version \
+ && [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ] \
+ && shfmt --version
 
 # npm-global CLIs (NPM_CONFIG_PREFIX inherited from the shell base).
 # OpenCode is pinned to the 1.x line via `opencode-ai@${OPENCODE_VERSION}`.

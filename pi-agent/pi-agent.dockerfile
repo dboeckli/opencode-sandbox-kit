@@ -46,7 +46,14 @@ RUN rm -rf /usr/local/java \
       echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
       grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
       exit 1; \
-    fi
+    fi \
+ && java -version \
+ && [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ] \
+ && javac -version \
+ && [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ] \
+ && jar --version \
+ && [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ] \
+ && shfmt --version
 
 # npm-global CLIs. Same npm CLI set as the other kit images, plus Pi itself. Retry the
 # install: the npm registry occasionally serves metadata for a just-published
