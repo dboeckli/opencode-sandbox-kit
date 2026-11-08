@@ -8,7 +8,7 @@
     Creates %USERPROFILE%\.config\kubernetes-mcp-server\config.toml: stdio transport
     (no port - sbx starts the process via `sbx mcp add --command`), full scope
     (read-write, default toolsets core/config/helm), host kubeconfig. The sandbox-side Kit
-    permission whitelist still limits the agent to read-only tools (docs/kubernetes-mcp-server.md).
+    permission whitelist still limits the agent to read-only tools (docs/mcp/kubernetes-mcp-server.md).
     Secrets are deliberately NOT denied (required by the helm toolset, because
     Helm stores releases as Secrets) - the generic tools can therefore read
     Kubernetes Secrets in full. DEVELOPMENT / NON-PRODUCTION ONLY.
@@ -107,7 +107,7 @@ log_level = 2
 # Secret kind breaks helm_list/helm_get/helm_status.
 # NEVER point this configuration at a production cluster. For production,
 # re-enable the block below (accepting that the helm toolset will no longer work).
-# See docs/kubernetes-mcp-server.md -> "Sicherheit".
+# See docs/mcp/kubernetes-mcp-server.md -> "Sicherheit".
 # ============================================================================
 # [[denied_resources]]
 # group = ""

@@ -97,10 +97,10 @@ erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im Intell
 sowie die K8s-Read-only-Tools des host-seitigen Kubernetes-MCP-Servers (`events_list`, `namespaces_list`,
 `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`, `pods_list_in_namespace`, `pods_log`,
 `pods_top`, `projects_list`, `resources_get`, `resources_list`, `helm_list` — jeweils mit `mcp-gateway_`-Präfix;
-siehe `docs/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt). Alle übrigen K8s-Tools
+siehe `docs/mcp/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt). Alle übrigen K8s-Tools
 (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`, `resources_delete`, `resources_scale`,
 `helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) sind **`ask`** — On-the-fly-Freigabe pro Aufruf.
-Für den lokalen Docker-MCP-Server (`docs/docker-mcp-server.md`, Issue #165) sind die Read-only-Tools
+Für den lokalen Docker-MCP-Server (`docs/mcp/docker-mcp-server.md`, Issue #165) sind die Read-only-Tools
 (`mcp-gateway_list_containers`/`list_images`/`list_networks`/`list_volumes`, `mcp-gateway_fetch_container_logs`)
 `allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
 `mcp-gateway_create_volume`, …) **`ask`**.
@@ -159,7 +159,7 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 
 > **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
-> durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/docker-mcp-server.md`
+> durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/mcp/docker-mcp-server.md`
 > (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus
 > der Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 
@@ -300,23 +300,6 @@ Methode) in `~/stackexchange-api-detail.md` nur bei Bedarf lesen; die Website
 https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
 Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
 nicht ausgeführt.
-
-## Cloudsmith
-
-Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku via
-Context7 (`npx ctx7 docs /websites/cloudsmith <query>`, API-Bindings:
-`/cloudsmith-io/cloudsmith-api`, z. B. Uploads über FilesApi). API-Key unter
-https://cloudsmith.io/user/settings/api-keys/, als Secret registrieren (`sbx secret set cloudsmith`).
-In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt; der Agent sendet
-`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
-`api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload) – der Key liegt
-nie im Sandbox-Filesystem.
-
-> **Helm-OCI-Pull aus Cloudsmith:** `helm.oci.cloudsmith.io` + `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
-> Netzwerk-Allowlist — Helm-Pull von `oci://docker.cloudsmith.io/…` (z. B. rest-mvc-Subcharts)
-> funktioniert (Blob-Download via `dl.cloudsmith.io`). Ein `helm registry login`
-> für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection
-> nur für die API-Domains).
 
 ## SonarCloud (CI-Ergebnis-Abfragen)
 

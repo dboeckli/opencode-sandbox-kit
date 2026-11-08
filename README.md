@@ -402,7 +402,7 @@ Nachträglich in eine laufende Sandbox laden: `sbx mcp load <name> --sandbox <sa
 
 **Permission-Modell:** Deny-by-default — nur lesende MCP-Tools sind `allow`; K8s-/Docker-Schreib-/Exec-Tools sind bei OpenCode/Mammouth/Claude `ask` (Freigabe pro Aufruf), bei Mistral Vibe hart `deny` (auto-approve-Hook). `configuration_view` ist gesperrt (würde die Host-`kubeconfig` in die Sandbox liefern).
 
-Details: [Kubernetes-MCP-Server](docs/kubernetes-mcp-server.md) · [Docker-MCP-Server (Host)](docs/docker-mcp-server.md) · [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md).
+Details: [Kubernetes-MCP-Server](docs/mcp/kubernetes-mcp-server.md) · [Docker-MCP-Server (Host)](docs/mcp/docker-mcp-server.md) · [IntelliJ MCP Port-Analyse](docs/mcp/intellij-mcp-port.md).
 
 ## Dual Agent Support
 
@@ -420,7 +420,7 @@ Die mehrzeiligen Start-Commands stehen im [Quickstart](#quickstart) oben.
 
 > **Host-MCP-Server via sbx MCP Gateway:** IntelliJ MCP einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
 > (Host-Loopback, SSRF-Guard umgehen); Kubernetes und Host-Docker via `sbx mcp add k8s …`/`sbx mcp add docker …`
-> (`docs/kubernetes-mcp-server.md`, `docs/docker-mcp-server.md`). Dann `--static-mcp idea,k8s,docker` beim Erzeugen
+> (`docs/mcp/kubernetes-mcp-server.md`, `docs/mcp/docker-mcp-server.md`). Dann `--static-mcp idea,k8s,docker` beim Erzeugen
 > oder `sbx mcp load <name> --sandbox <sandbox-name>`.
 > Die direkten IntelliJ-Host-Ports (`64615`/`64342`) sind bewusst **nicht** in der Sandbox-Allowlist — Zugriff nur
 > über den Gateway (sonst wäre die `mcp-gateway_*`-Whitelist per `curl` umgehbar, Issue #163).
@@ -808,10 +808,10 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 ## References
 
 - [Debugging, Analyzing & Logging](docs/debugging-analysis-logging.md)
-- [Kubernetes-MCP-Server](docs/kubernetes-mcp-server.md)
-- [Docker-MCP-Server (Host)](docs/docker-mcp-server.md)
-- [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp-gateway-security.md)
-- [IntelliJ MCP Port-Analyse](docs/intellij-mcp-port.md)
+- [Kubernetes-MCP-Server](docs/mcp/kubernetes-mcp-server.md)
+- [Docker-MCP-Server (Host)](docs/mcp/docker-mcp-server.md)
+- [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp/mcp-gateway-security.md)
+- [IntelliJ MCP Port-Analyse](docs/mcp/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
 - [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.51.0 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>

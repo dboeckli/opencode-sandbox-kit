@@ -11,17 +11,18 @@ Sandbox.
 
 | Log | Inhalt | Entstehung |
 |-----|--------|-----------|
-| `/var/log/sbx-kit-install.log` | Tooling-Installation Schritt für Schritt (`install-tooling.sh`) | `setup.install` beim Sandbox-Build |
+| `/var/log/sbx-kit-install.log` | Tooling-Installation Schritt für Schritt (`install-tooling.sh`) | Image-Build (Dockerfile) |
 | `/var/log/sbx-kit-startup.log` | Startup-Hooks des Dispatchers (`/etc/durable-startup.d/`) | jeder Sandbox-Start |
 | `/var/log/dockerd.log` | isolierter Docker-Daemon der Sandbox | Sandbox-Laufzeit |
-| `/var/log/dpkg.log` | apt-Paket-Installationen | `setup.install` |
+| `/var/log/dpkg.log` | apt-Paket-Installationen | Image-Build (apt) |
 | `/var/log/bootstrap.log`, `/var/log/alternatives.log` | distro-Init / Alternativen | Image-Build |
 | `~/.config/sandbox-kit/startup-checks.report` | aktueller `[startup-checks]`-Report | jeder Session-Start |
 
 ### Install-Log-Format (`/var/log/sbx-kit-install.log`)
 
-Der `setup.install` ruft npm/apt als **Inline-Commands** und die restlichen Tools **einzeln pro Tool**
-(`install-tooling.sh shfmt|jdk|maven|docker|compose|kubectl|helm|kafka`) auf — so zeigt die
+Die Kit-Images rufen npm/apt als **Inline-Commands** und die restlichen Tools **einzeln pro Tool**
+(`install-tooling.sh node|shfmt|jdk|maven|kubectl|helm|kafka`; Docker CLI/Compose/Buildx kommen aus
+der `shell-docker-image`-Basis) auf — so zeigt die
 `sbx run`-Konsole jedes Tool als eigene Zeile (Spinner beim Start → ✓ beim Abschluss). Jeder Lauf
 loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
 
@@ -75,6 +76,8 @@ Drift-Check schlägt sonst fehl:
 ```powershell
 cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh mammouth-agent\files\home\.local\bin\install-tooling.sh
 cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh claude-v3-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh pi-agent\files\home\.local\bin\install-tooling.sh
 ```
 
 ## Analyzing

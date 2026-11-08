@@ -33,13 +33,16 @@ Push-Mirror. Dieses Dokument sammelt die weiterhin relevanten Codeberg-/Forgejo-
   fully-qualified URLs vermeiden Mehrdeutigkeit.
 - **`vars`** ist u. a. in `runs-on` und `strategy` verfügbar (`${{ vars.X || 'default' }}`).
 
-## Workflows (`.forgejo/workflows/`)
+## Forgejo Actions (derzeit nicht genutzt)
 
-- `validate.yml` — Kit-Validierung + Sync-/Pin-Checks; **nur `workflow_dispatch`** (manuell).
-  Runner: `${{ vars.RUNNER_LABEL || 'codeberg-small' }}` (Codebergs gehosteter Runner).
+Der frühere Forgejo-CI-Port `.forgejo/workflows/validate.yml` (nur `workflow_dispatch`) wurde
+**entfernt** — er war ohnehin deaktiviert. Es gibt aktuell **keine** Forgejo-Pipelines: `validate`,
+`e2e`, `build-and-publish-*` und `cleanup-cloudsmith` liegen ausschließlich unter
+`.github/workflows/` und laufen auf **GitHub-Runnern** (Status wird via Push-Mirror an Codeberg
+gemeldet).
 
-Sonst **keine** Forgejo-Pipelines: `e2e`, `build-and-publish-*` und `cleanup-cloudsmith` existieren
-nur unter `.github/workflows/` und laufen auf **GitHub-Runnern** (Status wird an Codeberg gemeldet).
+> Hinweis: Der folgende Runner-Abschnitt ist derzeit **nicht in Gebrauch** (keine Forgejo-Pipelines);
+> er dient als Referenz, falls der Forgejo-CI-Port später reaktiviert wird.
 
 ## Runner-Anforderungen + Repo-Variablen
 
@@ -66,6 +69,9 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - **`e2e`:** **Docker + KVM** (`/dev/kvm`, `kernel.apparmor_restrict_unprivileged_userns=0`)
   + Secret-Service (gnome-keyring/dbus) → nur self-hosted oder vorerst GitHub.
 
+> Hinweis: Nur relevant, falls Forgejo-Pipelines reaktiviert werden. Renovate (self-hosted) nutzt
+> GitHub-Secrets, nicht die Codeberg-Variablen.
+
 ## Secrets/Variablen auf Codeberg
 
 - **Variablen:** `DOCKER_USERNAME`, `IMAGE_PREFIX` (Default `docker.io/domboeckli`),
@@ -82,9 +88,7 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
   `RENOVATE_PLATFORM=forgejo` + `RENOVATE_ENDPOINT=https://codeberg.org` → Renovate legt seine
   Update-PRs auf **Codeberg** an. Der GitHub-Runner ist nur die Ausführungsmaschine.
 - Config: `.github/renovate.json` — `github-actions`-Manager aktiviert (ersetzt Dependabot);
-  die Pin-Manager (SBX_VERSION, OPENCODE_VERSION, CLAUDE_VERSION) decken `.github/workflows/` **und**
-  `.forgejo/workflows/` ab. Der `github-actions`-Manager erkennt auch `.forgejo/workflows/`
-  (inkl. `https://code.forgejo.org/...`-URLs).
+  die Pin-Manager (SBX_VERSION, OPENCODE_VERSION, CLAUDE_VERSION) decken `.github/workflows/` ab.
 - Nötige Secrets (GitHub): `CODEBERG_FOR_RENOVATE_TOKEN` = Codeberg-PAT mit `write:repository` (+ `write:issue`)
   sowie `RENOVATE_GITHUB_TOKEN` = GitHub-PAT (public read, keine Scopes nötig) für die `github-releases`-Datasources.
   Ohne GitHub-Token überspringt Renovate alle GitHub-Dependencies (`docker/sbx-releases`, `helm/helm`, …) und das
@@ -95,10 +99,10 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 ## Offene Punkte / Risiken
 
 - **`local-test/local-test-kits.py` liest Pins aus `.github/workflows/`** (`SBX_VERSION`,
-  `OPENCODE_VERSION`, `CLAUDE_VERSION`). Solange `.github/workflows/` (Mirror) existiert, passt das; bei einem
-  Entfernen der GitHub-Workflows muss das Skript auf `.forgejo/workflows/` umgestellt werden.
-- **Doppelte CI:** Solange die GitHub-Workflows bestehen und GitHub Actions aktiv sind, laufen
-  Pushes (via Mirror) auch dort. Empfehlung: GitHub Actions stilllegen, sobald Codeberg grün ist.
+  `OPENCODE_VERSION`, `CLAUDE_VERSION`). Diese Dateien sind die einzige Pin-Quelle (Forgejo-Workflows
+  wurden entfernt); sie müssen erhalten bleiben.
+- **CI nur auf GitHub:** Pushes werden via Mirror auch von GitHub Actions ausgeführt; auf Codeberg
+  laufen keine Pipelines mehr.
 - **Mirror vs. GitHub-Bots:** Der `--mirror`-Push löscht GitHub-Refs, die auf Codeberg fehlen —
   GitHub-Bots (Dependabot/Renovate-App) und GitHub-only Tags/Releases sind damit unvereinbar.
   Daher Renovate self-hosted gegen Codeberg; **Releases/Tags auf Codeberg anlegen**.
@@ -106,6 +110,5 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - **e2e-KVM:** zentrale Machbarkeitsfrage; ggf. e2e vorerst auf GitHub belassen.
 - **GitHub-Packages-Maven / `gh` / sbx-CLI-Download / Docker Hub**: bleiben externe GitHub-/Drittdienste.
 
-> **Aktueller Stand (Übergang):** CI läuft auf **GitHub** (via Push-Mirror). Alle
-> `.forgejo/workflows` sind vorerst auf **`workflow_dispatch`** (kein Auto-Trigger), damit die
-> Codeberg-Runner-Queue nicht bei jedem Push hängt. Aktivierung nach Klärung des Runner-Themas.
+> **Aktueller Stand:** CI läuft ausschließlich auf **GitHub** (via Push-Mirror). Der frühere
+> Forgejo-CI-Port (`.forgejo/workflows/`) wurde entfernt.

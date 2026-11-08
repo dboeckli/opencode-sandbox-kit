@@ -41,8 +41,8 @@ v3-Besonderheiten gegenüber den v2-Kits:
 
 Das Image nutzt dieselben Skripte und Versionen wie die anderen Kits:
 
-- Node 26.13.0, shfmt 3.14.1, Liberica JDK 25.0.5+11, Maven 3.10.0, Docker CLI 27.5.1,
-  Compose 5.7.0, kubectl (stable), Helm 4.3.1, Kafka 4.4.0
+- Node 26.13.0, shfmt 3.14.1, Liberica JDK 25.0.5+11, Maven 3.10.0, Docker CLI 29.9.3 (Base-Image),
+  Compose 5.7.0 (Base-Image), kubectl (stable), Helm 4.3.1, Kafka 4.4.0
 - apt: `jq`, `python3`, `python3-pip`, `python3-yaml`, `libatomic1`
 - `fd` + `ripgrep` (Pi lädt sie sonst beim ersten Start nach `~/.pi/agent/bin`)
 - Node 26 (via `install-tooling.sh node`; die shell-docker-image-Basis bringt Node 22 mit)

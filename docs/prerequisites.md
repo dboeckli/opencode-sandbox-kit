@@ -11,8 +11,8 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **`sbx` CLI** | Docker Sandbox CLI, `sbx` im PATH | Sandbox erstellen / verwalten |
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342); einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` (Gateway-Weg, Issue #57). Die Sandbox erreicht den Server **nur** über den Gateway — direkte Host-Ports sind nicht allow-listed (Issue #163) | IntelliJ MCP (optional) |
-| **Kubernetes MCP Server** | Host-seitiger MCP-Server (`containers/kubernetes-mcp-server`, native Windows-Binary via `local-scripts/install-kubernetes-mcp-server.ps1`) + `sbx mcp add k8s …`; Details: `docs/kubernetes-mcp-server.md` (Issue #40) | Kubernetes MCP (optional) |
-| **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`mcp-server-docker==<pin>`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/docker-mcp-server.md` (Issue #165) | Host-Docker MCP (optional) |
+| **Kubernetes MCP Server** | Host-seitiger MCP-Server (`containers/kubernetes-mcp-server`, native Windows-Binary via `local-scripts/install-kubernetes-mcp-server.ps1`) + `sbx mcp add k8s …`; Details: `docs/mcp/kubernetes-mcp-server.md` (Issue #40) | Kubernetes MCP (optional) |
+| **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`mcp-server-docker==<pin>`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/mcp/docker-mcp-server.md` (Issue #165) | Host-Docker MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
 ### Secrets registrieren (`sbx secret set <service>`)
@@ -47,8 +47,8 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Node.js | 26.13.0 | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits (auch opencode-v3) |
 | Apache Maven | 3.10.0 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
-| Docker CLI | 29.9.3 | opencode-v3 aus dem Base-Image; sonst 27.5.1 (isolierter Daemon in der Sandbox-VM) |
-| Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
+| Docker CLI | 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; isolierter Daemon in der Sandbox-VM) |
+| Docker Compose | 5.7.0 (Plugin) | aus dem Base-Image (alle Kits) |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
 | Helm | 4.3.1 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
 | Apache Kafka CLI | 4.4.0 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
@@ -61,7 +61,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | MCP Inspector CLI (`mcp-inspector`, `mcpdo`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq, python3, pip, python3-yaml | distro | apt |
 
-> **opencode-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle vier basieren auf `docker.io/sbx/shell-docker-image:latest` —
+> **opencode-v3/claude-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle fünf basieren auf `docker.io/sbx/shell-docker-image:latest` —
 > Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert
 > weiterhin `install-tooling.sh` (wie in allen Kits).
 

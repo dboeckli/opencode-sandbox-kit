@@ -163,7 +163,7 @@ sbx run docker.io/domboeckli/sbx-mistral-vibe:<tag> `
   (Registry-Ref umbiegen). Docker Hub ist der **Default**; der **zentrale Umschalter** `IMAGE_PREFIX`
   (siehe README „Registry umschalten") lässt alle Szenarien automatisch aus Docker Hub ziehen:
   - `IMAGE_PREFIX=docker.io/domboeckli` (Env bzw. Repo-Variable) — `local-test/local-test-kits.py`
-    komponiert `<IMAGE_PREFIX>/sbx-<name>:<tag>` und übergibt `--kit-arg imagePrefix=…` an die
-    Sandbox-Kits (Mammouth/Mistral).
-  - Alternativ gezielt: `OPENCODE_IMAGE_TAG`/`CLAUDE_IMAGE_TAG` (Mixin) bzw. `--template`/`imagePrefix`.
+    komponiert `<IMAGE_PREFIX>/sbx-<name>:<tag>` (v3-Workloads; `--template`/`--kit-arg` entfallen).
+  - Alternativ gezielt pro Szenario: `OPENCODE_V3_IMAGE_TAG`, `CLAUDE_V3_IMAGE_TAG`,
+    `MAMMOUTH_IMAGE_TAG`, `VIBE_IMAGE_TAG`, `PI_IMAGE_TAG` (Pi sonst lokales Kit-Verzeichnis).
 - Optional zusätzlich `-t "$DH/sbx-<name>:latest"` taggen/pushen.

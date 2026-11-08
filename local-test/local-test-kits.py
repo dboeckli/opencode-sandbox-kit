@@ -210,10 +210,10 @@ PI_DOCKERFILE_VERSION_RE = re.compile(r"ARG PI_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+
 PI_NPM_URL = "https://registry.npmjs.org/@earendil-works%2Fpi-coding-agent/latest"
 
 # Lokaler Docker-MCP-Server (Issue #165): Pin im Doku-Command (`uvx mcp-server-docker==<v>`,
-# docs/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
+# docs/mcp/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
 # (mcp-server-docker), warnt (gelb), Drift zwischen den Dateien = fail.
 # Reiner Host-Server (nicht Teil des Sandbox-Images).
-DOCKER_MCP_DOC = "docs/docker-mcp-server.md"
+DOCKER_MCP_DOC = "docs/mcp/docker-mcp-server.md"
 DOCKER_MCP_FILES = (DOCKER_MCP_DOC, "README.md")
 DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker==(?P<v>[0-9]+(?:\.[0-9]+)+)")
 DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
@@ -1156,7 +1156,7 @@ def _docker_mcp_pins():
 
 def check_docker_mcp_update():
     """Prueft den Pin des lokalen Docker-MCP-Servers (`uvx mcp-server-docker==<v>`,
-    docs/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit der
+    docs/mcp/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit der
     latest PyPI-Version. Drift zwischen den Dateien = fail; neueres Release = warn (gelb).
     Der Server laeuft host-seitig (nicht Teil des Sandbox-Images)."""
     pins, err = _docker_mcp_pins()
@@ -1168,7 +1168,7 @@ def check_docker_mcp_update():
         detail = ", ".join(f"{rel}={v}" for rel, v in pins.items())
         fail(
             f"mcp-server-docker pin drift ({detail})",
-            "alle Vorkommen (docs/docker-mcp-server.md + README.md) auf dieselbe Version setzen",
+            "alle Vorkommen (docs/mcp/docker-mcp-server.md + README.md) auf dieselbe Version setzen",
         )
         return
     pin = unique[0]

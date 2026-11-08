@@ -133,7 +133,7 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 | Aktion | Befehl |
 |--------|--------|
-| Update (neue Version) | Renovate-PR für `docs/docker-mcp-server.md` (`mcp-server-docker==<v>`) mergen, dann auf dem Host neu registrieren: `sbx mcp rm docker` + `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==<neu>"`; laufende Sandbox: `sbx mcp load docker --sandbox <name>` |
+| Update (neue Version) | Renovate-PR für `docs/mcp/docker-mcp-server.md` (`mcp-server-docker==<v>`) mergen, dann auf dem Host neu registrieren: `sbx mcp rm docker` + `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==<neu>"`; laufende Sandbox: `sbx mcp load docker --sandbox <name>` |
 | Status prüfen | `sbx mcp ls` (Status `ready`), `sbx mcp inspect docker` (Command/Args) |
 | In Sandbox prüfen | `sbx exec <name> bash -lc 'bash ~/.local/bin/mcp-check.sh'` → `mcp-docker:OK` |
 | Nachladen in laufende Sandbox | `sbx mcp load docker --sandbox <name>` |

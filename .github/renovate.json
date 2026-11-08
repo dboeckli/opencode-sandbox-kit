@@ -162,7 +162,7 @@
     {
       "customType": "regex",
       "description": "sbx CLI version (.github/workflows/e2e.yml, validate.yml)",
-      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
       "matchStrings": ["SBX_VERSION: v?(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "docker/sbx-releases",
       "datasourceTemplate": "github-releases",
@@ -170,8 +170,8 @@
     },
     {
       "customType": "regex",
-      "description": "OpenCode-v3 CLI-Pin (.github/workflows/validate.yml + e2e.yml, .forgejo/: OPENCODE_VERSION; npm opencode-ai, 1.x — Issue #254)",
-      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
+      "description": "OpenCode-v3 CLI-Pin (.github/workflows/validate.yml + e2e.yml: OPENCODE_VERSION; npm opencode-ai, 1.x — Issue #254)",
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
       "matchStrings": ["OPENCODE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "opencode-ai",
       "datasourceTemplate": "npm"
@@ -186,8 +186,8 @@
     },
     {
       "customType": "regex",
-      "description": "Claude-Code-CLI-Pin (.github/workflows/e2e.yml, validate.yml; .forgejo: CLAUDE_VERSION; npm @anthropic-ai/claude-code — Issue #254)",
-      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml", ".forgejo/workflows/e2e.yml", ".forgejo/workflows/validate.yml"],
+      "description": "Claude-Code-CLI-Pin (.github/workflows/e2e.yml, validate.yml: CLAUDE_VERSION; npm @anthropic-ai/claude-code — Issue #254)",
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
       "matchStrings": ["CLAUDE_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@anthropic-ai/claude-code",
       "datasourceTemplate": "npm"
@@ -263,8 +263,8 @@
     },
     {
       "customType": "regex",
-      "description": "Lokaler Docker-MCP-Server (mcp-server-docker, Drittanbieter) Pin in Doku + README (docs/docker-mcp-server.md, README.md, Issue #165; host-seitig via uvx registriert)",
-      "managerFilePatterns": ["docs/docker-mcp-server.md", "README.md"],
+      "description": "Lokaler Docker-MCP-Server (mcp-server-docker, Drittanbieter) Pin in Doku + README (docs/mcp/docker-mcp-server.md, README.md, Issue #165; host-seitig via uvx registriert)",
+      "managerFilePatterns": ["docs/mcp/docker-mcp-server.md", "README.md"],
       "matchStrings": ["mcp-server-docker==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "mcp-server-docker",
       "datasourceTemplate": "pypi"

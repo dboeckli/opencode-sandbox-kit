@@ -10,7 +10,7 @@
     (unless -Force is given).
 
     Runs on the Windows host only - not inside the sandbox.
-    Configuration/start: see docs/kubernetes-mcp-server.md (Issue #40).
+    Configuration/start: see docs/mcp/kubernetes-mcp-server.md (Issue #40).
 
 .PARAMETER Version
     Release tag (e.g. "v0.0.69"). Default: the pinned version (updated via Renovate).
