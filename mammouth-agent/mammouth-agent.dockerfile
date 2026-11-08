@@ -106,8 +106,18 @@ RUN set -eux; \
 
 # Mammouth Code CLI (install.sh, pinned): run as the `agent` user so the binaries
 # land in ~/.mammouth, then symlink into PATH for the `mammouth` entrypoint.
-RUN runuser -u agent -- env HOME=/home/agent VERSION="${MAMMOUTH_VERSION}" \
-      bash -c 'curl -fsSL https://code.mammouth.ai/install.sh | VERSION="$VERSION" bash' \
+# Retry the whole install: the script downloads the release asset from GitHub,
+# which occasionally returns transient 5xx (503/504) and has no retry of its own.
+RUN set -e; \
+    for attempt in 1 2 3 4 5; do \
+      if runuser -u agent -- env HOME=/home/agent VERSION="${MAMMOUTH_VERSION}" \
+           bash -c 'curl -fsSL https://code.mammouth.ai/install.sh | VERSION="$VERSION" bash'; then \
+        break; \
+      fi; \
+      if [ "${attempt}" = "5" ]; then exit 1; fi; \
+      echo "mammouth install failed (attempt ${attempt}/5); retrying in 15s..." >&2; \
+      sleep 15; \
+    done \
  && test -x /home/agent/.mammouth/bin/mammouth \
  && ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth \
  && mammouth --version | grep -F "${MAMMOUTH_VERSION}"
