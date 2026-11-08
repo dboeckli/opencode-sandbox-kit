@@ -28,20 +28,19 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 
 - Windows-Host mit **Docker Desktop** und Docker-Hub-Login (`docker login`).
 - Kit-Repo unter `C:\development\projects\opencode-sandbox-kit`.
-- Basis-Images auf Docker Hub (lokal gecacht oder werden gezogen): OpenCode v3 nutzt die
-  Docker-verwaltete `docker.io/sbx/shell-docker-image:latest` (Issue #254), Claude `docker/sandbox-templates:claude-code-docker-0.10.0`,
-  Mammouth/Vibe/Pi `docker/sandbox-templates:shell-docker-0.10.0`.
+- Basis-Images auf Docker Hub (lokal gecacht oder werden gezogen): OpenCode v3/Claude v3/Mammouth/Vibe/Pi nutzen die
+  Docker-verwaltete `docker.io/sbx/shell-docker-image:latest` (Issue #254).
 - Docker-Hub-Namespace = `DOCKER_USER` (z. B. `domboeckli`).
 
 ## Variablen (PowerShell)
 
 ```powershell
 $DH  = "domboeckli"       # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
-# Backup-Tag = OpenCode-CLI-Pin bzw. Basis-Pin je Template-Familie:
+# Backup-Tag = jeweiliger CLI-Pin des Kit-Images:
 $TAG_OPENCODE = "1.19.5"  # OPENCODE_VERSION (OpenCode-CLI, npm opencode-ai, 1.x)
-$TAG_SHELL = "0.10.0"     # shell-docker — Mistral Vibe/Mammouth
-$TAG_CLAUDE   = "0.10.0"  # TEMPLATE_VERSION_CLAUDE (claude-code-docker)
-$TAG_VIBE     = "0.10.0"  # shell-docker (Mistral Vibe)
+$TAG_CLAUDE   = "2.1.319" # CLAUDE_VERSION (Claude-CLI, npm @anthropic-ai/claude-code)
+$TAG_MAMMOUTH = "1.18.31.2" # MAMMOUTH_VERSION (Mammouth-CLI)
+$TAG_VIBE     = "3.0.4"   # VIBE_VERSION (PyPI mistral-vibe)
 cd C:\development\projects\opencode-sandbox-kit
 docker login
 ```
@@ -51,9 +50,9 @@ docker login
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
 | opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `OPENCODE_VERSION=1.19.5` |
-| claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=claude-code-docker-0.10.0` |
-| mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `MAMMOUTH_VERSION=1.18.31.2` |
-| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=shell-docker-0.10.0`, `VIBE_VERSION=3.0.4` |
+| claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `CLAUDE_VERSION=2.1.319` |
+| mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `MAMMOUTH_VERSION=1.18.31.2` |
+| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `VIBE_VERSION=3.0.4` |
 
 ## 1. opencode-v3 — bauen + pushen
 
@@ -72,8 +71,8 @@ docker push  "$DH/sbx-claude:$TAG_CLAUDE"
 ## 3. mammouth — bauen + pushen
 
 ```powershell
-docker build -f mammouth-agent/mammouth-agent.yaml -t "$DH/sbx-mammouth:$TAG_SHELL" mammouth-agent
-docker push  "$DH/sbx-mammouth:$TAG_SHELL"
+docker build -f mammouth-agent/mammouth-agent.yaml -t "$DH/sbx-mammouth:$TAG_MAMMOUTH" mammouth-agent
+docker push  "$DH/sbx-mammouth:$TAG_MAMMOUTH"
 ```
 
 ## 4. mistral-vibe — bauen + pushen
@@ -88,7 +87,7 @@ docker push  "$DH/sbx-mistral-vibe:$TAG_VIBE"
 ```powershell
 docker image inspect "$DH/sbx-opencode:$TAG_OPENCODE"     --format '{{.Id}} {{.Architecture}}'
 docker image inspect "$DH/sbx-claude:$TAG_CLAUDE"         --format '{{.Id}} {{.Architecture}}'
-docker image inspect "$DH/sbx-mammouth:$TAG_SHELL"        --format '{{.Id}} {{.Architecture}}'
+docker image inspect "$DH/sbx-mammouth:$TAG_MAMMOUTH"        --format '{{.Id}} {{.Architecture}}'
 docker image inspect "$DH/sbx-mistral-vibe:$TAG_VIBE"     --format '{{.Id}} {{.Architecture}}'
 ```
 
@@ -106,7 +105,7 @@ Für **amd64+arm64** statt manuellem amd64-Build:
 - `image`: `opencode-v3` | `claude-v3` | `mammouth` | `mistral-vibe` | `all`
 - `arch`: `amd64` | `arm64` | `both`
 - `push`: `true`/`false`
-- `tag`: Override (Default = `OPENCODE_VERSION` / `TEMPLATE_VERSION_CLAUDE` bzw. `VIBE_VERSION`)
+- `tag`: Override (Default = `OPENCODE_VERSION` / `CLAUDE_VERSION` / `VIBE_VERSION`)
 
 Baut auf **nativen** Runnern (`ubuntu-latest` / `ubuntu-24.04-arm`) und mergt bei `both`
 per `docker buildx imagetools create` zu `<namespace>/sbx-<name>:<tag>`. Kein Cloudsmith
@@ -115,7 +114,7 @@ nötig. Credentials: repo-Variable `DOCKER_USERNAME` + repo-Secret `DOCKER_PAT`.
 ## Verwendung der Backup-Images (sbx run)
 
 Drop-in als Image-Ref. `<tag>` = Backup-Tag der jeweiligen Familie
-(z. B. `1.19.5` für OpenCode v3, `0.10.0` für Claude v3/Mistral Vibe/Mammouth).
+(z. B. `1.19.5` für OpenCode v3, `2.1.319` für Claude v3, `1.18.31.2` für Mammouth, `3.0.4` für Mistral Vibe).
 
 **OpenCode v3** (v3-Workload):
 
@@ -164,7 +163,7 @@ sbx run docker.io/domboeckli/sbx-mistral-vibe:<tag> `
   (Registry-Ref umbiegen). Docker Hub ist der **Default**; der **zentrale Umschalter** `IMAGE_PREFIX`
   (siehe README „Registry umschalten") lässt alle Szenarien automatisch aus Docker Hub ziehen:
   - `IMAGE_PREFIX=docker.io/domboeckli` (Env bzw. Repo-Variable) — `local-test/local-test-kits.py`
-    komponiert `<IMAGE_PREFIX>/sbx-<name>:<tag>` und übergibt `--kit-arg imagePrefix=…` an die
-    Sandbox-Kits (Mammouth/Mistral).
-  - Alternativ gezielt: `OPENCODE_IMAGE_TAG`/`CLAUDE_IMAGE_TAG` (Mixin) bzw. `--template`/`imagePrefix`.
+    komponiert `<IMAGE_PREFIX>/sbx-<name>:<tag>` (v3-Workloads; `--template`/`--kit-arg` entfallen).
+  - Alternativ gezielt pro Szenario: `OPENCODE_V3_IMAGE_TAG`, `CLAUDE_V3_IMAGE_TAG`,
+    `MAMMOUTH_IMAGE_TAG`, `VIBE_IMAGE_TAG`, `PI_IMAGE_TAG` (Pi sonst lokales Kit-Verzeichnis).
 - Optional zusätzlich `-t "$DH/sbx-<name>:latest"` taggen/pushen.

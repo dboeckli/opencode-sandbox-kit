@@ -3,8 +3,8 @@ name: Build and publish Mammouth image
 # Builds and publishes the pinned `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth` image that the
 # `mammouth-agent` v3 workload references (descriptor as build frontend).
 #
-# The image bakes the kit tooling AND the Mammouth CLI on top of the official
-# `opencode-docker` template (Mammouth is an OpenCode fork), so `setup.install`
+# The image bakes the kit tooling AND the Mammouth CLI on top of Docker's official
+# `shell-docker-image` base (Mammouth is an OpenCode fork; Issue #254), so `setup.install`
 # no longer downloads tooling/agent at sandbox creation time.
 #
 # This workflow is both directly dispatchable and a reusable workflow

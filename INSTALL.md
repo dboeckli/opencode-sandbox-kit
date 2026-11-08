@@ -49,11 +49,11 @@ installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzli
 1. **Host-Docker-Zugriff** (optional) über einen **lokalen Docker-MCP-Server** — kein offener `2375`-Port:
    `uvx` installieren und den Server host-seitig registrieren
    (`sbx mcp add docker --command "uvx" --args "mcp-server-docker"`), dann Sandbox mit `--static-mcp idea,k8s,docker`.
-   Details: [`docs/docker-mcp-server.md`](docs/docker-mcp-server.md) (Issue
+   Details: [`docs/mcp/docker-mcp-server.md`](docs/mcp/docker-mcp-server.md) (Issue
    [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165)). Ohne diesen Schritt hat die Sandbox nur
    ihren **isolierten Docker-Daemon** (eigene MicroVM) — Host-Container sind dann nicht sichtbar.
 2. **Kubernetes** (optional): Docker Desktop → **Settings → Kubernetes → "Enable Kubernetes"**. Zugriff aus der
-   Sandbox über den host-seitigen Kubernetes-MCP-Server (`docs/kubernetes-mcp-server.md`, Issue
+   Sandbox über den host-seitigen Kubernetes-MCP-Server (`docs/mcp/kubernetes-mcp-server.md`, Issue
    [#40](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/40)) — `sbx mcp add k8s …`, dann
    `--static-mcp idea,k8s,docker`. **Kein** kubeconfig-Mount und **kein** offener `2375`-Port mehr nötig.
 
@@ -118,7 +118,7 @@ sbx run ./opencode-v3-agent/ `
 > Nutzung gilt deshalb: **Schritt 3 ausführen** (Port in *Settings → Tools → MCP Server* verifizieren), dann
 > Registration (`<port>`) und ggf. Sandbox-Allowlist anpassen. `64342` (davor) und `64615` (2026.2.2) sind nur
 > beobachtete Werte. Dauerlösung = offener Feature-Request **IJPL-207839** (konfigurierbarer Port) — beobachten.
-> Details + Analyse: `docs/intellij-mcp-port.md`.
+> Details + Analyse: `docs/mcp/intellij-mcp-port.md`.
 
 ### IntelliJ MCP Zugriff einschränken (Whitelist + Run-Config-Guard)
 
@@ -644,7 +644,7 @@ curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/us
 ## 6. Sandbox starten
 
 > **Host-MCP-Server vorab registrieren** (einmalig): IntelliJ (Abschnitt 3) `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`,
-> Kubernetes (`docs/kubernetes-mcp-server.md`) und Host-Docker (`docs/docker-mcp-server.md`) via `sbx mcp add k8s …`/`sbx mcp add docker …`.
+> Kubernetes (`docs/mcp/kubernetes-mcp-server.md`) und Host-Docker (`docs/mcp/docker-mcp-server.md`) via `sbx mcp add k8s …`/`sbx mcp add docker …`.
 > — dann `--static-mcp idea,k8s,docker` in den `sbx run`-Kommandos verwenden (bzw. `sbx mcp load <name> --sandbox <name>`
 > für bereits laufende Sandboxes; die `--static-mcp`-Menge ist beim Erstellen fixiert).
 

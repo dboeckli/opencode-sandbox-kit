@@ -5,7 +5,7 @@ name: Build and publish Mistral Vibe image
 # `imageTag` kit arg).
 #
 # The v3 descriptor is the Dockerfile frontend; the image bakes a pinned Mistral
-# Vibe version on top of the versioned `shell-docker` sandbox template, following
+# Vibe version on top of Docker's official `shell-docker-image` base (Issue #254), following
 # https://docs.docker.com/guides/mistral-vibe-sandbox/.
 # Vibe is not a pre-built docker/sandbox-templates agent, so the kit ships its
 # own image instead of installing the agent at sandbox build time.

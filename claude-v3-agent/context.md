@@ -20,9 +20,9 @@ Nach Änderungen **nur** den Diff als **Patch-Datei** in IntelliJ öffnen — di
 werden nicht mehr zusätzlich geöffnet (der MCP-Server hat kein Diff-Tool; `mcp__mcp-gateway__open_file_in_editor`
 auf eine `.patch`-Datei liefert den Diff-View):
 
-- Verzeichnis `.review/` im Projekt (gitignored; im Projekt-`.gitignore` ergaenzen: `.review/`).
-- `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
-- Danach **nur** `.review/changes.patch` mit `mcp__mcp-gateway__open_file_in_editor` oeffnen.
+- Verzeichnis `target/review/` im Projekt (liegt unter dem gitignorierten `target/`).
+- `mkdir -p target/review && git diff <base> > target/review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
+- Danach **nur** `target/review/changes.patch` mit `mcp__mcp-gateway__open_file_in_editor` oeffnen.
 
 ## Context7 tools reference
 
@@ -60,23 +60,6 @@ Methode) in `~/stackexchange-api-detail.md` nur bei Bedarf lesen; die Website
 https://api.stackexchange.com/docs nur noch bei Unklarheiten abrufen.
 Ohne registriertes Secret (`sbx secret set stackoverflow`) oder ohne Zustimmung wird der Call
 nicht ausgeführt.
-
-## Cloudsmith
-
-Cloudsmith ist eine Artifact-Hosting-Plattform (Maven/NuGet/Npm/PyPI/Docker/etc.). Doku via
-Context7 (`npx ctx7 docs /websites/cloudsmith <query>`, API-Bindings:
-`/cloudsmith-io/cloudsmith-api`, z. B. Uploads über FilesApi). API-Key unter
-https://cloudsmith.io/user/settings/api-keys/, als Secret registrieren (`sbx secret set cloudsmith`).
-In der Sandbox ist `CLOUDSMITH_API_KEY=proxy-managed` gesetzt; der Agent sendet
-`X-Api-Key: proxy-managed`, der Proxy ersetzt den Platzhalter transparent bei Requests an
-`api.cloudsmith.io` (REST-API) und `upload.cloudsmith.io` (Package-Upload) – der Key liegt
-nie im Sandbox-Filesystem.
-
-> **Helm-OCI-Pull aus Cloudsmith:** `helm.oci.cloudsmith.io` + `docker.cloudsmith.io` + `dl.cloudsmith.io` sind in der
-> Netzwerk-Allowlist — Helm-Pull von `oci://docker.cloudsmith.io/…` (z. B. rest-mvc-Subcharts)
-> funktioniert (Blob-Download via `dl.cloudsmith.io`). Ein `helm registry login`
-> für `docker.cloudsmith.io` ist in der Sandbox nicht möglich (Credential-Injection
-> nur für die API-Domains).
 
 ## SonarCloud (CI-Ergebnis-Abfragen)
 
@@ -146,7 +129,7 @@ Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvo
 
 Jeder `git push` — auch auf einen Feature Branch — erfolgt **nur nach vorheriger, expliziter Zustimmung** des Users (pro Push, nicht pauschal für die Session). Nach dem Commit den User fragen, ob gepusht werden soll; ohne Antwort kein Push. Force-Push und `git push --no-verify` sind ebenfalls zustimmungspflichtig.
 
-**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p .review && git diff <base> > .review/changes.patch`) und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des Diffs wird gepusht.
+**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p target/review && git diff <base> > target/review/changes.patch`) und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des Diffs wird gepusht.
 
 ### Feature Branch mit GitHub-Issue (Zusatzregel)
 
@@ -194,7 +177,7 @@ same sbx MCP gateway. Tools arrive as `mcp__mcp-gateway__<tool>`. The documented
 `defaultMode: default`, so it prompts for on-the-fly approval per call (not permanently granted). As a
 consequence, other non-listed tools (e.g. `Bash`/`Edit`/`Write`) also prompt. `configuration_view` is
 intentionally blocked (it would return the host kubeconfig incl. client certificate/key into the sandbox).
-Setup: `docs/kubernetes-mcp-server.md`.
+Setup: `docs/mcp/kubernetes-mcp-server.md`.
 
 ## Docker MCP
 
@@ -205,7 +188,7 @@ gateway. Tools arrive as `mcp__mcp-gateway__<tool>`. Read-only tools — `list_c
 (`create_container`, `run_container`, `recreate_container`, `start_container`, `stop_container`,
 `remove_container`, `pull_image`, `push_image`, `build_image`, `remove_image`, `create_network`,
 `remove_network`, `create_volume`, `remove_volume`) are in `permissions.ask` (per-call approval). Setup:
-`docs/docker-mcp-server.md`.
+`docs/mcp/docker-mcp-server.md`.
 
 ## Context7
 
@@ -237,7 +220,7 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 
 > **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker` via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
-> durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/docker-mcp-server.md`
+> durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/mcp/docker-mcp-server.md`
 > (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus
 > der Sandbox per `curl` erreichbar (Restrisiko, Issue #229).
 

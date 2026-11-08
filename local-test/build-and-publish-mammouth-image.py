@@ -2,8 +2,8 @@
 """Build and push the Mammouth image locally (docker buildx).
 
 Local counterpart of .github/workflows/build-and-publish-mammouth-image.yml. The image
-bakes the kit tooling AND the Mammouth CLI on top of the official `opencode-docker`
-template; the tag is derived from the Mammouth CLI pin. The tag scheme mirrors the
+bakes the kit tooling AND the Mammouth CLI on top of Docker's official
+`shell-docker-image` base (Issue #254); the tag is derived from the Mammouth CLI pin. The tag scheme mirrors the
 feature-branch CI build (semver prerelease + timestamp) and additionally sets the moving
 `local` tag:
 

@@ -32,6 +32,9 @@ Verwendung:
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien (v3 via Kit-Builder)
 
+Log: die gesamte Ausgabe wird zusaetzlich nach `target/local-test-kits-<agent>.log`
+geschrieben (Tee, wie die `build-and-publish-*.py`-Skripte).
+
 Optionen:
   {all,opencode-v3,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
@@ -48,6 +51,7 @@ Optionen:
 """
 
 import argparse
+import atexit
 import json
 import os
 import re
@@ -60,6 +64,7 @@ import urllib.request
 from shutil import which
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TARGET = os.path.join(ROOT, "target")
 passed = []
 failed = []
 
@@ -145,88 +150,75 @@ INSTALL_SCRIPT_PAIRS = (
      "claude-v3-agent/files/home/.local/bin/claude-startup-maven.sh"),
 )
 
-# Sandbox-Template-Versionen — pro Docker-Hub-Familie getrennte Pins (Issue #202):
-#   - Expliziter Pin der lokalen Tests (dieses Script), Renovate-managed:
-#     TEMPLATE_VERSION_CLAUDE (claude-code-docker).
-#   - Muss identisch sein mit TEMPLATE_VERSION_CLAUDE in .github/workflows/validate.yml + e2e.yml
-#     sowie dem Dockerfile-BASE_IMAGE-Pin (Claude: claude-code-docker) — Drift-Check in
-#     check_template_update().
-#   - OpenCode-v3 nutzt seit Issue #254 die Docker-verwaltete Basis
-#     `docker.io/sbx/shell-docker-image:latest` (nightly) statt `opencode-docker` und pinnt
-#     stattdessen die OpenCode-CLI (OPENCODE_VERSION, npm `opencode-ai`, 1.x-Linie).
-# Update-Check gegen die Docker-Hub-Tags (hub.docker.com); warnt (gelb) bei neuerem Tag je Familie.
-TEMPLATE_VERSION_CLAUDE = "0.10.0"
-TEMPLATE_CFG_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
-# Pin je Template-Familie + Name der Workflow-Variable (fuer Fehlermeldungen).
-TEMPLATE_PINS = {
-    "claude-code-docker": TEMPLATE_VERSION_CLAUDE,
-}
-TEMPLATE_WORKFLOW_VARS = {
-    "claude-code-docker": "TEMPLATE_VERSION_CLAUDE",
-}
-TEMPLATE_CFG_RE = re.compile(
-    r"TEMPLATE_VERSION_(?P<fam>CLAUDE):\s*(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
-)
-TEMPLATE_TAG_RE = re.compile(
-    r"^(?P<fam>claude-code-docker|shell-docker)-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)$"
-)
-DOCKER_HUB_TEMPLATES_URL = "https://hub.docker.com/v2/repositories/docker/sandbox-templates/tags?page_size=100"
+# Workflow-Dateien mit den CLI-Pin-Variablen (Renovate-managed).
+WORKFLOW_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 
-# OpenCode-v3 (Issue #254): Docker-verwaltete Custom-Workload-Basis (nightly, kein Semver-Tag)
-# + OpenCode-CLI-Pin (npm `opencode-ai`, bewusst 1.x-Linie). BASE_IMAGE ist per Docker-Empfehlung
-# `:latest`; Renovate trackt die CLI-Version (nicht die driftende Basis).
+# Claude Code v3 (Issue #254, voll migriert): Basis ist die gemeinsame Custom-Workload-Basis
+# `docker.io/sbx/shell-docker-image:latest`; die CLI kommt aus npm (`@anthropic-ai/claude-code`,
+# Renovate-managed) statt aus dem frueheren `claude-code-docker`-Template. Drift-Check in
+# check_claude_v3_cli_version(); Update-Hinweis gegen die npm-latest-Version.
+CLAUDE_VERSION = "2.1.319"
+CLAUDE_VERSION_RE = re.compile(r"ARG CLAUDE_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+CLAUDE_WORKFLOW_VAR = "CLAUDE_VERSION"
+CLAUDE_NPM_LATEST_URL = "https://registry.npmjs.org/@anthropic-ai%2Fclaude-code/latest"
+
+# Docker-verwaltete Custom-Workload-Basis (Issue #254): `:latest`, nightly, kein Semver-Pin.
+# Alle Custom-Workload-Kits (OpenCode v3 / Claude Code v3 / Mammouth / Mistral Vibe / Pi)
+# nutzen sie; Renovate
+# trackt die jeweilige CLI-Version, nicht die driftende Basis. Node/npm, Python, Go, uv und
+# Docker CLI/compose/buildx kommen aus der Basis (nicht mehr separat installiert).
+SHELL_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest"
+
+# Eigenstaendiger, im Code erwarteter BASE_IMAGE-Wert (ARG BASE_IMAGE=...) eines Kit-Dockerfiles.
+BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=(?P<img>\S+)")
+
+# OpenCode-v3 (Issue #254): Custom-Workload-Basis + OpenCode-CLI-Pin (npm `opencode-ai`,
+# bewusst 1.x-Linie). Renovate trackt die CLI-Version (nicht die driftende Basis).
 OPENCODE_VERSION = "1.19.5"
 OPENCODE_VERSION_RE = re.compile(r"ARG OPENCODE_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
-OPENCODE_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest"
+OPENCODE_BASE_IMAGE_EXPECTED = SHELL_BASE_IMAGE_EXPECTED
 OPENCODE_WORKFLOW_VAR = "OPENCODE_VERSION"
 OPENCODE_NPM_LATEST_URL = "https://registry.npmjs.org/opencode-ai/latest"
 
 # Mammouth (Issue #137/#240): eigenes Image (mammouth-agent/mammouth-agent.dockerfile, v3) — Basis
-# shell-docker + Kit-Tooling + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag; ARG
-# BASE_IMAGE muss dem gemeinsamen shell-docker-Pin (Mistral Vibe) entsprechen. Update-Check des
-# CLI-Pins gegen das latest GitHub-Release (mammouth-ai/code, Tag v<ver>); warnt (gelb) bei neuerem Release.
+# shell-docker-image + Kit-Tooling + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag;
+# ARG BASE_IMAGE muss der gemeinsamen Custom-Workload-Basis entsprechen (Issue #254). Update-Check
+# des CLI-Pins gegen das latest GitHub-Release (mammouth-ai/code, Tag v<ver>); warnt (gelb).
 MAMMOUTH_DOCKERFILE = "mammouth-agent/mammouth-agent.dockerfile"
 MAMMOUTH_DESCRIPTOR = "mammouth-agent/mammouth-agent.yaml"
 MAMMOUTH_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
 MAMMOUTH_IMAGE_NAMESPACE = os.environ.get("MAMMOUTH_IMAGE_NAMESPACE", "domboeckli")
 MAMMOUTH_IMAGE_NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
 MAMMOUTH_VERSION_RE = re.compile(r"ARG MAMMOUTH_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
-MAMMOUTH_BASE_IMAGE_RE = re.compile(
-    r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
-)
 MAMMOUTH_LATEST_URL = "https://api.github.com/repos/mammouth-ai/code/releases/latest"
 
 # Mistral Vibe: Pin im Dockerfile (ARG VIBE_VERSION) — die spec.yaml referenziert das Image
 # mit demselben Tag. Update-Check gegen die latest PyPI-Version (mistral-vibe); warnt (gelb)
-# bei neuerer Version. Die shell-Basis (docker/sandbox-templates:shell-docker-<v>) ist ein
-# eigener Pin im Dockerfile (Renovate-managed) und wird nur gegen Docker Hub geprueft.
+# bei neuerer Version. Die Basis ist die gemeinsame Custom-Workload-Basis (Issue #254).
 VIBE_DOCKERFILE = "mistral-vibe-agent/mistral-vibe-agent.dockerfile"
 VIBE_DESCRIPTOR = "mistral-vibe-agent/mistral-vibe-agent.yaml"
 VIBE_IMAGE_NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
 VIBE_VERSION_RE = re.compile(r"ARG VIBE_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
 VIBE_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
-VIBE_BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 VIBE_PYPI_URL = "https://pypi.org/pypi/mistral-vibe/json"
 
 # Pi Coding Agent (Issue #236): v3-Workload, Descriptor pi-agent/pi-agent.yaml
 # (args.version.default) + Dockerfile pi-agent/pi-agent.dockerfile (ARG PI_VERSION).
-# Beide Pins muessen gleich sein; das Image backt exakt diese Version. Update-Check
-# gegen die latest npm-Version (@earendil-works/pi-coding-agent); neueres Release = warn.
+# Beide Pins muessen gleich sein; das Image backt exakt diese Version. Basis ist die
+# gemeinsame Custom-Workload-Basis (Issue #254). Update-Check gegen die latest
+# npm-Version (@earendil-works/pi-coding-agent); neueres Release = warn.
 PI_DESCRIPTOR = "pi-agent/pi-agent.yaml"
 PI_DOCKERFILE = "pi-agent/pi-agent.dockerfile"
 PI_IMAGE_NAME = os.environ.get("PI_IMAGE_NAME", "sbx-pi-agent")
 PI_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"')
 PI_DOCKERFILE_VERSION_RE = re.compile(r"ARG PI_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
-PI_BASE_IMAGE_RE = re.compile(
-    r"ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)"
-)
 PI_NPM_URL = "https://registry.npmjs.org/@earendil-works%2Fpi-coding-agent/latest"
 
 # Lokaler Docker-MCP-Server (Issue #165): Pin im Doku-Command (`uvx mcp-server-docker==<v>`,
-# docs/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
+# docs/mcp/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
 # (mcp-server-docker), warnt (gelb), Drift zwischen den Dateien = fail.
 # Reiner Host-Server (nicht Teil des Sandbox-Images).
-DOCKER_MCP_DOC = "docs/docker-mcp-server.md"
+DOCKER_MCP_DOC = "docs/mcp/docker-mcp-server.md"
 DOCKER_MCP_FILES = (DOCKER_MCP_DOC, "README.md")
 DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker==(?P<v>[0-9]+(?:\.[0-9]+)+)")
 DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
@@ -321,6 +313,76 @@ def enable_ansi():
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
+
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+class _AnsiStripStream:
+    """File-like wrapper that removes ANSI color escapes (keeps the log readable;
+    the console stream still gets the colors)."""
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, data):
+        self._stream.write(_ANSI_RE.sub("", data))
+
+    def flush(self):
+        self._stream.flush()
+
+    @property
+    def closed(self):
+        return self._stream.closed
+
+
+class Tee:
+    """Write to several streams at once (original stdout/stderr + the log file)."""
+
+    def __init__(self, *streams):
+        self._streams = streams
+
+    def write(self, data):
+        for stream in self._streams:
+            if stream is None or getattr(stream, "closed", False):
+                continue
+            stream.write(data)
+            stream.flush()
+
+    def flush(self):
+        for stream in self._streams:
+            if stream is None or getattr(stream, "closed", False):
+                continue
+            stream.flush()
+
+    def isatty(self):
+        return False
+
+
+def _start_test_log(agent):
+    """Mirror all console output into `target/local-test-kits-<agent>.log` (Tee),
+    like the `build-and-publish-*.py` scripts. ANSI color escapes are stripped from
+    the log file (the console keeps them). Returns the log path. The original streams
+    are restored and the file closed on interpreter exit (atexit), so an early
+    `sys.exit()` still leaves a complete log and no closed-stream flush error."""
+    os.makedirs(TARGET, exist_ok=True)
+    log_path = os.path.join(TARGET, f"local-test-kits-{agent}.log")
+    log_file = open(log_path, "w", encoding="utf-8", errors="replace", buffering=1)
+    log_sink = _AnsiStripStream(log_file)
+    orig_stdout, orig_stderr = sys.stdout, sys.stderr
+    sys.stdout = Tee(orig_stdout, log_sink)
+    sys.stderr = Tee(orig_stderr, log_sink)
+
+    def _restore():
+        sys.stdout, sys.stderr = orig_stdout, orig_stderr
+        try:
+            log_file.flush()
+            log_file.close()
+        except (OSError, ValueError):
+            pass
+
+    atexit.register(_restore)
+    return log_path
 
 
 def _color(code, text):
@@ -705,26 +767,15 @@ def _version_newer(a, b):
     return len(ka) > len(kb)
 
 
-def _template_workflow_version(fam):
-    """`TEMPLATE_VERSION_<OPENCODE|CLAUDE>` aus validate.yml/e2e.yml (Renovate-managed) — muss mit
-    der jeweiligen Konstante dieses Scripts uebereinstimmen (Drift-Check, je Template-Familie)."""
-    env_name = TEMPLATE_WORKFLOW_VARS.get(fam)
-    if not env_name:
+
+def _dockerfile_base_image(rel_path):
+    """BASE_IMAGE-Wert (ARG BASE_IMAGE=...) eines Kit-Dockerfiles."""
+    path = os.path.join(ROOT, rel_path)
+    if not os.path.isfile(path):
         return None
-    for rel in TEMPLATE_CFG_FILES:
-        path = os.path.join(ROOT, rel)
-        if not os.path.isfile(path):
-            continue
-        with open(path, encoding="utf-8") as f:
-            for m in TEMPLATE_CFG_RE.finditer(f.read()):
-                if "TEMPLATE_VERSION_" + m.group("fam") == env_name:
-                    return m.group("v")
-    return None
-
-
-def _mammouth_base_image_version():
-    """shell-docker-Basis-Tag im Mammouth-Dockerfile (gemeinsamer shell-Pin mit Mistral Vibe)."""
-    return _dockerfile_base_version(MAMMOUTH_DOCKERFILE, MAMMOUTH_BASE_IMAGE_RE)
+    with open(path, encoding="utf-8") as f:
+        m = BASE_IMAGE_RE.search(f.read())
+    return m.group("img") if m else None
 
 
 def _dockerfile_base_version(rel_path, regex):
@@ -760,29 +811,6 @@ def _mammouth_cli_pin_version():
     """Mammouth-CLI-Pin aus dem Dockerfile (ARG MAMMOUTH_VERSION) — treibt den Image-Tag."""
     return _dockerfile_base_version(MAMMOUTH_DOCKERFILE, MAMMOUTH_VERSION_RE)
 
-
-def _template_latest_per_family():
-    """Neueste Versions-Tags pro Familie (claude-code-docker / shell-docker)
-    von der Docker-Hub-API, inkl. Pagination."""
-    tags = []
-    url = DOCKER_HUB_TEMPLATES_URL
-    for _ in range(10):
-        body = _http_get(url)
-        data = json.loads(body)
-        tags.extend(data.get("results", []))
-        nxt = data.get("next")
-        if not nxt:
-            break
-        url = nxt
-    latest = {}
-    for t in tags:
-        m = TEMPLATE_TAG_RE.match(t.get("name", ""))
-        if not m:
-            continue
-        fam, v = m.group("fam"), m.group("v")
-        if fam not in latest or _version_newer(v, latest[fam]):
-            latest[fam] = v
-    return latest
 
 
 def check_workflow_job_references():
@@ -824,57 +852,6 @@ def check_workflow_job_references():
     pass_(f"workflow references (e2e.yml: needs/uses aufgeloest, {len(jobs)} Top-Level-Keys)")
 
 
-def check_template_update():
-    """Prueft den Template-Pin der Docker-Hub-Familie (Issue #202):
-    TEMPLATE_VERSION_CLAUDE (claude-code-docker: Claude v3) gegen validate.yml/e2e.yml.
-    Den OpenCode-CLI-Pin prueft check_opencode_v3_cli_version(), den Shell-Pin
-    check_vibe_cli_update()/check_mammouth_cli_update()/check_pi_cli_update().
-
-    Fehlschlag nur bei echten Fehlern: Pin-Konstante fehlt, Workflow-Variable weicht ab,
-    Docker-Hub-Tags nicht abrufbar oder ein Pin-Tag ist nicht publiziert. Warnt (gelb)
-    nur, wenn eine Familie einen neueren Tag hat — die Familien werden von Docker nicht
-    mehr in Lockstep veroeffentlicht."""
-    for fam, pin in TEMPLATE_PINS.items():
-        var = TEMPLATE_WORKFLOW_VARS[fam]
-        wf_ver = _template_workflow_version(fam)
-        if wf_ver is None:
-            fail(f"template version ({var} nicht in validate.yml/e2e.yml gefunden)")
-            return
-        if wf_ver != pin:
-            fail(
-                f"template version ({var}-Konstante v{pin} != validate.yml/e2e.yml v{wf_ver})",
-                f"{var} in .github/workflows/validate.yml + e2e.yml auf v{pin} setzen"
-                f" (Pin der lokalen Tests ist die Konstante in {os.path.relpath(__file__, ROOT)})",
-            )
-            return
-
-    try:
-        latest = _template_latest_per_family()
-    except Exception as e:
-        fail("template version (Docker-Hub-Tags nicht abrufbar)", str(e))
-        return
-    updates = []
-    problems = []
-    for fam, pin in TEMPLATE_PINS.items():
-        latest_ver = latest.get(fam)
-        if not latest_ver:
-            problems.append(f"{fam}: kein Versions-Tag auf Docker Hub")
-        elif _version_newer(latest_ver, pin):
-            updates.append(f"{fam}: neuerer Tag v{latest_ver} > Pin v{pin}")
-        elif latest_ver != pin:
-            problems.append(f"{fam}: Pin-Tag {fam}-{pin} nicht publiziert (letzter Tag v{latest_ver})")
-    if updates:
-        warn(
-            f"template version update available ({'; '.join(updates)})",
-            "Optional: TEMPLATE_VERSION_CLAUDE in local-test-kits.py + .github/workflows/*.yml "
-            "erhoehen (Renovate), Dockerfile-BASE_IMAGE-Pin synchronisieren",
-        )
-    for p in problems:
-        fail(f"template version (Docker Hub: {p})")
-    if not updates and not problems:
-        pins = ", ".join(f"{fam} v{pin}" for fam, pin in TEMPLATE_PINS.items())
-        pass_(f"template version up-to-date (getrennte Pins: {pins})")
-
 
 def _docker_template_node_major(image):
     """Node-Major-Version aus einem Basis-Template-Image (best-effort via `docker run`).
@@ -900,20 +877,13 @@ def _docker_template_node_major(image):
 
 
 def check_template_node_baseline():
-    """Warn-Check (Issue #138): liefern die Basis-Images bereits Node >= 24, kann der
+    """Warn-Check (Issue #138): liefert die Basis bereits Node >= 24, kann der
     `install-tooling.sh node`-Step (Node-24-Tarball) + der `nodejs.org`-Allowlist-Eintrag entfallen —
     die npm-CLIs (renovate >=43) laufen dann auf dem vom Basis-Image gelieferten Node. Prueft die
-    gepinnten `docker/sandbox-templates` (Claude/Shell) plus die Docker-verwaltete OpenCode-Basis
-    `docker.io/sbx/shell-docker-image:latest` (Issue #254). Best-effort ueber Docker (Image-Pull,
-    gecacht); wird uebersprungen, wenn Docker oder ein Image nicht verfuegbar ist."""
-    images = {}
-    for fam, pin in TEMPLATE_PINS.items():
-        if pin:
-            images[fam] = f"docker/sandbox-templates:{fam}-{pin}"
-    shell = _vibe_base_image_version()
-    if shell:
-        images["shell-docker"] = f"docker/sandbox-templates:shell-docker-{shell}"
-    images["opencode-base"] = OPENCODE_BASE_IMAGE_EXPECTED
+    gemeinsame Docker-verwaltete Custom-Workload-Basis `docker.io/sbx/shell-docker-image:latest`
+    (OpenCode v3/Claude v3/Mammouth/Vibe/Pi, Issue #254). Best-effort ueber Docker (Image-Pull,
+    gecacht); wird uebersprungen, wenn Docker oder das Image nicht verfuegbar ist."""
+    images = {"shell-docker-image": SHELL_BASE_IMAGE_EXPECTED}
     if which("docker") is None:
         print("  " + _color("33", "[SKIP] template node baseline — docker nicht im PATH"))
         return
@@ -954,15 +924,12 @@ def check_mammouth_cli_update():
             f"args.version.default in {MAMMOUTH_DESCRIPTOR} und ARG MAMMOUTH_VERSION in {MAMMOUTH_DOCKERFILE} angleichen",
         )
         return
-    base = _mammouth_base_image_version()
-    shell_pin = _vibe_base_image_version()
-    if not shell_pin:
-        fail("mammouth base image (shell-docker-Pin nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
-        return
-    if base != shell_pin:
+    base = _dockerfile_base_image(MAMMOUTH_DOCKERFILE)
+    if base != SHELL_BASE_IMAGE_EXPECTED:
         fail(
-            f"mammouth base image (shell-docker-{base} != Mistral-Vibe shell-docker-{shell_pin})",
-            f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf shell-docker-{shell_pin} setzen (gemeinsamer shell-Pin)",
+            f"mammouth base image ({base or 'BASE_IMAGE fehlt'} != {SHELL_BASE_IMAGE_EXPECTED})",
+            f"ARG BASE_IMAGE in {MAMMOUTH_DOCKERFILE} auf {SHELL_BASE_IMAGE_EXPECTED} setzen "
+            "(gemeinsame Custom-Workload-Basis, Issue #254)",
         )
         return
     try:
@@ -1003,21 +970,11 @@ def _vibe_descriptor_pin():
     return m.group("v") if m else None
 
 
-def _vibe_base_image_version():
-    path = os.path.join(ROOT, VIBE_DOCKERFILE)
-    if not os.path.isfile(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        m = VIBE_BASE_IMAGE_RE.search(f.read())
-    return m.group("v") if m else None
-
-
 def check_vibe_cli_update():
     """Vergleicht den Vibe-Pin (ARG VIBE_VERSION im Dockerfile — das Image installiert
     exakt diese Version) mit der latest PyPI-Version (mistral-vibe) und prueft, dass die
-    spec.yaml dasselbe Image-Tag referenziert sowie das shell-Basis-Image der
-    shell-Basis-Pin im Dockerfile ist eigenstaendig (geprueft gegen Docker Hub).
-    Warnt (gelb) bei neuerer PyPI-Version."""
+    spec.yaml dasselbe Image-Tag referenziert und die Basis die gemeinsame
+    Custom-Workload-Basis ist (Issue #254). Warnt (gelb) bei neuerer PyPI-Version."""
     pin = _vibe_dockerfile_pin()
     if not pin:
         fail("mistral-vibe version (VIBE_VERSION nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
@@ -1032,28 +989,12 @@ def check_vibe_cli_update():
             f"args.version.default in {VIBE_DESCRIPTOR} und ARG VIBE_VERSION in {VIBE_DOCKERFILE} angleichen",
         )
         return
-    base = _vibe_base_image_version()
-    if base is None:
-        fail("mistral-vibe base image (shell-Basis-Image nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
-        return
-    try:
-        shell_latest = _template_latest_per_family().get("shell-docker")
-    except Exception as e:
-        fail("mistral-vibe base image (Docker-Hub-Tags nicht abrufbar)", str(e))
-        return
-    if not shell_latest:
-        fail("mistral-vibe base image (shell-docker: kein Versions-Tag auf Docker Hub)")
-        return
-    if _version_newer(shell_latest, base):
-        warn(
-            f"mistral-vibe base image update available (shell-{base}, Docker Hub v{shell_latest})",
-            f"Optional: ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-"
-            f"{shell_latest} heben, Image neu publizieren (build-and-publish-mistral-vibe-image.yml)",
-        )
-    elif shell_latest != base:
+    base = _dockerfile_base_image(VIBE_DOCKERFILE)
+    if base != SHELL_BASE_IMAGE_EXPECTED:
         fail(
-            f"mistral-vibe base image (shell-{base} nicht publiziert, letzter Tag v{shell_latest})",
-            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf docker/sandbox-templates:shell-docker-{shell_latest} setzen",
+            f"mistral-vibe base image ({base or 'BASE_IMAGE fehlt'} != {SHELL_BASE_IMAGE_EXPECTED})",
+            f"ARG BASE_IMAGE in {VIBE_DOCKERFILE} auf {SHELL_BASE_IMAGE_EXPECTED} setzen "
+            "(gemeinsame Custom-Workload-Basis, Issue #254)",
         )
         return
     try:
@@ -1079,12 +1020,7 @@ def _opencode_v3_cli_version():
 
 def _opencode_v3_base_image():
     """BASE_IMAGE-Wert (ARG BASE_IMAGE=...) aus dem OpenCode-v3-Dockerfile."""
-    path = os.path.join(ROOT, OPENCODE_V3_DOCKERFILE)
-    if not os.path.isfile(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        m = re.search(r"ARG BASE_IMAGE=(?P<img>\S+)", f.read())
-    return m.group("img") if m else None
+    return _dockerfile_base_image(OPENCODE_V3_DOCKERFILE)
 
 
 def _workflow_env_version(env_name, files):
@@ -1126,7 +1062,7 @@ def check_opencode_v3_cli_version():
             f"ARG OPENCODE_VERSION in {OPENCODE_V3_DOCKERFILE} auf {OPENCODE_VERSION} setzen",
         )
         return
-    wf = _workflow_env_version(OPENCODE_WORKFLOW_VAR, TEMPLATE_CFG_FILES)
+    wf = _workflow_env_version(OPENCODE_WORKFLOW_VAR, WORKFLOW_FILES)
     if wf is None:
         fail(f"opencode-v3 CLI ({OPENCODE_WORKFLOW_VAR} nicht in validate.yml/e2e.yml gefunden)")
         return
@@ -1154,29 +1090,60 @@ def check_opencode_v3_cli_version():
         pass_(f"opencode-v3 CLI pin up-to-date ({cur}; npm latest {latest or 'n/a'}, bewusst 1.x)")
 
 
-def _claude_v3_base_version():
-    path = os.path.join(ROOT, CLAUDE_V3_DOCKERFILE)
-    if not os.path.isfile(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        m = re.search(r"ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-(?P<v>[0-9]+\.[0-9]+\.[0-9]+)", f.read())
-    return m.group("v") if m else None
+def _claude_v3_cli_version():
+    """Claude-Code-CLI-Pin (ARG CLAUDE_VERSION) aus dem Claude-v3-Dockerfile."""
+    return _dockerfile_base_version(CLAUDE_V3_DOCKERFILE, CLAUDE_VERSION_RE)
 
 
-def check_claude_v3_base_update():
-    """Prueft den claude-code-docker-Basis-Pin des Claude-v3-Workloads gegen
-    TEMPLATE_VERSION_CLAUDE. Die Claude-CLI selbst kommt aus dem Template."""
-    cur = _claude_v3_base_version()
+def check_claude_v3_cli_version():
+    """Prueft den Claude-Code-CLI-Pin (Issue #254, voll migriert):
+    - BASE_IMAGE ist die gemeinsame Docker-verwaltete Custom-Workload-Basis
+    - ARG CLAUDE_VERSION == CLAUDE_VERSION-Konstante dieses Scripts
+    - CLAUDE_VERSION in validate.yml/e2e.yml == Konstante
+    - Update-Hinweis, falls npm (`@anthropic-ai/claude-code`) eine neuere Version hat."""
+    cur = _claude_v3_cli_version()
     if not cur:
-        fail(f"claude-v3 base image (BASE_IMAGE nicht in {CLAUDE_V3_DOCKERFILE} gefunden)")
+        fail(f"claude-v3 CLI (ARG CLAUDE_VERSION nicht in {CLAUDE_V3_DOCKERFILE} gefunden)")
         return
-    if cur != TEMPLATE_VERSION_CLAUDE:
+    base = _dockerfile_base_image(CLAUDE_V3_DOCKERFILE)
+    if base != SHELL_BASE_IMAGE_EXPECTED:
         fail(
-            f"claude-v3 base image (claude-code-docker-{cur} != TEMPLATE_VERSION_CLAUDE {TEMPLATE_VERSION_CLAUDE})",
-            f"ARG BASE_IMAGE in {CLAUDE_V3_DOCKERFILE} auf claude-code-docker-{TEMPLATE_VERSION_CLAUDE} setzen",
+            f"claude-v3 base image ({base or 'BASE_IMAGE fehlt'} != {SHELL_BASE_IMAGE_EXPECTED})",
+            f"ARG BASE_IMAGE in {CLAUDE_V3_DOCKERFILE} auf {SHELL_BASE_IMAGE_EXPECTED} setzen "
+            "(gemeinsame Custom-Workload-Basis, Issue #254)",
         )
         return
-    pass_(f"claude-v3 base image up-to-date (claude-code-docker-{cur})")
+    if cur != CLAUDE_VERSION:
+        fail(
+            f"claude-v3 CLI (Dockerfile-Pin {cur} != CLAUDE_VERSION {CLAUDE_VERSION})",
+            f"ARG CLAUDE_VERSION in {CLAUDE_V3_DOCKERFILE} auf {CLAUDE_VERSION} setzen",
+        )
+        return
+    wf = _workflow_env_version(CLAUDE_WORKFLOW_VAR, WORKFLOW_FILES)
+    if wf is None:
+        fail(f"claude-v3 CLI ({CLAUDE_WORKFLOW_VAR} nicht in validate.yml/e2e.yml gefunden)")
+        return
+    if wf != cur:
+        fail(
+            f"claude-v3 CLI ({CLAUDE_WORKFLOW_VAR} {wf} != CLAUDE_VERSION {cur})",
+            f"{CLAUDE_WORKFLOW_VAR} in .github/workflows/validate.yml + e2e.yml auf {cur} setzen",
+        )
+        return
+    try:
+        data = json.loads(_http_get(CLAUDE_NPM_LATEST_URL))
+        latest = str(data.get("version", ""))
+    except Exception as e:
+        warn(f"claude-v3 CLI update check skipped (npm latest nicht abrufbar: {e})")
+        pass_(f"claude-v3 CLI pin up-to-date ({cur}, npm latest unbekannt)")
+        return
+    if latest and _version_newer(latest, cur):
+        warn(
+            f"claude-v3 CLI update available (Pin {cur}, npm latest {latest})",
+            f"Optional: CLAUDE_VERSION in {CLAUDE_V3_DOCKERFILE} + local-test-kits.py + "
+            f"validate.yml/e2e.yml auf {latest} heben (Renovate)",
+        )
+    else:
+        pass_(f"claude-v3 CLI pin up-to-date ({cur}; npm latest {latest or 'n/a'})")
 
 
 def _pi_pin_from(rel, regex):
@@ -1190,7 +1157,7 @@ def _pi_pin_from(rel, regex):
 
 def check_pi_cli_update():
     """Vergleicht den Pi-Pin (Descriptor args.version.default) mit dem Dockerfile-Pin
-    (ARG PI_VERSION), prueft den gemeinsamen shell-docker-Basis-Pin und
+    (ARG PI_VERSION), prueft die gemeinsame Custom-Workload-Basis (Issue #254) und
     warnt (gelb) bei einer neueren npm-Version (@earendil-works/pi-coding-agent)."""
     pin = _pi_pin_from(PI_DESCRIPTOR, PI_DESCRIPTOR_VERSION_RE)
     if not pin:
@@ -1206,18 +1173,12 @@ def check_pi_cli_update():
             f"ARG PI_VERSION in {PI_DOCKERFILE} und args.version.default in {PI_DESCRIPTOR} angleichen",
         )
         return
-    base = _pi_pin_from(PI_DOCKERFILE, PI_BASE_IMAGE_RE)
-    if base is None:
-        fail("pi base image (BASE_IMAGE nicht in pi-agent/pi-agent.dockerfile gefunden)")
-        return
-    shell_pin = _vibe_base_image_version()
-    if not shell_pin:
-        fail("pi base image (shell-docker-Pin nicht in mistral-vibe-agent/mistral-vibe-agent.dockerfile gefunden)")
-        return
-    if base != shell_pin:
+    base = _dockerfile_base_image(PI_DOCKERFILE)
+    if base != SHELL_BASE_IMAGE_EXPECTED:
         fail(
-            f"pi base image (shell-docker-{base} != Mistral-Vibe shell-docker-{shell_pin})",
-            f"ARG BASE_IMAGE in {PI_DOCKERFILE} auf shell-docker-{shell_pin} setzen (gemeinsamer shell-Pin)",
+            f"pi base image ({base or 'BASE_IMAGE fehlt'} != {SHELL_BASE_IMAGE_EXPECTED})",
+            f"ARG BASE_IMAGE in {PI_DOCKERFILE} auf {SHELL_BASE_IMAGE_EXPECTED} setzen "
+            "(gemeinsame Custom-Workload-Basis, Issue #254)",
         )
         return
     try:
@@ -1270,7 +1231,7 @@ def _docker_mcp_pins():
 
 def check_docker_mcp_update():
     """Prueft den Pin des lokalen Docker-MCP-Servers (`uvx mcp-server-docker==<v>`,
-    docs/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit der
+    docs/mcp/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit der
     latest PyPI-Version. Drift zwischen den Dateien = fail; neueres Release = warn (gelb).
     Der Server laeuft host-seitig (nicht Teil des Sandbox-Images)."""
     pins, err = _docker_mcp_pins()
@@ -1282,7 +1243,7 @@ def check_docker_mcp_update():
         detail = ", ".join(f"{rel}={v}" for rel, v in pins.items())
         fail(
             f"mcp-server-docker pin drift ({detail})",
-            "alle Vorkommen (docs/docker-mcp-server.md + README.md) auf dieselbe Version setzen",
+            "alle Vorkommen (docs/mcp/docker-mcp-server.md + README.md) auf dieselbe Version setzen",
         )
         return
     pin = unique[0]
@@ -1447,6 +1408,7 @@ def main():
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
+    log_path = _start_test_log(agent)
     # Default = Repo-Root (nicht cwd): so mountet das Szenario unabhaengig vom
     # Aufrufverzeichnis das Kit-Repo. `--workspace`/`$WORKSPACE_DIR` uebersteuern.
     workspace = os.path.abspath(
@@ -1455,6 +1417,7 @@ def main():
         sys.exit(f"Workspace nicht gefunden: {workspace}")
 
     print()
+    info(f"Log: {log_path}")
     _, sbx_ver = run_sbx(["version"])
     if not sbx_ver:
         _, sbx_ver = run_sbx(["--version"])
@@ -1538,14 +1501,11 @@ def main():
         info("==> e2e.yml Workflow-Referenzen (needs/uses)")
         check_workflow_job_references()
         print()
-        info("==> Sandbox-Template-Version Update-Check (Docker Hub)")
-        check_template_update()
-        print()
         info("==> OpenCode-v3 Base/CLI-Check (shell-docker-image + OPENCODE_VERSION, 1.x)")
         check_opencode_v3_cli_version()
         print()
-        info("==> Claude-v3 Basis-Image-Check (claude-code-docker gegen TEMPLATE_VERSION_CLAUDE)")
-        check_claude_v3_base_update()
+        info("==> Claude-v3 Base/CLI-Check (shell-docker-image + CLAUDE_VERSION, npm @anthropic-ai/claude-code)")
+        check_claude_v3_cli_version()
         print()
         info("==> Sandbox-Template Node-Baseline-Check (Node >= 24 macht install-tooling.sh node ueberfluessig)")
         check_template_node_baseline()
@@ -1553,10 +1513,10 @@ def main():
         info("==> Mammouth-CLI Version Update-Check (GitHub Release)")
         check_mammouth_cli_update()
         print()
-        info("==> Mistral-Vibe Version Update-Check (PyPI + Image-Tag + Basis-Template)")
+        info("==> Mistral-Vibe Version Update-Check (PyPI + Image-Tag + Custom-Workload-Basis)")
         check_vibe_cli_update()
         print()
-        info("==> Pi Version Update-Check (npm + Descriptor/Dockerfile-Pin + Basis-Template)")
+        info("==> Pi Version Update-Check (npm + Descriptor/Dockerfile-Pin + Custom-Workload-Basis)")
         check_pi_cli_update()
         print()
         info("==> Pi MCP-Guard Policy (Unit-Tests)")

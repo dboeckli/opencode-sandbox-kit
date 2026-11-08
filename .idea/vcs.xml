@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AgentCommitMessageProject"><![CDATA[{
+  "mode": "CUSTOM",
+  "instruction": "1. Answer in English.\n2. Use the Conventional Commit format.\n3. Extract the ticket number from $GIT_BRANCH_NAME.\n4. Keep the message as short as possible.\n5. Avoid overly verbose descriptions or unnecessary details.\n6. Use bullet points for multiple changes."
+}]]></component>
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />

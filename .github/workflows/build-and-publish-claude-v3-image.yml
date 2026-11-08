@@ -9,8 +9,8 @@ name: Build and publish Claude Code v3 workload image
 # (`workflow_call`), so e2e.yml can build the image before its scenario matrix.
 #
 # Tags:
-#   - master / main: `<TEMPLATE_VERSION_CLAUDE>` plus `latest`
-#   - feature/PR:    `<TEMPLATE_VERSION_CLAUDE>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
+#   - master / main: `<CLAUDE_VERSION>` plus `latest`
+#   - feature/PR:    `<CLAUDE_VERSION>-<branch-slug>.<YYYYMMDDHHMMSS>` plus `<branch-slug>`
 #
 # Multi-arch via NATIVE runners; the arch is part of the repository NAME
 # (`<name>-amd64` / `<name>-arm64`), merged with `docker buildx imagetools create`.
@@ -53,21 +53,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Compute image tags from the base template pin and the branch
+      - name: Compute image tags from the Claude CLI pin and the branch
         id: tags
         run: |
           set -euo pipefail
           echo "image_prefix=${IMAGE_PREFIX}" >> "$GITHUB_OUTPUT"
-          pin=$(grep -oE 'ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-[0-9]+(\.[0-9]+)+' \
-            claude-v3-agent/claude-v3-agent.dockerfile | head -1 | grep -oE '[0-9]+(\.[0-9]+)+$')
+          pin=$(grep -oE 'ARG CLAUDE_VERSION=[0-9]+(\.[0-9]+)+' \
+            claude-v3-agent/claude-v3-agent.dockerfile | head -1 | cut -d= -f2)
           if [ -z "$pin" ]; then
-            echo "claude-code-docker base pin not found in claude-v3-agent/claude-v3-agent.dockerfile" >&2
+            echo "CLAUDE_VERSION pin not found in claude-v3-agent/claude-v3-agent.dockerfile" >&2
             exit 1
           fi
-          wf_pin=$(grep -oE 'TEMPLATE_VERSION_CLAUDE: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
+          wf_pin=$(grep -oE 'CLAUDE_VERSION: ?[0-9]+(\.[0-9]+)+' .github/workflows/validate.yml \
             | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
           if [ "$wf_pin" != "$pin" ]; then
-            echo "Dockerfile base pin ($pin) != TEMPLATE_VERSION_CLAUDE in validate.yml ($wf_pin)" >&2
+            echo "Dockerfile CLAUDE_VERSION pin ($pin) != CLAUDE_VERSION in validate.yml ($wf_pin)" >&2
             exit 1
           fi
           ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"

@@ -1,8 +1,11 @@
 # syntax=docker/dockerfile:1
 #
-# Standalone Claude Code v3 workload (issue #242). This image bakes the kit tooling + the Claude config,
-# managed settings and guards on top of the versioned `claude-code-docker`
-# template (the Claude Code CLI itself comes from the template).
+# Standalone Claude Code v3 workload (issue #242; base migrated to the Docker-provided
+# shell image in issue #254). This image bakes the kit tooling + the Claude config,
+# managed settings and guards on top of Docker's official `shell-docker-image`; the
+# Claude Code CLI itself is installed from npm (`@anthropic-ai/claude-code`, pinned via
+# ARG CLAUDE_VERSION). The base already ships Node/npm, Python, Go, uv, tini and the
+# Docker CLI + compose + buildx — those are NOT re-installed (versions verified below).
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./claude-v3-agent -f ./claude-v3-agent/claude-v3-agent.yaml \
@@ -12,10 +15,13 @@
 #   docker buildx build ./claude-v3-agent -f ./claude-v3-agent/claude-v3-agent.yaml \
 #     -t <IMAGE_PREFIX>/sbx-claude:local --load
 #
-# ARG BASE_IMAGE must mirror TEMPLATE_VERSION_CLAUDE (Renovate-managed).
+# ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly, Issue #254).
+# ARG CLAUDE_VERSION is the Claude Code CLI pin (npm `@anthropic-ai/claude-code`, Renovate).
 
-ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-0.10.0
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
 FROM ${BASE_IMAGE}
+
+ARG CLAUDE_VERSION=2.1.319
 
 # The base image runs as the unprivileged `agent` user; installs need root.
 USER root
@@ -35,19 +41,25 @@ COPY files/home/.local/bin/claude-config.py /usr/local/bin/claude-config.py
 COPY files/home/.local/bin/claude-entrypoint.sh /usr/local/bin/claude-entrypoint
 RUN chmod +x /usr/local/bin/claude-config.py /usr/local/bin/claude-entrypoint
 
-# Root-level tooling. install-tooling.sh is fail-open by design; the explicit
-# verification step below makes the build fail loud.
-RUN chmod +x /tmp/kit/*.sh \
+# Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
+# buildx, Python, Go, uv and tini — those are not re-installed. The JDK is installed
+# as Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
+# JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
+# even if the base ever provides its own /usr/local/java. install-tooling.sh is
+# fail-open by design; the explicit verification step below makes the build fail loud.
+RUN rm -rf /usr/local/java \
+ && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && bash /tmp/kit/install-tooling.sh all
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
 
-# npm-global CLIs (NPM_CONFIG_PREFIX inherited from the claude-code base).
-# Retry: the npm registry occasionally serves metadata for a just-published
-# dependency before all its versions resolve (transient ETARGET).
+# npm-global CLIs (NPM_CONFIG_PREFIX inherited from the shell base). The Claude Code CLI
+# is installed here too (postinstall copies the platform-native binary over the wrapper).
+# Retry: the npm registry occasionally serves metadata for a just-published dependency
+# before all its versions resolve (transient ETARGET).
 RUN set -e; \
     for attempt in 1 2 3; do \
       if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
-           @modelcontextprotocol/inspector@2.13.0; then \
+           @modelcontextprotocol/inspector@2.13.0 "@anthropic-ai/claude-code@${CLAUDE_VERSION}"; then \
         break; \
       fi; \
       if [ "${attempt}" = "3" ]; then exit 1; fi; \
@@ -56,25 +68,36 @@ RUN set -e; \
     done
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
-RUN shfmt --version \
- && java -version \
- && mvn -v \
- && docker --version \
- && docker compose version \
- && kubectl version --client \
- && helm version --short \
- && helm4 version --short \
- && kafka-topics.sh --version \
- && node --version \
- && [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ] \
- && command -v ctx7 \
- && command -v skills \
- && command -v prettier \
- && command -v renovate \
- && bru --version \
- && command -v mcp-inspector \
- && command -v claude \
- && runuser -u agent -- env HOME=/home/agent claude --version
+# Base-provided tools (Docker CLI, compose) and the install-tooling tools (Node,
+# Liberica JDK, Maven, …) are verified here; the build fails if a version no longer
+# fits the kit's requirements (Issue #254).
+RUN set -eux; \
+    node --version; \
+    [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
+    java -version; \
+    [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ]; \
+    javac -version; \
+    [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ]; \
+    jar --version; \
+    [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ]; \
+    /usr/local/java/bin/java -version; \
+    mvn -v; \
+    docker --version; \
+    docker compose version; \
+    kubectl version --client; \
+    helm version --short; \
+    helm4 version --short; \
+    kafka-topics.sh --version; \
+    shfmt --version; \
+    command -v ctx7; \
+    command -v skills; \
+    command -v prettier; \
+    command -v renovate; \
+    bru --version; \
+    command -v mcp-inspector; \
+    command -v claude; \
+    runuser -u agent -- env HOME=/home/agent claude --version; \
+    runuser -u agent -- env HOME=/home/agent claude --version | grep -F "${CLAUDE_VERSION}"
 
 # Agent-user tooling (skills, Claude statusline, repsy docs) as uid 1000 / `agent`.
 RUN runuser -u agent -- env HOME=/home/agent bash /tmp/kit/install-tooling-user.sh
@@ -94,8 +117,7 @@ ENV npm_config_bin_links=false
 
 USER agent
 
-# tini is inherited from the base image. The wrapper merges the kit config,
-# then execs the Claude Code CLI (without the template's
-# --dangerously-skip-permissions, so `permissions.ask` stays effective).
+# tini comes from the base image. The wrapper merges the kit config, then execs the
+# Claude Code CLI (no --dangerously-skip-permissions, so `permissions.ask` stays effective).
 ENTRYPOINT ["tini", "--"]
 CMD ["claude-entrypoint"]

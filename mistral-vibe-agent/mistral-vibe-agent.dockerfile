@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1
 #
-# Pinned Mistral Vibe image for the `mistral-vibe-agent` v3 sandbox workload (issue #241).
-# Builds on the versioned `shell-docker` template, bakes the kit tooling (JDK,
-# Maven, Docker CLI, Compose, kubectl, Helm, Kafka, Node, npm CLIs) and a pinned
-# `mistral-vibe` version (PyPI).
+# Pinned Mistral Vibe image for the `mistral-vibe-agent` v3 sandbox workload (issue #241;
+# base migrated to the Docker-provided shell image in issue #254).
+# Builds on Docker's official `shell-docker-image`, bakes the kit tooling (Liberica JDK,
+# Maven, kubectl, Helm, Kafka, Node, npm CLIs) and a pinned `mistral-vibe` version (PyPI).
+# The base already ships Node/npm, Python, uv and the Docker CLI + compose + buildx —
+# those are NOT re-installed (no double installation; versions are verified below).
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./mistral-vibe-agent -f ./mistral-vibe-agent/mistral-vibe-agent.yaml \
@@ -16,18 +18,14 @@
 # CI builds linux/amd64 + linux/arm64 on native runners (`uv tool install` does
 # not run under QEMU arm64 emulation) and merges with `imagetools create`.
 #
-# ARG BASE_IMAGE uses the shared shell-docker pin (Renovate-managed);
+# ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly) —
+# Node/npm, Python, uv and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG VIBE_VERSION is the Mistral Vibe pin (Renovate, PyPI mistral-vibe).
 
-ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
 FROM ${BASE_IMAGE}
 
 ARG VIBE_VERSION=3.0.4
-
-# The plain shell template does not set an npm global prefix; keep the shared
-# kit convention for install-tooling-user.sh.
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=/usr/local/share/npm-global/bin:${PATH}
 
 USER root
 
@@ -42,15 +40,21 @@ COPY files/home/.local/bin/install-tooling-user.sh /tmp/kit/install-tooling-user
 # Build tools for source builds of native dependencies: `miniaudio` (a transitive
 # mistral-vibe dependency) ships no arm64 wheel for Python 3.14, so uv compiles it
 # from source — needs a C/C++ compiler and the Python dev headers (pyconfig.h).
+# The base image already ships gcc/g++, but not the Python dev headers.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends gcc g++ python3-dev \
+ && apt-get install -y --no-install-recommends python3-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Root-level tooling. install-tooling.sh is fail-open by design; the explicit
-# verification step below makes the build fail loud.
-RUN chmod +x /tmp/kit/*.sh \
+# Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
+# buildx, Python and uv — those are not re-installed. The JDK is installed as
+# Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
+# JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
+# even if the base ever provides its own /usr/local/java. install-tooling.sh is
+# fail-open by design; the explicit verification step below makes the build fail loud.
+RUN rm -rf /usr/local/java \
+ && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && bash /tmp/kit/install-tooling.sh all
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
 
 # npm-global CLIs (install-tooling.sh installed Node 26). Retry: the npm registry
 # occasionally serves metadata for a just-published dependency before all its
@@ -67,24 +71,34 @@ RUN set -e; \
     done
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
-RUN shfmt --version \
- && java -version \
- && mvn -v \
- && docker --version \
- && docker compose version \
- && kubectl version --client \
- && helm version --short \
- && helm4 version --short \
- && kafka-topics.sh --version \
- && node --version \
- && [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ] \
- && command -v ctx7 \
- && command -v skills \
- && command -v prettier \
- && command -v renovate \
- && bru --version \
- && command -v mcp-inspector \
- && uv --version
+# Base-provided tools (Docker CLI, compose, uv) and the install-tooling tools (Node,
+# Liberica JDK, Maven, …) are verified here; the build fails if a version no longer
+# fits the kit's requirements (Issue #254).
+RUN set -eux; \
+    node --version; \
+    [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
+    java -version; \
+    [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ]; \
+    javac -version; \
+    [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ]; \
+    jar --version; \
+    [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ]; \
+    /usr/local/java/bin/java -version; \
+    mvn -v; \
+    docker --version; \
+    docker compose version; \
+    kubectl version --client; \
+    helm version --short; \
+    helm4 version --short; \
+    kafka-topics.sh --version; \
+    shfmt --version; \
+    command -v ctx7; \
+    command -v skills; \
+    command -v prettier; \
+    command -v renovate; \
+    bru --version; \
+    command -v mcp-inspector; \
+    uv --version
 
 # Install Vibe as the non-root agent user. The socks extra is installed explicitly
 # so the agent works through the sandbox proxy (some releases don't pull it in).

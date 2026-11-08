@@ -1,8 +1,12 @@
 # syntax=docker/dockerfile:1
 #
-# Pinned Mammouth Code image for the `mammouth-agent` v3 sandbox workload (issue #240).
-# Mammouth is an OpenCode fork; the image builds on the plain `shell-docker`
-# template (no OpenCode CLI in the image) and bakes the kit tooling + Mammouth CLI.
+# Pinned Mammouth Code image for the `mammouth-agent` v3 sandbox workload (issue #240;
+# base migrated to the Docker-provided shell image in issue #254).
+# Mammouth is an OpenCode fork; the image builds on Docker's official
+# `shell-docker-image` (no OpenCode CLI in the image) and bakes the kit tooling + Mammouth CLI.
+# The base already ships Node/npm, Python, Go, uv and the Docker CLI + compose + buildx —
+# those are NOT re-installed (no double installation; versions are verified below). The JDK
+# is installed as Liberica via install-tooling.sh so all kits share the same vendor/build.
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./mammouth-agent -f ./mammouth-agent/mammouth-agent.yaml \
@@ -12,16 +16,12 @@
 #   docker buildx build ./mammouth-agent -f ./mammouth-agent/mammouth-agent.yaml \
 #     -t <IMAGE_PREFIX>/sbx-mammouth:local --load
 #
-# ARG BASE_IMAGE uses the shell-docker pin (same as Mistral Vibe; Renovate-managed);
+# ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly) —
+# Node/npm, Docker CLI/compose/buildx, Python, Go and uv come from it (Issue #254).
 # ARG MAMMOUTH_VERSION is the Mammouth CLI pin (Renovate, mammouth-ai/code).
 
-ARG BASE_IMAGE=docker/sandbox-templates:shell-docker-0.10.0
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
 FROM ${BASE_IMAGE}
-
-# The plain shell template does not set an npm global prefix (opencode-docker did).
-# Keep the shared kit convention for install-tooling-user.sh.
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=/usr/local/share/npm-global/bin:${PATH}
 
 ARG MAMMOUTH_VERSION=1.18.31.2
 
@@ -42,16 +42,19 @@ COPY files/home/.local/bin/seed-mammouth-model-favorites.py /usr/local/bin/seed-
 COPY files/home/.local/bin/mammouth-entrypoint.sh /usr/local/bin/mammouth-entrypoint
 RUN chmod +x /usr/local/bin/seed-mammouth-model-favorites.py /usr/local/bin/mammouth-entrypoint
 
-# Base utilities the Mammouth installer/tooling expect on the plain shell image.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends curl ca-certificates xz-utils unzip \
- && rm -rf /var/lib/apt/lists/*
+# Base utilities (curl, ca-certificates, xz-utils, unzip) already ship in the
+# shell-docker-image base — no extra apt layer needed.
 
-# Root-level tooling. install-tooling.sh is fail-open by design; the explicit
-# verification step below makes the build fail loud.
-RUN chmod +x /tmp/kit/*.sh \
+# Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
+# buildx, Python, Go and uv — those are not re-installed. The JDK is installed as
+# Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
+# JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
+# even if the base ever provides its own /usr/local/java. install-tooling.sh is
+# fail-open by design; the explicit verification step below makes the build fail loud.
+RUN rm -rf /usr/local/java \
+ && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && bash /tmp/kit/install-tooling.sh all
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
 
 # npm-global CLIs (install-tooling.sh installed Node 26; npm prefix is /usr/local/share/npm-global).
 # Retry: the npm registry occasionally serves metadata for a just-published
@@ -68,23 +71,33 @@ RUN set -e; \
     done
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
-RUN shfmt --version \
- && java -version \
- && mvn -v \
- && docker --version \
- && docker compose version \
- && kubectl version --client \
- && helm version --short \
- && helm4 version --short \
- && kafka-topics.sh --version \
- && node --version \
- && [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ] \
- && command -v ctx7 \
- && command -v skills \
- && command -v prettier \
- && command -v renovate \
- && bru --version \
- && command -v mcp-inspector
+# Base-provided tools (Docker CLI, compose) and the install-tooling tools (Node,
+# Liberica JDK, Maven, …) are verified here; the build fails if a version no longer
+# fits the kit's requirements (Issue #254).
+RUN set -eux; \
+    node --version; \
+    [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
+    java -version; \
+    [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ]; \
+    javac -version; \
+    [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ]; \
+    jar --version; \
+    [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ]; \
+    /usr/local/java/bin/java -version; \
+    mvn -v; \
+    docker --version; \
+    docker compose version; \
+    kubectl version --client; \
+    helm version --short; \
+    helm4 version --short; \
+    kafka-topics.sh --version; \
+    shfmt --version; \
+    command -v ctx7; \
+    command -v skills; \
+    command -v prettier; \
+    command -v renovate; \
+    bru --version; \
+    command -v mcp-inspector
 
 # Mammouth Code CLI (install.sh, pinned): run as the `agent` user so the binaries
 # land in ~/.mammouth, then symlink into PATH for the `mammouth` entrypoint.

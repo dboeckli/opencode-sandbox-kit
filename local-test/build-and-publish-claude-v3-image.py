@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Build and push the Claude Code v3 workload image locally (docker buildx).
 
-Local counterpart of .github/workflows/build-and-publish-claude-v3-image.yml. The image is the
-official `claude-code-docker` sandbox template with the kit tooling baked in (issue #137);
-the tag is derived from the claude-code-docker base pin (TEMPLATE_VERSION_CLAUDE). The tag scheme mirrors
+Local counterpart of .github/workflows/build-and-publish-claude-v3-image.yml. The image is built
+on Docker's `shell-docker-image` base with the kit tooling baked in and the Claude Code CLI pinned
+via npm (`@anthropic-ai/claude-code` — issue #254); the tag base is the Claude CLI pin (CLAUDE_VERSION). The tag scheme mirrors
 the feature-branch CI build (semver prerelease + timestamp) and additionally sets the
 moving `local` tag:
 
@@ -95,11 +95,11 @@ def run(cmd):
 def base_version():
     with open(os.path.join(CONTEXT, "claude-v3-agent.dockerfile"), encoding="utf-8") as f:
         m = re.search(
-            r"ARG BASE_IMAGE=docker/sandbox-templates:claude-code-docker-([0-9]+(?:\.[0-9]+)+)",
+            r"ARG CLAUDE_VERSION=([0-9]+(?:\.[0-9]+)+)",
             f.read(),
         )
     if not m:
-        sys.exit("claude-code-docker BASE_IMAGE pin not found in claude-v3-agent/claude-v3-agent.dockerfile")
+        sys.exit("CLAUDE_VERSION pin not found in claude-v3-agent/claude-v3-agent.dockerfile")
     return m.group(1)
 
 

@@ -37,4 +37,4 @@ Abgrenzung zu den anderen Skript-Orten:
 ```
 
 Voraussetzungen: Windows, PowerShell 5.1+, Internetzugang (GitHub Releases).
-Konfiguration und Start des Servers: siehe [`docs/kubernetes-mcp-server.md`](../docs/kubernetes-mcp-server.md).
+Konfiguration und Start des Servers: siehe [`docs/mcp/kubernetes-mcp-server.md`](../docs/mcp/kubernetes-mcp-server.md).
