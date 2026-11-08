@@ -27,7 +27,7 @@
 # ARG OPENCODE_VERSION must mirror OPENCODE_VERSION in local-test-kits.py and
 # validate.yml/e2e.yml (Renovate-managed; 1.x line).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea
 FROM ${BASE_IMAGE}
 
 # OpenCode CLI pin (npm `opencode-ai`, 1.x). Available to the RUN steps below.
@@ -61,7 +61,19 @@ RUN chmod +x /usr/local/bin/seed-opencode-model-favorites.py /usr/local/bin/open
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
+      echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
+      grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
+      exit 1; \
+    fi \
+ && java -version \
+ && [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ] \
+ && javac -version \
+ && [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ] \
+ && jar --version \
+ && [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ] \
+ && shfmt --version
 
 # npm-global CLIs (NPM_CONFIG_PREFIX inherited from the shell base).
 # OpenCode is pinned to the 1.x line via `opencode-ai@${OPENCODE_VERSION}`.

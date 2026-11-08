@@ -167,7 +167,7 @@ CLAUDE_NPM_LATEST_URL = "https://registry.npmjs.org/@anthropic-ai%2Fclaude-code/
 # nutzen sie; Renovate
 # trackt die jeweilige CLI-Version, nicht die driftende Basis. Node/npm, Python, Go, uv und
 # Docker CLI/compose/buildx kommen aus der Basis (nicht mehr separat installiert).
-SHELL_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest"
+SHELL_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea"
 
 # Eigenstaendiger, im Code erwarteter BASE_IMAGE-Wert (ARG BASE_IMAGE=...) eines Kit-Dockerfiles.
 BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=(?P<img>\S+)")
@@ -214,14 +214,15 @@ PI_DESCRIPTOR_VERSION_RE = re.compile(r'default:\s*"(?P<v>[0-9]+(?:\.[0-9]+)+)"'
 PI_DOCKERFILE_VERSION_RE = re.compile(r"ARG PI_VERSION=(?P<v>[0-9]+(?:\.[0-9]+)+)")
 PI_NPM_URL = "https://registry.npmjs.org/@earendil-works%2Fpi-coding-agent/latest"
 
-# Lokaler Docker-MCP-Server (Issue #165): Pin im Doku-Command (`uvx mcp-server-docker==<v>`,
-# docs/mcp/docker-mcp-server.md) und im README; Update-Check gegen die latest PyPI-Version
-# (mcp-server-docker), warnt (gelb), Drift zwischen den Dateien = fail.
+# Lokaler Docker-MCP-Server (Issue #165/#250): Pin im Doku-Command als **Fork-Tag**
+# (`--from git+https://github.com/dboeckli/mcp-server-docker@v<v>`, docs/mcp/docker-mcp-server.md)
+# und im README; Update-Check gegen das latest GitHub-Release des Forks
+# (dboeckli/mcp-server-docker), warnt (gelb), Drift zwischen den Dateien = fail.
 # Reiner Host-Server (nicht Teil des Sandbox-Images).
 DOCKER_MCP_DOC = "docs/mcp/docker-mcp-server.md"
 DOCKER_MCP_FILES = (DOCKER_MCP_DOC, "README.md")
-DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker==(?P<v>[0-9]+(?:\.[0-9]+)+)")
-DOCKER_MCP_PYPI_URL = "https://pypi.org/pypi/mcp-server-docker/json"
+DOCKER_MCP_PIN_RE = re.compile(r"mcp-server-docker@v(?P<v>[0-9]+(?:\.[0-9]+)+)")
+DOCKER_MCP_LATEST_URL = "https://api.github.com/repos/dboeckli/mcp-server-docker/releases/latest"
 
 # Bruno CLI (Issue #257 im spring-6-gateway-Repo): Pin `@usebruno/cli@<v>` in allen drei
 # Kit-Specs (setup.install) und in den Tooling-Images (Dockerfile). Der Validate-Check
@@ -1215,7 +1216,7 @@ def check_pi_mcp_guard():
 
 
 def _docker_mcp_pins():
-    """Liest den `mcp-server-docker==<v>`-Pin aus allen Doku-/README-Dateien."""
+    """Liest den Fork-Pin `mcp-server-docker@v<v>` aus allen Doku-/README-Dateien."""
     pins = {}
     for rel in DOCKER_MCP_FILES:
         path = os.path.join(ROOT, rel)
@@ -1224,16 +1225,17 @@ def _docker_mcp_pins():
         with open(path, encoding="utf-8") as f:
             m = DOCKER_MCP_PIN_RE.search(f.read())
         if not m:
-            return None, f"Pin `mcp-server-docker==<v>` nicht in {rel} gefunden"
+            return None, f"Pin `mcp-server-docker@v<v>` nicht in {rel} gefunden"
         pins[rel] = m.group("v")
     return pins, None
 
 
 def check_docker_mcp_update():
-    """Prueft den Pin des lokalen Docker-MCP-Servers (`uvx mcp-server-docker==<v>`,
-    docs/mcp/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit der
-    latest PyPI-Version. Drift zwischen den Dateien = fail; neueres Release = warn (gelb).
-    Der Server laeuft host-seitig (nicht Teil des Sandbox-Images)."""
+    """Prueft den Fork-Pin des lokalen Docker-MCP-Servers
+    (`--from git+https://github.com/dboeckli/mcp-server-docker@v<v>`,
+    docs/mcp/docker-mcp-server.md + README.md) auf Gleichheit und vergleicht ihn mit dem
+    latest GitHub-Release des Forks. Drift zwischen den Dateien = fail; neueres Release =
+    warn (gelb). Der Server laeuft host-seitig (nicht Teil des Sandbox-Images)."""
     pins, err = _docker_mcp_pins()
     if err:
         fail(f"mcp-server-docker version ({err})")
@@ -1243,25 +1245,28 @@ def check_docker_mcp_update():
         detail = ", ".join(f"{rel}={v}" for rel, v in pins.items())
         fail(
             f"mcp-server-docker pin drift ({detail})",
-            "alle Vorkommen (docs/mcp/docker-mcp-server.md + README.md) auf dieselbe Version setzen",
+            "alle Vorkommen (docs/mcp/docker-mcp-server.md + README.md) auf denselben Fork-Tag setzen",
         )
         return
     pin = unique[0]
     try:
-        data = json.loads(_http_get(DOCKER_MCP_PYPI_URL))
-        latest = str(data["info"]["version"])
+        data = json.loads(_http_get(DOCKER_MCP_LATEST_URL))
+        latest = str(data.get("tag_name", "")).lstrip("v")
     except Exception as e:
-        fail("mcp-server-docker version (PyPI latest nicht abrufbar)", str(e))
+        fail("mcp-server-docker version (Fork-Release nicht abrufbar)", str(e))
+        return
+    if not latest:
+        fail("mcp-server-docker version (kein tag_name im Fork-Release)")
         return
     if _version_newer(latest, pin):
         warn(
-            f"mcp-server-docker update available (Pin v{pin}, PyPI latest v{latest})",
+            f"mcp-server-docker update available (Pin v{pin}, fork latest v{latest})",
             f"Pin in {DOCKER_MCP_DOC} + README.md auf v{latest} heben; auf dem Host neu registrieren "
-            f"(`sbx mcp rm docker` + `sbx mcp add docker --command \"uvx\" "
-            f"--args \"mcp-server-docker=={latest}\"`)",
+            f"(`sbx mcp rm docker` + `sbx mcp add docker --command (Get-Command uvx).Source "
+            f"--args \"--from,git+https://github.com/dboeckli/mcp-server-docker@v{latest},mcp-server-docker\"`)",
         )
     else:
-        pass_(f"mcp-server-docker version up-to-date (Pin v{pin}, PyPI latest v{latest})")
+        pass_(f"mcp-server-docker version up-to-date (Pin v{pin}, fork latest v{latest})")
 
 
 def check_bruno_cli_update():

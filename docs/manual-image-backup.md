@@ -49,10 +49,10 @@ docker login
 
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
-| opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `OPENCODE_VERSION=1.19.5` |
-| claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `CLAUDE_VERSION=2.1.319` |
-| mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `MAMMOUTH_VERSION=1.18.31.2` |
-| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest`, `VIBE_VERSION=3.0.4` |
+| opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea`, `OPENCODE_VERSION=1.19.5` |
+| claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea`, `CLAUDE_VERSION=2.1.319` |
+| mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea`, `MAMMOUTH_VERSION=1.18.31.2` |
+| mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea`, `VIBE_VERSION=3.0.4` |
 
 ## 1. opencode-v3 — bauen + pushen
 

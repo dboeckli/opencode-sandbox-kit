@@ -136,6 +136,8 @@ jobs:
           set -euo pipefail
           echo "using sbx ${SBX_VERSION}"
           curl -fsSL \
+            --retry 8 --retry-delay 5 --retry-max-time 300 --retry-all-errors \
+            --connect-timeout 15 --max-time 600 \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux.tar.gz" \
             -o /tmp/DockerSandboxes-linux.tar.gz

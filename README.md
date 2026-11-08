@@ -205,8 +205,7 @@ CLI — **`OPENCODE_VERSION`** (npm `opencode-ai`, bewusst 1.x), **`CLAUDE_VERSI
 Die Pins werden auf Konsistenz geprüft: `OPENCODE_VERSION`/`CLAUDE_VERSION` als Dockerfile-`ARG`, Konstante in
 `local-test/local-test-kits.py` und Variable in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed). Die
 Basis aller Custom-Workload-Kits (OpenCode v3, Claude v3, Mammouth, Mistral Vibe, Pi) ist bewusst die von Docker
-empfohlene, nightly neu gebaute `docker.io/sbx/shell-docker-image:latest` (kein Semver-Pin — Docker re-installiert
-dafür täglich OS/Security-Fixes).
+empfohlene, nightly neu gebaute `docker.io/sbx/shell-docker-image:latest` (Digest-gepinnt — Renovate aktualisiert den Digest, wenn das Nightly weiterzieht).
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-/npm-Versionen und
 schlägt bei Drift fehl.
 
@@ -390,7 +389,7 @@ Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 |--------|------|--------------------------------------|
 | **IntelliJ MCP** | IntelliJ IDEA (JetBrains MCP Server, Port `64615` seit IDEA 2026.2.2, Endpoint `/stream`) | `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` |
 | **Kubernetes** | `kubernetes-mcp-server` (voller Umfang, Toolsets `core,config,helm`; keine Sandbox-Credentials) | `sbx mcp add k8s --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"` |
-| **Docker** | `ckreiling/mcp-server-docker` via `uvx` (steuert den Host-Docker-Daemon) | `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"` |
+| **Docker** | `dboeckli/mcp-server-docker`-Fork via `uvx` (`v0.4.0`: steuert den Host-Docker-Daemon + Buildx-Abfragen, Issue #250) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.0,mcp-server-docker"` |
 
 ```powershell
 sbx run ./opencode-v3-agent/ `

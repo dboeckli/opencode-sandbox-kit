@@ -33,6 +33,20 @@ capabilities:
     config:
       install:
         allow: &allow
+          - githubstatus.com:443
+          - www.githubstatus.com:443
+          - azure.status.microsoft:443
+          - status.azure.com:443
+          - status.docker.com:443
+          - dockerstatus.com:443
+          - www.dockerstatus.com:443
+          - status.maven.org:443
+          - status.sonatype.com:443
+          - status.npmjs.org:443
+          - status.python.org:443
+          - cloudflarestatus.com:443
+          - www.cloudflarestatus.com:443
+          - status.codeberg.org:443
           - context7.com:443
           - '*.context7.com:443'
           - mammouth.ai:443

@@ -20,7 +20,7 @@
 # Node/npm, Python, Go, uv and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG PI_VERSION is the Pi pin (Renovate, npm @earendil-works/pi-coding-agent).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea
 FROM ${BASE_IMAGE}
 
 ARG PI_VERSION=1.5.0
@@ -41,7 +41,19 @@ COPY files/home/.local/bin/install-tooling-user.sh /tmp/kit/install-tooling-user
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
+      echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
+      grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
+      exit 1; \
+    fi \
+ && java -version \
+ && [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ] \
+ && javac -version \
+ && [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ] \
+ && jar --version \
+ && [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ] \
+ && shfmt --version
 
 # npm-global CLIs. Same npm CLI set as the other kit images, plus Pi itself. Retry the
 # install: the npm registry occasionally serves metadata for a just-published

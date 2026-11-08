@@ -27,6 +27,9 @@ test("allows read-only prefix groups", () => {
 	assert.equal(isAllowedTool(pi("search_symbol"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("read_file"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("generate_psi_tree"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("buildx_list"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("buildx_history"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("buildx_logs"), {}).allowed, true);
 });
 
 test("blocks Pi-prefixed write and exec tools", () => {

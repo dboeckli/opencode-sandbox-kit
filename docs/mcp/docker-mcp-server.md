@@ -4,9 +4,10 @@ Issue: [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165) —
 der Sandbox **ohne offenen `2375`-Port** (siehe [#71](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/71)).
 
 **Entscheid:** Host-Docker-Zugriff über einen **lokalen Docker-MCP-Server**
-([`ckreiling/mcp-server-docker`](https://github.com/ckreiling/mcp-server-docker), Python), der
-**host-seitig via `uvx`** gestartet und beim **sbx MCP Gateway** registriert wird
-(`sbx mcp add --command …`). Die Sandbox spricht ausschließlich MCP; der direkte `2375`-Port entfällt
+([`ckreiling/mcp-server-docker`](https://github.com/ckreiling/mcp-server-docker), Python) — fuer die
+Buildx-Abfragen (`buildx_list`/`buildx_history`/`buildx_logs`, Issue #250) der Fork
+[`dboeckli/mcp-server-docker`](https://github.com/dboeckli/mcp-server-docker) (`v0.4.0`). Der Server wird
+**host-seitig via `uvx`** gestartet und beim **sbx MCP Gateway** registriert (`sbx mcp add --command …`). Die Sandbox spricht ausschließlich MCP; der direkte `2375`-Port entfällt
 aus der Netzwerk-Allowlist. Muster wie beim Kubernetes-MCP (Issue #40).
 
 > **Warum nicht das Docker MCP Toolkit?** Verworfen (siehe #165): Der offizielle Katalog hat **keinen**
@@ -52,36 +53,80 @@ uvx --version
 ## 2. Server-Starttest
 
 ```powershell
-uvx mcp-server-docker==0.3.0
+uvx --from "git+https://github.com/dboeckli/mcp-server-docker@v0.4.0" mcp-server-docker
 ```
 
-Erststart lädt das Paket aus PyPI; danach startet der **stdio-MCP-Server** (keine Ausgabe, wartet auf
-JSON-RPC). Mit `Ctrl+C` beenden.
+Erststart klont den Fork-Tag; danach startet der **stdio-MCP-Server** (keine Ausgabe, wartet auf
+JSON-RPC). Mit `Ctrl+C` beenden — dabei kann ein `KeyboardInterrupt`/`CancelledError`-Traceback
+erscheinen. Das ist **normal** (der Server blockiert auf stdin; die Unterbrechung wird nicht
+abgefangen) und kein Fehler.
 
-> **Version pinnen** (empfohlen): Der Server ist ein Drittanbieter-Paket (Community, Solo-Maintainer) →
-> reproduzierbare Version `mcp-server-docker==<v>` statt „latest". Der Pin wird via Renovate
-> (`.github/renovate.json`, PyPI) getrackt und im Validate-Check (`local-test-kits.py`) gegen die
-> latest PyPI-Version geprüft.
+> **Fork-Pin (`v0.4.0`):** Wir nutzen `dboeckli/mcp-server-docker` (Tag `v0.4.0`), der die zusaetzlichen
+> Read-only-Tools `buildx_list`/`buildx_history`/`buildx_logs` mitbringt (Upstream-PR
+> `ckreiling/mcp-server-docker#78` noch offen, Issue #250). Gepinnt per Git-Tag `@v<v>`; Renovate
+> (`.github/renovate.json`, `github-releases` des Forks) und der Validate-Check (`local-test-kits.py`)
+> pruefen den Tag gegen das latest Fork-Release.
 
 ## 3. Beim sbx MCP Gateway registrieren
 
 `--command` + `--args` registrieren den Server als **host-lokalen stdio-Server**; sbx startet den Prozess
 selbst. **Wichtig:** `--command` läuft im Kontext des sbx-Host-Daemons — dieser erbt **nicht** den
 Terminal-PATH, in dem `uvx` ggf. nur über einen winget-Shim auflösbar ist. Deshalb den **absoluten Pfad**
-verwenden (genau wie beim K8s-MCP):
+verwenden (genau wie beim K8s-MCP).
+
+Absoluten `uvx`-Pfad ermitteln:
 
 ```powershell
 (Get-Command uvx).Source
-sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"
+```
+
+Server registrieren:
+
+```powershell
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.0,mcp-server-docker"
+```
+
+Registrierung prüfen:
+
+```powershell
 sbx mcp ls
+```
+
+Details anzeigen:
+
+```powershell
 sbx mcp inspect docker
 ```
 
 > Ohne absoluten Pfad registriert `sbx mcp add docker --command "uvx" …` zwar erfolgreich (`sbx mcp ls`
 > = `ready`), aber der Gateway-Prozess findet `uvx` nicht und startet den Server nicht → in der Sandbox
 > `mcp-docker:FAIL` (siehe Troubleshooting).
->
-> Alternativ ohne `uvx`-Shim: `--command (Get-Command uv).Source --args "tool,run,mcp-server-docker==0.3.0"`.
+
+Alternativ ohne `uvx`-Shim:
+
+```powershell
+sbx mcp add docker --command (Get-Command uv).Source --args "tool,run,--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.0,mcp-server-docker"
+```
+
+### Bestehende Registrierung umstellen
+
+Gilt z. B. beim Wechsel von `mcp-server-docker==0.3.0` (PyPI) auf den Fork. Erst die alte Registrierung entfernen:
+
+```powershell
+sbx mcp rm docker
+```
+
+Dann den Fork registrieren:
+
+```powershell
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.0,mcp-server-docker"
+```
+
+Laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim Erstellen fixiert) bzw. neu erstellen:
+
+```powershell
+sbx mcp load docker --sandbox <name>
+```
 
 ## 4. Sandbox mit Docker-MCP starten
 
@@ -102,7 +147,7 @@ Die Tools des Servers erscheinen (wie bei K8s) als `mcp-gateway_<tool>`. Gating 
 letzte passende Regel gewinnt):
 
 - **`allow`** (read-only): `list_containers`, `list_images`, `list_networks`, `list_volumes`,
-  `fetch_container_logs`, `container_stats`.
+  `fetch_container_logs`, `container_stats`, `buildx_list`, `buildx_history`, `buildx_logs`.
 - **`ask`** (schreibend): `create_container`, `run_container`, `recreate_container`, `start_container`,
   `stop_container`, `remove_container`, `pull_image`, `push_image`, `build_image`, `remove_image`,
   `create_network`, `remove_network`, `create_volume`, `remove_volume`.
@@ -124,16 +169,16 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 | Symptom | Ursache / Fix |
 |---------|---------------|
-| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==0.3.0"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
+| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.0,mcp-server-docker"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
 | `sbx mcp add` ok, aber keine Docker-Tools im `tools/list` | Server ist nicht Teil der `--static-mcp`-Menge der Sandbox (Set ist beim Erstellen fixiert) → `sbx mcp load docker --sandbox <name>` oder neu erstellen. |
-| Erster Check kurz `FAIL`, danach `OK` | `uvx` löst das gepinnte Paket beim ersten Start auf (Download) → kurzer Start-Timeout; erneut prüfen. |
+| Erster Check kurz `FAIL`, danach `OK` | `uvx` klont den gepinnten Fork-Tag beim ersten Start → kurzer Start-Timeout; erneut prüfen. |
 | Tool-Fehler „Cannot connect to the Docker daemon" | Docker Desktop läuft nicht oder der Benutzer ist nicht in `docker-users` (Host-Docker-Socket nötig). |
 
 ## Betrieb
 
 | Aktion | Befehl |
 |--------|--------|
-| Update (neue Version) | Renovate-PR für `docs/mcp/docker-mcp-server.md` (`mcp-server-docker==<v>`) mergen, dann auf dem Host neu registrieren: `sbx mcp rm docker` + `sbx mcp add docker --command (Get-Command uvx).Source --args "mcp-server-docker==<neu>"`; laufende Sandbox: `sbx mcp load docker --sandbox <name>` |
+| Update (neue Version) | Renovate-PR für `docs/mcp/docker-mcp-server.md` (`mcp-server-docker@v<v>`) mergen, dann auf dem Host neu registrieren: `sbx mcp rm docker` + `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v<neu>,mcp-server-docker"`; laufende Sandbox: `sbx mcp load docker --sandbox <name>` |
 | Status prüfen | `sbx mcp ls` (Status `ready`), `sbx mcp inspect docker` (Command/Args) |
 | In Sandbox prüfen | `sbx exec <name> bash -lc 'bash ~/.local/bin/mcp-check.sh'` → `mcp-docker:OK` |
 | Nachladen in laufende Sandbox | `sbx mcp load docker --sandbox <name>` |
@@ -141,7 +186,7 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 ## Verifikation
 
-- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker==0.3.0`).
+- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker@v0.4.0`).
 - **Sandbox:** MCP-Handshake `tools/list` enthält die Docker-Tools; ein Read-Tool (`list_containers`)
   läuft ohne Prompt, ein Write-Tool (`run_container`) löst den `ask`-Prompt aus.
 - **Nach Phase 2:** `host.docker.internal:2375` (+ `localhost`/`127.0.0.1`) aus allen `spec.yaml` +

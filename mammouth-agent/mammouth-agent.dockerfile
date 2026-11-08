@@ -20,7 +20,7 @@
 # Node/npm, Docker CLI/compose/buildx, Python, Go and uv come from it (Issue #254).
 # ARG MAMMOUTH_VERSION is the Mammouth CLI pin (Renovate, mammouth-ai/code).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea
 FROM ${BASE_IMAGE}
 
 ARG MAMMOUTH_VERSION=1.18.31.2
@@ -54,7 +54,19 @@ RUN chmod +x /usr/local/bin/seed-mammouth-model-favorites.py /usr/local/bin/mamm
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done
+ && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
+      echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
+      grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
+      exit 1; \
+    fi \
+ && java -version \
+ && [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ] \
+ && javac -version \
+ && [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ] \
+ && jar --version \
+ && [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ] \
+ && shfmt --version
 
 # npm-global CLIs (install-tooling.sh installed Node 26; npm prefix is /usr/local/share/npm-global).
 # Retry: the npm registry occasionally serves metadata for a just-published
@@ -101,8 +113,18 @@ RUN set -eux; \
 
 # Mammouth Code CLI (install.sh, pinned): run as the `agent` user so the binaries
 # land in ~/.mammouth, then symlink into PATH for the `mammouth` entrypoint.
-RUN runuser -u agent -- env HOME=/home/agent VERSION="${MAMMOUTH_VERSION}" \
-      bash -c 'curl -fsSL https://code.mammouth.ai/install.sh | VERSION="$VERSION" bash' \
+# Retry the whole install: the script downloads the release asset from GitHub,
+# which occasionally returns transient 5xx (503/504) and has no retry of its own.
+RUN set -e; \
+    for attempt in 1 2 3 4 5; do \
+      if runuser -u agent -- env HOME=/home/agent VERSION="${MAMMOUTH_VERSION}" \
+           bash -c 'curl -fsSL https://code.mammouth.ai/install.sh | VERSION="$VERSION" bash'; then \
+        break; \
+      fi; \
+      if [ "${attempt}" = "5" ]; then exit 1; fi; \
+      echo "mammouth install failed (attempt ${attempt}/5); retrying in 15s..." >&2; \
+      sleep 15; \
+    done \
  && test -x /home/agent/.mammouth/bin/mammouth \
  && ln -sf /home/agent/.mammouth/bin/mammouth /usr/local/bin/mammouth \
  && mammouth --version | grep -F "${MAMMOUTH_VERSION}"

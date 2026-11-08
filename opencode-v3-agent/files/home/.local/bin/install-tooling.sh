@@ -86,13 +86,13 @@ esac
 download() {
 	local url="$1" out="$2"
 	local attempt rc=1
-	for attempt in 1 2 3 4 5; do
+	for attempt in 1 2 3 4 5 6 7 8; do
 		curl -fsSL --connect-timeout 15 --max-time 300 "$url" -o "$out"
 		rc=$?
 		if [ "${rc}" -eq 0 ]; then
 			return 0
 		fi
-		echo "install-tooling: download attempt ${attempt}/5 failed (curl exit ${rc}): ${url}" >&2
+		echo "install-tooling: download attempt ${attempt}/8 failed (curl exit ${rc}): ${url}" >&2
 		sleep "$(( attempt * 2 ))"
 	done
 	return "${rc}"
@@ -229,7 +229,7 @@ run_kubectl() {
 	fi
 	KUBE_VER=""
 	local attempt
-	for attempt in 1 2 3 4 5; do
+	for attempt in 1 2 3 4 5 6 7 8; do
 		KUBE_VER="$(curl -fsSL --connect-timeout 15 --max-time 60 https://dl.k8s.io/release/stable.txt 2>/dev/null)" && break
 		echo "install-tooling: kubectl version fetch attempt ${attempt}/5 failed" >&2
 		sleep "$(( attempt * 2 ))"
