@@ -182,7 +182,7 @@ Setup: `docs/mcp/kubernetes-mcp-server.md`.
 ## Docker MCP
 
 On a sandbox started with `--static-mcp idea,k8s,docker`, a local Docker MCP server
-(`dboeckli/mcp-server-docker` fork `v0.4.0`, started host-side via `uvx`) is exposed through the same sbx MCP
+(`dboeckli/mcp-server-docker` fork `v0.4.2`, started host-side via `uvx`) is exposed through the same sbx MCP
 gateway. Tools arrive as `mcp__mcp-gateway__<tool>`. Read-only tools — `list_containers`, `list_images`,
 `list_networks`, `list_volumes`, `fetch_container_logs`, `buildx_list`, `buildx_history`, `buildx_logs` — are on `permissions.allow`; the write tools
 (`create_container`, `run_container`, `recreate_container`, `start_container`, `stop_container`,
