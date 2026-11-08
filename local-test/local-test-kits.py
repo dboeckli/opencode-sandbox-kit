@@ -32,6 +32,9 @@ Verwendung:
   python local-test-kits.py --help          # alle Optionen anzeigen
   python local-test-kits.py --validate-only # nur Kit-Validierung, keine Sandbox/Sandbox-Szenarien (v3 via Kit-Builder)
 
+Log: die gesamte Ausgabe wird zusaetzlich nach `target/local-test-kits-<agent>.log`
+geschrieben (Tee, wie die `build-and-publish-*.py`-Skripte).
+
 Optionen:
   {all,opencode-v3,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
@@ -48,6 +51,7 @@ Optionen:
 """
 
 import argparse
+import atexit
 import json
 import os
 import re
@@ -60,6 +64,7 @@ import urllib.request
 from shutil import which
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TARGET = os.path.join(ROOT, "target")
 passed = []
 failed = []
 
@@ -308,6 +313,76 @@ def enable_ansi():
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
+
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+class _AnsiStripStream:
+    """File-like wrapper that removes ANSI color escapes (keeps the log readable;
+    the console stream still gets the colors)."""
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, data):
+        self._stream.write(_ANSI_RE.sub("", data))
+
+    def flush(self):
+        self._stream.flush()
+
+    @property
+    def closed(self):
+        return self._stream.closed
+
+
+class Tee:
+    """Write to several streams at once (original stdout/stderr + the log file)."""
+
+    def __init__(self, *streams):
+        self._streams = streams
+
+    def write(self, data):
+        for stream in self._streams:
+            if stream is None or getattr(stream, "closed", False):
+                continue
+            stream.write(data)
+            stream.flush()
+
+    def flush(self):
+        for stream in self._streams:
+            if stream is None or getattr(stream, "closed", False):
+                continue
+            stream.flush()
+
+    def isatty(self):
+        return False
+
+
+def _start_test_log(agent):
+    """Mirror all console output into `target/local-test-kits-<agent>.log` (Tee),
+    like the `build-and-publish-*.py` scripts. ANSI color escapes are stripped from
+    the log file (the console keeps them). Returns the log path. The original streams
+    are restored and the file closed on interpreter exit (atexit), so an early
+    `sys.exit()` still leaves a complete log and no closed-stream flush error."""
+    os.makedirs(TARGET, exist_ok=True)
+    log_path = os.path.join(TARGET, f"local-test-kits-{agent}.log")
+    log_file = open(log_path, "w", encoding="utf-8", errors="replace", buffering=1)
+    log_sink = _AnsiStripStream(log_file)
+    orig_stdout, orig_stderr = sys.stdout, sys.stderr
+    sys.stdout = Tee(orig_stdout, log_sink)
+    sys.stderr = Tee(orig_stderr, log_sink)
+
+    def _restore():
+        sys.stdout, sys.stderr = orig_stdout, orig_stderr
+        try:
+            log_file.flush()
+            log_file.close()
+        except (OSError, ValueError):
+            pass
+
+    atexit.register(_restore)
+    return log_path
 
 
 def _color(code, text):
@@ -1333,6 +1408,7 @@ def main():
     args = parser.parse_args()
     ci = args.ci
     agent = args.agent
+    log_path = _start_test_log(agent)
     # Default = Repo-Root (nicht cwd): so mountet das Szenario unabhaengig vom
     # Aufrufverzeichnis das Kit-Repo. `--workspace`/`$WORKSPACE_DIR` uebersteuern.
     workspace = os.path.abspath(
@@ -1341,6 +1417,7 @@ def main():
         sys.exit(f"Workspace nicht gefunden: {workspace}")
 
     print()
+    info(f"Log: {log_path}")
     _, sbx_ver = run_sbx(["version"])
     if not sbx_ver:
         _, sbx_ver = run_sbx(["--version"])

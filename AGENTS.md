@@ -269,7 +269,8 @@ IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-tes
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
 `$PROJECT_DIR$` (Repo-Root = Sandbox-Workspace), `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
 `PARAMETERS`; IntelliJ erkennt sie (die `get_run_configurations`-Liste kann kurz veraltet sein — direkt per Namen starten
-funktioniert trotzdem).
+funktioniert trotzdem). Die `local-test-kits.py`-Läufe schreiben ihre gesamte Ausgabe zusätzlich nach
+`target/local-test-kits-<agent>.log` (Tee, gitignored), analog zu den `build-and-publish-*.log`.
 
 Die Sandbox-Szenarien mounten als Workspace den **Repo-Root** (`--workspace <pfad>` bzw.
 `$WORKSPACE_DIR` übersteuert; kein Temp-Dir mehr — Default ist bewusst nicht das Aufrufverzeichnis).
