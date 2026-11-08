@@ -808,7 +808,7 @@ Die jeweilige Config wird automatisch gelesen:
 | Tool | Source |
 |------|--------|
 | Node.js 26.13.0 | nodejs.org (`/opt/node` → Symlinks in `/usr/local/bin`; npm-CLIs wie renovate ≥43) |
-| Liberica JDK 25.0.5+11 | GitHub Releases (bell-sw) — alle Kits (auch opencode-v3) |
+| Liberica JDK 25.0.5+11 | GitHub Releases (bell-sw) — alle Kits; alle JDK-Binaries (`java`, `javac`, `jar`, `javadoc`, `jshell`, `keytool`, …) via Symlink in `/usr/local/bin` |
 | Apache Maven 3.10.0 | dlcdn.apache.org |
 | Docker CLI 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; Issue #254) |
 | Docker Compose 5.7.0 (Plugin) | aus dem Base-Image (alle Kits; Issue #254) |

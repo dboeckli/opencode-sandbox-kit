@@ -79,6 +79,10 @@ RUN set -eux; \
     [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
     java -version; \
     [ "$(readlink -f "$(command -v java)")" = "/usr/local/java/bin/java" ]; \
+    javac -version; \
+    [ "$(readlink -f "$(command -v javac)")" = "/usr/local/java/bin/javac" ]; \
+    jar --version; \
+    [ "$(readlink -f "$(command -v jar)")" = "/usr/local/java/bin/jar" ]; \
     /usr/local/java/bin/java -version; \
     mvn -v; \
     docker --version; \

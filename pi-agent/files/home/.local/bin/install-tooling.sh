@@ -139,9 +139,23 @@ run_shfmt() {
 }
 
 # --- Liberica JDK (LTS) ---
+# Symlink every JDK binary from the Liberica install into /usr/local/bin (which
+# precedes /usr/bin on PATH). Otherwise only `java` is Liberica while `javac`,
+# `jar`, `javadoc`, `jshell`, `keytool`, … would still resolve to the distro JDK
+# (/usr/bin). Idempotent; also (re)creates the links when the JDK was already present.
+link_jdk_bins() {
+	local b
+	for b in /usr/local/java/bin/*; do
+		[ -x "${b}" ] || continue
+		ln -sf "${b}" "/usr/local/bin/$(basename "${b}")"
+	done
+}
+
 run_jdk() {
 	LIBERICA_VER="25.0.5+11"
-	if [ -x /usr/local/java/bin/java ] && /usr/local/java/bin/java -version 2>&1 | grep -qF "25.0.4"; then
+	LIBERICA_BASE_VER="${LIBERICA_VER%%+*}"
+	if [ -x /usr/local/java/bin/java ] && /usr/local/java/bin/java -version 2>&1 | grep -qF "${LIBERICA_BASE_VER}"; then
+		link_jdk_bins
 		log_step jdk
 		return 0
 	fi
@@ -149,7 +163,7 @@ run_jdk() {
 	rm -rf /usr/local/java
 	mkdir -p /usr/local/java
 	tar -xzf /tmp/jdk.tar.gz -C /usr/local/java --strip-components=1
-	ln -sf /usr/local/java/bin/java /usr/local/bin/java
+	link_jdk_bins
 	rm -f /tmp/jdk.tar.gz
 	log_step jdk
 }

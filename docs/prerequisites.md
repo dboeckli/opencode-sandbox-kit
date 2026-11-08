@@ -45,7 +45,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Tool | Version | Pfad |
 |------|---------|------|
 | Node.js | 26.13.0 | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
-| Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits (auch opencode-v3) |
+| Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits; alle JDK-Binaries via Symlink in `/usr/local/bin` |
 | Apache Maven | 3.10.0 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
 | Docker CLI | 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; isolierter Daemon in der Sandbox-VM) |
 | Docker Compose | 5.7.0 (Plugin) | aus dem Base-Image (alle Kits) |
