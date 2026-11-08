@@ -270,9 +270,17 @@
     },
     {
       "customType": "regex",
-      "description": "Docker-MCP-Server-Fork (dboeckli/mcp-server-docker) Pin in Doku + README als Fork-Tag (`--from git+...@v<v>`, docs/mcp/docker-mcp-server.md, README.md, Issue #250; host-seitig via uvx registriert)",
-      "managerFilePatterns": ["docs/mcp/docker-mcp-server.md", "README.md"],
-      "matchStrings": ["mcp-server-docker@v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "description": "Docker-MCP-Server-Fork (dboeckli/mcp-server-docker) Pin in Doku + README + INSTALL + Kit-Kontexten als Fork-Tag (`--from git+...@v<v>`), inkl. Prosa-Varianten (`Fork-Pin (`v<v>`)`, `(Tag `v<v>`)`, `fork `v<v>``); Issue #250/#258, host-seitig via uvx registriert",
+      "managerFilePatterns": ["docs/mcp/docker-mcp-server.md", "README.md", "INSTALL.md", "*/context.md"],
+      "matchStringsStrategy": "any",
+      "matchStrings": [
+        "mcp-server-docker@v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)",
+        "mcp-server-docker\\)\\s*\\(`v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`\\)",
+        "Fork-Pin \\(`v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`\\)",
+        "\\(Tag `v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`\\)",
+        "-Fork via `uvx` \\(`v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`",
+        "mcp-server-docker` fork `v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`"
+      ],
       "depNameTemplate": "dboeckli/mcp-server-docker",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
