@@ -27,7 +27,7 @@
 # ARG OPENCODE_VERSION must mirror OPENCODE_VERSION in local-test-kits.py and
 # validate.yml/e2e.yml (Renovate-managed; 1.x line).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea
 FROM ${BASE_IMAGE}
 
 # OpenCode CLI pin (npm `opencode-ai`, 1.x). Available to the RUN steps below.

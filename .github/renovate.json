@@ -35,14 +35,14 @@
       "groupName": "mammouth"
     },
     {
-      "description": "OpenCode-v3 CLI-Pin (npm opencode-ai, bewusst 1.x-Linie) in EINEM PR gruppieren: Dockerfile ARG OPENCODE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis docker.io/sbx/shell-docker-image:latest ist nightly und wird nicht versioniert (Issue #254).",
+      "description": "OpenCode-v3 CLI-Pin (npm opencode-ai, bewusst 1.x-Linie) in EINEM PR gruppieren: Dockerfile ARG OPENCODE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis ist per Digest gepinnt (Tag `:latest`), Renovate aktualisiert den Digest (Issue #254).",
       "matchDatasources": ["npm"],
       "matchPackageNames": ["opencode-ai"],
       "groupName": "opencode-cli",
       "allowedVersions": "/^1\\./"
     },
     {
-      "description": "Claude-Code-CLI-Pin (npm @anthropic-ai/claude-code) in EINEM PR gruppieren: Dockerfile ARG CLAUDE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis docker.io/sbx/shell-docker-image:latest ist nightly und wird nicht versioniert (Issue #254).",
+      "description": "Claude-Code-CLI-Pin (npm @anthropic-ai/claude-code) in EINEM PR gruppieren: Dockerfile ARG CLAUDE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis ist per Digest gepinnt (Tag `:latest`), Renovate aktualisiert den Digest (Issue #254).",
       "matchDatasources": ["npm"],
       "matchPackageNames": ["@anthropic-ai/claude-code"],
       "groupName": "claude-cli"
@@ -68,9 +68,9 @@
       ]
     },
     {
-      "description": "Docker MCP server: host-side re-registration instructions in the PR body (runs on the Windows host via uvx, not part of the sandbox image)",
-      "matchDatasources": ["pypi"],
-      "matchDepNames": ["mcp-server-docker"],
+      "description": "Docker MCP server (fork dboeckli/mcp-server-docker): host-side re-registration instructions in the PR body (runs on the Windows host via uvx, not part of the sandbox image)",
+      "matchDatasources": ["github-releases"],
+      "matchDepNames": ["dboeckli/mcp-server-docker"],
       "prBodyNotes": [
         "### Host re-registration required",
         "This pin only changes the documented/registered version; the server runs on the Windows host via `uvx`.",
@@ -78,13 +78,20 @@
         "1. Re-register the server on the host (PowerShell):",
         "   ```powershell",
         "   sbx mcp rm docker",
-        "   sbx mcp add docker --command (Get-Command uvx).Source --args \"mcp-server-docker=={{{newValue}}}\"",
+        "   sbx mcp add docker --command (Get-Command uvx).Source --args \"--from,git+https://github.com/dboeckli/mcp-server-docker@v{{{newValue}}},mcp-server-docker\"",
         "   ```",
         "2. Running sandboxes: `sbx mcp load docker --sandbox <name>` (or recreate the sandbox).",
-        "3. Verify: `sbx mcp ls` / `sbx mcp inspect docker` shows `mcp-server-docker=={{{newValue}}}`.",
+        "3. Verify: `sbx mcp ls` / `sbx mcp inspect docker` shows the fork pin `...mcp-server-docker@v{{{newValue}}}`.",
         "",
-        "`uvx` downloads the pinned version on first start; there is no local install script for this server."
+        "`uvx` clones the pinned fork tag on first start; there is no local install script for this server."
       ]
+    },
+    {
+      "description": "Custom-workload base image (sbx/shell-docker-image nightly digest): bündeln + nur wöchentlich aktualisieren, statt taeglich einen Digest-PR (Issue #254)",
+      "matchDatasources": ["docker"],
+      "matchDepNames": ["sbx/shell-docker-image"],
+      "schedule": ["before 5am on monday"],
+      "groupName": "shell-docker-image nightly digest"
     }
   ],
   "customManagers": [
@@ -263,11 +270,12 @@
     },
     {
       "customType": "regex",
-      "description": "Lokaler Docker-MCP-Server (mcp-server-docker, Drittanbieter) Pin in Doku + README (docs/mcp/docker-mcp-server.md, README.md, Issue #165; host-seitig via uvx registriert)",
+      "description": "Docker-MCP-Server-Fork (dboeckli/mcp-server-docker) Pin in Doku + README als Fork-Tag (`--from git+...@v<v>`, docs/mcp/docker-mcp-server.md, README.md, Issue #250; host-seitig via uvx registriert)",
       "managerFilePatterns": ["docs/mcp/docker-mcp-server.md", "README.md"],
-      "matchStrings": ["mcp-server-docker==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
-      "depNameTemplate": "mcp-server-docker",
-      "datasourceTemplate": "pypi"
+      "matchStrings": ["mcp-server-docker@v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "dboeckli/mcp-server-docker",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
       "customType": "regex",
@@ -300,6 +308,15 @@
       "matchStrings": ["ARG PI_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "@earendil-works/pi-coding-agent",
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Custom-workload base image digest pin (docker.io/sbx/shell-docker-image:latest@sha256:<digest>) in den 5 Kit-Dockerfiles — Renovate aktualisiert den Digest, wenn das Nightly :latest weiterzieht (Issue #254)",
+      "managerFilePatterns": ["opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile"],
+      "matchStrings": ["ARG BASE_IMAGE=docker\\.io/sbx/shell-docker-image:(?<currentValue>latest)@(?<currentDigest>sha256:[0-9a-f]{64})"],
+      "depNameTemplate": "sbx/shell-docker-image",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     }
   ],
   "customDatasources": {
