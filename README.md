@@ -798,7 +798,7 @@ Das Kit installiert zwei Skill-Bundles nach `~/.agents/skills/` (als `user: "100
 > **Superpowers nur als Skills, kein Plugin:** Das OpenCode-Plugin von Superpowers wird bewusst
 > **nicht** aktiviert — es gibt also keine automatische Methodik-Injektion/Auto-Trigger beim
 > Session-Start; Skills werden bei Bedarf über das `skill`-Tool geladen. So bleiben die Kit-Regeln
-> (Feature-Branch, kein Auto-Commit, `.review`-Diff, Run-Config-Guard) maßgeblich. Update:
+> (Feature-Branch, kein Auto-Commit, `target/review`-Diff, Run-Config-Guard) maßgeblich. Update:
 > `skills update`.
 
 Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).

@@ -38,8 +38,8 @@ read-only tools). `mcp__mcp_gateway__execute_run_configuration` is limited to
 - Always work on a `feature/` branch, never directly on `master`/`main`.
 - Never push to `master`/`main`; feature-branch pushes need explicit
   per-push consent.
-- Before a push, generate `.review/changes.patch` (`mkdir -p .review &&
-  git diff <base> > .review/changes.patch`) and open only that patch in
+- Before a push, generate `target/review/changes.patch` (`mkdir -p target/review &&
+  git diff <base> > target/review/changes.patch`) and open only that patch in
   IntelliJ via `mcp__mcp_gateway__open_file_in_editor`.
 - Never add AI/co-authoring trailers (`Co-authored-by`, `Generated with …`).
 

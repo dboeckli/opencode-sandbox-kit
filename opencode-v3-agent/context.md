@@ -20,9 +20,9 @@ Nach Änderungen **nur** den Diff als **Patch-Datei** in IntelliJ öffnen — di
 werden nicht mehr zusätzlich geöffnet (der MCP-Server hat kein Diff-Tool; `mcp-gateway_open_file_in_editor`
 auf eine `.patch`-Datei liefert den Diff-View):
 
-- Verzeichnis `.review/` im Projekt (gitignored; im Projekt-`.gitignore` ergaenzen: `.review/`).
-- `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
-- Danach **nur** `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` oeffnen.
+- Verzeichnis `target/review/` im Projekt (liegt unter dem gitignorierten `target/`).
+- `mkdir -p target/review && git diff <base> > target/review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
+- Danach **nur** `target/review/changes.patch` mit `mcp-gateway_open_file_in_editor` oeffnen.
 
 ## Context7 tools reference
 
@@ -129,7 +129,7 @@ Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvo
 
 Jeder `git push` — auch auf einen Feature Branch — erfolgt **nur nach vorheriger, expliziter Zustimmung** des Users (pro Push, nicht pauschal für die Session). Nach dem Commit den User fragen, ob gepusht werden soll; ohne Antwort kein Push. Force-Push und `git push --no-verify` sind ebenfalls zustimmungspflichtig.
 
-**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p .review && git diff <base> > .review/changes.patch`) und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des Diffs wird gepusht.
+**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p target/review && git diff <base> > target/review/changes.patch`) und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des Diffs wird gepusht.
 
 ### Feature Branch mit GitHub-Issue (Zusatzregel)
 

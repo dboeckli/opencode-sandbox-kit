@@ -20,9 +20,9 @@ Nach Änderungen **nur** den Diff als **Patch-Datei** in IntelliJ öffnen — di
 werden nicht mehr zusätzlich geöffnet (der MCP-Server hat kein Diff-Tool; `open_file_in_editor` auf eine
 `.patch`-Datei liefert den Diff-View):
 
-- Verzeichnis `.review/` (gitignored; Eintrag `.review/` in `.gitignore`).
-- `mkdir -p .review && git diff <base> > .review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
-- Danach **nur** `.review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
+- Verzeichnis `target/review/` (liegt unter dem gitignorierten `target/`).
+- `mkdir -p target/review && git diff <base> > target/review/changes.patch` (`<base>` z. B. `master...HEAD`, sonst `git diff`/`git diff HEAD`).
+- Danach **nur** `target/review/changes.patch` mit `mcp-gateway_open_file_in_editor` öffnen.
 
 ## Git commits (Nachfragen-Pflicht)
 
@@ -51,7 +51,7 @@ Jeder `git push` — auch auf einen Feature Branch — erfolgt **nur nach vorher
 Users (pro Push, nicht pauschal für die Session). Nach dem Commit den User fragen, ob gepusht werden soll; ohne
 Antwort kein Push. Force-Push und `git push --no-verify` sind ebenfalls zustimmungspflichtig.
 
-**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p .review && git diff <base> > .review/changes.patch`)
+**Vor jedem Push wird der Diff präsentiert**: Patch erzeugen (`mkdir -p target/review && git diff <base> > target/review/changes.patch`)
 und mit `mcp-gateway_open_file_in_editor` in IntelliJ öffnen (bzw. `git diff` ausgeben). Erst nach Freigabe des
 Diffs wird gepusht.
 
@@ -721,7 +721,7 @@ Beim `setup.install` (User 1000) werden zwei Skill-Bundles nach `~/.agents/skill
 (`"plugin": ["superpowers@git+…"]` in `opencode.jsonc`) wird **nicht** verwendet. Damit fehlen die
 automatische Methodik-Injektion beim Session-Start/Auto-Trigger — die Skills werden bei Bedarf über
 das `skill`-Tool geladen. Das vermeidet konkurrierende Instruktionen zu den Kit-Regeln
-(Feature-Branch-Pflicht, kein Auto-Commit, `.review`-Diff, Run-Config-Guard); **bei Konflikt gelten
+(Feature-Branch-Pflicht, kein Auto-Commit, `target/review`-Diff, Run-Config-Guard); **bei Konflikt gelten
 die Kit-Regeln**. Kein Versions-Pin (Upstream-`main`, Update via `skills update`).
 
 Die Installation läuft über `opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh` (alle
