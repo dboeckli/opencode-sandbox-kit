@@ -17,7 +17,7 @@ Push-Mirror. Dieses Dokument sammelt die weiterhin relevanten Codeberg-/Forgejo-
 
 | GitHub Actions | Forgejo Actions |
 |----------------|-----------------|
-| `.github/workflows/` | `.forgejo/workflows/` (auch `.gitea/workflows/`) |
+| `.github/workflows/` | primär `.forgejo/workflows/` (auch `.gitea/workflows/`); **Codeberg führt hier nachweislich auch `.github/workflows/` aus** (siehe unten) |
 | `runs-on: ubuntu-latest` | Runner-Label (Codebergs gehostet: `codeberg-tiny/small/medium[-lazy]`; sonst `host`/custom) — `ubuntu-latest` existiert nicht |
 | Default-Image Ubuntu | Default-Image **Debian bookworm** (Tools via `apt-get` nachinstallieren) |
 | `actions/checkout@v7` | fully-qualified `https://code.forgejo.org/actions/checkout@v6` empfohlen |
@@ -33,16 +33,22 @@ Push-Mirror. Dieses Dokument sammelt die weiterhin relevanten Codeberg-/Forgejo-
   fully-qualified URLs vermeiden Mehrdeutigkeit.
 - **`vars`** ist u. a. in `runs-on` und `strategy` verfügbar (`${{ vars.X || 'default' }}`).
 
-## Forgejo Actions (derzeit nicht genutzt)
+## Forgejo Actions — im Repo deaktiviert
 
-Der frühere Forgejo-CI-Port `.forgejo/workflows/validate.yml` (nur `workflow_dispatch`) wurde
-**entfernt** — er war ohnehin deaktiviert. Es gibt aktuell **keine** Forgejo-Pipelines: `validate`,
-`e2e`, `build-and-publish-*` und `cleanup-cloudsmith` liegen ausschließlich unter
-`.github/workflows/` und laufen auf **GitHub-Runnern** (Status wird via Push-Mirror an Codeberg
-gemeldet).
+**Codeberg Actions sind für dieses Repo deaktiviert** (Repo-Setting `has_actions = false`, gesetzt am
+2026-11-08). Grund: Nach dem Entfernen von `.forgejo/workflows/validate.yml` hat Codeberg weiterhin
+die Workflows aus `.github/workflows/` ausgeführt (`validate.yml`, `e2e.yml`; belegt über die
+Codeberg-Runs-API für Commits ohne `.forgejo`-Dateien). Diese Runs blieben in der Codeberg-Runner-Queue
+auf `waiting`, alle abhängigen Jobs auf „Blocked by required conditions“ und hielten den PR-Status auf
+„pending“. Die wartenden Runs wurden gecancelt, danach Actions deaktiviert.
 
-> Hinweis: Der folgende Runner-Abschnitt ist derzeit **nicht in Gebrauch** (keine Forgejo-Pipelines);
-> er dient als Referenz, falls der Forgejo-CI-Port später reaktiviert wird.
+- Kanonische CI ist **GitHub** (Push-Mirror): dort laufen `validate`, `e2e` und `build-and-publish-*`
+  auf GitHub-Runnern; der Status wird an Codeberg gemeldet (`github-actions/*`).
+- Auf Codeberg laufen **keine** Actions mehr (auch keine `schedule`-Runs wie `cleanup-cloudsmith`).
+- Der frühere Forgejo-Port (`.forgejo/workflows/validate.yml`) ist entfernt.
+
+> Hinweis: Der folgende Runner-Abschnitt ist **nicht in Gebrauch** (Codeberg Actions deaktiviert);
+> er dient als Referenz, falls Codeberg Actions später wieder aktiviert werden.
 
 ## Runner-Anforderungen + Repo-Variablen
 
@@ -72,6 +78,8 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 > Hinweis: Nur relevant, falls Forgejo-Pipelines reaktiviert werden. Renovate (self-hosted) nutzt
 > GitHub-Secrets, nicht die Codeberg-Variablen.
 
+> Nicht in Gebrauch, solange Codeberg Actions deaktiviert sind (CI nutzt die GitHub-Secrets/Variablen).
+
 ## Secrets/Variablen auf Codeberg
 
 - **Variablen:** `DOCKER_USERNAME`, `IMAGE_PREFIX` (Default `docker.io/domboeckli`),
@@ -99,10 +107,11 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 ## Offene Punkte / Risiken
 
 - **`local-test/local-test-kits.py` liest Pins aus `.github/workflows/`** (`SBX_VERSION`,
-  `OPENCODE_VERSION`, `CLAUDE_VERSION`). Diese Dateien sind die einzige Pin-Quelle (Forgejo-Workflows
-  wurden entfernt); sie müssen erhalten bleiben.
-- **CI nur auf GitHub:** Pushes werden via Mirror auch von GitHub Actions ausgeführt; auf Codeberg
-  laufen keine Pipelines mehr.
+  `OPENCODE_VERSION`, `CLAUDE_VERSION`). Diese Dateien sind die einzige Pin-/Workflow-Quelle; sie
+  müssen erhalten bleiben.
+- **CI nur auf GitHub:** Pushes werden via Mirror von GitHub Actions ausgeführt; auf Codeberg sind
+  die Actions deaktiviert (`has_actions=false`). Die früher von Codeberg mit ausgeführten
+  `.github/workflows` erzeugen keine Runs mehr.
 - **Mirror vs. GitHub-Bots:** Der `--mirror`-Push löscht GitHub-Refs, die auf Codeberg fehlen —
   GitHub-Bots (Dependabot/Renovate-App) und GitHub-only Tags/Releases sind damit unvereinbar.
   Daher Renovate self-hosted gegen Codeberg; **Releases/Tags auf Codeberg anlegen**.
@@ -111,4 +120,6 @@ Runner-Labels sind über Repo-**Variablen** konfigurierbar (Defaults in Klammern
 - **GitHub-Packages-Maven / `gh` / sbx-CLI-Download / Docker Hub**: bleiben externe GitHub-/Drittdienste.
 
 > **Aktueller Stand:** CI läuft ausschließlich auf **GitHub** (via Push-Mirror). Der frühere
-> Forgejo-CI-Port (`.forgejo/workflows/`) wurde entfernt.
+> Forgejo-CI-Port (`.forgejo/workflows/`) wurde entfernt; **Codeberg Actions sind deaktiviert**
+> (`has_actions = false`), weil Codeberg sonst die `.github/workflows` mit ausführt (Runner-Queue
+> blieb auf `waiting`).
