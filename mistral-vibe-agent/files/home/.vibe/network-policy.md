@@ -33,4 +33,6 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Elastic REST-APIs (ELK-Stack, Docker Compose im Host-Docker)**: `localhost:9200`, `127.0.0.1:9200`, `host.docker.internal:9200` (Elasticsearch REST-API), `localhost:5601`, `127.0.0.1:5601`, `host.docker.internal:5601` (Kibana UI + REST-API), `localhost:8200`, `127.0.0.1:8200`, `host.docker.internal:8200` (APM Server OTLP-HTTP-Intake)
 - **Elastic REST-APIs (Docker Desktop Kubernetes, NodePort → localhost)**: `localhost:30920`, `127.0.0.1:30920` (Elasticsearch), `localhost:30561`, `127.0.0.1:30561` (Kibana), `localhost:30820`, `127.0.0.1:30820` (APM Server)
 
+- **Status pages**: `githubstatus.com`, `www.githubstatus.com`, `azure.status.microsoft`, `status.azure.com`, `status.docker.com`, `dockerstatus.com`, `www.dockerstatus.com`, `status.maven.org`, `status.sonatype.com`, `status.npmjs.org`, `status.python.org`, `cloudflarestatus.com`, `www.cloudflarestatus.com`, `status.codeberg.org` (offizielle Dienst-Statusseiten)
+
 Not reachable (blocked): Anthropic, telemetry, and any other host not on this list.

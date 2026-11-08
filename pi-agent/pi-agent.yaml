@@ -34,6 +34,20 @@ capabilities:
     config:
       install:
         allow: &allow
+          - githubstatus.com
+          - www.githubstatus.com
+          - azure.status.microsoft
+          - status.azure.com
+          - status.docker.com
+          - dockerstatus.com
+          - www.dockerstatus.com
+          - status.maven.org
+          - status.sonatype.com
+          - status.npmjs.org
+          - status.python.org
+          - cloudflarestatus.com
+          - www.cloudflarestatus.com
+          - status.codeberg.org
           - context7.com
           - '*.context7.com'
           - docs.mistral.ai
