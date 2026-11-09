@@ -32,6 +32,24 @@ Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-v3-agent/`, `./
 cd C:\development\projects\opencode-sandbox-kit
 ```
 
+> **Hinweis (Ressourcen & Cache):** Ohne `-m`/`--cpus` bekommt jede Sandbox per Default **50 % des
+> Host-RAM** (bei 32 GB ≈ 15.8 GiB) und alle Host-Cores. Beim `sbx run` explizit begrenzen, z. B.
+> `-m 6g --cpus 4` (gilt nur bei der Erzeugung — bestehende Sandbox vorher `sbx rm`). Das erste
+> `sbx run ./<kit>/` baut das Kit kalt (mehrere Minuten); Folgeläufe sind schneller, solange der
+> gemeinsame Buildx-Builder `sbx-kits` erhalten bleibt (`--stop-active` statt `--remove-active`,
+> kein `buildx prune`). Details: [`docs/docker-disk-cleanup.md`](docs/docker-disk-cleanup.md).
+
+Beispiel lokal mit Ressourcen-Limits (empfohlen):
+
+```powershell
+sbx run ./opencode-v3-agent/ `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    -m 6g --cpus 4 `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
 Vor dem lokalen Start einmalig die Run-Config `build-and-publish-<agent>-image` ausführen — sie baut/pusht den Tag `:local`:
 
 - [`build-and-publish-opencode-v3-image`](.run/build-and-publish-opencode-v3-image.run.xml)
