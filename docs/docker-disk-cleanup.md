@@ -27,18 +27,17 @@ Alternativ direkt mit Python (läuft im aktuellen Fenster):
 python .\local-test\docker-buildx-cleanup.py
 ```
 
-Es entfernt `sbx-opencode`/`sbx-claude` (pre-v3, inkl. Cache-Volume) und prunt
-`sbx-opencode-v3`, `sbx-claude-v3`, `sbx-mammouth`, `sbx-pi`, `sbx-vibe`. Die Ausgabe wird
-zusätzlich nach `target/docker-buildx-cleanup.log` geschrieben. Auf diesem Host freigegeben:
-**~64,6 GB Build-Cache** (`sbx-pi` 30,66 GB, `sbx-vibe` 33,97 GB).
+Es entfernt die alten pre-v3-Builder `sbx-opencode`/`sbx-claude` sowie die früheren
+per-Kit-Builder (`sbx-opencode-v3`, `sbx-claude-v3`, `sbx-mammouth`, `sbx-pi`, `sbx-vibe`)
+inkl. Cache-Volume und prunt den gemeinsamen Builder `sbx-kits`. Die Ausgabe wird zusätzlich
+nach `target/docker-buildx-cleanup.log` geschrieben.
 
 > Manueller Weg (ohne Script): siehe [Manueller Weg (Alternative)](#manueller-weg-alternative) am Ende.
 
 ## 1a. RAM freigeben (Builder idle stoppen/entfernen)
 
-Die fünf aktiven `docker-container`-Builder (`sbx-opencode-v3`, `sbx-claude-v3`,
-`sbx-mammouth`, `sbx-pi`, `sbx-vibe`) halten je einen laufenden BuildKit-Container in der
-Docker-Desktop-VM und belegen auch dann RAM, wenn gerade nicht gebaut wird. Verbrauch messen:
+Der gemeinsame `docker-container`-Builder `sbx-kits` hält einen laufenden BuildKit-Container in
+der Docker-Desktop-VM und belegt auch dann RAM, wenn gerade nicht gebaut wird. Verbrauch messen:
 
 ```powershell
 docker stats --no-stream
@@ -169,10 +168,10 @@ BuildKit-Cache je Builder messen (ohne `--builder` = aktueller Builder):
 docker buildx du
 ```
 
-Cache eines einzelnen Builders leeren:
+Cache des Builders leeren:
 
 ```powershell
-docker buildx prune --builder sbx-claude-v3 -af
+docker buildx prune --builder sbx-kits -af
 ```
 
 Ungenutzten Alt-Builder `sbx-opencode` inkl. Cache-Volume entfernen (pre-v3):
@@ -188,12 +187,12 @@ docker buildx rm sbx-claude
 ```
 
 > **Wichtig:** `docker buildx prune -af` ohne `--builder` prunt nur den **aktuellen** Builder,
-> `docker builder prune -af` nur den `default`-Builder. Jedes Kit baut mit eigenem Builder
-> (`BUILDER` in `local-test/build-and-publish-*-image.py`), daher alle aktiven prunen:
+> `docker builder prune -af` nur den `default`-Builder. Alle Kits bauen mit dem gemeinsamen
+> Builder `sbx-kits` (`BUILDER` in `local-test/build-and-publish-*-image.py`), daher diesen
+> explizit prunen:
 >
 > ```powershell
-> "sbx-opencode-v3","sbx-claude-v3","sbx-mammouth","sbx-pi","sbx-vibe" |
->   ForEach-Object { docker buildx prune --builder $_ -af }
+> docker buildx prune --builder sbx-kits -af
 > ```
 >
 > `buildx prune` löscht nur Cache/Layer — **keine** Images und **keine** Builder. `buildx rm`

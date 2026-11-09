@@ -46,7 +46,7 @@ NAME = os.environ.get("OPENCODE_V3_IMAGE_NAME", "sbx-opencode")
 # Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
 IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
 IMAGE = f"{IMAGE_PREFIX}/{NAME}"
-BUILDER = os.environ.get("OPENCODE_V3_BUILDX_BUILDER", "sbx-opencode-v3")
+BUILDER = os.environ.get("OPENCODE_V3_BUILDX_BUILDER", "sbx-kits")
 
 
 class Tee:

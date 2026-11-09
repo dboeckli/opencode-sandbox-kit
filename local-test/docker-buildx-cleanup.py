@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Free disk space from Docker buildx on the host (Windows/PowerShell).
 
-Removes the obsolete pre-v3 buildx builders and prunes the build cache of the
-active kit builders:
+Removes obsolete buildx builders and prunes the build cache of the shared
+kit builder:
 
     python local-test/docker-buildx-cleanup.py                    # remove obsolete + prune active
     python local-test/docker-buildx-cleanup.py --dry-run          # only print the commands
@@ -11,16 +11,18 @@ active kit builders:
     python local-test/docker-buildx-cleanup.py --stop-active      # also stop active builders (free RAM)
     python local-test/docker-buildx-cleanup.py --remove-active    # remove active builders (free RAM)
 
-Why per builder: `docker buildx prune -af` without `--builder` prunes only the
-*current* builder, but each kit builds with its own builder (see BUILDER in
-local-test/build-and-publish-*-image.py). The obsolete `sbx-opencode`/`sbx-claude`
-builders predate the v3 migration and are superseded by `sbx-opencode-v3`/
-`sbx-claude-v3`; removing them also drops their build cache (builder state).
+Why a single builder: `docker buildx prune -af` without `--builder` prunes only
+the *current* builder, so the cleanup still targets the shared builder explicitly.
+All kits now build with the same `docker-container` builder (`sbx-kits`, see
+BUILDER in local-test/build-and-publish-*-image.py), so there is one BuildKit
+container and one cache instead of one per kit. The former per-kit builders
+(`sbx-opencode-v3`, `sbx-claude-v3`, `sbx-mammouth`, `sbx-pi`, `sbx-vibe`) and
+the pre-v3 `sbx-opencode`/`sbx-claude` are removed if still present.
 
-`--stop-active` stops the running BuildKit containers of the active builders
+`--stop-active` stops the running BuildKit container of the active builder
 (frees RAM in the Docker Desktop VM, keeps builder config and cache).
-`--remove-active` removes them entirely (also drops their cache volume; the
-build-and-publish scripts recreate a builder on the next build). The two flags
+`--remove-active` removes it entirely (also drops its cache volume; the
+build-and-publish scripts recreate the builder on the next build). The two flags
 are mutually exclusive, and `--remove-active` skips pruning because the cache is
 deleted anyway.
 
@@ -44,17 +46,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET = os.path.join(ROOT, "target")
 LOG_FILE = os.path.join(TARGET, "docker-buildx-cleanup.log")
 
-# Pre-v3 builders (superseded by the *-v3 variants) - safe to remove.
-OLD_BUILDERS = ("sbx-opencode", "sbx-claude")
-
-# Builders currently used by local-test/build-and-publish-*-image.py.
-ACTIVE_BUILDERS = (
+# Obsolete builders (pre-v3 plus the former one-per-kit v3 builders) - safe to
+# remove; superseded by the shared `sbx-kits` builder.
+OLD_BUILDERS = (
+    "sbx-opencode",
+    "sbx-claude",
     "sbx-opencode-v3",
     "sbx-claude-v3",
     "sbx-mammouth",
     "sbx-pi",
     "sbx-vibe",
 )
+
+# Shared builder used by all local-test/build-and-publish-*-image.py scripts
+# (override per script via the *_BUILDX_BUILDER env vars).
+ACTIVE_BUILDERS = ("sbx-kits",)
 
 
 class Tee:
