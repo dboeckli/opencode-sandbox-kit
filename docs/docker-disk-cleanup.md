@@ -34,6 +34,36 @@ zusätzlich nach `target/docker-buildx-cleanup.log` geschrieben. Auf diesem Host
 
 > Manueller Weg (ohne Script): siehe [Manueller Weg (Alternative)](#manueller-weg-alternative) am Ende.
 
+## 1a. RAM freigeben (Builder idle stoppen/entfernen)
+
+Die fünf aktiven `docker-container`-Builder (`sbx-opencode-v3`, `sbx-claude-v3`,
+`sbx-mammouth`, `sbx-pi`, `sbx-vibe`) halten je einen laufenden BuildKit-Container in der
+Docker-Desktop-VM und belegen auch dann RAM, wenn gerade nicht gebaut wird. Verbrauch messen:
+
+```powershell
+docker stats --no-stream
+```
+
+Builder stoppen (Cache/Config bleibt, startet beim nächsten Build wieder):
+
+```powershell
+.\local-test\docker-buildx-cleanup.cmd --stop-active
+```
+
+Builder entfernen (gibt zusätzlich das Cache-Volume frei; die Build-Skripte legen sie beim
+nächsten `build-and-publish-*`-Lauf neu an):
+
+```powershell
+.\local-test\docker-buildx-cleanup.cmd --remove-active
+```
+
+`--stop-active` und `--remove-active` schließen sich gegenseitig aus. `--remove-active`
+überspringt das Prunen, da der Cache ohnehin gelöscht wird. Die gebauten Images (z. B.
+`:local`) bleiben in beiden Fällen erhalten.
+
+> Wichtig für die Sandbox-Größe: `sbx` setzt `--memory` ohne eigene Angabe auf **50 % des
+> Host-RAM pro Sandbox** — beim `sbx run` explizit `-m <z. B. 6g>` setzen.
+
 ## 2. VHDX-Dateien finden
 
 Per `cmd`:
@@ -78,8 +108,10 @@ Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss | ForEach-Obj
 wsl --shutdown
 ```
 
-> Achtung: beendet auch die Agent-Sandbox (läuft in Docker Desktop/WSL2) — vorher offene Arbeit
-> sichern. Docker Desktop muss ebenfalls vollständig beendet sein, sonst ist die VHDX gesperrt.
+> `wsl --shutdown` beendet nur die WSL2-Distros (`docker-desktop`, `Ubuntu`, …). Die
+> Agent-Sandbox läuft als eigene MicroVM (sbx/`sandboxd`) und wird davon **nicht** beendet —
+> dafür `sbx stop <name>` bzw. `sbx rm <name>` verwenden. Docker Desktop muss für das Compact
+> vollständig beendet sein, sonst ist die VHDX gesperrt.
 
 ## 4. VHDX kompaktieren (diskpart, als Administrator)
 

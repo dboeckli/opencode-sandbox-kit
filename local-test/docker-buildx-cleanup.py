@@ -4,16 +4,25 @@
 Removes the obsolete pre-v3 buildx builders and prunes the build cache of the
 active kit builders:
 
-    python local-test/docker-buildx-cleanup.py             # remove + prune
-    python local-test/docker-buildx-cleanup.py --dry-run   # only print the commands
-    python local-test/docker-buildx-cleanup.py --no-rm     # prune only
-    python local-test/docker-buildx-cleanup.py --no-prune  # remove only
+    python local-test/docker-buildx-cleanup.py                    # remove obsolete + prune active
+    python local-test/docker-buildx-cleanup.py --dry-run          # only print the commands
+    python local-test/docker-buildx-cleanup.py --no-rm            # prune only
+    python local-test/docker-buildx-cleanup.py --no-prune         # remove obsolete only
+    python local-test/docker-buildx-cleanup.py --stop-active      # also stop active builders (free RAM)
+    python local-test/docker-buildx-cleanup.py --remove-active    # remove active builders (free RAM)
 
 Why per builder: `docker buildx prune -af` without `--builder` prunes only the
 *current* builder, but each kit builds with its own builder (see BUILDER in
 local-test/build-and-publish-*-image.py). The obsolete `sbx-opencode`/`sbx-claude`
 builders predate the v3 migration and are superseded by `sbx-opencode-v3`/
 `sbx-claude-v3`; removing them also drops their build cache (builder state).
+
+`--stop-active` stops the running BuildKit containers of the active builders
+(frees RAM in the Docker Desktop VM, keeps builder config and cache).
+`--remove-active` removes them entirely (also drops their cache volume; the
+build-and-publish scripts recreate a builder on the next build). The two flags
+are mutually exclusive, and `--remove-active` skips pruning because the cache is
+deleted anyway.
 
 `-a` (prune) includes internal/frontend images, so rebuilds are slower until the
 cache is warm again. After pruning, compact the WSL2 VHDX to return the freed
@@ -128,7 +137,14 @@ def cleanup():
     argv = sys.argv[1:]
     dry_run = "--dry-run" in argv
     do_rm = "--no-rm" not in argv
-    do_prune = "--no-prune" not in argv
+    stop_active = "--stop-active" in argv
+    remove_active = "--remove-active" in argv
+    # Removing the active builders drops their cache anyway, so skip the (then
+    # pointless) prune pass.
+    do_prune = "--no-prune" not in argv and not remove_active
+
+    if stop_active and remove_active:
+        sys.exit("--stop-active and --remove-active are mutually exclusive")
 
     if which("docker") is None:
         sys.exit("docker not found on PATH (run on the Windows host, not in the sandbox)")
@@ -159,6 +175,23 @@ def cleanup():
                     dry_run,
                 ):
                     failed.append(f"buildx prune --builder {builder}")
+            else:
+                print(f"skip {builder}: not present")
+
+    if remove_active:
+        print("\n== Remove active builders (free RAM; recreated on next build) ==")
+        for builder in ACTIVE_BUILDERS:
+            if builder in existing:
+                if not run(["docker", "buildx", "rm", builder], dry_run):
+                    failed.append(f"buildx rm {builder}")
+            else:
+                print(f"skip {builder}: not present")
+    elif stop_active:
+        print("\n== Stop active builders (free RAM; config + cache kept) ==")
+        for builder in ACTIVE_BUILDERS:
+            if builder in existing:
+                if not run(["docker", "buildx", "stop", builder], dry_run):
+                    failed.append(f"buildx stop {builder}")
             else:
                 print(f"skip {builder}: not present")
 
