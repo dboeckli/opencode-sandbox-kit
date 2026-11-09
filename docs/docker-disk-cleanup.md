@@ -56,6 +56,17 @@ nächsten `build-and-publish-*`-Lauf neu an):
 .\local-test\docker-buildx-cleanup.cmd --remove-active
 ```
 
+> Nach `--remove-active` ist **kein** `docker-container`-Builder mehr ausgewählt; ein direktes
+> `sbx run ./<kit>/` scheitert dann mit „OCI exporter is not supported for the docker driver".
+> Gemeinsamen Builder neu anlegen und selektieren:
+>
+> ```powershell
+> docker buildx create --name sbx-kits --driver docker-container --use --bootstrap
+> docker buildx ls
+> ```
+>
+> Erwartet: `sbx-kits*` mit Driver `docker-container` und Status `running`.
+
 `--stop-active` und `--remove-active` schließen sich gegenseitig aus. `--remove-active`
 überspringt das Prunen, da der Cache ohnehin gelöscht wird. Die gebauten Images (z. B.
 `:local`) bleiben in beiden Fällen erhalten.
