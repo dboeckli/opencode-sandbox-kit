@@ -6,22 +6,45 @@
 
 ## 1. Im Docker-VM aufräumen (PowerShell)
 
+Für die Kit-Images gibt es ein fertiges Script, das die Alt-Builder entfernt und den Cache
+**je aktivem Builder** prunt:
+
+Nur anzeigen, was passieren würde (Dry-Run):
+
 ```powershell
-docker system df -v
-docker builder prune -af          # BuildKit-Cache, meist der größte Brocken
-docker image prune -a             # ungenutzte Images
-docker container prune
-docker volume prune
-# Buildx gezielt:
-docker buildx du
-docker buildx prune -af --builder sbx-claude-v3   # je Builder
-docker buildx rm sbx-claude                       # ungenutzte Alt-Builder inkl. Cache-Volume
+.\local-test\docker-buildx-cleanup.cmd --dry-run
 ```
+
+Ausführen:
+
+```powershell
+.\local-test\docker-buildx-cleanup.cmd
+```
+
+Alternativ direkt mit Python (läuft im aktuellen Fenster):
+
+```powershell
+python .\local-test\docker-buildx-cleanup.py
+```
+
+Es entfernt `sbx-opencode`/`sbx-claude` (pre-v3, inkl. Cache-Volume) und prunt
+`sbx-opencode-v3`, `sbx-claude-v3`, `sbx-mammouth`, `sbx-pi`, `sbx-vibe`. Die Ausgabe wird
+zusätzlich nach `target/docker-buildx-cleanup.log` geschrieben. Auf diesem Host freigegeben:
+**~64,6 GB Build-Cache** (`sbx-pi` 30,66 GB, `sbx-vibe` 33,97 GB).
+
+> Manueller Weg (ohne Script): siehe [Manueller Weg (Alternative)](#manueller-weg-alternative) am Ende.
 
 ## 2. VHDX-Dateien finden
 
+Per `cmd`:
+
 ```powershell
 cmd /c "dir /s /b %LOCALAPPDATA%\Docker\*.vhdx"
+```
+
+Oder per PowerShell (inkl. Größe):
+
+```powershell
 Get-ChildItem "$env:LOCALAPPDATA\Docker" -Recurse -Filter *.vhdx |
   Select-Object FullName, @{n='GB';e={[math]::Round($_.Length/1GB,2)}}
 ```
@@ -32,11 +55,6 @@ Auf diesem Host gefunden (`C:\Users\dboec`):
 |-------|--------|
 | `...\Docker\wsl\disk\docker_data.vhdx` | **Images / Container / Volumes** (der große Brocken) |
 | `...\Docker\wsl\main\ext4.vhdx` | Docker-Desktop-Systemdisk (kleiner) |
-| `...\Docker\wsl.bak\disk\docker_data.vhdx` | Alt-Backup (Upgrade-Rest) |
-| `...\Docker\wsl.bak\main\ext4.vhdx` | Alt-Backup (Upgrade-Rest) |
-
-> `wsl.bak` ist ein Alt-Backup. Läuft Docker Desktop normal (nutzt `wsl\`), kannst du den Ordner
-> `wsl.bak` löschen — gibt sofort Platz, unabhängig von der Kompaktierung.
 
 Registry-Variante (falls die Pfade mal anders liegen):
 
@@ -92,3 +110,74 @@ Danach Docker Desktop wieder starten.
 
 - `Optimize-VHD -Path "<vhd>" -Mode Full` — nur mit aktivem Hyper-V-Feature; VHDX darf vorher nicht attached sein.
 - Docker Desktop → Troubleshoot → „Clean / Purge data" (destruktiv: löscht Images/Container/Volumes).
+
+## Manueller Weg (Alternative)
+
+Verbrauch und freigegebenen Platz anzeigen:
+
+```powershell
+docker system df -v
+```
+
+Gestoppte Container entfernen:
+
+```powershell
+docker container prune
+```
+
+Ungenutzte Volumes entfernen:
+
+```powershell
+docker volume prune
+```
+
+BuildKit-Cache je Builder messen (ohne `--builder` = aktueller Builder):
+
+```powershell
+docker buildx du
+```
+
+Cache eines einzelnen Builders leeren:
+
+```powershell
+docker buildx prune --builder sbx-claude-v3 -af
+```
+
+Ungenutzten Alt-Builder `sbx-opencode` inkl. Cache-Volume entfernen (pre-v3):
+
+```powershell
+docker buildx rm sbx-opencode
+```
+
+Ungenutzten Alt-Builder `sbx-claude` inkl. Cache-Volume entfernen (pre-v3):
+
+```powershell
+docker buildx rm sbx-claude
+```
+
+> **Wichtig:** `docker buildx prune -af` ohne `--builder` prunt nur den **aktuellen** Builder,
+> `docker builder prune -af` nur den `default`-Builder. Jedes Kit baut mit eigenem Builder
+> (`BUILDER` in `local-test/build-and-publish-*-image.py`), daher alle aktiven prunen:
+>
+> ```powershell
+> "sbx-opencode-v3","sbx-claude-v3","sbx-mammouth","sbx-pi","sbx-vibe" |
+>   ForEach-Object { docker buildx prune --builder $_ -af }
+> ```
+>
+> `buildx prune` löscht nur Cache/Layer — **keine** Images und **keine** Builder. `buildx rm`
+> entfernt Builder + Cache-Volume, die gebauten Images (z. B. `:local`) bleiben erhalten.
+
+Alte Timestamp-Tags der Kit-Images (nur Images **ohne** `:local` geben dabei Platz frei; ein
+zusätzlicher Tag auf einem `:local`-Image wird nur entfernt).
+
+Alte Timestamp-Tags auflisten:
+
+```powershell
+docker images --format "{{.Repository}}:{{.Tag}}" | Select-String 'sbx-.*\.\d{14}$'
+```
+
+Dann gezielt entfernen (`<repo>`/`<tag>` ersetzen):
+
+```powershell
+docker rmi <repo>:<tag>
+```
