@@ -18,6 +18,7 @@ test("normalizes Pi gateway tool names", () => {
 test("allows Pi-prefixed read-only Kubernetes tools", () => {
 	assert.equal(isAllowedTool(pi("pods_list"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("resources_get"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("api_resources_list"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("helm_list"), {}).allowed, true);
 });
 

@@ -94,7 +94,7 @@ Operationen erlaubt): `mcp-gateway_get_*`, `mcp-gateway_list_*`, `mcp-gateway_se
 `mcp-gateway_test_database_connection`, `mcp-gateway_introspect_schema`, `mcp-gateway_run_inspection_kts`,
 `mcp-gateway_validate_inspection_kts`, `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ — bewusst
 erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor — bewusst erlaubt, ohne ask)
-sowie die K8s-Read-only-Tools des host-seitigen Kubernetes-MCP-Servers (`events_list`, `namespaces_list`,
+sowie die K8s-Read-only-Tools des host-seitigen Kubernetes-MCP-Servers (`api_resources_list`, `events_list`, `namespaces_list`,
 `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`, `pods_list_in_namespace`, `pods_log`,
 `pods_top`, `projects_list`, `resources_get`, `resources_list`, `helm_list` — jeweils mit `mcp-gateway_`-Präfix;
 siehe `docs/mcp/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt). Alle übrigen K8s-Tools

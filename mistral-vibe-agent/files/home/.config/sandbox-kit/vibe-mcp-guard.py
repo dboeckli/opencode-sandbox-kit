@@ -44,6 +44,7 @@ ALLOW = (
     # Kubernetes MCP server (read_only toolsets core/helm; configuration_view
     # intentionally excluded: it would return the host kubeconfig incl. client
     # certificate/key into the sandbox).
+    "api_resources_list",
     "events_list",
     "helm_list",
     "namespaces_list",
