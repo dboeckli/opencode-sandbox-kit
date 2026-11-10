@@ -46,7 +46,7 @@ NAME = os.environ.get("MAMMOUTH_IMAGE_NAME", "sbx-mammouth")
 # Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
 IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
 IMAGE = f"{IMAGE_PREFIX}/{NAME}"
-BUILDER = os.environ.get("MAMMOUTH_BUILDX_BUILDER", "sbx-mammouth")
+BUILDER = os.environ.get("MAMMOUTH_BUILDX_BUILDER", "sbx-kits")
 
 
 class Tee:

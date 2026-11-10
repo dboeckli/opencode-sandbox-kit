@@ -43,7 +43,7 @@ NAME = os.environ.get("VIBE_IMAGE_NAME", "sbx-mistral-vibe")
 # Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
 IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
 IMAGE = f"{IMAGE_PREFIX}/{NAME}"
-BUILDER = os.environ.get("VIBE_BUILDX_BUILDER", "sbx-vibe")
+BUILDER = os.environ.get("VIBE_BUILDX_BUILDER", "sbx-kits")
 
 
 class Tee:

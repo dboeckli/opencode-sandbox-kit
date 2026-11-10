@@ -45,7 +45,7 @@ NAME = os.environ.get("PI_IMAGE_NAME", "sbx-pi-agent")
 # Zentraler Registry-Umschalter (siehe local-test-kits.py): Docker Hub (Default) oder Cloudsmith.
 IMAGE_PREFIX = os.environ.get("IMAGE_PREFIX", "docker.io/domboeckli")
 IMAGE = f"{IMAGE_PREFIX}/{NAME}"
-BUILDER = os.environ.get("PI_BUILDX_BUILDER", "sbx-pi")
+BUILDER = os.environ.get("PI_BUILDX_BUILDER", "sbx-kits")
 
 
 class Tee:
