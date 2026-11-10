@@ -354,7 +354,8 @@ Die Config liegt je Agent-Location vor:
   `mcp-gateway_validate_inspection_kts`, `mcp-gateway_build_project` (kompiliert das Projekt im IntelliJ —
   bewusst erlaubt, ohne ask), `mcp-gateway_open_file_in_editor` (öffnet Dateien im IntelliJ-Editor —
   bewusst erlaubt, ohne ask) sowie die **K8s-Read-only-Tools** des host-seitigen Kubernetes-MCP-Servers
-  (`docs/mcp/kubernetes-mcp-server.md`, Issue #40): `mcp-gateway_events_list`, `mcp-gateway_helm_list`,
+  (`docs/mcp/kubernetes-mcp-server.md`, Issue #40): `mcp-gateway_api_resources_list`,
+  `mcp-gateway_events_list`, `mcp-gateway_helm_list`,
   `mcp-gateway_namespaces_list`, `mcp-gateway_nodes_log`, `mcp-gateway_nodes_stats_summary`,
   `mcp-gateway_nodes_top`, `mcp-gateway_pods_get`, `mcp-gateway_pods_list`,
   `mcp-gateway_pods_list_in_namespace`, `mcp-gateway_pods_log`, `mcp-gateway_pods_top`,

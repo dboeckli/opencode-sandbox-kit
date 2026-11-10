@@ -172,8 +172,8 @@ Connected via the sbx MCP gateway (`mcp-gateway`); the IntelliJ MCP server runs 
 On a sandbox started with `--static-mcp idea,k8s`, the host-side Kubernetes MCP server
 (`containers/kubernetes-mcp-server`, full scope: `read_only = false`, toolsets
 `core`/`config`/`helm`) is exposed through the
-same sbx MCP gateway. Tools arrive as `mcp-gateway_<tool>`. The documented read-only tools — `pods_list`,
-`pods_list_in_namespace`, `pods_get`, `pods_log`, `pods_top`, `events_list`, `namespaces_list`, `nodes_log`,
+same sbx MCP gateway. Tools arrive as `mcp-gateway_<tool>`. The documented read-only tools — `api_resources_list`,
+`pods_list`, `pods_list_in_namespace`, `pods_get`, `pods_log`, `pods_top`, `events_list`, `namespaces_list`, `nodes_log`,
 `nodes_stats_summary`, `nodes_top`, `resources_list`, `resources_get`, `projects_list`, `helm_list` — are
 `allow`. All other K8s tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`,
 `resources_delete`, `resources_scale`, `helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) are **`ask`**:

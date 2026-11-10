@@ -215,8 +215,8 @@ freigegeben (in allen vier Agent-Configs):
 - Claude Code: `permissions.allow` + `permissions.ask` in `settings.json` (+ `settings.kit.json`, `defaultMode: default`)
 - Mistral Vibe: `pre_tool`-Guard (`vibe-mcp-guard.py`)
 
-Freigegeben (nur lesend, aus den Toolsets `core`/`config`/`helm`): `events_list`, `helm_list`,
-`namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`,
+Freigegeben (nur lesend, aus den Toolsets `core`/`config`/`helm`): `api_resources_list`, `events_list`,
+`helm_list`, `namespaces_list`, `nodes_log`, `nodes_stats_summary`, `nodes_top`, `pods_get`, `pods_list`,
 `pods_list_in_namespace`, `pods_log`, `pods_top`, `projects_list`, `resources_get`,
 `resources_list`.
 

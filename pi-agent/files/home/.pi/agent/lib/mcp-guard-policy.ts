@@ -20,6 +20,7 @@ const CANONICAL_PREFIX = "mcp-gateway_";
 
 const ALLOWED_EXACT = new Set([
 	"mcp-gateway_analyze_calls",
+	"mcp-gateway_api_resources_list",
 	"mcp-gateway_build_project",
 	"mcp-gateway_buildx_list",
 	"mcp-gateway_buildx_history",
