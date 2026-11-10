@@ -152,6 +152,37 @@ sbx mcp ls
 > PowerShell automatisch zum Benutzerprofil auf — kein `<user>`-Platzhalter nötig. Das
 > Configure-Skript gibt den fertigen Befehl (mit aufgelöstem Pfad) am Ende aus.
 
+### Bestehende Registrierung umstellen
+
+Gilt z. B., wenn die Registrierung noch auf einen alten Command/Pfad zeigt (etwa ohne absoluten
+`.exe`-Pfad, mit dem alten `MCP_CONFIG_PATH`-Shim oder auf eine anderswo liegende Binary) oder wenn
+Binary-Pfad bzw. `config.toml` umgezogen sind. Erst die alte Registrierung entfernen:
+
+```powershell
+sbx mcp rm k8s
+```
+
+Dann mit dem aktuellen Command neu registrieren (absoluter `.exe`-Pfad + `--config`):
+
+```powershell
+sbx mcp add k8s `
+  --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" `
+  --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"
+```
+
+Registrierung prüfen:
+
+```powershell
+sbx mcp ls
+sbx mcp inspect k8s
+```
+
+Laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim Erstellen fixiert) bzw. neu erstellen:
+
+```powershell
+sbx mcp load k8s --sandbox <name>
+```
+
 ## 4. In der Sandbox verwenden
 
 Beim Erstellen der Sandbox als statischen MCP-Server mitgeben (neben dem IntelliJ-MCP):
