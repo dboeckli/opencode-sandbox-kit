@@ -205,7 +205,7 @@ run_docker() {
 # --- Docker Compose (CLI plugin) ---
 run_compose() {
 	# Compose release assets use x86_64/aarch64, not amd64/arm64
-	COMPOSE_VER="5.7.0"
+	COMPOSE_VER="5.7.1"
 	if [ -x /usr/local/lib/docker/cli-plugins/docker-compose ] && docker compose version 2>/dev/null | grep -qF "${COMPOSE_VER}"; then
 		log_step compose
 		return 0
