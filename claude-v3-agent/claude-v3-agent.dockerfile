@@ -18,7 +18,7 @@
 # ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly, Issue #254).
 # ARG CLAUDE_VERSION is the Claude Code CLI pin (npm `@anthropic-ai/claude-code`, Renovate).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
 FROM ${BASE_IMAGE}
 
 ARG CLAUDE_VERSION=2.1.322
