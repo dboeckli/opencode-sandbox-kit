@@ -18,7 +18,7 @@ jobs:
       # Source of Truth fuer die CLI-Pins der v3-Workload-Kits; Updates via Renovate
       # (customManager in .github/renovate.json).
       OPENCODE_VERSION: 1.19.5
-      CLAUDE_VERSION: 2.1.319
+      CLAUDE_VERSION: 2.1.322
       # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
       # session ("not signed in to Docker"); that session needs a Secret Service
       # on the headless runner (see the setup step below). Fork PRs get no
