@@ -9,6 +9,7 @@
   "permissions": {
     "allow": [
       "mcp__mcp-gateway__analyze_calls",
+      "mcp__mcp-gateway__api_resources_list",
       "mcp__mcp-gateway__build_project",
       "mcp__mcp-gateway__events_list",
       "mcp__mcp-gateway__fetch_query_result",

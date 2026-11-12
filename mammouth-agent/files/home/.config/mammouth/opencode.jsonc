@@ -84,6 +84,7 @@
     "mcp-gateway_create_volume": "ask",
     "mcp-gateway_remove_volume": "ask",
     "mcp-gateway_analyze_calls": "allow",
+    "mcp-gateway_api_resources_list": "allow",
     "mcp-gateway_build_project": "allow",
     "mcp-gateway_buildx_list": "allow",
     "mcp-gateway_buildx_history": "allow",
