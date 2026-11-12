@@ -21,7 +21,7 @@
 ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
 FROM ${BASE_IMAGE}
 
-ARG CLAUDE_VERSION=2.1.319
+ARG CLAUDE_VERSION=2.1.322
 
 # The base image runs as the unprivileged `agent` user; installs need root.
 USER root
