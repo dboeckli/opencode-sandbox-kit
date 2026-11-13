@@ -253,7 +253,7 @@ install_helm() {
 }
 
 run_helm() {
-	HELM_VER="4.3.1"
+	HELM_VER="4.3.2"
 	if command -v helm >/dev/null 2>&1 && helm version --short 2>/dev/null | grep -qF "v${HELM_VER}" \
 		&& [ "$(readlink -f /usr/local/bin/helm4 2>/dev/null)" = "$(readlink -f /usr/local/bin/helm)" ]; then
 		log_step helm
