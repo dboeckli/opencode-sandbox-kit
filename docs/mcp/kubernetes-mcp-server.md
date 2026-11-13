@@ -154,15 +154,30 @@ sbx mcp ls
 
 ### Bestehende Registrierung umstellen
 
-Gilt z. B., wenn die Registrierung noch auf einen alten Command/Pfad zeigt (etwa ohne absoluten
-`.exe`-Pfad, mit dem alten `MCP_CONFIG_PATH`-Shim oder auf eine anderswo liegende Binary) oder wenn
-Binary-Pfad bzw. `config.toml` umgezogen sind. Erst die alte Registrierung entfernen:
+Gilt z. B. beim Wechsel auf eine neue Version oder wenn der Command/Pfad nicht mehr stimmt (ohne
+absoluten `.exe`-Pfad, alter `MCP_CONFIG_PATH`-Shim, umgezogene Binary/`config.toml`).
+
+Alte Registrierung entfernen (verhindert, dass das Gateway den Prozess neu startet):
 
 ```powershell
 sbx mcp rm k8s
 ```
 
-Dann mit dem aktuellen Command neu registrieren (absoluter `.exe`-Pfad + `--config`):
+Laufenden Server stoppen — Windows lockt die `.exe`, sonst schlägt das Ersetzen beim Install fehl:
+
+```powershell
+Get-Process kubernetes-mcp-server -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+Gepinnte/aktuelle Binary installieren und Version prüfen (Update auf den Renovate-Pin; ohne
+Prozess-Stop bricht das Skript mit „binary cannot be replaced while in use“ ab):
+
+```powershell
+.\local-scripts\install-kubernetes-mcp-server.ps1
+& "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --version
+```
+
+Mit dem aktuellen Command neu registrieren (absoluter `.exe`-Pfad + `--config`):
 
 ```powershell
 sbx mcp add k8s `
@@ -170,16 +185,12 @@ sbx mcp add k8s `
   --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"
 ```
 
-Registrierung prüfen:
+Registrierung prüfen und in die laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim
+Erstellen fixiert) bzw. Sandbox neu erstellen:
 
 ```powershell
 sbx mcp ls
 sbx mcp inspect k8s
-```
-
-Laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim Erstellen fixiert) bzw. neu erstellen:
-
-```powershell
 sbx mcp load k8s --sandbox <name>
 ```
 
