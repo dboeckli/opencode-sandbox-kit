@@ -35,6 +35,11 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+Das gilt nur für Branches, die **der Agent selbst anlegt**. Branches, die **Renovate** (`renovate/…`) oder
+**Dependabot** (`dependabot/…`) erzeugen, sind die **Ausnahme**: nicht umbenennen, nicht löschen, nicht direkt
+darauf pushen. Sollen Änderungen an einem solchen PR gemacht werden, einen eigenen `feature/…`-Branch anlegen und
+einen separaten PR erstellen.
+
 ### Kein Push auf `master`/`main` (Pflicht)
 
 Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvor allgemein Commits/Pushes freigegeben wurden. Ausnahme ausschließlich: Der User verlangt den Push auf `master`/`main` **explizit** in derselben Anweisung (z. B. „push auf master"). Standard ist immer der Feature Branch + Frage nach einem PR.
@@ -155,7 +160,7 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
 
-> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`dboeckli/mcp-server-docker`-Fork via `uvx`, host-seitig
+> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker-dboeckli` PyPI-Wheel via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
 > durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/mcp/docker-mcp-server.md`
 > (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus

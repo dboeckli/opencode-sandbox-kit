@@ -39,6 +39,11 @@ cd C:\development\projects\opencode-sandbox-kit
 > gemeinsame Buildx-Builder `sbx-kits` erhalten bleibt (`--stop-active` statt `--remove-active`,
 > kein `buildx prune`). Details: [`docs/docker-disk-cleanup.md`](docs/docker-disk-cleanup.md).
 
+> **Clipboard (optional):** Sandbox → Host-Textkopie ist seit sbx v0.51 opt-in — einmalig
+> `sbx settings set clipboard.textCopy true` (plus `clipboard.imagePaste true` für Screenshots). Ohne das
+> schlägt Copy in Pi/OpenCode fehl (Pi meldet irreführend „Clipboard unavailable …"). Details:
+> [`docs/prerequisites.md`](docs/prerequisites.md), [`docs/troubleshooting.md`](docs/troubleshooting.md).
+
 Beispiel lokal mit Ressourcen-Limits (empfohlen):
 
 ```powershell
@@ -407,7 +412,7 @@ Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 |--------|------|--------------------------------------|
 | **IntelliJ MCP** | IntelliJ IDEA (JetBrains MCP Server, Port `64615` seit IDEA 2026.2.2, Endpoint `/stream`) | `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` |
 | **Kubernetes** | `kubernetes-mcp-server` (voller Umfang, Toolsets `core,config,helm`; keine Sandbox-Credentials) | `sbx mcp add k8s --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"` |
-| **Docker** | `dboeckli/mcp-server-docker`-Fork via `uvx` (`v0.4.2`: steuert den Host-Docker-Daemon + Buildx-Abfragen, Issue #250) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.2,mcp-server-docker"` |
+| **Docker** | `dboeckli/mcp-server-docker`-Fork als PyPI-Wheel (`mcp-server-docker-dboeckli==0.6.2`: steuert den Host-Docker-Daemon + Docker-/Buildx-Introspektion, Issue #250/#286) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.6.2,mcp-server-docker"` |
 
 ```powershell
 sbx run ./opencode-v3-agent/ `
@@ -573,11 +578,11 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 [Pi](https://pi.dev) (`@earendil-works/pi-coding-agent`) ist ein minimaler, erweiterbarer Coding-Agent.
 Das Kit liegt unter `pi-agent/` und ist bewusst als **Kit-Spec v3** umgesetzt (`# syntax=docker/sandbox-kit:3`,
 `schemaVersion: "3"`, `kind: workload`) — Descriptor `pi-agent/pi-agent.yaml` + `pi-agent/pi-agent.dockerfile`.
-v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.51.0). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
+v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.53.0). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
 (`--template` entfällt); das Pi-Kit ist ein eigenständiger Workload.
 
 - **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker.io/sbx/shell-docker-image:latest`
-  auf (schmale Shell-Basis) und backt **dasselbe Tooling wie die anderen Kits** (Node 26, JDK, Maven, Docker CLI/Compose, kubectl, Helm, Kafka,
+  auf (schmale Shell-Basis) und backt **dasselbe Tooling wie die anderen Kits** (Node 26, JDK, Maven, uv, Docker CLI/Compose, kubectl, Helm, Kafka,
   shfmt, ctx7, skills, prettier, renovate, Bruno CLI, MCP-Inspector) plus Pi `1.5.0` (Pin im Descriptor,
   `buildArg: PI_VERSION`). Die Tooling-Skripte sind identische Kopien (`local-test-kits.py --validate-only` prüft Drift).
 - **Launch**: `ENTRYPOINT ["pi"]` im Dockerfile; Entrypoint/Config kommen aus dem Image, nicht aus einem `sandbox:`-Block.
@@ -679,7 +684,7 @@ Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IM
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.51.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
+  (`SBX_VERSION`, aktuell `v0.53.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
   übersprungen, da keine Secrets), validiert die v3-Kits über den Kit-Builder (`sbx kit validate` ohne
   `--offline`; `./opencode-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`,
@@ -722,7 +727,8 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > `CLAUDE_VERSION` (npm `@anthropic-ai/claude-code`) als Konstanten in `local-test-kits.py`, Drift-Check gegen die
 > gleichnamigen Variablen in `.github/workflows/validate.yml`/`e2e.yml` und die Dockerfile-Pins; die gemeinsame Basis der
 > Custom-Workload-Kits (`docker.io/sbx/shell-docker-image:latest`) wird gegen die erwartete Docker-verwaltete Basis
-> geprüft, die **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
+> geprüft (Konstante `SHELL_BASE_IMAGE_EXPECTED` und die Doku-Digests werden per Renovate-Custom-Manager im selben
+> gruppierten PR wie die Dockerfiles mitgezogen), die **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
 > und die **Mistral-Vibe-Pin** (`ARG VIBE_VERSION` im Dockerfile, Image-Tag in der spec, gemeinsame Custom-Workload-Basis)
 > gegen die latest PyPI-Version (`mistral-vibe`) — alle **warnen** (gelb), sobald eine neuere Version
 > existiert (Renovate-Tracking, s. o.). Die **Bruno-CLI-Pin** (`@usebruno/cli@<v>` in allen drei Specs +
@@ -762,6 +768,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | Node.js | 26.13.0 | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` |
 | Apache Maven | 3.10.0 | `/opt/maven` |
+| uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4 — Issue #284) |
 | Docker CLI | 29.9.3 | `/usr/local/bin/docker` (opencode-v3 aus Base; sonst 27.5.1) |
 | Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
@@ -776,8 +783,8 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 > **opencode-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle vier basieren auf `docker.io/sbx/shell-docker-image:latest` —
-> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert
-> weiterhin `install-tooling.sh` (wie in allen Kits).
+> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, uv (inkl. `uvx`,
+> Issue #284), Node-Pin usw. installiert weiterhin `install-tooling.sh` (wie in allen Kits).
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
@@ -830,7 +837,7 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp/mcp-gateway-security.md)
 - [IntelliJ MCP Port-Analyse](docs/mcp/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
-- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.51.0 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.53.0 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
 - [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)

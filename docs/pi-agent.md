@@ -6,7 +6,7 @@ Gateway direkt über Pis eingebautes MCP (`~/.pi/agent/mcp.json`) — kein `pi-m
 
 ## Voraussetzungen
 
-- `sbx` **≥ v0.45** (Repo-Pin v0.51.0) — v3-Format.
+- `sbx` **≥ v0.45** (Repo-Pin v0.53.0) — v3-Format.
 - Docker Desktop mit `docker login` (Publish) bzw. lokaler Docker-Daemon (Build).
 - Host-MCP registriert: `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
   (optional `k8s`, `docker`); Sandbox mit `--static-mcp idea,k8s,docker` erzeugen.
@@ -41,7 +41,8 @@ v3-Besonderheiten gegenüber den v2-Kits:
 
 Das Image nutzt dieselben Skripte und Versionen wie die anderen Kits:
 
-- Node 26.13.0, shfmt 3.14.1, Liberica JDK 25.0.5+11, Maven 3.10.0, Docker CLI 29.9.3 (Base-Image),
+- Node 26.13.0, shfmt 3.14.1, Liberica JDK 25.0.5+11, Maven 3.10.0, uv 0.13.8 inkl. `uvx`
+  (`install-tooling.sh uv`, Issue #284), Docker CLI 29.9.3 (Base-Image),
   Compose 5.7.0 (Base-Image), kubectl (stable), Helm 4.3.1, Kafka 4.4.0
 - apt: `jq`, `python3`, `python3-pip`, `python3-yaml`, `libatomic1`
 - `fd` + `ripgrep` (Pi lädt sie sonst beim ersten Start nach `~/.pi/agent/bin`)

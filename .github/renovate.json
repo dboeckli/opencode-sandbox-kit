@@ -68,9 +68,9 @@
       ]
     },
     {
-      "description": "Docker MCP server (fork dboeckli/mcp-server-docker): host-side re-registration instructions in the PR body (runs on the Windows host via uvx, not part of the sandbox image)",
-      "matchDatasources": ["github-releases"],
-      "matchDepNames": ["dboeckli/mcp-server-docker"],
+      "description": "Docker MCP server (PyPI mcp-server-docker-dboeckli): host-side re-registration instructions in the PR body (runs on the Windows host via uvx, not part of the sandbox image)",
+      "matchDatasources": ["pypi"],
+      "matchDepNames": ["mcp-server-docker-dboeckli"],
       "prBodyNotes": [
         "### Host re-registration required",
         "This pin only changes the documented/registered version; the server runs on the Windows host via `uvx`.",
@@ -78,12 +78,12 @@
         "1. Re-register the server on the host (PowerShell):",
         "   ```powershell",
         "   sbx mcp rm docker",
-        "   sbx mcp add docker --command (Get-Command uvx).Source --args \"--from,git+https://github.com/dboeckli/mcp-server-docker@v{{{newValue}}},mcp-server-docker\"",
+        "   sbx mcp add docker --command (Get-Command uvx).Source --args \"--from,mcp-server-docker-dboeckli=={{{newValue}}},mcp-server-docker\"",
         "   ```",
         "2. Running sandboxes: `sbx mcp load docker --sandbox <name>` (or recreate the sandbox).",
-        "3. Verify: `sbx mcp ls` / `sbx mcp inspect docker` shows the fork pin `...mcp-server-docker@v{{{newValue}}}`.",
+        "3. Verify: `sbx mcp ls` / `sbx mcp inspect docker` shows the PyPI pin `mcp-server-docker-dboeckli=={{{newValue}}}`.",
         "",
-        "`uvx` clones the pinned fork tag on first start; there is no local install script for this server."
+        "`uvx` downloads the pinned wheel from PyPI on first start (no Git clone/build); there is no local install script for this server."
       ]
     },
     {
@@ -155,6 +155,15 @@
       "depNameTemplate": "mvdan/sh",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "uv version (install-tooling.sh, alle Kit-Kopien) — Astral uv + uvx; >= 0.13.8 nötig, damit der eingebettete CPython-Download-Index 3.12.16 (und neuer) kennt (Issue #284)",
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "claude-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "matchStrings": ["UV_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
     },
     {
       "customType": "regex",
@@ -270,20 +279,14 @@
     },
     {
       "customType": "regex",
-      "description": "Docker-MCP-Server-Fork (dboeckli/mcp-server-docker) Pin in Doku + README + INSTALL + Kit-Kontexten als Fork-Tag (`--from git+...@v<v>`), inkl. Prosa-Varianten (`Fork-Pin (`v<v>`)`, `(Tag `v<v>`)`, `fork `v<v>``); Issue #250/#258, host-seitig via uvx registriert",
+      "description": "Docker-MCP-Server (PyPI mcp-server-docker-dboeckli) Pin in Doku + README + INSTALL + Kit-Kontexten als Wheel-Pin (`--from mcp-server-docker-dboeckli==<v>`); Issue #250/#258/#286, host-seitig via uvx registriert",
       "managerFilePatterns": ["docs/mcp/docker-mcp-server.md", "README.md", "INSTALL.md", "*/context.md"],
       "matchStringsStrategy": "any",
       "matchStrings": [
-        "mcp-server-docker@v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)",
-        "mcp-server-docker\\)\\s*\\(`v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`\\)",
-        "Fork-Pin \\(`v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`\\)",
-        "\\(Tag `v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`\\)",
-        "-Fork via `uvx` \\(`v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`",
-        "mcp-server-docker` fork `v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)`"
+        "mcp-server-docker-dboeckli==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
       ],
-      "depNameTemplate": "dboeckli/mcp-server-docker",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
+      "depNameTemplate": "mcp-server-docker-dboeckli",
+      "datasourceTemplate": "pypi"
     },
     {
       "customType": "regex",
@@ -322,6 +325,15 @@
       "description": "Custom-workload base image digest pin (docker.io/sbx/shell-docker-image:latest@sha256:<digest>) in den 5 Kit-Dockerfiles — Renovate aktualisiert den Digest, wenn das Nightly :latest weiterzieht (Issue #254)",
       "managerFilePatterns": ["opencode-v3-agent/opencode-v3-agent.dockerfile", "claude-v3-agent/claude-v3-agent.dockerfile", "mammouth-agent/mammouth-agent.dockerfile", "mistral-vibe-agent/mistral-vibe-agent.dockerfile", "pi-agent/pi-agent.dockerfile"],
       "matchStrings": ["ARG BASE_IMAGE=docker\\.io/sbx/shell-docker-image:(?<currentValue>latest)@(?<currentDigest>sha256:[0-9a-f]{64})"],
+      "depNameTemplate": "sbx/shell-docker-image",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Mirror des Base-Image-Digests außerhalb der Dockerfiles: SHELL_BASE_IMAGE_EXPECTED (local-test-kits.py, sonst schlägt der Validate-Base-Check fehl) + Doku (AGENTS.md, docs/prerequisites.md, docs/manual-image-backup.md). Gleiche depName/datasource wie der Dockerfile-Manager → beide Updates landen per packageRule im selben gruppierten PR (Issue #254).",
+      "managerFilePatterns": ["local-test/local-test-kits.py", "AGENTS.md", "docs/prerequisites.md", "docs/manual-image-backup.md"],
+      "matchStrings": ["docker\\.io/sbx/shell-docker-image:(?<currentValue>latest)@(?<currentDigest>sha256:[0-9a-f]{64})"],
       "depNameTemplate": "sbx/shell-docker-image",
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"

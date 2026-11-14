@@ -4,9 +4,10 @@
 # base migrated to the Docker-provided shell image in issue #254).
 # Bakes the kit tooling on top of Docker's official `shell-docker-image`, so Pi has full
 # tooling parity (Liberica JDK, Maven, kubectl, Helm, Kafka CLI, Node.js, npm CLIs,
-# agent-user tooling) and no runtime installs. The base already ships Node/npm, Python, Go,
-# uv and the Docker CLI + compose + buildx — those are NOT re-installed (versions are
-# verified below).
+# agent-user tooling) and no runtime installs. The base already ships Node/npm, Python, Go
+# and the Docker CLI + compose + buildx — those are NOT re-installed (versions are
+# verified below). uv is installed by install-tooling.sh (pinned >= 0.13.8, incl. uvx;
+# issue #284) because the base uv's CPython download index is too old for newer patch pins.
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./pi-agent -f ./pi-agent/pi-agent.yaml \
@@ -17,7 +18,7 @@
 #     -t <IMAGE_PREFIX>/sbx-pi-agent:local --load
 #
 # ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly) —
-# Node/npm, Python, Go, uv and the Docker CLI/compose/buildx come from it (Issue #254).
+# Node/npm, Python, Go and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG PI_VERSION is the Pi pin (Renovate, npm @earendil-works/pi-coding-agent).
 
 ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
@@ -33,7 +34,8 @@ COPY files/home/.local/bin/install-tooling.sh /tmp/kit/install-tooling.sh
 COPY files/home/.local/bin/install-tooling-user.sh /tmp/kit/install-tooling-user.sh
 
 # Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
-# buildx, Python, Go and uv — those are not re-installed. The JDK is installed as
+# buildx, Python and Go — those are not re-installed (uv is installed here, Issue #284).
+# The JDK is installed as
 # Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
 # JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
 # even if the base ever provides its own /usr/local/java. install-tooling.sh is
@@ -41,7 +43,7 @@ COPY files/home/.local/bin/install-tooling-user.sh /tmp/kit/install-tooling-user
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && for t in node shfmt uv jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
  && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
       echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
       grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
@@ -73,7 +75,7 @@ RUN set -e; \
 # Fail-closed verification: abort the build if any tool is missing or wrong.
 # Node must satisfy Pi's floor (>= 22.19) — install-tooling.sh installs the
 # shared Node pin (26.x), so this also proves tooling parity. Base-provided tools
-# (Docker CLI, compose) and the Liberica JDK are verified here (Issue #254).
+# (Docker CLI, compose), uv (Issue #284) and the Liberica JDK are verified here (Issue #254).
 RUN set -eux; \
     node --version; \
     [ "$(node --version | sed 's/^v//; s/\..*//')" -ge 24 ]; \
@@ -92,6 +94,9 @@ RUN set -eux; \
     helm4 version --short; \
     kafka-topics.sh --version; \
     shfmt --version; \
+    uv --version; \
+    uvx --version; \
+    uv python list --all-versions 3.12 | grep -q 'cpython-3.12.16-linux'; \
     command -v ctx7; \
     command -v skills; \
     command -v prettier; \

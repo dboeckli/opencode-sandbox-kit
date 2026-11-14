@@ -4,8 +4,10 @@
 # base migrated to the Docker-provided shell image in issue #254).
 # Builds on Docker's official `shell-docker-image`, bakes the kit tooling (Liberica JDK,
 # Maven, kubectl, Helm, Kafka, Node, npm CLIs) and a pinned `mistral-vibe` version (PyPI).
-# The base already ships Node/npm, Python, uv and the Docker CLI + compose + buildx —
+# The base already ships Node/npm, Python and the Docker CLI + compose + buildx —
 # those are NOT re-installed (no double installation; versions are verified below).
+# uv is installed by install-tooling.sh (pinned >= 0.13.8, incl. uvx; issue #284)
+# because the base uv's CPython download index is too old for newer patch pins.
 #
 # Build/publish (descriptor is the Dockerfile frontend):
 #   docker buildx build ./mistral-vibe-agent -f ./mistral-vibe-agent/mistral-vibe-agent.yaml \
@@ -19,7 +21,7 @@
 # not run under QEMU arm64 emulation) and merges with `imagetools create`.
 #
 # ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly) —
-# Node/npm, Python, uv and the Docker CLI/compose/buildx come from it (Issue #254).
+# Node/npm, Python and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG VIBE_VERSION is the Mistral Vibe pin (Renovate, PyPI mistral-vibe).
 
 ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
@@ -46,7 +48,8 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
-# buildx, Python and uv — those are not re-installed. The JDK is installed as
+# buildx and Python — those are not re-installed (uv is installed here, Issue #284).
+# The JDK is installed as
 # Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
 # JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
 # even if the base ever provides its own /usr/local/java. install-tooling.sh is
@@ -54,7 +57,7 @@ RUN apt-get update \
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && for t in node shfmt uv jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
  && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
       echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
       grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
@@ -83,7 +86,7 @@ RUN set -e; \
     done
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
-# Base-provided tools (Docker CLI, compose, uv) and the install-tooling tools (Node,
+# Base-provided tools (Docker CLI, compose) and the install-tooling tools (Node, uv,
 # Liberica JDK, Maven, …) are verified here; the build fails if a version no longer
 # fits the kit's requirements (Issue #254).
 RUN set -eux; \
@@ -110,7 +113,9 @@ RUN set -eux; \
     command -v renovate; \
     bru --version; \
     command -v mcp-inspector; \
-    uv --version
+    uv --version; \
+    uvx --version; \
+    uv python list --all-versions 3.12 | grep -q 'cpython-3.12.16-linux'
 
 # Install Vibe as the non-root agent user. The socks extra is installed explicitly
 # so the agent works through the sandbox proxy (some releases don't pull it in).

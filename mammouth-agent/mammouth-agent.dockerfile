@@ -4,8 +4,10 @@
 # base migrated to the Docker-provided shell image in issue #254).
 # Mammouth is an OpenCode fork; the image builds on Docker's official
 # `shell-docker-image` (no OpenCode CLI in the image) and bakes the kit tooling + Mammouth CLI.
-# The base already ships Node/npm, Python, Go, uv and the Docker CLI + compose + buildx —
-# those are NOT re-installed (no double installation; versions are verified below). The JDK
+# The base already ships Node/npm, Python, Go and the Docker CLI + compose + buildx —
+# those are NOT re-installed (no double installation; versions are verified below). uv is
+# installed by install-tooling.sh (pinned >= 0.13.8, incl. uvx; issue #284) because the
+# base uv's CPython download index is too old for newer patch pins. The JDK
 # is installed as Liberica via install-tooling.sh so all kits share the same vendor/build.
 #
 # Build/publish (descriptor is the Dockerfile frontend):
@@ -17,7 +19,7 @@
 #     -t <IMAGE_PREFIX>/sbx-mammouth:local --load
 #
 # ARG BASE_IMAGE is Docker's official custom-workload base (`:latest`, nightly) —
-# Node/npm, Docker CLI/compose/buildx, Python, Go and uv come from it (Issue #254).
+# Node/npm, Docker CLI/compose/buildx, Python and Go come from it (Issue #254).
 # ARG MAMMOUTH_VERSION is the Mammouth CLI pin (Renovate, mammouth-ai/code).
 
 ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
@@ -46,7 +48,8 @@ RUN chmod +x /usr/local/bin/seed-mammouth-model-favorites.py /usr/local/bin/mamm
 # shell-docker-image base — no extra apt layer needed.
 
 # Root-level tooling. The base already provides Node/npm, Docker CLI + compose +
-# buildx, Python, Go and uv — those are not re-installed. The JDK is installed as
+# buildx, Python and Go — those are not re-installed (uv is installed here, Issue #284).
+# The JDK is installed as
 # Liberica (install-tooling.sh jdk) so all kits share the same vendor/build at
 # JAVA_HOME=/usr/local/java. `rm -rf /usr/local/java` forces a fresh Liberica install
 # even if the base ever provides its own /usr/local/java. install-tooling.sh is
@@ -54,7 +57,7 @@ RUN chmod +x /usr/local/bin/seed-mammouth-model-favorites.py /usr/local/bin/mamm
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && for t in node shfmt uv jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
  && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
       echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
       grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
@@ -83,7 +86,7 @@ RUN set -e; \
     done
 
 # Fail-closed verification: abort the build if any tool is missing or wrong.
-# Base-provided tools (Docker CLI, compose) and the install-tooling tools (Node,
+# Base-provided tools (Docker CLI, compose) and the install-tooling tools (Node, uv,
 # Liberica JDK, Maven, …) are verified here; the build fails if a version no longer
 # fits the kit's requirements (Issue #254).
 RUN set -eux; \
@@ -104,6 +107,9 @@ RUN set -eux; \
     helm4 version --short; \
     kafka-topics.sh --version; \
     shfmt --version; \
+    uv --version; \
+    uvx --version; \
+    uv python list --all-versions 3.12 | grep -q 'cpython-3.12.16-linux'; \
     command -v ctx7; \
     command -v skills; \
     command -v prettier; \
