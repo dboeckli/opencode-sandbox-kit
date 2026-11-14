@@ -39,6 +39,11 @@ cd C:\development\projects\opencode-sandbox-kit
 > gemeinsame Buildx-Builder `sbx-kits` erhalten bleibt (`--stop-active` statt `--remove-active`,
 > kein `buildx prune`). Details: [`docs/docker-disk-cleanup.md`](docs/docker-disk-cleanup.md).
 
+> **Clipboard (optional):** Sandbox → Host-Textkopie ist seit sbx v0.51 opt-in — einmalig
+> `sbx settings set clipboard.textCopy true` (plus `clipboard.imagePaste true` für Screenshots). Ohne das
+> schlägt Copy in Pi/OpenCode fehl (Pi meldet irreführend „Clipboard unavailable …"). Details:
+> [`docs/prerequisites.md`](docs/prerequisites.md), [`docs/troubleshooting.md`](docs/troubleshooting.md).
+
 Beispiel lokal mit Ressourcen-Limits (empfohlen):
 
 ```powershell

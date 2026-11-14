@@ -15,6 +15,21 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`dboeckli/mcp-server-docker`-Fork, Tag `@v<pin>`, inkl. Docker-/Buildx-Introspektion `buildx_*`/`system_*`/`image_*`/`container_inspect`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/mcp/docker-mcp-server.md` (Issue #165/#250) | Host-Docker MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
+### Clipboard (Kopieren/Einfügen)
+
+Sandbox → Host-**Textkopie** ist seit sbx **v0.51** opt-in (`clipboard.textCopy`, Default `false`); ohne Opt-in
+antwortet der von `sbx` injizierte Clipboard-Shim (`wl-copy`/`xclip`/`xsel` → `sbx-clipboard-write`) mit HTTP 403.
+Text-**Paste** (Host → Sandbox) braucht keine Einstellung (läuft terminal-seitig); Bild-Paste (`Ctrl+V` für
+Screenshots) braucht `clipboard.imagePaste`.
+
+```powershell
+sbx settings set clipboard.textCopy true      # Sandbox → Host-Clipboard (Pi/OpenCode-Copy)
+sbx settings set clipboard.imagePaste true    # optional: Bilder/Screenshots einfügen
+```
+
+Die Settings gelten sofort für laufende Sandboxes (kein Recreate). Verifikation: `sbx settings get clipboard.textCopy`
+→ `true`, in der Sandbox `printf test | wl-copy` → Exit 0. Symptome/Fehlermeldungen: `docs/troubleshooting.md`.
+
 ### Secrets registrieren (`sbx secret set <service>`)
 
 | Service | Agent | Key-Quelle |

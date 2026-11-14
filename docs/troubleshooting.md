@@ -39,6 +39,30 @@ sbx daemon start --detach
 sbx rm <sandbox-name> --force
 ```
 
+### Copy/Paste funktioniert nicht (Pi: „Clipboard unavailable …", OpenCode kopiert nicht)
+
+**Nicht** das Kit-Image: seit sbx **v0.51** ist die Sandbox → Host-**Textkopie** opt-in. Die von `sbx` injizierten
+Clipboard-Shims (`wl-copy`/`xclip`/`xsel` → `sbx-clipboard-write`) antworten sonst mit HTTP 403
+(`clipboard text copy is disabled`). Pi zeigt das als irreführende Meldung
+`Clipboard unavailable: install 'wl-clipboard' ('wl-copy') or check Wayland access` — es sieht zwar
+`WAYLAND_DISPLAY`, emittiert aber kein OSC 52, weil es keine „remote session" (SSH/Mosh/IDE-Daemon) erkennt.
+OpenCode schreibt beim Copy OSC 52 und versucht zusätzlich den nativen Shim; ohne Host-Opt-in und ohne
+OSC-52-fähiges Terminal schlägt auch dort das Copy fehl.
+
+Fix auf dem Host (gilt sofort für laufende Sandboxes, kein Recreate):
+
+```powershell
+sbx settings set clipboard.textCopy true
+# optional: Bilder/Screenshots per Ctrl+V einfügen
+sbx settings set clipboard.imagePaste true
+```
+
+- Text-**Paste** (Host → Sandbox) braucht keine Einstellung — das übernimmt das Terminal.
+- Verifikation: `sbx settings get clipboard.textCopy` → `true`; in der Sandbox `printf test | wl-copy; echo $?`
+  → `0` (vorher `1` mit 403-Meldung).
+- Terminals ohne OSC-52-Support (manche IDE-Terminals): dort wirkt nur der native Shim — `clipboard.textCopy`
+  ist dann zwingend.
+
 ### Veraltete CA-Zertifikate in bestehenden Sandboxes (Issue #202)
 
 `sbx` v0.49.2 behebt die eMudhra-CA-Kompromittierung; die gepinnten Basis-Images
