@@ -112,7 +112,7 @@ version_ge() {
 # Extract to /opt/node and symlink into /usr/local/bin (which precedes /usr/bin
 # on PATH), so the distro Node stays untouched as a fallback.
 run_node() {
-	NODE_VER="26.13.0"
+	NODE_VER="26.13.1"
 	if command -v node >/dev/null 2>&1 && node --version 2>/dev/null | grep -qE '^v(2[4-9]|[3-9][0-9])\.'; then
 		log_step node
 		return 0
@@ -211,7 +211,7 @@ run_docker() {
 # --- Docker Compose (CLI plugin) ---
 run_compose() {
 	# Compose release assets use x86_64/aarch64, not amd64/arm64
-	COMPOSE_VER="5.7.0"
+	COMPOSE_VER="5.7.1"
 	if [ -x /usr/local/lib/docker/cli-plugins/docker-compose ] && docker compose version 2>/dev/null | grep -qF "${COMPOSE_VER}"; then
 		log_step compose
 		return 0
@@ -259,7 +259,7 @@ install_helm() {
 }
 
 run_helm() {
-	HELM_VER="4.3.1"
+	HELM_VER="4.3.2"
 	if command -v helm >/dev/null 2>&1 && helm version --short 2>/dev/null | grep -qF "v${HELM_VER}" \
 		&& [ "$(readlink -f /usr/local/bin/helm4 2>/dev/null)" = "$(readlink -f /usr/local/bin/helm)" ]; then
 		log_step helm
