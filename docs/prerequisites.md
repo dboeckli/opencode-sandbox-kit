@@ -62,6 +62,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Node.js | 26.13.0 | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits; alle JDK-Binaries via Symlink in `/usr/local/bin` |
 | Apache Maven | 3.10.0 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
+| uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4, Issue #284) |
 | Docker CLI | 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; isolierter Daemon in der Sandbox-VM) |
 | Docker Compose | 5.7.0 (Plugin) | aus dem Base-Image (alle Kits) |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
@@ -77,8 +78,8 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | jq, python3, pip, python3-yaml | distro | apt |
 
 > **opencode-v3/claude-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle fünf basieren auf `docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00` (Digest-gepinnt; Renovate) —
-> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert
-> weiterhin `install-tooling.sh` (wie in allen Kits).
+> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, uv (inkl. `uvx`,
+> Issue #284), Node-Pin usw. installiert weiterhin `install-tooling.sh` (wie in allen Kits).
 
 ### Agent-User-Tooling (`install-tooling-user.sh`, user 1000)
 

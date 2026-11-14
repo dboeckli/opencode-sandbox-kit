@@ -9,7 +9,7 @@ set -euo pipefail
 # copy, then `cp` it to the other (`mammouth-agent/files/home/.local/bin/`). Renovate
 # bumps tool versions in both copies together (validate-check fails on drift).
 #
-# Tools: `install-tooling.sh [node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka|all]`.
+# Tools: `install-tooling.sh [node|shfmt|uv|jdk|maven|docker|compose|kubectl|helm|kafka|all]`.
 # The spec.yaml setup.install calls each tool as a separate command, so the `sbx run`
 # TUI shows every tool as its own row (spinner → ✓ with duration). `all` runs all tools
 # at once (previous behavior). npm is inlined directly into the spec.yaml commands; apt
@@ -96,6 +96,12 @@ download() {
 		sleep "$(( attempt * 2 ))"
 	done
 	return "${rc}"
+}
+
+# --- Version comparison (sort -V) ---
+# version_ge A B => true when A >= B (used by run_uv).
+version_ge() {
+	[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n 1)" = "$2" ]
 }
 
 # --- Node.js (LTS) ---
@@ -298,6 +304,40 @@ run_kafka() {
 	log_step kafka
 }
 
+# --- uv (Astral) ---
+# The base image ships an old uv (0.13.4) whose embedded python-build-standalone
+# index stops before CPython 3.12.16, so projects pinning a newer patch (e.g.
+# `.python-version = 3.12.16`) cannot resolve an interpreter (issue #284). Install
+# a pinned uv (incl. `uvx`) into /usr/local/bin and verify that its CPython index
+# contains 3.12.16 — the install fails otherwise (fail-closed via the Dockerfile).
+run_uv() {
+	UV_VER="0.13.8"
+	UV_TEST_PYTHON="3.12.16"
+	if ! (command -v uv >/dev/null 2>&1 && command -v uvx >/dev/null 2>&1 \
+		&& version_ge "$(uv --version 2>/dev/null | awk '{print $2}')" "${UV_VER}"); then
+		local uv_arch
+		case "${UNAME_M}" in
+			x86_64) uv_arch="x86_64" ;;
+			aarch64) uv_arch="aarch64" ;;
+			*)
+				echo "Unsupported architecture for uv: ${UNAME_M}" >&2
+				return 1
+				;;
+		esac
+		download "https://github.com/astral-sh/uv/releases/download/${UV_VER}/uv-${uv_arch}-unknown-linux-musl.tar.gz" /tmp/uv.tgz
+		rm -rf /tmp/uv-extract
+		mkdir -p /tmp/uv-extract
+		tar -xzf /tmp/uv.tgz -C /tmp/uv-extract --strip-components=1
+		install -m 0755 /tmp/uv-extract/uv /usr/local/bin/uv
+		install -m 0755 /tmp/uv-extract/uvx /usr/local/bin/uvx
+		rm -rf /tmp/uv.tgz /tmp/uv-extract
+	fi
+	version_ge "$(uv --version | awk '{print $2}')" "${UV_VER}"
+	command -v uvx >/dev/null
+	uv python list --all-versions "${UV_TEST_PYTHON%.*}" | grep -q "cpython-${UV_TEST_PYTHON}-linux"
+	log_step uv
+}
+
 # --- Dispatch ---
 PHASE="${1:-all}"
 case "${PHASE}" in
@@ -305,6 +345,7 @@ case "${PHASE}" in
 		log_phase_start all
 		run_step node run_node
 		run_step shfmt run_shfmt
+		run_step uv run_uv
 		run_step jdk run_jdk
 		run_step maven run_maven
 		run_step docker run_docker
@@ -319,6 +360,9 @@ case "${PHASE}" in
 		;;
 	shfmt)
 		run_step shfmt run_shfmt
+		;;
+	uv)
+		run_step uv run_uv
 		;;
 	jdk)
 		run_step jdk run_jdk
@@ -342,7 +386,7 @@ case "${PHASE}" in
 		run_step kafka run_kafka
 		;;
 	*)
-		echo "Unknown tool: ${PHASE} (expected: node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka|all)" >&2
+		echo "Unknown tool: ${PHASE} (expected: node|shfmt|uv|jdk|maven|docker|compose|kubectl|helm|kafka|all)" >&2
 		exit 1
 		;;
 esac

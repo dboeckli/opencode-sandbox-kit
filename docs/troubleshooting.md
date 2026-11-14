@@ -63,6 +63,29 @@ sbx settings set clipboard.imagePaste true
 - Terminals ohne OSC-52-Support (manche IDE-Terminals): dort wirkt nur der native Shim — `clipboard.textCopy`
   ist dann zwingend.
 
+### uv: „No download found for request: cpython-3.12.16…" / „No interpreter found for Python 3.12.16"
+
+Alte Kit-Images erbten **uv 0.13.4** aus dem Base-Image; dessen eingebetteter
+python-build-standalone-Index endet bei CPython **3.12.15**. Projekte mit neuerem Patch-Pin
+(`.python-version` = `3.12.16`, z. B. `mcp-server-docker`) können dann keinen Interpreter auflösen;
+`uv run`/`uv sync` schlagen fehl (Issue #284). `uv self update` hilft nicht (`/usr/local/bin/uv`
+gehört root), und `uvx` fehlte ganz.
+
+Seit dem Fix installiert `install-tooling.sh uv` eine gepinnte **uv >= 0.13.8 inkl. `uvx`** nach
+`/usr/local/bin`; die Image-Builds verifizieren `uv --version`, `uvx --version` und den CPython-Index.
+Prüfen (in der Sandbox):
+
+```bash
+uv --version        # erwartet >= 0.13.8
+uvx --version
+uv python list --all-versions 3.12 | grep 3.12.16   # muss cpython-3.12.16 zeigen
+uv python install 3.12.16
+```
+
+Ältere, bereits gebaute Images: Image neu bauen/pullen (Kit-Update). Workaround ohne Rebuild
+(aus Issue #284): uv 0.13.8 nach `~/.local/bin` entpacken und `export PATH="$HOME/.local/bin:$PATH"`
+setzen.
+
 ### Veraltete CA-Zertifikate in bestehenden Sandboxes (Issue #202)
 
 `sbx` v0.49.2 behebt die eMudhra-CA-Kompromittierung; die gepinnten Basis-Images

@@ -582,7 +582,7 @@ v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.53.0). **v3-Kits lassen sich nicht mi
 (`--template` entfällt); das Pi-Kit ist ein eigenständiger Workload.
 
 - **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker.io/sbx/shell-docker-image:latest`
-  auf (schmale Shell-Basis) und backt **dasselbe Tooling wie die anderen Kits** (Node 26, JDK, Maven, Docker CLI/Compose, kubectl, Helm, Kafka,
+  auf (schmale Shell-Basis) und backt **dasselbe Tooling wie die anderen Kits** (Node 26, JDK, Maven, uv, Docker CLI/Compose, kubectl, Helm, Kafka,
   shfmt, ctx7, skills, prettier, renovate, Bruno CLI, MCP-Inspector) plus Pi `1.5.0` (Pin im Descriptor,
   `buildArg: PI_VERSION`). Die Tooling-Skripte sind identische Kopien (`local-test-kits.py --validate-only` prüft Drift).
 - **Launch**: `ENTRYPOINT ["pi"]` im Dockerfile; Entrypoint/Config kommen aus dem Image, nicht aus einem `sandbox:`-Block.
@@ -768,6 +768,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | Node.js | 26.13.0 | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` |
 | Apache Maven | 3.10.0 | `/opt/maven` |
+| uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4 — Issue #284) |
 | Docker CLI | 29.9.3 | `/usr/local/bin/docker` (opencode-v3 aus Base; sonst 27.5.1) |
 | Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
@@ -782,8 +783,8 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | jq | distro | apt (StatusLine-Abhängigkeit) |
 
 > **opencode-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle vier basieren auf `docker.io/sbx/shell-docker-image:latest` —
-> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert
-> weiterhin `install-tooling.sh` (wie in allen Kits).
+> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, uv (inkl. `uvx`,
+> Issue #284), Node-Pin usw. installiert weiterhin `install-tooling.sh` (wie in allen Kits).
 
 `JAVA_HOME` wird via Kit-`environment.variables` in jeder Shell verfügbar gemacht (Java/Maven liegen über
 Symlinks bereits in `/usr/local/bin` und damit auf dem PATH).
