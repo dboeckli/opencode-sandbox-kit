@@ -722,7 +722,8 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > `CLAUDE_VERSION` (npm `@anthropic-ai/claude-code`) als Konstanten in `local-test-kits.py`, Drift-Check gegen die
 > gleichnamigen Variablen in `.github/workflows/validate.yml`/`e2e.yml` und die Dockerfile-Pins; die gemeinsame Basis der
 > Custom-Workload-Kits (`docker.io/sbx/shell-docker-image:latest`) wird gegen die erwartete Docker-verwaltete Basis
-> geprüft, die **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
+> geprüft (Konstante `SHELL_BASE_IMAGE_EXPECTED` und die Doku-Digests werden per Renovate-Custom-Manager im selben
+> gruppierten PR wie die Dockerfiles mitgezogen), die **Mammouth-CLI-Pin** (`VERSION=` im spec-install) gegen das latest GitHub-Release (`mammouth-ai/code`)
 > und die **Mistral-Vibe-Pin** (`ARG VIBE_VERSION` im Dockerfile, Image-Tag in der spec, gemeinsame Custom-Workload-Basis)
 > gegen die latest PyPI-Version (`mistral-vibe`) — alle **warnen** (gelb), sobald eine neuere Version
 > existiert (Renovate-Tracking, s. o.). Die **Bruno-CLI-Pin** (`@usebruno/cli@<v>` in allen drei Specs +
