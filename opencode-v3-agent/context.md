@@ -184,9 +184,11 @@ Setup: `docs/mcp/kubernetes-mcp-server.md`.
 ## Docker MCP
 
 On a sandbox started with `--static-mcp idea,k8s,docker`, a local Docker MCP server
-(`dboeckli/mcp-server-docker` fork `v0.4.2`, started host-side via `uvx`) is exposed through the same sbx MCP
+(`dboeckli/mcp-server-docker` fork `v0.6.0`, started host-side via `uvx`) is exposed through the same sbx MCP
 gateway. Tools arrive as `mcp-gateway_<tool>`. Read-only tools — `list_containers`, `list_images`,
-`list_networks`, `list_volumes`, `fetch_container_logs`, `buildx_list`, `buildx_history`, `buildx_logs` — are `allow`; the write tools
+`list_networks`, `list_volumes`, `fetch_container_logs`, `buildx_list`, `buildx_history`, `buildx_logs`,
+`buildx_du`, `buildx_inspect`, `system_df`, `system_info`, `version`, `image_inspect`, `image_history`,
+`container_inspect`, `container_processes` — are `allow`; the write tools
 (`create_container`, `run_container`, `recreate_container`, `start_container`, `stop_container`,
 `remove_container`, `pull_image`, `push_image`, `build_image`, `remove_image`, `create_network`,
 `remove_network`, `create_volume`, `remove_volume`) are **`ask`** (per-call approval, not permanently

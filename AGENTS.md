@@ -364,7 +364,10 @@ Die Config liegt je Agent-Location vor:
   sowie die **Docker-MCP-Read-only-Tools** des lokalen Docker-MCP-Servers (`docs/mcp/docker-mcp-server.md`,
   Issue #165/#250): `mcp-gateway_list_containers`, `mcp-gateway_list_images`, `mcp-gateway_list_networks`,
   `mcp-gateway_list_volumes`, `mcp-gateway_fetch_container_logs`, `mcp-gateway_buildx_list`,
-  `mcp-gateway_buildx_history`, `mcp-gateway_buildx_logs`.
+  `mcp-gateway_buildx_history`, `mcp-gateway_buildx_logs`, `mcp-gateway_buildx_du`,
+  `mcp-gateway_buildx_inspect`, `mcp-gateway_system_df`, `mcp-gateway_system_info`,
+  `mcp-gateway_version`, `mcp-gateway_image_inspect`, `mcp-gateway_image_history`,
+  `mcp-gateway_container_inspect`, `mcp-gateway_container_processes`.
   Der Server selbst läuft im **vollen Umfang** (`read_only = false`, Standard-Toolsets
   `core`/`config`/`helm`); diese Whitelist begrenzt den Agenten trotzdem. Die dokumentierten Read-only-Tools bleiben `allow`; alle übrigen
   K8s-/Docker-Write-Tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`,
