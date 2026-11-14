@@ -48,7 +48,7 @@ installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzli
 
 1. **Host-Docker-Zugriff** (optional) über einen **lokalen Docker-MCP-Server** — kein offener `2375`-Port:
    `uvx` installieren und den Server host-seitig registrieren
-   (`sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.4.2,mcp-server-docker"`), dann Sandbox mit `--static-mcp idea,k8s,docker`.
+   (`sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.6.0,mcp-server-docker"`), dann Sandbox mit `--static-mcp idea,k8s,docker`.
    Details: [`docs/mcp/docker-mcp-server.md`](docs/mcp/docker-mcp-server.md) (Issue
    [#165](https://codeberg.org/dboeckli/opencode-sandbox-kit/issues/165)). Ohne diesen Schritt hat die Sandbox nur
    ihren **isolierten Docker-Daemon** (eigene MicroVM) — Host-Container sind dann nicht sichtbar.

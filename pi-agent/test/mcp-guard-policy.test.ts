@@ -31,6 +31,15 @@ test("allows read-only prefix groups", () => {
 	assert.equal(isAllowedTool(pi("buildx_list"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("buildx_history"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("buildx_logs"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("buildx_du"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("buildx_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("container_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("container_processes"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("image_history"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("image_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("system_df"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("system_info"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("version"), {}).allowed, true);
 });
 
 test("blocks Pi-prefixed write and exec tools", () => {

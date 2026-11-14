@@ -63,10 +63,20 @@ ALLOW = (
     # above already covers list_containers/images/networks/volumes; write tools
     # (create_/run_/remove_* image/network/volume, …) stay denied (no `ask`).
     "fetch_container_logs",
-    # Buildx/builder read-only queries (fork mcp-server-docker 0.4.0, issue #250).
+    # Buildx/builder read-only queries (fork mcp-server-docker, issue #250).
     "buildx_list",
     "buildx_history",
     "buildx_logs",
+    # Docker/Buildx introspection (fork mcp-server-docker 0.5.0+), all read-only.
+    "buildx_du",
+    "buildx_inspect",
+    "container_inspect",
+    "container_processes",
+    "image_history",
+    "image_inspect",
+    "system_df",
+    "system_info",
+    "version",
 )
 
 RUN_CONFIG_TOOL = PREFIX + "execute_run_configuration"

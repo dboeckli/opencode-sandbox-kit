@@ -102,7 +102,8 @@ siehe `docs/mcp/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt
 `helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) sind **`ask`** — On-the-fly-Freigabe pro Aufruf.
 Für den lokalen Docker-MCP-Server (`docs/mcp/docker-mcp-server.md`, Issue #165) sind die Read-only-Tools
 (`mcp-gateway_list_containers`/`list_images`/`list_networks`/`list_volumes`, `mcp-gateway_fetch_container_logs`,
-`mcp-gateway_buildx_list`/`buildx_history`/`buildx_logs`) `allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
+`mcp-gateway_buildx_list`/`buildx_history`/`buildx_logs`/`buildx_du`/`buildx_inspect`, `mcp-gateway_system_df`/`system_info`/`version`,
+`mcp-gateway_image_inspect`/`image_history`, `mcp-gateway_container_inspect`/`container_processes`) `allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
 `mcp-gateway_create_volume`, …) **`ask`**.
 Schreibende/ausführende Tools (`mcp-gateway_apply_patch`,
 `mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
