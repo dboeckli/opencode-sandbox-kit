@@ -29,6 +29,7 @@ const ALLOWED_EXACT = new Set([
 	"mcp-gateway_buildx_inspect",
 	"mcp-gateway_container_inspect",
 	"mcp-gateway_container_processes",
+	"mcp-gateway_container_stats",
 	"mcp-gateway_image_history",
 	"mcp-gateway_image_inspect",
 	"mcp-gateway_system_df",

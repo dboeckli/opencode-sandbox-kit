@@ -35,6 +35,7 @@ test("allows read-only prefix groups", () => {
 	assert.equal(isAllowedTool(pi("buildx_inspect"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("container_inspect"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("container_processes"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("container_stats"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("image_history"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("image_inspect"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("system_df"), {}).allowed, true);

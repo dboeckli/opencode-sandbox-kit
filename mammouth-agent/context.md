@@ -108,7 +108,7 @@ siehe `docs/mcp/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt
 Für den lokalen Docker-MCP-Server (`docs/mcp/docker-mcp-server.md`, Issue #165) sind die Read-only-Tools
 (`mcp-gateway_list_containers`/`list_images`/`list_networks`/`list_volumes`, `mcp-gateway_fetch_container_logs`,
 `mcp-gateway_buildx_list`/`buildx_history`/`buildx_logs`/`buildx_du`/`buildx_inspect`, `mcp-gateway_system_df`/`system_info`/`version`,
-`mcp-gateway_image_inspect`/`image_history`, `mcp-gateway_container_inspect`/`container_processes`) `allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
+`mcp-gateway_image_inspect`/`image_history`, `mcp-gateway_container_inspect`/`container_processes`/`container_stats`) `allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
 `mcp-gateway_create_volume`, …) **`ask`**.
 Schreibende/ausführende Tools (`mcp-gateway_apply_patch`,
 `mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
@@ -163,7 +163,7 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
 
-> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`dboeckli/mcp-server-docker`-Fork via `uvx`, host-seitig
+> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker-dboeckli` PyPI-Wheel via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
 > durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/mcp/docker-mcp-server.md`
 > (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus

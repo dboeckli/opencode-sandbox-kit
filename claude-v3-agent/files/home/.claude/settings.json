@@ -73,6 +73,7 @@
       "mcp__mcp-gateway__buildx_inspect",
       "mcp__mcp-gateway__container_inspect",
       "mcp__mcp-gateway__container_processes",
+      "mcp__mcp-gateway__container_stats",
       "mcp__mcp-gateway__image_history",
       "mcp__mcp-gateway__image_inspect",
       "mcp__mcp-gateway__system_df",

@@ -12,7 +12,7 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **KVM-Zugriff (WSL2)** | Zugriff auf `/dev/kvm` für die MicroVM (nerdbox) | Sandbox-VM starten |
 | **IntelliJ IDEA** | MCP-Server (2025.2+ integriert) auf `127.0.0.1:64615` (Port 64615 seit IDEA 2026.2.2, davor 64342); einmalig `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` (Gateway-Weg, Issue #57). Die Sandbox erreicht den Server **nur** über den Gateway — direkte Host-Ports sind nicht allow-listed (Issue #163) | IntelliJ MCP (optional) |
 | **Kubernetes MCP Server** | Host-seitiger MCP-Server (`containers/kubernetes-mcp-server`, native Windows-Binary via `local-scripts/install-kubernetes-mcp-server.ps1`) + `sbx mcp add k8s …`; Details: `docs/mcp/kubernetes-mcp-server.md` (Issue #40) | Kubernetes MCP (optional) |
-| **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`dboeckli/mcp-server-docker`-Fork, Tag `@v<pin>`, inkl. Docker-/Buildx-Introspektion `buildx_*`/`system_*`/`image_*`/`container_inspect`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/mcp/docker-mcp-server.md` (Issue #165/#250) | Host-Docker MCP (optional) |
+| **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (PyPI-Wheel `mcp-server-docker-dboeckli==<pin>`, inkl. Docker-/Buildx-Introspektion `buildx_*`/`system_*`/`image_*`/`container_inspect`/`container_stats`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/mcp/docker-mcp-server.md` (Issue #165/#250/#286) | Host-Docker MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
 ### Clipboard (Kopieren/Einfügen)
