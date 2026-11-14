@@ -157,7 +157,7 @@ WORKFLOW_FILES = (".github/workflows/validate.yml", ".github/workflows/e2e.yml")
 # `docker.io/sbx/shell-docker-image:latest`; die CLI kommt aus npm (`@anthropic-ai/claude-code`,
 # Renovate-managed) statt aus dem frueheren `claude-code-docker`-Template. Drift-Check in
 # check_claude_v3_cli_version(); Update-Hinweis gegen die npm-latest-Version.
-CLAUDE_VERSION = "2.1.323"
+CLAUDE_VERSION = "2.1.325"
 CLAUDE_VERSION_RE = re.compile(r"ARG CLAUDE_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 CLAUDE_WORKFLOW_VAR = "CLAUDE_VERSION"
 CLAUDE_NPM_LATEST_URL = "https://registry.npmjs.org/@anthropic-ai%2Fclaude-code/latest"

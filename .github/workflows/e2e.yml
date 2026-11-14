@@ -116,7 +116,7 @@ jobs:
       #  - CLAUDE_VERSION: Claude-Code-CLI (npm @anthropic-ai/claude-code); dieselbe Basis (Issue #254).
       #  - Mammouth/Vibe/Pi nutzen dieselbe shell-docker-image-Basis und pinnen ihre CLI (Issue #254).
       OPENCODE_VERSION: 1.19.5
-      CLAUDE_VERSION: 2.1.323
+      CLAUDE_VERSION: 2.1.325
     steps:
       - uses: actions/checkout@v7
 
