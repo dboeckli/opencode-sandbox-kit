@@ -84,7 +84,7 @@ cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh pi-agent\files\hom
 
 ### sbx CLI Offline-Referenz (`~/sbx-cli.md`)
 
-Alle `--help`-Outputs der v0.51.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
+Alle `--help`-Outputs der v0.53.0-Binary liegen offline unter `~/sbx-cli.md` (Kit-Bundle
 `opencode-v3-agent/files/home/sbx-cli.md`, identisch in allen Kit-Kopien) — Context7 deckt die sbx-Commands
 inzwischen ab (`/docker/docs`: Manuels + generierte CLI-Referenz `data/sbx_cli/*.yaml`; `/docker/sbx-releases`:
 nur Installation/Releases), indexiert aber den Docs-`main`-Branch statt unseres Pins. Die exakten `--help`-Dumps
@@ -92,7 +92,7 @@ der gepinnten Version liefert nur diese Offline-Referenz. Hintergrunddoku (Kits,
 `npx ctx7 docs /docker/docs <query>`.
 
 **Aktualisieren:** `python local-test/regenerate-sbx-doc.py [<version>]` (Default: `SBX_VERSION` aus
-`.github/workflows/validate.yml`, ggf. `v0.51.0` übergeben — die Doku muss den Renovate-verwalteten
+`.github/workflows/validate.yml`, ggf. `v0.53.0` übergeben — die Doku muss den Renovate-verwalteten
 Pin spiegeln, nicht das neueste Release). Der Validate-only-Lauf (`local-test-kits.py --validate-only`)
 vergleicht die dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 (Hinweis aufs Regen-Skript).

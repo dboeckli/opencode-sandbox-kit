@@ -6,7 +6,7 @@ Gateway direkt über Pis eingebautes MCP (`~/.pi/agent/mcp.json`) — kein `pi-m
 
 ## Voraussetzungen
 
-- `sbx` **≥ v0.45** (Repo-Pin v0.51.0) — v3-Format.
+- `sbx` **≥ v0.45** (Repo-Pin v0.53.0) — v3-Format.
 - Docker Desktop mit `docker login` (Publish) bzw. lokaler Docker-Daemon (Build).
 - Host-MCP registriert: `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check`
   (optional `k8s`, `docker`); Sandbox mit `--static-mcp idea,k8s,docker` erzeugen.

@@ -5,7 +5,7 @@
 # Build/publish: docker buildx build ./mistral-vibe-agent -f ./mistral-vibe-agent/mistral-vibe-agent.yaml
 # (multi-arch via .github/workflows/build-and-publish-mistral-vibe-image.yml).
 #
-# v3 requires sbx >= v0.45 (repo pin: v0.51.0). v3 kits cannot compose with
+# v3 requires sbx >= v0.45 (repo pin: v0.53.0). v3 kits cannot compose with
 # v1/v2 kits, so this workload is standalone (--template does not apply).
 
 schemaVersion: "3"

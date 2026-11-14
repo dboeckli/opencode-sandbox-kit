@@ -130,7 +130,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases in .github/renovate.json).
         env:
-          SBX_VERSION: v0.51.0
+          SBX_VERSION: v0.53.0
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
@@ -355,7 +355,7 @@ jobs:
 
       - name: Sign out of Docker Hub
         if: always()
-        run: sbx logout --force || true
+        run: sbx logout --yes || true
 
       - name: Report status to Codeberg
         # GitHub Actions is the execution host (reliable runners); report the outcome back to the
