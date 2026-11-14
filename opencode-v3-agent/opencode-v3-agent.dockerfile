@@ -84,7 +84,7 @@ RUN rm -rf /usr/local/java \
 RUN set -e; \
     for attempt in 1 2 3; do \
       if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
-           @modelcontextprotocol/inspector@2.14.0 "opencode-ai@${OPENCODE_VERSION}"; then \
+           @modelcontextprotocol/inspector@2.15.0 "opencode-ai@${OPENCODE_VERSION}"; then \
         break; \
       fi; \
       if [ "${attempt}" = "3" ]; then exit 1; fi; \
