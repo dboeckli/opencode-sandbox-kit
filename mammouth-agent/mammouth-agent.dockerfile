@@ -22,7 +22,7 @@
 # Node/npm, Docker CLI/compose/buildx, Python and Go come from it (Issue #254).
 # ARG MAMMOUTH_VERSION is the Mammouth CLI pin (Renovate, mammouth-ai/code).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:78bbd3aa71057e907f70a81c23456ab5476c8b6ec66c7d2bb356181fa3f94a1f
 FROM ${BASE_IMAGE}
 
 ARG MAMMOUTH_VERSION=1.18.31.2
