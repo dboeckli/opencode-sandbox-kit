@@ -6,10 +6,12 @@
 #
 # Base: `docker.io/sbx/shell-docker-image:latest` — the Docker-recommended base for
 # custom workloads that need Docker Engine (docs: customize/author/base-images.md).
-# Docker rebuilds it nightly (Ubuntu 26.04 + Node/npm, Python, Go, headless JDK, uv,
+# Docker rebuilds it nightly (Ubuntu 26.04 + Node/npm, Python, Go, headless JDK,
 # Docker CLI + compose + buildx). We do NOT re-install Node/Docker CLI/compose/buildx
-# (avoids double installation; versions are verified below). The JDK is installed as
-# Liberica via install-tooling.sh so all kits share the same JDK vendor/build.
+# (avoids double installation; versions are verified below). uv is installed by
+# install-tooling.sh (pinned >= 0.13.8, incl. uvx; issue #284) because the base uv's
+# CPython download index is too old for newer patch pins (e.g. 3.12.16). The JDK is
+# installed as Liberica via install-tooling.sh so all kits share the same JDK vendor/build.
 #
 # OpenCode itself is NOT part of the base: it is installed from npm and pinned to the
 # 1.x line via ARG OPENCODE_VERSION (Renovate-managed). The official installer
@@ -61,7 +63,7 @@ RUN chmod +x /usr/local/bin/seed-opencode-model-favorites.py /usr/local/bin/open
 RUN rm -rf /usr/local/java \
  && chmod +x /tmp/kit/*.sh \
  && bash /tmp/kit/install-apt-packages.sh \
- && for t in node shfmt jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
+ && for t in node shfmt uv jdk maven kubectl helm kafka; do bash /tmp/kit/install-tooling.sh "$t"; done \
  && if grep -q 'FAILED' /var/log/sbx-kit-install.log 2>/dev/null; then \
       echo "ERROR: tooling install failed (transient download?) -- see /var/log/sbx-kit-install.log:"; \
       grep -B1 -A8 'FAILED' /var/log/sbx-kit-install.log; \
@@ -91,7 +93,7 @@ RUN set -e; \
     done
 
 # Fail-closed verification. Base-provided tools (Docker CLI, compose) and the
-# install-tooling tools (Node, Liberica JDK, Maven, …) are verified here; the build
+# install-tooling tools (Node, uv, Liberica JDK, Maven, …) are verified here; the build
 # fails if a version no longer fits the kit's requirements (issue #254).
 RUN set -eux; \
     node --version; \
@@ -111,6 +113,9 @@ RUN set -eux; \
     helm4 version --short; \
     kafka-topics.sh --version; \
     shfmt --version; \
+    uv --version; \
+    uvx --version; \
+    uv python list --all-versions 3.12 | grep -q 'cpython-3.12.16-linux'; \
     command -v ctx7; \
     command -v skills; \
     command -v prettier; \

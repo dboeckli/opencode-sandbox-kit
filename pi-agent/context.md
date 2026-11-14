@@ -35,7 +35,12 @@ read-only tools). `mcp__mcp_gateway__execute_run_configuration` is limited to
 ## Git rules (mandatory)
 
 - Never commit or push unless the user explicitly asks.
-- Always work on a `feature/` branch, never directly on `master`/`main`.
+- Branch naming applies only to branches the agent creates: use `feature/…`
+  (with an issue: `feature/<issue-number>-<short-text>`), never work directly
+  on `master`/`main`. Branches created by Renovate (`renovate/…`) or Dependabot
+  (`dependabot/…`) are the exception: do not rename, delete, or push to them
+  directly; for changes to such a PR, create your own `feature/…` branch and a
+  separate PR.
 - Never push to `master`/`main`; feature-branch pushes need explicit
   per-push consent.
 - Before a push, generate `target/review/changes.patch` (`mkdir -p target/review &&

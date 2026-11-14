@@ -40,6 +40,21 @@ Danach eine neue Shell öffnen und `sbx version` prüfen. `local-test-kits.py --
 installierte sbx älter als der Repo-Pin ist; bei einem Versionssprung zusätzlich `sbx-cli.md` neu erzeugen:
 `python local-test/regenerate-sbx-doc.py v<version>`.
 
+### Clipboard (Kopieren/Einfügen)
+
+Sandbox → Host-**Textkopie** ist seit sbx **v0.51** opt-in (`clipboard.textCopy`, Default `false`). Ohne Opt-in
+liefert der von `sbx` injizierte `wl-copy`-Shim HTTP 403 — Pi meldet dann irreführend
+`Clipboard unavailable: install 'wl-clipboard' ('wl-copy') or check Wayland access`, OpenCode kopiert (ohne
+OSC-52-fähiges Terminal) ebenfalls nicht. Text-**Paste** (Host → Sandbox) braucht keine Einstellung.
+
+```powershell
+sbx settings set clipboard.textCopy true      # Sandbox → Host-Clipboard
+sbx settings set clipboard.imagePaste true    # optional: Bilder/Screenshots per Ctrl+V
+```
+
+Gilt sofort für laufende Sandboxes (kein Recreate). Verifikation: `sbx settings get clipboard.textCopy` → `true`,
+in der Sandbox `printf test | wl-copy` → Exit 0. Details: [`docs/troubleshooting.md`](docs/troubleshooting.md).
+
 ## 2. Docker Desktop konfigurieren
 
 > **Docker CLI in der Sandbox:** Das Kit installiert die Docker CLI (statisches Binary). Jede Sandbox hat einen

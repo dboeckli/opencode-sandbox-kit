@@ -37,6 +37,11 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+Das gilt nur für Branches, die **der Agent selbst anlegt**. Branches, die **Renovate** (`renovate/…`) oder
+**Dependabot** (`dependabot/…`) erzeugen, sind die **Ausnahme**: nicht umbenennen, nicht löschen, nicht direkt
+darauf pushen. Sollen Änderungen an einem solchen PR gemacht werden, einen eigenen `feature/…`-Branch anlegen und
+einen separaten PR erstellen.
+
 ### Kein Push auf `master`/`main` (Pflicht)
 
 Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvor allgemein Commits/Pushes
@@ -802,12 +807,12 @@ Die jeweilige Config wird automatisch gelesen:
 
 > Die Tooling-Installation ist in allen Kit-Specs dedupliziert: `setup.install` nutzt für die
 > **schweren Tools** `bash /home/agent/.local/bin/install-tooling.sh <tool>` — **einen Command pro Tool**
-> (`node|shfmt|jdk|maven|docker|compose|kubectl|helm|kafka`, Default `all`), damit die `sbx run`-Konsole
+> (`node|shfmt|uv|jdk|maven|docker|compose|kubectl|helm|kafka`, Default `all`), damit die `sbx run`-Konsole
 > jedes Tool als eigene Zeile (Spinner → ✓) zeigt. npm/apt-Pakete sind als Inline-Commands direkt in
 > den Specs (`npm_config_bin_links=true npm install -g ctx7` usw., `apt-get update && …`). Die Skripte
 > liegen als identische Kopien in den `files/home/.local/bin/`-Bundles der Kits (kein separates
 > Kanonik-Verzeichnis). **Versionsänderungen**
-> (Node.js, JDK, Maven, Docker, Compose, Helm, Kafka, shfmt) in einer Kit-Kopie machen, dann die anderen identisch halten
+> (Node.js, JDK, Maven, Docker, Compose, Helm, Kafka, shfmt, uv) in einer Kit-Kopie machen, dann die anderen identisch halten
 > (`opencode-v3-agent/files/home/.local/bin/`, `mammouth-agent/files/home/.local/bin/`, `mistral-vibe-agent/files/home/.local/bin/`) → der Validate-only-Lauf
 > (`local-test-kits-validate-only`) schlägt bei Drift fehl.
 
@@ -816,6 +821,7 @@ Die jeweilige Config wird automatisch gelesen:
 | Node.js 26.13.0 | nodejs.org (`/opt/node` → Symlinks in `/usr/local/bin`; npm-CLIs wie renovate ≥43) |
 | Liberica JDK 25.0.5+11 | GitHub Releases (bell-sw) — alle Kits; alle JDK-Binaries (`java`, `javac`, `jar`, `javadoc`, `jshell`, `keytool`, …) via Symlink in `/usr/local/bin` |
 | Apache Maven 3.10.0 | dlcdn.apache.org |
+| uv 0.13.8 (inkl. `uvx`) | GitHub Releases (astral-sh/uv) — Kit-Install, ersetzt das Base-uv 0.13.4, dessen CPython-Index bei 3.12.15 endet (Issue #284) |
 | Docker CLI 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; Issue #254) |
 | Docker Compose 5.7.0 (Plugin) | aus dem Base-Image (alle Kits; Issue #254) |
 | kubectl (latest stable) | dl.k8s.io (Build: v1.37.2) |
@@ -830,9 +836,9 @@ Die jeweilige Config wird automatisch gelesen:
 | MCP-Verbindungs-CLI (`mcpdo`, gleiches npm-Paket; Subcommands `connect`/`tools/list`/`tools/call`) 2.13.0 | npm (`@modelcontextprotocol/inspector`, gepinnt; Renovate-Custom-Manager) |
 
 > **opencode-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle vier basieren auf `docker.io/sbx/shell-docker-image:latest` —
-> Node/npm, Docker CLI, Compose, Buildx, Python, Go und uv kommen aus dem Base-Image und werden **nicht** neu
-> installiert. Die Kit-Tooling-Schleife installiert `node shfmt jdk maven kubectl helm kafka` (JDK = Liberica, wie
-> in allen Kits).
+> Node/npm, Docker CLI, Compose, Buildx, Python und Go kommen aus dem Base-Image und werden **nicht** neu
+> installiert. Die Kit-Tooling-Schleife installiert `node shfmt uv jdk maven kubectl helm kafka` (JDK = Liberica,
+> wie in allen Kits; uv gepinnt >= 0.13.8 inkl. `uvx`, Issue #284 — das Base-uv 0.13.4 kennt CPython 3.12.16 noch nicht).
 
 > **`npm_config_bin_links`:** Die npm-Install-Kommandos laufen mit explizitem Prefix
 > `npm_config_bin_links=true` (`install-tooling.sh`), damit die globalen CLIs als Symlinks nach

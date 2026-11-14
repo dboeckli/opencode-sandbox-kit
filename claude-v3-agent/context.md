@@ -121,6 +121,11 @@ vorhanden), dessen Name mit `feature/` beginnt (z. B. `feature/mein-feature`). D
 ist nicht erlaubt. Nach Änderungen den Feature Branch committen/pushen und den User fragen, ob ein PR erstellt
 werden soll.
 
+Das gilt nur für Branches, die **der Agent selbst anlegt**. Branches, die **Renovate** (`renovate/…`) oder
+**Dependabot** (`dependabot/…`) erzeugen, sind die **Ausnahme**: nicht umbenennen, nicht löschen, nicht direkt
+darauf pushen. Sollen Änderungen an einem solchen PR gemacht werden, einen eigenen `feature/…`-Branch anlegen und
+einen separaten PR erstellen.
+
 ### Kein Push auf `master`/`main` (Pflicht)
 
 Der Agent pusht **niemals** direkt auf `master`/`main` — auch nicht, wenn zuvor allgemein Commits/Pushes freigegeben wurden. Ausnahme ausschließlich: Der User verlangt den Push auf `master`/`main` **explizit** in derselben Anweisung (z. B. „push auf master"). Standard ist immer der Feature Branch + Frage nach einem PR.

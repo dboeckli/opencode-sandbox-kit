@@ -15,6 +15,21 @@ Host = Windows (PowerShell/CMD, Standard) oder Ubuntu-WSL; Sandbox = Docker-Micr
 | **Docker MCP Server** | Lokaler Docker-MCP-Server via `uv`/`uvx` (`dboeckli/mcp-server-docker`-Fork, Tag `@v<pin>`, inkl. Docker-/Buildx-Introspektion `buildx_*`/`system_*`/`image_*`/`container_inspect`) + `sbx mcp add docker …` (absoluter `uvx`-Pfad); Details: `docs/mcp/docker-mcp-server.md` (Issue #165/#250) | Host-Docker MCP (optional) |
 | **API-Keys / Secrets** | Globale Secrets, vom Proxy verwaltet — liegen nie im Sandbox-Filesystem | je nach Agent (siehe unten) |
 
+### Clipboard (Kopieren/Einfügen)
+
+Sandbox → Host-**Textkopie** ist seit sbx **v0.51** opt-in (`clipboard.textCopy`, Default `false`); ohne Opt-in
+antwortet der von `sbx` injizierte Clipboard-Shim (`wl-copy`/`xclip`/`xsel` → `sbx-clipboard-write`) mit HTTP 403.
+Text-**Paste** (Host → Sandbox) braucht keine Einstellung (läuft terminal-seitig); Bild-Paste (`Ctrl+V` für
+Screenshots) braucht `clipboard.imagePaste`.
+
+```powershell
+sbx settings set clipboard.textCopy true      # Sandbox → Host-Clipboard (Pi/OpenCode-Copy)
+sbx settings set clipboard.imagePaste true    # optional: Bilder/Screenshots einfügen
+```
+
+Die Settings gelten sofort für laufende Sandboxes (kein Recreate). Verifikation: `sbx settings get clipboard.textCopy`
+→ `true`, in der Sandbox `printf test | wl-copy` → Exit 0. Symptome/Fehlermeldungen: `docs/troubleshooting.md`.
+
 ### Secrets registrieren (`sbx secret set <service>`)
 
 | Service | Agent | Key-Quelle |
@@ -47,6 +62,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Node.js | 26.13.0 | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits; alle JDK-Binaries via Symlink in `/usr/local/bin` |
 | Apache Maven | 3.10.0 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
+| uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4, Issue #284) |
 | Docker CLI | 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; isolierter Daemon in der Sandbox-VM) |
 | Docker Compose | 5.7.0 (Plugin) | aus dem Base-Image (alle Kits) |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
@@ -62,8 +78,8 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | jq, python3, pip, python3-yaml | distro | apt |
 
 > **opencode-v3/claude-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle fünf basieren auf `docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00` (Digest-gepinnt; Renovate) —
-> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, Node-Pin usw. installiert
-> weiterhin `install-tooling.sh` (wie in allen Kits).
+> Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, uv (inkl. `uvx`,
+> Issue #284), Node-Pin usw. installiert weiterhin `install-tooling.sh` (wie in allen Kits).
 
 ### Agent-User-Tooling (`install-tooling-user.sh`, user 1000)
 

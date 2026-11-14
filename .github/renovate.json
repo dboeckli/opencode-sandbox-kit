@@ -158,6 +158,15 @@
     },
     {
       "customType": "regex",
+      "description": "uv version (install-tooling.sh, alle Kit-Kopien) — Astral uv + uvx; >= 0.13.8 nötig, damit der eingebettete CPython-Download-Index 3.12.16 (und neuer) kennt (Issue #284)",
+      "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "claude-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
+      "matchStrings": ["UV_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
       "description": "Apache Kafka distribution version (install-tooling.sh, alle Kit-Kopien). Quelle = die distro-Verzeichnisliste auf dlcdn (custom Datasource `custom.apache-kafka`), NICHT Maven Central: die Maven-Artifacts (org.apache.kafka:kafka_2.13) werden publiziert, bevor der Binary-Tarball auf den Apache-Mirrors liegt — ein Maven-Bump auf eine noch nicht veröffentlichte Distro bricht den Image-Build.",
       "managerFilePatterns": ["opencode-v3-agent/files/home/.local/bin/install-tooling.sh", "mammouth-agent/files/home/.local/bin/install-tooling.sh", "mistral-vibe-agent/files/home/.local/bin/install-tooling.sh", "pi-agent/files/home/.local/bin/install-tooling.sh"],
       "matchStrings": ["KAFKA_VER=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],

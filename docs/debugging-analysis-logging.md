@@ -21,8 +21,8 @@ Sandbox.
 ### Install-Log-Format (`/var/log/sbx-kit-install.log`)
 
 Die Kit-Images rufen npm/apt als **Inline-Commands** und die restlichen Tools **einzeln pro Tool**
-(`install-tooling.sh node|shfmt|jdk|maven|kubectl|helm|kafka`; Docker CLI/Compose/Buildx kommen aus
-der `shell-docker-image`-Basis) auf — so zeigt die
+(`install-tooling.sh node|shfmt|uv|jdk|maven|kubectl|helm|kafka`; Docker CLI/Compose/Buildx kommen aus
+der `shell-docker-image`-Basis, uv wird vom Kit installiert) auf — so zeigt die
 `sbx run`-Konsole jedes Tool als eigene Zeile (Spinner beim Start → ✓ beim Abschluss). Jeder Lauf
 loggt `start`/`done` (Tool, Dauer, kumulative Gesamtzeit, Wall-Clock-Timestamp):
 
