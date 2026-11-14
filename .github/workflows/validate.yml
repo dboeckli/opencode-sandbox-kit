@@ -32,7 +32,7 @@ jobs:
         # sbx-Version ist gepinnt (SBX_VERSION), Updates via Renovate
         # (customManager docker/sbx-releases in .github/renovate.json).
         env:
-          SBX_VERSION: v0.51.0
+          SBX_VERSION: v0.53.0
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
@@ -181,7 +181,7 @@ jobs:
 
       - name: Sign out of Docker Hub via sbx
         if: always() && env.CAN_VALIDATE == 'true'
-        run: sbx logout --force || true
+        run: sbx logout --yes || true
 
       - name: Check install-script copies are in sync
         # setup.install konsumiert die Skripte aus files/home/.local/bin/ (alle Kits);

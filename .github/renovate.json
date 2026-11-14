@@ -325,6 +325,15 @@
       "depNameTemplate": "sbx/shell-docker-image",
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Mirror des Base-Image-Digests außerhalb der Dockerfiles: SHELL_BASE_IMAGE_EXPECTED (local-test-kits.py, sonst schlägt der Validate-Base-Check fehl) + Doku (AGENTS.md, docs/prerequisites.md, docs/manual-image-backup.md). Gleiche depName/datasource wie der Dockerfile-Manager → beide Updates landen per packageRule im selben gruppierten PR (Issue #254).",
+      "managerFilePatterns": ["local-test/local-test-kits.py", "AGENTS.md", "docs/prerequisites.md", "docs/manual-image-backup.md"],
+      "matchStrings": ["docker\\.io/sbx/shell-docker-image:(?<currentValue>latest)@(?<currentDigest>sha256:[0-9a-f]{64})"],
+      "depNameTemplate": "sbx/shell-docker-image",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     }
   ],
   "customDatasources": {

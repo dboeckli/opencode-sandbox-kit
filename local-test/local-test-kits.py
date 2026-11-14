@@ -167,7 +167,7 @@ CLAUDE_NPM_LATEST_URL = "https://registry.npmjs.org/@anthropic-ai%2Fclaude-code/
 # nutzen sie; Renovate
 # trackt die jeweilige CLI-Version, nicht die driftende Basis. Node/npm, Python, Go, uv und
 # Docker CLI/compose/buildx kommen aus der Basis (nicht mehr separat installiert).
-SHELL_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest@sha256:969457e4d3eb99b913985875dab829e41924e5435255356546ccefea56c5d6ea"
+SHELL_BASE_IMAGE_EXPECTED = "docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00"
 
 # Eigenstaendiger, im Code erwarteter BASE_IMAGE-Wert (ARG BASE_IMAGE=...) eines Kit-Dockerfiles.
 BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=(?P<img>\S+)")

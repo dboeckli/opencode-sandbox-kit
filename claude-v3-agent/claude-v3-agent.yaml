@@ -6,7 +6,7 @@
 # Build/publish: docker buildx build ./claude-v3-agent -f ./claude-v3-agent/claude-v3-agent.yaml
 # (multi-arch via .github/workflows/build-and-publish-claude-v3-image.yml).
 #
-# v3 requires sbx >= v0.45 (repo pin: v0.51.0). v3 kits cannot compose with
+# v3 requires sbx >= v0.45 (repo pin: v0.53.0). v3 kits cannot compose with
 # v1/v2 kits; this is a standalone workload (no --template/--kit).
 
 schemaVersion: "3"

@@ -4,7 +4,7 @@ name: Build and publish Pi agent image
 #
 # The v3 descriptor is the Dockerfile frontend; buildx is called with
 # `-f pi-agent/pi-agent.yaml`, so the kit grammar and the image stay in sync.
-# v3 requires sbx >= v0.45 (repo pin v0.51.0); v3 kits cannot compose with v1/v2.
+# v3 requires sbx >= v0.45 (repo pin v0.53.0); v3 kits cannot compose with v1/v2.
 #
 # This workflow is both directly dispatchable and a reusable workflow
 # (`workflow_call`). `e2e.yml` calls it before the scenario matrix.
