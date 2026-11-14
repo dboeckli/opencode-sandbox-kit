@@ -121,6 +121,7 @@
     "mcp-gateway_buildx_inspect": "allow",
     "mcp-gateway_container_inspect": "allow",
     "mcp-gateway_container_processes": "allow",
+    "mcp-gateway_container_stats": "allow",
     "mcp-gateway_image_history": "allow",
     "mcp-gateway_image_inspect": "allow",
     "mcp-gateway_system_df": "allow",

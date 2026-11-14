@@ -160,7 +160,7 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 
 `docker` CLI is installed and connects to the isolated Docker daemon inside the sandbox microVM. Use it to build/pull/run containers. The Docker socket is not the host socket.
 
-> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`dboeckli/mcp-server-docker`-Fork via `uvx`, host-seitig
+> **Host-Docker-Zugriff:** über einen **lokalen Docker-MCP-Server** (`mcp-server-docker-dboeckli` PyPI-Wheel via `uvx`, host-seitig
 > beim sbx MCP Gateway registriert) — kein offener `2375`-Port. Die Tools laufen über den Gateway und werden
 > durch die Permission-Whitelist gegated (read-only `allow`, Write `ask`). Siehe `docs/mcp/docker-mcp-server.md`
 > (Issue #165). Hinweis: Die Whitelist ist eine Agent-Guardrail, keine Netzgrenze — der Gateway selbst ist aus

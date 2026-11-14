@@ -412,7 +412,7 @@ Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 |--------|------|--------------------------------------|
 | **IntelliJ MCP** | IntelliJ IDEA (JetBrains MCP Server, Port `64615` seit IDEA 2026.2.2, Endpoint `/stream`) | `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` |
 | **Kubernetes** | `kubernetes-mcp-server` (voller Umfang, Toolsets `core,config,helm`; keine Sandbox-Credentials) | `sbx mcp add k8s --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"` |
-| **Docker** | `dboeckli/mcp-server-docker`-Fork via `uvx` (`v0.6.0`: steuert den Host-Docker-Daemon + Docker-/Buildx-Introspektion, Issue #250) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,git+https://github.com/dboeckli/mcp-server-docker@v0.6.0,mcp-server-docker"` |
+| **Docker** | `dboeckli/mcp-server-docker`-Fork als PyPI-Wheel (`mcp-server-docker-dboeckli==0.6.2`: steuert den Host-Docker-Daemon + Docker-/Buildx-Introspektion, Issue #250/#286) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.6.2,mcp-server-docker"` |
 
 ```powershell
 sbx run ./opencode-v3-agent/ `

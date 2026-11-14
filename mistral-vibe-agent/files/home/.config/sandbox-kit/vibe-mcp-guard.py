@@ -72,6 +72,7 @@ ALLOW = (
     "buildx_inspect",
     "container_inspect",
     "container_processes",
+    "container_stats",
     "image_history",
     "image_inspect",
     "system_df",
