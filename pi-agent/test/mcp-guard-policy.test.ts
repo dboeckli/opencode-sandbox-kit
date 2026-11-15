@@ -24,26 +24,27 @@ test("allows Pi-prefixed read-only Kubernetes tools", () => {
 
 test("allows read-only prefix groups", () => {
 	assert.equal(isAllowedTool(pi("get_symbol_info"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("list_containers"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("list_database_connections"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_list_containers"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("search_symbol"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("read_file"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("generate_psi_tree"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("buildx_list"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("buildx_history"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("buildx_logs"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("buildx_du"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("buildx_inspect"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("container_inspect"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("container_processes"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("container_stats"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("container_health"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("network_inspect"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("volume_inspect"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("image_history"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("image_inspect"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("system_df"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("system_info"), {}).allowed, true);
-	assert.equal(isAllowedTool(pi("version"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_buildx_list"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_buildx_history"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_buildx_logs"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_buildx_du"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_buildx_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_container_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_container_processes"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_container_stats"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_container_health"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_network_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_volume_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_image_history"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_image_inspect"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_system_df"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_system_info"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_version"), {}).allowed, true);
 });
 
 test("blocks Pi-prefixed write and exec tools", () => {

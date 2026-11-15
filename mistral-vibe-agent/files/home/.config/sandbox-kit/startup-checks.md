@@ -19,7 +19,7 @@ It shows:
 - **MCP servers** reachable through the sbx MCP gateway via `~/.local/bin/mcp-check.sh`:
   `mcp-gateway` (gateway handshake succeeded), `mcp-idea` (IntelliJ tools present, detected by
   `get_symbol_info`), `mcp-k8s` (Kubernetes tools present, detected by `pods_list`),
-  `mcp-docker` (Docker tools present, detected by `list_containers`), `mcp-client` (the agent config
+  `mcp-docker` (Docker tools present, detected by `docker_list_containers`), `mcp-client` (the agent config
   declares the gateway URL — without it no `mcp-gateway_*` tools reach the agent; issue #139) and
   `mcp-tools` (deep, startup report only: `<agent> mcp list` performs a real handshake through the
   agent's own MCP client; falls back to `mcp-client` when the CLI has no `mcp list`). The sandbox holds **no**

@@ -59,28 +59,31 @@ ALLOW = (
     "projects_list",
     "resources_get",
     "resources_list",
-    # Docker MCP server (local Docker, issue #165): read-only tools. `list_*`
-    # above already covers list_containers/images/networks/volumes; write tools
-    # (create_/run_/remove_* image/network/volume, …) stay denied (no `ask`).
-    "fetch_container_logs",
+    # Docker MCP server (local Docker, issue #165): read-only tools. Since
+    # mcp-server-docker 0.8.0 every tool is prefixed with `docker_`; `docker_list_*`
+    # covers containers/images/networks/volumes. Write tools (create_/run_/remove_*
+    # image/network/volume, …) stay denied (no `ask`).
+    "docker_list_*",
+    "docker_events_list",
+    "docker_fetch_container_logs",
     # Buildx/builder read-only queries (fork mcp-server-docker, issue #250).
-    "buildx_list",
-    "buildx_history",
-    "buildx_logs",
+    "docker_buildx_list",
+    "docker_buildx_history",
+    "docker_buildx_logs",
     # Docker/Buildx introspection (fork mcp-server-docker 0.5.0+), all read-only.
-    "buildx_du",
-    "buildx_inspect",
-    "container_inspect",
-    "container_processes",
-    "container_stats",
-    "container_health",
-    "network_inspect",
-    "volume_inspect",
-    "image_history",
-    "image_inspect",
-    "system_df",
-    "system_info",
-    "version",
+    "docker_buildx_du",
+    "docker_buildx_inspect",
+    "docker_container_inspect",
+    "docker_container_processes",
+    "docker_container_stats",
+    "docker_container_health",
+    "docker_network_inspect",
+    "docker_volume_inspect",
+    "docker_image_history",
+    "docker_image_inspect",
+    "docker_system_df",
+    "docker_system_info",
+    "docker_version",
 )
 
 RUN_CONFIG_TOOL = PREFIX + "execute_run_configuration"

@@ -189,15 +189,19 @@ Setup: `docs/mcp/kubernetes-mcp-server.md`.
 ## Docker MCP
 
 On a sandbox started with `--static-mcp idea,k8s,docker`, a local Docker MCP server
-(PyPI `mcp-server-docker-dboeckli==0.7.0`, started host-side via `uvx`) is exposed through the same sbx MCP
-gateway. Tools arrive as `mcp-gateway_<tool>`. Read-only tools — `list_containers`, `list_images`,
-`list_networks`, `list_volumes`, `fetch_container_logs`, `buildx_list`, `buildx_history`, `buildx_logs`,
-`buildx_du`, `buildx_inspect`, `system_df`, `system_info`, `version`, `image_inspect`, `image_history`,
-`container_inspect`, `container_processes`, `container_stats`, `container_health`, `network_inspect`,
-`volume_inspect` (`events_list` is shared with the Kubernetes MCP server) — are `allow`; the write tools
-(`create_container`, `run_container`, `recreate_container`, `start_container`, `stop_container`,
-`remove_container`, `pull_image`, `push_image`, `build_image`, `remove_image`, `create_network`,
-`remove_network`, `create_volume`, `remove_volume`) are **`ask`** (per-call approval, not permanently
+(PyPI `mcp-server-docker-dboeckli==0.8.0`, started host-side via `uvx`) is exposed through the same sbx MCP
+gateway. Tools arrive as `mcp-gateway_<tool>`; since 0.8.0 every Docker tool is prefixed with `docker_`
+(the gateway namespace is flat and globally unique, so `docker_events_list` no longer collides with the
+Kubernetes `events_list`). Read-only tools — `docker_list_containers`, `docker_list_images`,
+`docker_list_networks`, `docker_list_volumes`, `docker_fetch_container_logs`, `docker_buildx_list`,
+`docker_buildx_history`, `docker_buildx_logs`, `docker_buildx_du`, `docker_buildx_inspect`,
+`docker_system_df`, `docker_system_info`, `docker_version`, `docker_image_inspect`, `docker_image_history`,
+`docker_container_inspect`, `docker_container_processes`, `docker_container_stats`, `docker_container_health`,
+`docker_network_inspect`, `docker_volume_inspect`, `docker_events_list` — are `allow`; the write tools
+(`docker_create_container`, `docker_run_container`, `docker_recreate_container`, `docker_start_container`,
+`docker_stop_container`, `docker_remove_container`, `docker_pull_image`, `docker_push_image`,
+`docker_build_image`, `docker_remove_image`, `docker_create_network`, `docker_remove_network`,
+`docker_create_volume`, `docker_remove_volume`) are **`ask`** (per-call approval, not permanently
 granted). Setup: `docs/mcp/docker-mcp-server.md`.
 
 ## Context7
