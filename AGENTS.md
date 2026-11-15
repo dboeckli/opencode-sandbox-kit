@@ -294,6 +294,13 @@ IntelliJ Run-Configs (`.run/*.run.xml`; die `local-test-kits-*` rufen `local-tes
 | `build-and-publish-opencode2-image` | — | Baut/pusht das OpenCode-2-Workload-Image lokal (`local-test/build-and-publish-opencode2-image.py`, Tag `<basever>-<branch-slug>.<timestamp>` + `local`, Log `target/build-and-publish-opencode2-image.log`); das `local-test-kits-opencode2`-Szenario nutzt `OPENCODE2_IMAGE_TAG=local` bzw. baut das Verzeichnis |
 | `build-and-publish-claude-v3-image` | — | Baut/pusht das Claude-v3-Workload-Image lokal (`local-test/build-and-publish-claude-v3-image.py`, Tag `<basever>-<branch-slug>.<timestamp>` + `local`, Log `target/build-and-publish-claude-v3-image.log`); das `local-test-kits-claude-v3`-Szenario nutzt `CLAUDE_V3_IMAGE_TAG=local` bzw. baut das Verzeichnis |
 
+> **`.run/*.run.xml` in IntelliJ-Form committen:** IntelliJ schreibt jede `PythonConfigurationType`-Config beim
+> Öffnen/Ausführen um — es entfernt `DEBUG_JUST_MY_CODE`, ergänzt
+> `<EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />` plus `RUN_AS_SCRIPT` und lässt
+> das Trailing-Newline am Dateiende weg. Alle 15 Configs liegen deshalb in genau dieser Form im Repo; sonst zeigt der
+> Branch nach jedem IDE-Lauf einen Diff (auf `master` ist das ein Fehlalarm). Neue Configs aus einer bestehenden Datei
+> ableiten und eine doch auftretende Umschreibung mitcommitten statt sie zu verwerfen.
+
 Alle Configs nutzen dasselbe SDK (`~\AppData\Local\Microsoft\WindowsApps\python3.exe`), WORKING_DIRECTORY
 `$PROJECT_DIR$` (Repo-Root = Sandbox-Workspace), `PYTHONUNBUFFERED=1`. Neue Config in `.run/` anlegen = nur eine XML-Datei mit passendem
 `PARAMETERS`; IntelliJ erkennt sie (die `get_run_configurations`-Liste kann kurz veraltet sein — direkt per Namen starten
@@ -327,8 +334,14 @@ seine **unterstützten Agenten** an (OpenCode: `~/.config/opencode/opencode.json
 **Mammouth** ist keine sbx-Integration und bringt den `mcp`-Block selbst mit
 (`mammouth-agent/files/home/.config/mammouth/opencode.jsonc`, Issue #139), **Mistral Vibe** analog in
 `~/.vibe/config.toml`. Tool-Präfixe:
-`mcp-gateway_<tool>` (OpenCode/Mammouth) bzw. `mcp__mcp-gateway__<tool>` (Claude Code) — der frühere direkte
+`mcp-gateway_<tool>` (OpenCode v3/OpenCode 2/Mammouth/Mistral Vibe) bzw. `mcp__mcp-gateway__<tool>` (Claude Code)
+und `mcp__mcp_gateway__<tool>` (Pi) — der frühere direkte
 `idea_`/`mcp__idea__`-Prefix existiert nicht mehr.
+
+**Pfad-Quirk:** `projectPath`/Projektparameter immer im **Windows-Format** übergeben
+(`C:/development/projects/<projekt>`) — der IntelliJ MCP lehnt Sandbox-Pfade wie `/c/development/...` ab
+(der Workspace heißt in der Sandbox `/c/...`, in der IDE aber `C:/...`). Der Fehlertext nennt die offenen Projekte;
+den Pfad von dort übernehmen. Gilt für alle Kits (identisch in den always-loaded Profilen und `context.md` verankert).
 
 **Kein direkter Host-Port in der Sandbox:** `host.docker.internal:64615`/`:64342` (und `localhost`/`127.0.0.1`)
 stehen bewusst **nicht** in `permissions.network.allow` — der Proxy blockt sie mit HTTP 403. Sonst könnte jeder

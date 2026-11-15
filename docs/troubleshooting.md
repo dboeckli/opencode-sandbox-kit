@@ -192,6 +192,22 @@ Falls die Gateway-Verbindung fehlschlägt (Log: `connect to idea: … Method Not
 Der Gateway verbindet host-seitig über `localhost`; eine Windows-Firewall-Freigabe für Port 64615 ist für die
 Sandbox **nicht** mehr nötig (Issue #163).
 
+### IntelliJ MCP: `projectPath` im Windows-Format
+
+Der IntelliJ-MCP-Server läuft auf dem Windows-Host, seine Projekt-IDs sind **Windows-Pfade**. In der Sandbox
+erscheint der Workspace dagegen als `/c/development/projects/<projekt>`. Ein Aufruf mit dem Sandbox-Pfad schlägt
+fehl:
+
+```text
+`projectPath`=`/c/development/projects/<projekt>` doesn't correspond to any open project.
+ You may specify the project path via `projectPath` parameter when calling a tool.
+ Currently open projects: {"projects":[{"path":"C:/development/projects/<projekt>"}, ...]}
+```
+
+Immer den Windows-Pfad übergeben (`C:/development/projects/<projekt>`) — der Fehlertext listet die offenen Projekte,
+falls der genaue Pfad unklar ist. Bei mehreren offenen Projekten das passende auswählen, nicht raten. Der Hinweis ist
+in allen Kits in den always-loaded Agent-Profilen und in `context.md` verankert (Abschnitt „Pfad-Quirk").
+
 ## Caveats
 
 ### Kit-Spec v3 und die sbx-Version

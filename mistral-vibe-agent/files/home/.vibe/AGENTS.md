@@ -7,3 +7,7 @@
 3. **Kein Auto-Commit/-Push:** `git commit`, `git push` und PR-Erstellung nur nach expliziter Zustimmung des Users; vor einem Push den Diff freigeben lassen.
 
 Vollständige Sandbox-/Kit-Regeln (Umgebung, Netzwerk-Policy, MCP-Whitelist, Auth, Tooling) stehen in `/usr/share/sandbox/kit/mistral-vibe-agent/context.md` — bei nichttrivialen Aufgaben vorher lesen.
+
+## IntelliJ MCP: Projektpfad
+
+`projectPath`/Projektparameter immer im **Windows-Format** übergeben (`C:/development/projects/<projekt>`) — Linux-Pfade (`/c/development/...`) lehnt der IntelliJ MCP ab. Der Fehlertext nennt die offenen Projekte; von dort übernehmen.
