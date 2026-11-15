@@ -7,7 +7,7 @@ der Sandbox **ohne offenen `2375`-Port** (siehe [#71](https://codeberg.org/dboec
 ([`ckreiling/mcp-server-docker`](https://github.com/ckreiling/mcp-server-docker), Python) — fuer die
 Buildx-Abfragen (`docker_buildx_list`/`docker_buildx_history`/`docker_buildx_logs`, Issue #250) der Fork
 [`dboeckli/mcp-server-docker`](https://github.com/dboeckli/mcp-server-docker), gestartet aus dem
-PyPI-Wheel `mcp-server-docker-dboeckli==0.8.0` (Distribution ≠ Command-Name, Issue #286). Der Server wird
+PyPI-Wheel `mcp-server-docker-dboeckli==0.8.1` (Distribution ≠ Command-Name, Issue #286). Der Server wird
 **host-seitig via `uvx`** gestartet und beim **sbx MCP Gateway** registriert (`sbx mcp add --command …`). Die Sandbox spricht ausschließlich MCP; der direkte `2375`-Port entfällt
 aus der Netzwerk-Allowlist. Muster wie beim Kubernetes-MCP (Issue #40).
 
@@ -54,7 +54,7 @@ uvx --version
 ## 2. Server-Starttest
 
 ```powershell
-uvx --from "mcp-server-docker-dboeckli==0.8.0" mcp-server-docker
+uvx --from "mcp-server-docker-dboeckli==0.8.1" mcp-server-docker
 ```
 
 Der erste Start lädt das Wheel von PyPI (kein Git-Clone/venv-Build); danach startet der
@@ -62,11 +62,19 @@ Der erste Start lädt das Wheel von PyPI (kein Git-Clone/venv-Build); danach sta
 erscheinen. Das ist **normal** (der Server blockiert auf stdin; die Unterbrechung wird nicht
 abgefangen) und kein Fehler.
 
-> **PyPI-Pin (`mcp-server-docker-dboeckli==0.8.0`):** Der Server startet aus dem veröffentlichten Wheel
+> **PyPI-Pin (`mcp-server-docker-dboeckli==0.8.1`):** Der Server startet aus dem veröffentlichten Wheel
 > (kein Git-Clone/venv-Build mehr; Issue #286). Wichtig: **Distribution ≠ Command** — PyPI
 > `mcp-server-docker` gehört zum Upstream und endet bei `0.3.0`; ein bloßes `uvx mcp-server-docker`
 > liefert daher die alte Upstream-Version **ohne** `buildx_*`. Deshalb immer
 > `--from mcp-server-docker-dboeckli==<v>`.
+>
+> **0.8.1 — Listen-Tools liefern ein JSON-Array:** `docker_list_*`/`docker_buildx_*` geben jetzt ein
+> einzelnes JSON-Array zurück statt aneinandergeketteter Einzelobjekte (upstream
+> [#64](https://github.com/dboeckli/mcp-server-docker/issues/64), behoben mit
+> [PR #65](https://github.com/dboeckli/mcp-server-docker/pull/65)) — Ergebnisse sind damit direkt
+> parsebar. Der zweite Teil von #64 (`docker_list_containers` liefert nur 1 von 37 Containern, obwohl
+> `docker_container_inspect` sie per Name auflöst) wird im Release-Text **nicht** genannt; beim Re-Test
+> nach dem Update prüfen.
 >
 > **Breaking in 0.8.0 — Tool-Präfix `docker_`:** Alle 36 Tools tragen jetzt das Präfix `docker_`
 > (`list_containers` → `docker_list_containers`), damit der flache Gateway-Namespace kollisionsfrei
@@ -102,7 +110,7 @@ Absoluten `uvx`-Pfad ermitteln:
 Server registrieren:
 
 ```powershell
-sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.8.0,mcp-server-docker"
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.8.1,mcp-server-docker"
 ```
 
 Registrierung prüfen:
@@ -124,7 +132,7 @@ sbx mcp inspect docker
 Alternativ ohne `uvx`-Shim:
 
 ```powershell
-sbx mcp add docker --command (Get-Command uv).Source --args "tool,run,--from,mcp-server-docker-dboeckli==0.8.0,mcp-server-docker"
+sbx mcp add docker --command (Get-Command uv).Source --args "tool,run,--from,mcp-server-docker-dboeckli==0.8.1,mcp-server-docker"
 ```
 
 ### Bestehende Registrierung umstellen
@@ -139,7 +147,7 @@ sbx mcp rm docker
 Dann den Fork registrieren:
 
 ```powershell
-sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.8.0,mcp-server-docker"
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.8.1,mcp-server-docker"
 ```
 
 Laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim Erstellen fixiert) bzw. neu erstellen:
@@ -206,8 +214,8 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 | Symptom | Ursache / Fix |
 |---------|---------------|
-| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.8.0,mcp-server-docker"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
-| `sbx mcp load docker` scheitert mit `502 … tool "events_list" … collides with an existing tool already registered for server "k8s"` | Auf dem Host läuft noch **0.7.0** mit unpräfixierten Tool-Namen. **Fix:** auf 0.8.0 neu registrieren (`sbx mcp rm docker` + `add …==0.8.0`, siehe oben) und `sbx mcp load docker --sandbox <name>`; erst danach `mcp-docker:OK` erwarten. |
+| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.8.1,mcp-server-docker"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
+| `sbx mcp load docker` scheitert mit `502 … tool "events_list" … collides with an existing tool already registered for server "k8s"` | Auf dem Host läuft noch **0.7.0** mit unpräfixierten Tool-Namen. **Fix:** auf den Pin neu registrieren (`sbx mcp rm docker` + `add …==<pin>`, siehe oben) und `sbx mcp load docker --sandbox <name>`; erst danach `mcp-docker:OK` erwarten. |
 | `sbx mcp add` ok, aber keine Docker-Tools im `tools/list` | Server ist nicht Teil der `--static-mcp`-Menge der Sandbox (Set ist beim Erstellen fixiert) → `sbx mcp load docker --sandbox <name>` oder neu erstellen. |
 | Erster Check kurz `FAIL`, danach `OK` | `uvx` lädt das PyPI-Wheel beim ersten Start → kurzer Start-Timeout (Gateway-Startprobe); erneut prüfen. |
 | Tool-Fehler „Cannot connect to the Docker daemon" | Docker Desktop läuft nicht oder der Benutzer ist nicht in `docker-users` (Host-Docker-Socket nötig). |
@@ -224,7 +232,7 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 ## Verifikation
 
-- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker-dboeckli==0.8.0`).
+- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker-dboeckli==0.8.1`).
 - **Sandbox:** MCP-Handshake `tools/list` enthält die Docker-Tools (`docker_list_containers`, …); ein
   Read-Tool (`docker_list_containers`) läuft ohne Prompt, ein Write-Tool (`docker_run_container`) löst den
   `ask`-Prompt aus.
