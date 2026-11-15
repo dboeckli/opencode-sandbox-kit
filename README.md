@@ -187,7 +187,7 @@ sbx run ./pi-agent/ `
 
 ### Ohne Clone starten (Release-Images)
 
-Alle sechs Kits sind v3-Workloads und starten direkt per Image-Ref (`docker.io/domboeckli/sbx-<name>:<tag>`) — die früheren Kit-Configs per `git+…` sind entfallen; `kit.allowedSources` (siehe [`INSTALL.md`](INSTALL.md)) braucht es für diese Starts nicht mehr. `latest` ist der bewegliche master-Publish — für reproduzierbare Läufe den Pin-Tag verwenden.
+Alle sechs Kits sind v3-Workloads und starten direkt per Image-Ref (`docker.io/domboeckli/sbx-<name>:<tag>`) — die früheren Kit-Configs per `git+…` sind entfallen. Einmalig `kit.allowedSources` freigeben, damit die Registry-Images bezogen werden dürfen (siehe [`INSTALL.md`](INSTALL.md) → „Kit-Quellen freigeben"). `latest` ist der bewegliche master-Publish — für reproduzierbare Läufe den Pin-Tag verwenden.
 
 Ins Projekt wechseln (wird als Workspace gemountet):
 
