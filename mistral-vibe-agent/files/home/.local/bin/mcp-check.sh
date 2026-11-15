@@ -14,7 +14,7 @@
 #   mcp-gateway:OK   gateway reachable (handshake succeeded)
 #   mcp-idea:OK      IntelliJ tools present (get_symbol_info)
 #   mcp-k8s:OK       Kubernetes tools present (pods_list)
-#   mcp-docker:OK    Docker tools present (list_containers)
+#   mcp-docker:OK    Docker tools present (docker_list_containers)
 #   mcp-client:OK    the agent config declares the gateway (url = MCP_URL)
 #   mcp-tools:OK     (deep) the agent's own MCP client reports the gateway CONNECTED;
 #                    falls back to mcp-client when no supported CLI exists
@@ -98,7 +98,7 @@ if [ -n "$mcp_sid" ]; then
     *'"name":"pods_list"'*) k8s="mcp-k8s:OK" ;;
   esac
   case "$mcp_tools" in
-    *'"name":"list_containers"'*) docker="mcp-docker:OK" ;;
+    *'"name":"docker_list_containers"'*) docker="mcp-docker:OK" ;;
   esac
 fi
 

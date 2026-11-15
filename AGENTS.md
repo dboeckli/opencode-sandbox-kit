@@ -367,19 +367,22 @@ Die Config liegt je Agent-Location vor:
   `mcp-gateway_projects_list`, `mcp-gateway_resources_get`, `mcp-gateway_resources_list`
   (`configuration_view` bewusst gesperrt — würde die kubeconfig inkl. Client-Cert/Key in die Sandbox liefern)
   sowie die **Docker-MCP-Read-only-Tools** des lokalen Docker-MCP-Servers (`docs/mcp/docker-mcp-server.md`,
-  Issue #165/#250): `mcp-gateway_list_containers`, `mcp-gateway_list_images`, `mcp-gateway_list_networks`,
-  `mcp-gateway_list_volumes`, `mcp-gateway_fetch_container_logs`, `mcp-gateway_buildx_list`,
-  `mcp-gateway_buildx_history`, `mcp-gateway_buildx_logs`, `mcp-gateway_buildx_du`,
-  `mcp-gateway_buildx_inspect`, `mcp-gateway_system_df`, `mcp-gateway_system_info`,
-  `mcp-gateway_version`, `mcp-gateway_image_inspect`, `mcp-gateway_image_history`,
-  `mcp-gateway_container_inspect`, `mcp-gateway_container_processes`, `mcp-gateway_container_stats`,
-  `mcp-gateway_container_health`, `mcp-gateway_network_inspect`, `mcp-gateway_volume_inspect` (`mcp-gateway_events_list`
-  ist bereits über den Kubernetes-MCP erlaubt; der Docker-Server bietet seit 0.7.0 ebenfalls ein `events_list`).
+  Issue #165/#250): `mcp-gateway_docker_list_containers` (per Glob `mcp-gateway_docker_list_*`),
+  `mcp-gateway_docker_fetch_container_logs`, `mcp-gateway_docker_buildx_list`,
+  `mcp-gateway_docker_buildx_history`, `mcp-gateway_docker_buildx_logs`, `mcp-gateway_docker_buildx_du`,
+  `mcp-gateway_docker_buildx_inspect`, `mcp-gateway_docker_system_df`, `mcp-gateway_docker_system_info`,
+  `mcp-gateway_docker_version`, `mcp-gateway_docker_image_inspect`, `mcp-gateway_docker_image_history`,
+  `mcp-gateway_docker_container_inspect`, `mcp-gateway_docker_container_processes`,
+  `mcp-gateway_docker_container_stats`, `mcp-gateway_docker_container_health`,
+  `mcp-gateway_docker_network_inspect`, `mcp-gateway_docker_volume_inspect`,
+  `mcp-gateway_docker_events_list` (separat von `mcp-gateway_events_list` des Kubernetes-MCP).
+  Seit mcp-server-docker 0.8.0 tragen **alle** Tools das Präfix `docker_` — der Gateway-Namespace ist
+  flach und global eindeutig, unpräfixierte Namen (`events_list`) lehnt er mit `502 … collides` ab.
   Der Server selbst läuft im **vollen Umfang** (`read_only = false`, Standard-Toolsets
   `core`/`config`/`helm`); diese Whitelist begrenzt den Agenten trotzdem. Die dokumentierten Read-only-Tools bleiben `allow`; alle übrigen
   K8s-/Docker-Write-Tools (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`,
-  `resources_delete`, `helm_install`, `vm_*`, `tekton_*`, `run_container`, `remove_container`,
-  `build_image`, `create_volume`, …) sind bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe pro Aufruf).
+  `resources_delete`, `helm_install`, `vm_*`, `tekton_*`, `docker_run_container`, `docker_remove_container`,
+  `docker_build_image`, `docker_create_volume`, …) sind bei OpenCode/Mammouth/Claude **`ask`** (On-the-fly-Freigabe pro Aufruf).
   `configuration_view` bleibt `deny`.
   Claude listet die erlaubten Tools einzeln als `mcp__mcp-gateway__<tool>` in `permissions.allow`, die
   K8s-Schreib-/Exec-Tools in `permissions.ask`.

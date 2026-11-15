@@ -105,12 +105,16 @@ sowie die K8s-Read-only-Tools des host-seitigen Kubernetes-MCP-Servers (`api_res
 siehe `docs/mcp/kubernetes-mcp-server.md`; `configuration_view` bewusst gesperrt). Alle übrigen K8s-Tools
 (`pods_delete`, `pods_exec`, `pods_run`, `resources_create_or_update`, `resources_delete`, `resources_scale`,
 `helm_install`, `helm_uninstall`, `vm_*`, `tekton_*`, …) sind **`ask`** — On-the-fly-Freigabe pro Aufruf.
-Für den lokalen Docker-MCP-Server (`docs/mcp/docker-mcp-server.md`, Issue #165) sind die Read-only-Tools
-(`mcp-gateway_list_containers`/`list_images`/`list_networks`/`list_volumes`, `mcp-gateway_fetch_container_logs`,
-`mcp-gateway_buildx_list`/`buildx_history`/`buildx_logs`/`buildx_du`/`buildx_inspect`, `mcp-gateway_system_df`/`system_info`/`version`,
-`mcp-gateway_image_inspect`/`image_history`, `mcp-gateway_container_inspect`/`container_processes`/`container_stats`,
-`mcp-gateway_container_health`/`network_inspect`/`volume_inspect` (`events_list` teilt sich der Docker-Server mit dem Kubernetes-MCP) `allow`, die Write-Tools (`mcp-gateway_run_container`, `mcp-gateway_remove_container`, `mcp-gateway_build_image`,
-`mcp-gateway_create_volume`, …) **`ask`**.
+Für den lokalen Docker-MCP-Server (`docs/mcp/docker-mcp-server.md`, Issue #165) tragen seit 0.8.0 **alle**
+Tools das Präfix `docker_` (flacher, global eindeutiger Gateway-Namespace — `docker_events_list` kollidiert
+nicht mehr mit dem `events_list` des Kubernetes-MCP). Read-only-Tools (`mcp-gateway_docker_list_*` für
+containers/images/networks/volumes, `mcp-gateway_docker_fetch_container_logs`,
+`mcp-gateway_docker_buildx_list`/`buildx_history`/`buildx_logs`/`buildx_du`/`buildx_inspect`,
+`mcp-gateway_docker_system_df`/`system_info`/`version`, `mcp-gateway_docker_image_inspect`/`image_history`,
+`mcp-gateway_docker_container_inspect`/`container_processes`/`container_stats`/`container_health`,
+`mcp-gateway_docker_network_inspect`/`volume_inspect`, `mcp-gateway_docker_events_list`) sind `allow`, die
+Write-Tools (`mcp-gateway_docker_run_container`, `mcp-gateway_docker_remove_container`,
+`mcp-gateway_docker_build_image`, `mcp-gateway_docker_create_volume`, …) **`ask`**.
 Schreibende/ausführende Tools (`mcp-gateway_apply_patch`,
 `mcp-gateway_execute_terminal_command`, `mcp-gateway_execute_tool`,
 `mcp-gateway_execute_sql_query`, Debugger-Steuerung, Gateway-Builtins wie `mcp-gateway_code-mode`/`mcp-gateway_mcp-exec`,
