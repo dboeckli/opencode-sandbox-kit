@@ -3,6 +3,14 @@
 Sandbox Kit (mixin) for OpenCode / Mammouth Code / Claude Code / Mistral Vibe / Pi with ctx7 and IntelliJ MCP; OpenCode v3 workload as migration pilot.
 Repo: https://codeberg.org/dboeckli/opencode-sandbox-kit (kanonisch) — GitHub-Mirror: https://github.com/dboeckli/opencode-sandbox-kit
 
+## Harte Regeln (immer befolgen)
+
+1. **Diff-Review:** Nach Änderungen **nur** `target/review/changes.patch` erzeugen (`mkdir -p target/review && git diff <base> > target/review/changes.patch`) und diese Datei in IntelliJ öffnen (`mcp-gateway_open_file_in_editor`) — keine Einzeldateien öffnen.
+2. **Feature Branch:** Vor jeder Änderung einen Branch `feature/<kurzer-text>` anlegen (mit Issue: `feature/<nummer>-<max-4-wörter>`); nie direkt auf `master`/`main` committen oder pushen.
+3. **Kein Auto-Commit/-Push:** `git commit`, `git push` und PR-Erstellung nur nach expliziter Zustimmung des Users; vor einem Push den Diff freigeben lassen.
+
+Details zu Umgebung, MCP-Whitelist, Auth und Tooling stehen in den Abschnitten unten.
+
 ## Environment (wichtig!)
 
 Der Agent läuft in einer **Docker-Sandbox** (MicroVM). Das Kit ist aber ein **Windows-Setup** — der Host
@@ -767,7 +775,8 @@ Network-Allowlist. Der e2e-Check (`local-test-kits.py`) prüft `using-superpower
 - `pi-agent/pi-agent.dockerfile` — Pi image (shell-docker-image base + Kit-Tooling + `@earendil-works/pi-coding-agent`, `ENTRYPOINT [pi]`; kein OpenCode im Image)
 - `pi-agent/files/home/.pi/agent/` — `settings.json` (deepseek/deepseek-flash), `mcp.json` (MCP-Gateway), `extensions/mcp-guard.ts` (Read-only-Whitelist + Run-Config-Guard, gemeinsame Allow-Liste)
 - `pi-agent/files/home/.local/bin/pi-startup-{ca,maven}.sh` — Lifecycle-Startup (Proxy-CA in JDK-cacerts, `~/.m2/settings.xml` inkl. Host-Cache)
-- `pi-agent/context.md` — Sandbox-`AGENTS.md` via `agent-context@1`
+- Immer geladene Agent-Profile mit den **Harten Regeln** (Diff-Review, Feature-Branch, kein Auto-Commit; Issue #276): `opencode-v3-agent/files/home/.config/opencode/AGENTS.md`, `claude-v3-agent/files/home/.claude/CLAUDE.md`, `mammouth-agent/files/home/.config/mammouth/AGENTS.md`, `mistral-vibe-agent/files/home/.vibe/AGENTS.md`, `pi-agent/files/home/.pi/agent/AGENTS.md` — die Details bleiben im gestagten `context.md` (`agent-context@1`-Pointer, `/usr/share/sandbox/kit/<kit>/context.md`)
+- `pi-agent/context.md` — Sandbox-Detailkontext (via `agent-context@1` als Pointer im immer geladenen `~/.pi/agent/AGENTS.md`)
 - `mistral-vibe-agent/mistral-vibe-agent.dockerfile` — pinned Vibe image (shell-docker-image + Kit-Tooling + `uv tool install mistral-vibe==<pin>`, `ENV VIBE_ACTIVE_MODEL=glm-flash`); Build/Publish via `.github/workflows/build-and-publish-mistral-vibe-image.yml`
 - `mistral-vibe-agent/files/home/.vibe/config.toml` — MCP-Gateway-Verdrahtung (`[[mcp_servers]]` → `mcp-gateway.docker.internal/mcp`, `Bearer proxy-managed`) + Default-Modell GLM-5.3-Flash (Z.AI-Provider `zai`) + GLM-5.3 direkt via Z.AI (`glm-5.3`) + GLM-4.7-Flash gratis (`glm-4.7-flash`) + Mistral-hosted GLM (`glm` → `zai-glm-5-3`)
 - `mistral-vibe-agent/files/home/.vibe/hooks.toml` + `files/home/.config/sandbox-kit/vibe-mcp-guard.py` — pre_tool-Read-only-Guard für die IntelliJ-MCP-Tools (auto-approve umgeht das Permission-System)

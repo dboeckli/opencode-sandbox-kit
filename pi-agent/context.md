@@ -1,3 +1,9 @@
+## Harte Regeln (immer befolgen)
+
+1. **Diff-Review:** Nach Änderungen **nur** `target/review/changes.patch` erzeugen (`mkdir -p target/review && git diff <base> > target/review/changes.patch`) und diese Datei in IntelliJ öffnen (`mcp__mcp_gateway__open_file_in_editor`) — keine Einzeldateien öffnen.
+2. **Feature Branch:** Vor jeder Änderung einen Branch `feature/<kurzer-text>` anlegen (mit Issue: `feature/<nummer>-<max-4-wörter>`); nie direkt auf `master`/`main` committen oder pushen.
+3. **Kein Auto-Commit/-Push:** `git commit`, `git push` und PR-Erstellung nur nach expliziter Zustimmung des Users; vor einem Push den Diff freigeben lassen.
+
 ## Sandbox environment
 
 You are Pi, running inside a Docker sandbox. The workspace is mounted at its
