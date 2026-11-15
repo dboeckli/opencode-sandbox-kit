@@ -19,11 +19,11 @@ Gateway direkt über Pis eingebautes MCP (`~/.pi/agent/mcp.json`) — kein `pi-m
 pi-agent/
 ├── pi-agent.yaml          # v3 descriptor (kind: workload, args.version, capabilities)
 ├── pi-agent.dockerfile    # Image: Kit-Tooling + Pi, ENTRYPOINT [pi]
-├── context.md             # Sandbox-AGENTS.md (agent-context@1, contentFile)
+├── context.md             # Sandbox-Detailkontext (agent-context@1, contentFile; Pointer im Profil)
 └── files/home/
     ├── .local/bin/        # install-*.sh (Kopien), pi-startup-*.sh, mcp-check.sh
     ├── .config/git/hooks/ # commit-msg (AI-Attribution entfernen)
-    ├── .pi/agent/         # settings.json, mcp.json, extensions/mcp-guard.ts, lib/mcp-guard-policy.ts
+    ├── .pi/agent/         # AGENTS.md (immer geladene Harte Regeln), settings.json, mcp.json, extensions/mcp-guard.ts, lib/mcp-guard-policy.ts
     ├── sbx-cli.md, stackexchange-api*.md
 ```
 

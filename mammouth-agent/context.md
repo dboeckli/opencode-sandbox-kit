@@ -1,3 +1,9 @@
+## Harte Regeln (immer befolgen)
+
+1. **Diff-Review:** Nach Änderungen **nur** `target/review/changes.patch` erzeugen (`mkdir -p target/review && git diff <base> > target/review/changes.patch`) und diese Datei in IntelliJ öffnen (`mcp-gateway_open_file_in_editor`) — keine Einzeldateien öffnen.
+2. **Feature Branch:** Vor jeder Änderung einen Branch `feature/<kurzer-text>` anlegen (mit Issue: `feature/<nummer>-<max-4-wörter>`); nie direkt auf `master`/`main` committen oder pushen.
+3. **Kein Auto-Commit/-Push:** `git commit`, `git push` und PR-Erstellung nur nach expliziter Zustimmung des Users; vor einem Push den Diff freigeben lassen.
+
 <!-- context7 -->
 Use the Context7 CLI (`npx ctx7`) to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service — even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer — your training data may not reflect recent changes. Prefer this over web search for library docs.
 
