@@ -187,7 +187,7 @@ sbx run ./pi-agent/ `
 
 ### Ohne Clone starten (Release-Images)
 
-Für OpenCode/Claude (Kit-Config per `git+…`) einmalig `kit.allowedSources` setzen (siehe INSTALL.md); die v3-Workloads (Mammouth/Mistral Vibe/Pi) ziehen das Release-Image direkt per Image-Ref. `latest` ist der bewegliche master-Publish — für reproduzierbare Läufe den Pin-Tag verwenden.
+Alle sechs Kits sind v3-Workloads und starten direkt per Image-Ref (`docker.io/domboeckli/sbx-<name>:<tag>`) — die früheren Kit-Configs per `git+…` sind entfallen; `kit.allowedSources` (siehe [`INSTALL.md`](INSTALL.md)) braucht es für diese Starts nicht mehr. `latest` ist der bewegliche master-Publish — für reproduzierbare Läufe den Pin-Tag verwenden.
 
 Ins Projekt wechseln (wird als Workspace gemountet):
 
@@ -199,6 +199,26 @@ cd C:\development\projects\mein-projekt
 
 ```powershell
 sbx run docker.io/domboeckli/sbx-opencode:latest `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**OpenCode 2** (v3-Workload, Release-Image, Issue #266):
+
+```powershell
+sbx run docker.io/domboeckli/sbx-opencode2:latest `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**Claude Code v3** (v3-Workload, Release-Image):
+
+```powershell
+sbx run docker.io/domboeckli/sbx-claude:latest `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -335,6 +355,16 @@ sbx run docker.io/domboeckli/sbx-opencode:latest \
     "/mnt/c/development/maven-repo:ro"
 ```
 
+**OpenCode 2** (v3-Workload, Release-Image, Issue #266):
+
+```bash
+sbx run docker.io/domboeckli/sbx-opencode2:latest \
+    --skills=off \
+    --static-mcp idea,k8s,docker \
+    . \
+    "/mnt/c/development/maven-repo:ro"
+```
+
 **Claude Code v3** (v3-Workload, Release-Image):
 
 ```bash
@@ -359,6 +389,16 @@ sbx run docker.io/domboeckli/sbx-mammouth:latest \
 
 ```bash
 sbx run docker.io/domboeckli/sbx-mistral-vibe:latest \
+    --skills=off \
+    --static-mcp idea,k8s,docker \
+    . \
+    "/mnt/c/development/maven-repo:ro"
+```
+
+**Pi Coding Agent** (v3-Workload, Release-Image):
+
+```bash
+sbx run docker.io/domboeckli/sbx-pi-agent:latest \
     --skills=off \
     --static-mcp idea,k8s,docker \
     . \
