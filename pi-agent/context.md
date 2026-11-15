@@ -16,6 +16,11 @@ IntelliJ, Kubernetes and host Docker are available through the sbx MCP
 gateway (`mcp-gateway` in `~/.pi/agent/mcp.json`; sandbox created with
 `--static-mcp idea,k8s,docker`). Host ports are deliberately not reachable.
 
+**Path quirk:** pass `projectPath`/project parameters always in Windows form
+(`C:/development/projects/<project>`) — the IntelliJ MCP rejects Linux paths
+such as `/c/development/...`. The error reply lists the open projects; copy the
+path from there.
+
 ## Documentation lookup priority
 
 1. **IntelliJ MCP** (`mcp__mcp_gateway__*` tools) for the project itself.

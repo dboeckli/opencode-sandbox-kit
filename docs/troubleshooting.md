@@ -41,13 +41,15 @@ sbx rm <sandbox-name> --force
 
 ### Copy/Paste funktioniert nicht (Pi: „Clipboard unavailable …", OpenCode kopiert nicht)
 
+Es gibt **zwei** verschiedene Ursachen — je nach Agent. Erst prüfen, welcher Fall vorliegt.
+
+#### Fall A — Pi / Claude / Mammouth / Vibe (Shim-Pfad)
+
 **Nicht** das Kit-Image: seit sbx **v0.51** ist die Sandbox → Host-**Textkopie** opt-in. Die von `sbx` injizierten
 Clipboard-Shims (`wl-copy`/`xclip`/`xsel` → `sbx-clipboard-write`) antworten sonst mit HTTP 403
 (`clipboard text copy is disabled`). Pi zeigt das als irreführende Meldung
 `Clipboard unavailable: install 'wl-clipboard' ('wl-copy') or check Wayland access` — es sieht zwar
 `WAYLAND_DISPLAY`, emittiert aber kein OSC 52, weil es keine „remote session" (SSH/Mosh/IDE-Daemon) erkennt.
-OpenCode schreibt beim Copy OSC 52 und versucht zusätzlich den nativen Shim; ohne Host-Opt-in und ohne
-OSC-52-fähiges Terminal schlägt auch dort das Copy fehl.
 
 Fix auf dem Host (gilt sofort für laufende Sandboxes, kein Recreate):
 
@@ -62,6 +64,34 @@ sbx settings set clipboard.imagePaste true
   → `0` (vorher `1` mit 403-Meldung).
 - Terminals ohne OSC-52-Support (manche IDE-Terminals): dort wirkt nur der native Shim — `clipboard.textCopy`
   ist dann zwingend.
+
+#### Fall B — OpenCode 2 (kein Shim-Pfad, Issue #59664 upstream)
+
+Bei OpenCode 2 hilft `clipboard.textCopy` **nicht**: die TUI ruft die Shim-Binaries nie auf (kein `wl-copy`/
+`sbx-clipboard-*` im Binary). Sie nutzt nur zwei Kanäle, von denen in der Sandbox keiner trägt:
+
+| Aktion | Kanal in OpenCode 2 | Warum er hier scheitert |
+|---|---|---|
+| Copy → Host | OSC 52 / Kitty-Clipboard ans Terminal | Terminal muss OSC 52 können — **JediTerm (IntelliJ-Terminal) und VTE-basierte Terminals können es nicht** |
+| Copy → Host (2. Kanal) | Wayland `data-control` | die sbx-Wayland-Brücke stellt nur die Shim-CLIs bereit, nicht das Protokoll („no data-control protocol") |
+| Paste per `Ctrl+V` | `clipboard.read()` (OSC-52-Query bzw. `wl-paste`/`xclip` für Bilder) | es gibt **kein** `sbx-clipboard-read`; ohne OSC-52-Read im Terminal → `Clipboard read timed out` |
+
+Der Copy-Fehler ist zusätzlich **still**: OpenTUI wertet `terminal.status === "attempted"` als Erfolg, die TUI
+zeigt „Copied to clipboard", obwohl nichts ankommt (upstream [#59664](https://github.com/anomalyco/opencode/issues/59664),
+dort als VTE/Sandbox-Fall beschrieben).
+
+**Workaround (funktioniert ohne Änderungen):**
+
+- **Paste:** Terminal-Paste statt `Ctrl+V` — im IntelliJ-Terminal `Ctrl+Shift+V`, in Windows Terminal ebenfalls
+  `Ctrl+Shift+V` (bzw. Rechtsklick). Das geht am Clipboard-Service vorbei und landet direkt in der TUI.
+- **Copy:** nicht die TUI-Copy benutzen, sondern die Terminal-Selektion: mit **`Shift`+Maus** selektieren (umgeht
+  das Mouse-Tracking der TUI) und dann `Ctrl+Shift+C`. Alternativ in `cli.json` `"mouse": false` setzen — dann
+  funktioniert die normale Selektion, dafür entfällt das TUI-Scrolling per Maus.
+- **Host-Terminal:** Windows Terminal beherrscht OSC 52 (JediTerm nicht) — ein Test wert, ob `sbx run` die Sequenz
+  durchlässt; verlässlich ist der Terminal-Copy-Weg oben in beiden Terminals.
+
+Ist nur das **Bild**-Paste betroffen (Screenshot → `Ctrl+V`), greift Fall A: `clipboard.imagePaste` plus
+`wl-paste`/`xclip` in der Sandbox.
 
 ### uv: „No download found for request: cpython-3.12.16…" / „No interpreter found for Python 3.12.16"
 
@@ -191,6 +221,22 @@ Falls die Gateway-Verbindung fehlschlägt (Log: `connect to idea: … Method Not
 `/stream` (nicht `/sse`) registriert ist — `sbx mcp inspect idea` muss `URL: http://localhost:64615/stream` zeigen.
 Der Gateway verbindet host-seitig über `localhost`; eine Windows-Firewall-Freigabe für Port 64615 ist für die
 Sandbox **nicht** mehr nötig (Issue #163).
+
+### IntelliJ MCP: `projectPath` im Windows-Format
+
+Der IntelliJ-MCP-Server läuft auf dem Windows-Host, seine Projekt-IDs sind **Windows-Pfade**. In der Sandbox
+erscheint der Workspace dagegen als `/c/development/projects/<projekt>`. Ein Aufruf mit dem Sandbox-Pfad schlägt
+fehl:
+
+```text
+`projectPath`=`/c/development/projects/<projekt>` doesn't correspond to any open project.
+ You may specify the project path via `projectPath` parameter when calling a tool.
+ Currently open projects: {"projects":[{"path":"C:/development/projects/<projekt>"}, ...]}
+```
+
+Immer den Windows-Pfad übergeben (`C:/development/projects/<projekt>`) — der Fehlertext listet die offenen Projekte,
+falls der genaue Pfad unklar ist. Bei mehreren offenen Projekten das passende auswählen, nicht raten. Der Hinweis ist
+in allen Kits in den always-loaded Agent-Profilen und in `context.md` verankert (Abschnitt „Pfad-Quirk").
 
 ## Caveats
 
