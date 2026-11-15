@@ -70,7 +70,7 @@ sbx exec opencode-sandbox -- tail -f /var/log/sbx-kit-install.log
 Die Timestamp-Logik steckt in `log_step()`, `log_phase_start()`, `log_phase_done()` und im
 Fail-open-Wrapper `run_step()` von `opencode-v3-agent/files/home/.local/bin/install-tooling.sh`. Die
 Phasen-Commands laufen in den Publish-Dockerfiles der Kits.
-**Alle Kit-Kopien identisch halten** (`opencode-v3-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`, ...) — der
+**Alle Kit-Kopien identisch halten** (`opencode-v3-agent/`, `opencode2-v3-agent/`, `mammouth-agent/`, `mistral-vibe-agent/`, ...) — der
 Drift-Check schlägt sonst fehl:
 
 ```powershell
@@ -78,6 +78,7 @@ cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh mammouth-agent\fil
 cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh mistral-vibe-agent\files\home\.local\bin\install-tooling.sh
 cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh claude-v3-agent\files\home\.local\bin\install-tooling.sh
 cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh pi-agent\files\home\.local\bin\install-tooling.sh
+cp opencode-v3-agent\files\home\.local\bin\install-tooling.sh opencode2-v3-agent\files\home\.local\bin\install-tooling.sh
 ```
 
 ## Analyzing
@@ -125,7 +126,7 @@ python local-test\local-test-kits.py --validate-only
 `local-test-kits.py` prüft, dass die Install-Skripte in allen Kit-Kopien identisch sind
 (`check_install_scripts_sync`). Nur diese Kopien anfassen und synchron halten:
 
-- `opencode-v3-agent/files/home/.local/bin/install-tooling.sh` → `mammouth-agent/…`, `mistral-vibe-agent/…`, `claude-v3-agent/…`, `pi-agent/…`
+- `opencode-v3-agent/files/home/.local/bin/install-tooling.sh` → `opencode2-v3-agent/…`, `mammouth-agent/…`, `mistral-vibe-agent/…`, `claude-v3-agent/…`, `pi-agent/…`
 - `opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh` → dito
 - `opencode-v3-agent/files/home/.local/bin/mcp-check.sh` → dito
 - `opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh` → dito
@@ -158,7 +159,7 @@ sbx policy log opencode-sandbox
 `local-test-kits.py --validate-only` vergleicht die in `~/stackexchange-api.md` dokumentierte
 API-Version mit dem offiziellen Change-Log — schlägt fehl, wenn eine neuere Version existiert
 (Doku-Dateien + `api_revision` aktualisieren). Alle Kit-Kopien
-(`opencode-v3-agent/files/home/`, `mammouth-agent/files/home/`, `mistral-vibe-agent/files/home/`, ...) identisch halten.
+(`opencode-v3-agent/files/home/`, `opencode2-v3-agent/files/home/`, `mammouth-agent/files/home/`, `mistral-vibe-agent/files/home/`, ...) identisch halten.
 
 ### IntelliJ: Probleme statisch analysieren
 

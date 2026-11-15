@@ -6,7 +6,7 @@ name: Backup images to Docker Hub
 # (`docker/sandbox-templates:*`) + den Kit-Dockerfiles.
 #
 # Auswahl beim Start:
-#   - image: opencode-v3 | claude-v3 | mammouth | mistral-vibe | all
+#   - image: opencode-v3 | opencode2 | claude-v3 | mammouth | mistral-vibe | all
 #   - arch:  amd64 | arm64 | both   (both = native Runner + imagetools-Merge)
 #   - push:  true/false (Build-only)
 #   - tag:   Override; Default = OPENCODE_VERSION / CLAUDE_VERSION / VIBE_VERSION (CLI-Pins)
@@ -27,7 +27,7 @@ on:
       image:
         description: "Kit / Image"
         type: choice
-        options: [opencode-v3, claude-v3, mammouth, mistral-vibe, all]
+        options: [opencode-v3, opencode2, claude-v3, mammouth, mistral-vibe, all]
         default: opencode-v3
       arch:
         description: "Architektur"
@@ -67,7 +67,7 @@ jobs:
           set -euo pipefail
 
           images="$IMAGE"
-          [ "$images" = "all" ] && images="opencode-v3 claude-v3 mammouth mistral-vibe"
+          [ "$images" = "all" ] && images="opencode-v3 opencode2 claude-v3 mammouth mistral-vibe"
 
           both="false"; archs="$ARCH"
           if [ "$archs" = "both" ]; then archs="amd64 arm64"; both="true"; fi
@@ -79,6 +79,10 @@ jobs:
                 ctx=opencode-v3-agent;  df=opencode-v3-agent/opencode-v3-agent.yaml
                 name=sbx-opencode
                 pin=$(grep -oE 'OPENCODE_VERSION=[0-9]+(\.[0-9]+)+' opencode-v3-agent/opencode-v3-agent.dockerfile | head -1 | cut -d= -f2);;
+              opencode2)
+                ctx=opencode2-v3-agent; df=opencode2-v3-agent/opencode2-v3-agent.yaml
+                name=sbx-opencode2
+                pin=$(grep -oE 'OPENCODE2_VERSION=[0-9]+(\.[0-9]+)+' opencode2-v3-agent/opencode2-v3-agent.dockerfile | head -1 | cut -d= -f2);;
               claude-v3)
                 ctx=claude-v3-agent;    df=claude-v3-agent/claude-v3-agent.yaml
                 name=sbx-claude

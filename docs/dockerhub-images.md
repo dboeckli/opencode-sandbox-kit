@@ -13,7 +13,7 @@ Kommandos (publizierte Images, Tag `:latest`).
   - CI: Repo-Variable `IMAGE_PREFIX` (`gh variable set IMAGE_PREFIX --body "docker.io/domboeckli" --repo dboeckli/opencode-sandbox-kit`)
   - Lokal: nur nötig, um vom Default abzuweichen (`$env:IMAGE_PREFIX = "docker.io/domboeckli"`)
 - Images auf Docker Hub (öffentlich, anonym pullbar):
-  `domboeckli/sbx-opencode`, `domboeckli/sbx-claude`, `domboeckli/sbx-mammouth`, `domboeckli/sbx-mistral-vibe`, `domboeckli/sbx-pi-agent`
+  `domboeckli/sbx-opencode`, `domboeckli/sbx-opencode2`, `domboeckli/sbx-claude`, `domboeckli/sbx-mammouth`, `domboeckli/sbx-mistral-vibe`, `domboeckli/sbx-pi-agent`
 - `--skills=off` gehört in **jedes** Kommando (Trust Boundary).
 - `--static-mcp idea,k8s,docker` nur, wenn die Host-MCP-Server registriert sind
   (`sbx mcp add idea …` / `k8s` / `docker`); sonst weglassen.
@@ -81,6 +81,7 @@ Zuerst je Kit das Image lokal bauen und **nach Docker Hub pushen** (setzt den be
 ```powershell
 $env:IMAGE_PREFIX = "docker.io/domboeckli"
 python local-test\build-and-publish-opencode-v3-image.py    # sbx-opencode:local
+python local-test\build-and-publish-opencode2-image.py      # sbx-opencode2:local
 python local-test\build-and-publish-claude-v3-image.py      # sbx-claude:local
 python local-test\build-and-publish-mammouth-image.py       # sbx-mammouth:local
 python local-test\build-and-publish-mistral-vibe-image.py   # sbx-mistral-vibe:local
@@ -108,6 +109,18 @@ sbx run ./opencode-v3-agent/ `
     . `
     "C:\development\maven-repo:ro"
 ```
+
+**2) OpenCode 2** (v3-Workload, Issue #266)
+
+```powershell
+sbx run docker.io/domboeckli/sbx-opencode2:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Ohne publiziertes Image: `sbx run ./opencode2-v3-agent/ ...` (gleiche Optionen).
 
 **2) Claude Code v3** (v3-Workload)
 

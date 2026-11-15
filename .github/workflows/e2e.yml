@@ -9,15 +9,15 @@ name: Kit e2e
 # from local-test/local-test-kits.py with `--ci` (no real
 # mammouth/mistral/context7 API calls — fake keys only prove proxy wiring).
 #
-# The 5 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
+# The 6 scenarios run as PARALLEL matrix jobs (`e2e-scenario`, one job per scenario),
 # each on its own runner with the full setup (sbx, secrets, Cloudsmith registry credential).
 # Modeled on docker/sbx-kits-contrib/.github/workflows/e2e.yml, adapted to
 # this repo: no Go TCK, the Python scenario runner instead.
 #
 # The images are served from the configured registry prefix (`IMAGE_PREFIX`, default
 # Cloudsmith `docker.cloudsmith.io/dboeckli/sbx/…`; `docker.io/<user>` for Docker Hub):
-# the `mistral-vibe` scenario pulls `sbx-mistral-vibe`; `opencode`/`claude` pull
-# `sbx-opencode`/`sbx-claude` (v3 workload images), `mammouth` pulls `sbx-mammouth` (v3 image ref), and `pi` uses the
+# the `mistral-vibe` scenario pulls `sbx-mistral-vibe`; `opencode`/`opencode2`/`claude` pull
+# `sbx-opencode`/`sbx-opencode2`/`sbx-claude` (v3 workload images), `mammouth` pulls `sbx-mammouth` (v3 image ref), and `pi` uses the
 # v3 kit directory (branches) or the published `sbx-pi-agent` image (master/schedule)
 # (baked tooling/agent, issue #137). The `build-and-publish-*-image` jobs (reusing the
 # standalone build-and-publish workflows) build those images — but they PUSH only on
@@ -64,6 +64,16 @@ jobs:
       push: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
     secrets: inherit
 
+  build-and-publish-opencode2-image:
+    # Build (and, unless it's a PR, push) the OpenCode 2 workload image.
+    # `opencode2` uses the published image on master/schedule and the local
+    # kit directory on branches/PRs. Reuses the standalone build workflow.
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: ./.github/workflows/build-and-publish-opencode2-image.yml
+    with:
+      push: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
+    secrets: inherit
+
   build-and-publish-claude-v3-image:
     # Build (and, unless it's a PR, push) the Claude Code v3 workload image.
     # `claude-v3` uses the published image on master/schedule and the local
@@ -96,7 +106,7 @@ jobs:
   e2e-scenario:
     # Scheduled runs (weekly cron, Monday) and push must run; fork PRs do not expose
     # Docker Hub secrets, so skip those.
-    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-v3-image, build-and-publish-claude-v3-image, build-and-publish-mammouth-image, build-and-publish-pi-image]
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-v3-image, build-and-publish-opencode2-image, build-and-publish-claude-v3-image, build-and-publish-mammouth-image, build-and-publish-pi-image]
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -108,14 +118,16 @@ jobs:
       # parallelen Jobs nicht ab (ersetzt das fruehere `success() || failure()`).
       fail-fast: false
       matrix:
-        scenario: [opencode-v3, claude-v3, mammouth, mistral-vibe, pi]
+        scenario: [opencode-v3, opencode2, claude-v3, mammouth, mistral-vibe, pi]
     env:
       # Pins (muessen mit validate.yml identisch sein, Renovate-managed):
       #  - OPENCODE_VERSION: OpenCode-v3-CLI (npm opencode-ai, 1.x); Basis ist die Docker-verwaltete
       #    `docker.io/sbx/shell-docker-image:latest` (Issue #254).
+      #  - OPENCODE2_VERSION: OpenCode-2-CLI (npm @opencode/cli, 2.x; Issue #266); dieselbe Basis.
       #  - CLAUDE_VERSION: Claude-Code-CLI (npm @anthropic-ai/claude-code); dieselbe Basis (Issue #254).
       #  - Mammouth/Vibe/Pi nutzen dieselbe shell-docker-image-Basis und pinnen ihre CLI (Issue #254).
       OPENCODE_VERSION: 1.19.5
+      OPENCODE2_VERSION: 2.3.0
       CLAUDE_VERSION: 2.1.325
     steps:
       - uses: actions/checkout@v7
@@ -343,6 +355,8 @@ jobs:
           MAMMOUTH_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-mammouth-image.outputs.version_tag || '' }}
           # OpenCode v3: master/schedule published image, branches/PRs empty -> local kit.
           OPENCODE_V3_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-opencode-v3-image.outputs.version_tag || '' }}
+          # OpenCode 2: master/schedule published image, branches/PRs empty -> local kit.
+          OPENCODE2_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-opencode2-image.outputs.version_tag || '' }}
           # Claude Code v3: master/schedule published image, branches/PRs empty -> local kit.
           CLAUDE_V3_IMAGE_TAG: ${{ (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && needs.build-and-publish-claude-v3-image.outputs.version_tag || '' }}
           # Pi (v3-Workload): master/schedule das publizierte Image, auf Branches/PRs
@@ -394,7 +408,7 @@ jobs:
     # da GitHub schedule-Runs stark verzögert). Nur bei push(master)/schedule relevant
     # UND nur für Cloudsmith (IMAGE_PREFIX) — Docker Hub hat keinen Feature-Image-Cleanup;
     # läuft auch, wenn die Szenarien fehlschlagen (always), damit Storage frei wird.
-    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-v3-image, build-and-publish-claude-v3-image, build-and-publish-mammouth-image, build-and-publish-pi-image, e2e-scenario]
+    needs: [build-and-publish-mistral-vibe-image, build-and-publish-opencode-v3-image, build-and-publish-opencode2-image, build-and-publish-claude-v3-image, build-and-publish-mammouth-image, build-and-publish-pi-image, e2e-scenario]
     if: ${{ always() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && startsWith(vars.IMAGE_PREFIX || 'docker.io/domboeckli', 'docker.cloudsmith.io') }}
     uses: ./.github/workflows/cleanup-cloudsmith.yml
     secrets: inherit

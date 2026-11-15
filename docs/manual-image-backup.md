@@ -15,6 +15,7 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
   `GET /v1/quota/oss/history/dboeckli/`).
 - Betroffene Images:
   - `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode`
+  - `docker.cloudsmith.io/dboeckli/sbx/sbx-opencode2`
   - `docker.cloudsmith.io/dboeckli/sbx/sbx-claude`
   - `docker.cloudsmith.io/dboeckli/sbx/sbx-mammouth`
   - `docker.cloudsmith.io/dboeckli/sbx/sbx-mistral-vibe`
@@ -37,7 +38,8 @@ die Cloudsmith-Bandwidth-Quote erschöpft ist.
 ```powershell
 $DH  = "domboeckli"       # Docker Hub Namespace (= DOCKER_USER), bitte prüfen
 # Backup-Tag = jeweiliger CLI-Pin des Kit-Images:
-$TAG_OPENCODE = "1.19.5"  # OPENCODE_VERSION (OpenCode-CLI, npm opencode-ai, 1.x)
+$TAG_OPENCODE  = "1.19.5"  # OPENCODE_VERSION (OpenCode-CLI, npm opencode-ai, 1.x)
+$TAG_OPENCODE2 = "2.3.0"   # OPENCODE2_VERSION (OpenCode-2-CLI, npm @opencode/cli, 2.x)
 $TAG_CLAUDE   = "2.1.319" # CLAUDE_VERSION (Claude-CLI, npm @anthropic-ai/claude-code)
 $TAG_MAMMOUTH = "1.18.31.2" # MAMMOUTH_VERSION (Mammouth-CLI)
 $TAG_VIBE     = "3.0.4"   # VIBE_VERSION (PyPI mistral-vibe)
@@ -50,6 +52,7 @@ docker login
 | Image | Context | Dockerfile | Build-Args (Default) |
 |-------|---------|-----------|----------------------|
 | opencode-v3 | `opencode-v3-agent` | `opencode-v3-agent/opencode-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00`, `OPENCODE_VERSION=1.19.5` |
+| opencode2 | `opencode2-v3-agent` | `opencode2-v3-agent/opencode2-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00`, `OPENCODE2_VERSION=2.3.0` |
 | claude-v3 | `claude-v3-agent` | `claude-v3-agent/claude-v3-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00`, `CLAUDE_VERSION=2.1.319` |
 | mammouth | `mammouth-agent` | `mammouth-agent/mammouth-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00`, `MAMMOUTH_VERSION=1.18.31.2` |
 | mistral-vibe | `mistral-vibe-agent` | `mistral-vibe-agent/mistral-vibe-agent.yaml` (v3) | `BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00`, `VIBE_VERSION=3.0.4` |
@@ -59,6 +62,13 @@ docker login
 ```powershell
 docker build -f opencode-v3-agent/opencode-v3-agent.yaml -t "$DH/sbx-opencode:$TAG_OPENCODE" opencode-v3-agent
 docker push  "$DH/sbx-opencode:$TAG_OPENCODE"
+```
+
+## 1b. opencode2 — bauen + pushen
+
+```powershell
+docker build -f opencode2-v3-agent/opencode2-v3-agent.yaml -t "$DH/sbx-opencode2:$TAG_OPENCODE2" opencode2-v3-agent
+docker push  "$DH/sbx-opencode2:$TAG_OPENCODE2"
 ```
 
 ## 2. claude-v3 — bauen + pushen
@@ -102,7 +112,7 @@ curl -s "https://hub.docker.com/v2/repositories/$DH/sbx-mistral-vibe/tags/?page_
 Für **amd64+arm64** statt manuellem amd64-Build:
 `.github/workflows/backup-images-dockerhub.yml` (manueller Trigger) mit Auswahl
 
-- `image`: `opencode-v3` | `claude-v3` | `mammouth` | `mistral-vibe` | `all`
+- `image`: `opencode-v3` | `opencode2` | `claude-v3` | `mammouth` | `mistral-vibe` | `all`
 - `arch`: `amd64` | `arm64` | `both`
 - `push`: `true`/`false`
 - `tag`: Override (Default = `OPENCODE_VERSION` / `CLAUDE_VERSION` / `VIBE_VERSION`)
