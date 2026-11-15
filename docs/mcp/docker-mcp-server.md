@@ -170,6 +170,11 @@ letzte passende Regel gewinnt):
 > Der Gateway liefert die Tool-Namen flach; nach dem Re-Register im `tools/list` prüfen, welches
 > `events_list` sichtbar ist. Die Allow-Regel `mcp-gateway_events_list` deckt beide ab.
 
+> **`container_stats` ist Tool *und* Resource (Issue #264):** Seit Fork-Release 0.6.1 bietet der Server
+> `container_stats` zusätzlich als Tool an (`container_stats(container_id)`, One-Shot-Snapshot); die
+> Resource `docker://containers/{container_id}/stats` bleibt daneben bestehen. Deshalb steht
+> `container_stats` zu Recht in der `allow`-Liste oben.
+
 ## Variante 2 — containerisiert (optional)
 
 Statt `uvx` den Server als Container starten (Host-Docker via Socket-Mount):
