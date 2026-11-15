@@ -15,6 +15,7 @@ Enthält zusätzlich dedizierte Agent-Kits:
 - **Mammouth Code** — `mammouth-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-mammouth`, Entrypoint `mammouth-entrypoint` (seedet die Model-Picker-Favoriten, dann `exec mammouth`).
 - **Mistral Vibe** — `mistral-vibe-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image, Entrypoint `vibe --agent auto-approve`.
 - **OpenCode v3** — `opencode-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-opencode` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, OpenCode-CLI via npm `opencode-ai` auf 1.x gepinnt).
+- **OpenCode 2** — `opencode2-v3-agent/` (**Kit-Spec v3**, `kind: workload`, Issue #266), eigenes Image `docker.io/domboeckli/sbx-opencode2` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, OpenCode-2-CLI via npm `@opencode/cli` auf 2.x gepinnt; V2-Plugin-API + `cli.json`).
 - **Claude Code v3** — `claude-v3-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes Image `docker.io/domboeckli/sbx-claude` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, Claude-CLI via npm `@anthropic-ai/claude-code` gepinnt).
 - **Pi Coding Agent** — `pi-agent/` (**Kit-Spec v3**, `kind: workload`), eigenes gepinntes Image `docker.io/domboeckli/sbx-pi-agent`, Entrypoint `pi`; identisches Tooling wie die anderen Kits, MCP-Gateway direkt in `~/.pi/agent/mcp.json`, Read-only-Guard als Pi-Extension.
 
@@ -26,7 +27,7 @@ Enthält zusätzlich dedizierte Agent-Kits:
 
 ### Lokale Entwicklung (opencode-sandbox-kit)
 
-Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`, `./pi-agent/`) sind relativ:
+Zuerst ins geklonte Repo wechseln — die Kit-Pfade (`./opencode-v3-agent/`, `./opencode2-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`, `./pi-agent/`) sind relativ:
 
 ```powershell
 cd C:\development\projects\opencode-sandbox-kit
@@ -58,6 +59,7 @@ sbx run ./opencode-v3-agent/ `
 Vor dem lokalen Start einmalig die Run-Config `build-and-publish-<agent>-image` ausführen — sie baut/pusht den Tag `:local`:
 
 - [`build-and-publish-opencode-v3-image`](.run/build-and-publish-opencode-v3-image.run.xml)
+- [`build-and-publish-opencode2-image`](.run/build-and-publish-opencode2-image.run.xml)
 - [`build-and-publish-claude-v3-image`](.run/build-and-publish-claude-v3-image.run.xml)
 - [`build-and-publish-mammouth-image`](.run/build-and-publish-mammouth-image.run.xml)
 - [`build-and-publish-mistral-vibe-image`](.run/build-and-publish-mistral-vibe-image.run.xml)
@@ -77,6 +79,26 @@ Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
 
 ```powershell
 sbx run ./opencode-v3-agent/ `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+**OpenCode 2** (v3-Workload, eigenes Image `docker.io/domboeckli/sbx-opencode2:<basever>`, Issue #266):
+
+```powershell
+sbx run docker.io/domboeckli/sbx-opencode2:local `
+    --skills=off `
+    --static-mcp idea,k8s,docker `
+    . `
+    "C:\development\maven-repo:ro"
+```
+
+Ohne publiziertes Image baut `sbx` das Kit direkt aus dem Verzeichnis:
+
+```powershell
+sbx run ./opencode2-v3-agent/ `
     --skills=off `
     --static-mcp idea,k8s,docker `
     . `
@@ -216,23 +238,24 @@ sbx run docker.io/domboeckli/sbx-pi-agent:latest `
 ### CLI-Versionen & Tooling-Image-Tags (gepinnt, Renovate-managed)
 
 Alle Kits nutzen die von Docker verwaltete `docker.io/sbx/shell-docker-image:latest`-Basis und pinnen ihre jeweilige
-CLI — **`OPENCODE_VERSION`** (npm `opencode-ai`, bewusst 1.x), **`CLAUDE_VERSION`** (npm `@anthropic-ai/claude-code`),
+CLI — **`OPENCODE_VERSION`** (npm `opencode-ai`, bewusst 1.x), **`OPENCODE2_VERSION`** (npm `@opencode/cli`, bewusst 2.x), **`CLAUDE_VERSION`** (npm `@anthropic-ai/claude-code`),
 `MAMMOUTH_VERSION`, `VIBE_VERSION`, `PI_VERSION` — Renovate-managed:
 
 - **OpenCode v3**: `docker.io/domboeckli/sbx-opencode:<tag>` — v3-Workload-Image (Basis `docker.io/sbx/shell-docker-image:latest` + Tooling + Config), `<tag>` = OpenCode-CLI-Version (`OPENCODE_VERSION`)
+- **OpenCode 2**: `docker.io/domboeckli/sbx-opencode2:<tag>` — v3-Workload-Image (Basis + Tooling + V2-Config/Plugins), `<tag>` = OpenCode-2-CLI-Version (`OPENCODE2_VERSION`)
 - **Claude Code v3**: `docker.io/domboeckli/sbx-claude:<tag>` — v3-Workload-Image (Basis + Tooling + Config), Tag = Claude-CLI-Version (`CLAUDE_VERSION`)
 - **Mammouth**: `docker.io/domboeckli/sbx-mammouth:<tag>` — v3-Workload, baut auf `docker.io/sbx/shell-docker-image:latest` auf (Tooling **+ Mammouth-CLI** vorgebacken)
 - **Mistral Vibe**: `docker.io/domboeckli/sbx-mistral-vibe:<tag>` — eigenes Image, baut auf `docker.io/sbx/shell-docker-image:latest` auf (`<tag>` = Vibe-Version)
 - **Pi**: `docker.io/domboeckli/sbx-pi-agent:<tag>` — v3-Workload (Descriptor + Dockerfile), baut auf `docker.io/sbx/shell-docker-image:latest` auf (schmale Shell-Basis; `<tag>` = Pi-Version)
 
-Die Pins werden auf Konsistenz geprüft: `OPENCODE_VERSION`/`CLAUDE_VERSION` als Dockerfile-`ARG`, Konstante in
+Die Pins werden auf Konsistenz geprüft: `OPENCODE_VERSION`/`OPENCODE2_VERSION`/`CLAUDE_VERSION` als Dockerfile-`ARG`, Konstante in
 `local-test/local-test-kits.py` und Variable in `.github/workflows/validate.yml` + `e2e.yml` (Renovate-managed). Die
-Basis aller Custom-Workload-Kits (OpenCode v3, Claude v3, Mammouth, Mistral Vibe, Pi) ist bewusst die von Docker
+Basis aller Custom-Workload-Kits (OpenCode v3, OpenCode 2, Claude v3, Mammouth, Mistral Vibe, Pi) ist bewusst die von Docker
 empfohlene, nightly neu gebaute `docker.io/sbx/shell-docker-image:latest` (Digest-gepinnt — Renovate aktualisiert den Digest, wenn das Nightly weiterzieht).
 `python local-test/local-test-kits.py --validate-only` **warnt** (gelb) bei neueren Docker-Hub-/npm-Versionen und
 schlägt bei Drift fehl.
 
-**Image-Tags** — Schema für alle Agent-Images; `<version>` = `OPENCODE_VERSION` (OpenCode v3)
+**Image-Tags** — Schema für alle Agent-Images; `<version>` = `OPENCODE_VERSION` (OpenCode v3) bzw. `OPENCODE2_VERSION` (OpenCode 2)
 bzw. `CLAUDE_VERSION` (Claude v3) bzw. die Agent-Version (Mammouth/Mistral Vibe/Pi), `<branch-slug>` = Branch-Name
 (lowercase), `<timestamp>` = UTC `YYYYMMDDHHMMSS`:
 
@@ -434,6 +457,7 @@ der Agent wird vom jeweiligen Kit-Image beim `sbx run` bestimmt:
 | Agent | Template | Kit |
 |-------|----------|-----|
 | OpenCode v3 | `docker.io/domboeckli/sbx-opencode` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, OpenCode-CLI via npm gepinnt) | `opencode-v3-agent/` |
+| OpenCode 2 | `docker.io/domboeckli/sbx-opencode2` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, `@opencode/cli` 2.x via npm gepinnt) | `opencode2-v3-agent/` |
 | Claude Code v3 | `docker.io/domboeckli/sbx-claude` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, Claude-CLI via npm gepinnt) | `claude-v3-agent/` |
 | Mammouth Code | `docker.io/domboeckli/sbx-mammouth` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, Mammouth-CLI gepinnt) | `mammouth-agent/` (v3-Workload, Pin im Descriptor/Dockerfile) |
 | Mistral Vibe | `docker.io/domboeckli/sbx-mistral-vibe` (baut auf `docker.io/sbx/shell-docker-image:latest` auf, Vibe via PyPI gepinnt) | `mistral-vibe-agent/` (v3-Workload, eigenes Image) |
@@ -687,7 +711,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
   (`SBX_VERSION`, aktuell `v0.53.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
   übersprungen, da keine Secrets), validiert die v3-Kits über den Kit-Builder (`sbx kit validate` ohne
-  `--offline`; `./opencode-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`,
+  `--offline`; `./opencode-v3-agent/`, `./opencode2-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`,
   `./pi-agent/`) und prüft, dass die Install-Skript-Kopien
   (`files/home/.local/bin/`) in allen Kits identisch sind, sowie dass der Vibe-Image-Tag in
   `args.version.default` im Descriptor zum `ARG VIBE_VERSION` im Dockerfile passt.
@@ -723,7 +747,7 @@ Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows
 > dokumentierte Version mit dem gepinnten `SBX_VERSION` und schlägt fehl bei Abweichung
 > (inkl. Hinweis aufs Regen-Skript).
 >
-> `--validate-only` prüft zusätzlich die **CLI-Pins**: `OPENCODE_VERSION` (npm `opencode-ai`, 1.x) und
+> `--validate-only` prüft zusätzlich die **CLI-Pins**: `OPENCODE_VERSION` (npm `opencode-ai`, 1.x), `OPENCODE2_VERSION` (npm `@opencode/cli`, 2.x) und
 > `CLAUDE_VERSION` (npm `@anthropic-ai/claude-code`) als Konstanten in `local-test-kits.py`, Drift-Check gegen die
 > gleichnamigen Variablen in `.github/workflows/validate.yml`/`e2e.yml` und die Dockerfile-Pins; die gemeinsame Basis der
 > Custom-Workload-Kits (`docker.io/sbx/shell-docker-image:latest`) wird gegen die erwartete Docker-verwaltete Basis

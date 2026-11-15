@@ -1,0 +1,180 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-flash",
+  "small_model": "deepseek/deepseek-flash",
+  // V2 native MCP shape: servers live under `mcp.servers`. `codemode: false`
+  // keeps the gateway tools on the provider's native tool list so the ordered
+  // `permissions` rules below apply per tool (Code Mode is the V2 default and
+  // would route tools through the code-execution tool instead). `oauth: false`
+  // keeps the bearer header injection from the sandbox proxy authoritative.
+  "mcp": {
+    "servers": {
+      "mcp-gateway": {
+        "type": "remote",
+        "url": "http://mcp-gateway.docker.internal/mcp",
+        "headers": { "Authorization": "Bearer proxy-managed" },
+        "oauth": false,
+        "codemode": false
+      }
+    }
+  },
+  // V2 native provider shape (`providers`, `settings`). The proxy injects the
+  // real keys for the `proxy-managed` placeholder at the network boundary.
+  "providers": {
+    "deepseek": {
+      "settings": {
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
+      },
+      "models": {
+        "deepseek-flash": {
+          "name": "DeepSeek V4.1 Flash"
+        },
+        "deepseek-v4-pro": {
+          "name": "DeepSeek V4 Pro"
+        },
+        "deepseek-chat": {
+          "name": "DeepSeek Chat"
+        },
+        "deepseek-reasoner": {
+          "name": "DeepSeek Reasoner"
+        }
+      }
+    },
+    "openrouter": {
+      "settings": {
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "~anthropic/claude-sonnet-latest": {
+          "name": "Claude Sonnet (OpenRouter)"
+        },
+        "~google/gemini-flash-latest": {
+          "name": "Gemini Flash (OpenRouter)"
+        }
+      }
+    },
+    "google": {
+      "settings": {
+        "apiKey": "{env:GOOGLE_GENERATIVE_AI_API_KEY}"
+      },
+      "models": {
+        "gemini-3.5-flash": {
+          "name": "Gemini 3.5 Flash"
+        },
+        "gemini-3-flash": {
+          "name": "Gemini 3 Flash"
+        },
+        "gemini-3-pro": {
+          "name": "Gemini 3 Pro"
+        }
+      }
+    },
+    "zai": {
+      "settings": {
+        "apiKey": "{env:ZAI_API_KEY}"
+      },
+      "models": {
+        "glm-5.3-flash": {
+          "name": "GLM 5.3 Flash"
+        },
+        "glm-5.3": {
+          "name": "GLM 5.3"
+        },
+        "glm-4.7-flash": {
+          "name": "GLM 4.7 Flash (free)"
+        }
+      }
+    },
+    "mistral": {
+      "settings": {
+        "apiKey": "{env:MISTRAL_API_KEY}"
+      },
+      "models": {
+        "zai-glm-5-3": {
+          "name": "GLM 5.3 (Mistral)"
+        }
+      }
+    }
+  },
+  // V2 native permission shape: ordered rules, last match wins. The broad deny
+  // first keeps every unknown gateway tool blocked; the documented read-only
+  // tools and the K8s/Docker write/exec groups are listed afterwards (ask).
+  "permissions": [
+    { "action": "mcp-gateway_*", "resource": "*", "effect": "deny" },
+    { "action": "mcp-gateway_execute_run_configuration", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_pods_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_resources_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_helm_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_kiali_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_vm_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_tekton_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_netobserv_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_kcp_*", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_create_container", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_run_container", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_recreate_container", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_start_container", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_stop_container", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_remove_container", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_pull_image", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_push_image", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_build_image", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_remove_image", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_create_network", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_remove_network", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_create_volume", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_docker_remove_volume", "resource": "*", "effect": "ask" },
+    { "action": "mcp-gateway_analyze_calls", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_api_resources_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_build_project", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_buildx_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_buildx_history", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_buildx_logs", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_buildx_du", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_buildx_inspect", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_container_inspect", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_container_processes", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_container_stats", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_container_health", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_network_inspect", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_volume_inspect", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_image_history", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_image_inspect", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_system_df", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_system_info", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_version", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_fetch_container_logs", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_events_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_list_*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_fetch_query_result", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_generate_*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_get_*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_git_status", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_introspect_schema", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_lint_files", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_list_*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_events_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_helm_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_namespaces_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_nodes_log", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_nodes_stats_summary", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_nodes_top", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_pods_get", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_pods_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_pods_list_in_namespace", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_pods_log", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_pods_top", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_projects_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_resources_get", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_resources_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_open_file_in_editor", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_preview_table_data", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_read*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_run_inspection_kts", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_search_*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_test_database_connection", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_validate_inspection_kts", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_xdebug_get_*", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_xdebug_list_*", "resource": "*", "effect": "allow" }
+  ]
+}

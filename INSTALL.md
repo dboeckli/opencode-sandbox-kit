@@ -120,6 +120,9 @@ sbx run ./opencode-v3-agent/ `
     --static-mcp idea
 ```
 
+> Für **OpenCode 2** analog `sbx run ./opencode2-v3-agent/ ...` bzw.
+> `sbx run docker.io/domboeckli/sbx-opencode2:latest ...` (eigene Image-Linie, Issue #266).
+
 > **Warum nicht `/sse`?** Der sbx MCP Gateway spricht bei Remote-Servern Streamable HTTP (POST `initialize`).
 > `/sse` ist klassisches SSE → `Method Not Allowed` (405). Der IntelliJ-Server bietet beide Transporte;
 > für den Gateway ist `/stream` der richtige Endpoint.
@@ -197,7 +200,7 @@ schreibenden/ausführenden Tools. Nicht gelistete MCP-Tools fallen auf den Stand
 ## 4. Kit-Quellen freigeben (Remote-Git-Kits)
 
 Einmalig nötig, bevor Kits direkt aus Codeberg (kanonisch; GitHub-Mirror ebenfalls erlaubt) bezogen werden
-(z. B. `sbx run docker.io/domboeckli/sbx-opencode:latest` — die v3-Workloads kommen aus der Registry):
+(z. B. `sbx run docker.io/domboeckli/sbx-opencode:latest` bzw. `…/sbx-opencode2:latest` — die v3-Workloads kommen aus der Registry):
 
 ```powershell
 sbx settings set kit.allowedSources --% "[\"docker.io/\",\"github.com/dboeckli/\",\"codeberg.org/dboeckli/\"]"
@@ -671,6 +674,7 @@ curl -s -H "Authorization: token $CODEBERG_TOKEN" https://codeberg.org/api/v1/us
 
 # OpenCode v3 (v3-Workload): lokaler Build-Tag :local
 # (vorher Run-Config build-and-publish-opencode-v3-image); Release-Image via Workflow build-and-publish-opencode-v3-image.yml
+# OpenCode 2 analog: Run-Config build-and-publish-opencode2-image / Workflow build-and-publish-opencode2-image.yml
 sbx run docker.io/domboeckli/sbx-opencode:local `
     --skills=off `
     --static-mcp idea,k8s,docker

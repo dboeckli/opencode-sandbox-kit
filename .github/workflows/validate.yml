@@ -14,10 +14,12 @@ jobs:
       # Pins (Renovate-managed):
       #  - OPENCODE_VERSION: OpenCode-v3-CLI (npm opencode-ai, bewusst 1.x). Die Basis ist die
       #    Docker-verwaltete `docker.io/sbx/shell-docker-image:latest` (Issue #254, kein Semver-Pin).
+      #  - OPENCODE2_VERSION: OpenCode-2-CLI (npm @opencode/cli, 2.x; Issue #266); dieselbe Basis.
       #  - CLAUDE_VERSION: Claude-Code-CLI (npm @anthropic-ai/claude-code); dieselbe Basis (Issue #254).
       # Source of Truth fuer die CLI-Pins der v3-Workload-Kits; Updates via Renovate
       # (customManager in .github/renovate.json).
       OPENCODE_VERSION: 1.19.5
+      OPENCODE2_VERSION: 2.3.0
       CLAUDE_VERSION: 2.1.325
       # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
       # session ("not signed in to Docker"); that session needs a Secret Service
@@ -126,6 +128,19 @@ jobs:
             *) exit 1 ;;
           esac
 
+      - name: Validate OpenCode 2 agent kit (v3 workload)
+        if: env.CAN_VALIDATE == 'true'
+        # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
+        # configured". Validierung via buildx-Kit-Frontend/e2e.
+        run: |
+          set -uo pipefail
+          out=$(sbx kit validate --offline ./opencode2-v3-agent/ 2>&1) && { echo "$out"; exit 0; }
+          echo "$out"
+          case "$out" in
+            *"no kit builder configured"*) echo "SKIP: v3 source kit validation needs the kit-builder sandbox; full validation runs via local-test-kits.py --validate-only (builder) and the publish/e2e build"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+
       - name: Validate Claude Code v3 agent kit (v3 workload)
         if: env.CAN_VALIDATE == 'true'
         # v3-Quellkit braucht den Kit-Builder; `--offline` meldet "no kit builder
@@ -195,9 +210,11 @@ jobs:
             cmp "opencode-v3-agent/files/home/.local/bin/$f" "mammouth-agent/files/home/.local/bin/$f"
             cmp "opencode-v3-agent/files/home/.local/bin/$f" "mistral-vibe-agent/files/home/.local/bin/$f"
             cmp "opencode-v3-agent/files/home/.local/bin/$f" "pi-agent/files/home/.local/bin/$f"
+            cmp "opencode-v3-agent/files/home/.local/bin/$f" "opencode2-v3-agent/files/home/.local/bin/$f"
           done
           cmp "opencode-v3-agent/files/home/.local/bin/mcp-check.sh" "claude-v3-agent/files/home/.local/bin/mcp-check.sh"
           cmp "opencode-v3-agent/files/home/.local/bin/mcp-check.sh" "mistral-vibe-agent/files/home/.local/bin/mcp-check.sh"
+          cmp "opencode-v3-agent/files/home/.local/bin/mcp-check.sh" "opencode2-v3-agent/files/home/.local/bin/mcp-check.sh"
 
       - name: Check Mistral Vibe image tag matches the Dockerfile pin
         # args.version.default im Descriptor muss exakt den VIBE_VERSION-Pin aus dem Dockerfile

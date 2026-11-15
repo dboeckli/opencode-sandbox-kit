@@ -89,7 +89,7 @@ setzen.
 ### Veraltete CA-Zertifikate in bestehenden Sandboxes (Issue #202)
 
 `sbx` v0.49.2 behebt die eMudhra-CA-Kompromittierung; die gepinnten Basis-Images
-(`docker.io/sbx/shell-docker-image:latest` für alle Custom-Workload-Kits: OpenCode v3/Claude Code v3/Mammouth/Mistral Vibe/Pi) bringen den
+(`docker.io/sbx/shell-docker-image:latest` für alle Custom-Workload-Kits: OpenCode v3/OpenCode 2/Claude Code v3/Mammouth/Mistral Vibe/Pi) bringen den
 aktualisierten Trust-Store mit. **Bestehende** Sandboxes behalten ihren alten Trust-Store —
 ein CLI-Update allein genügt nicht. Zwei Wege:
 

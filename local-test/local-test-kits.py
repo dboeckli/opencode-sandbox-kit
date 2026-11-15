@@ -6,6 +6,7 @@ Docker-Daemon verfuegbar sind (auf Windows der nativen Docker Desktop, NICHT aus
 
 Szenarien:
   1. OpenCode v3 + opencode-v3-agent   (sbx create ./opencode-v3-agent/ — v3-Workload)
+  2. OpenCode 2 + opencode2-v3-agent  (sbx create ./opencode2-v3-agent/ — v3-Workload)
   2. Claude v3   + claude-v3-agent     (sbx create ./claude-v3-agent/ — v3-Workload)
   3. Mammouth    + mammouth-agent      (sbx create ./mammouth-agent/ — Sandbox-Kit, erstes positionales Argument)
   4. Mistral Vibe + mistral-vibe-agent  (sbx create ./mistral-vibe-agent/ — Sandbox-Kit, eigenes gepinntes Image)
@@ -25,6 +26,7 @@ Voraussetzungen:
 Verwendung:
   python local-test-kits.py                 # alle 5 Szenarien testen (default: all)
   python local-test-kits.py opencode-v3     # nur OpenCode v3 testen
+  python local-test-kits.py opencode2       # nur OpenCode 2 testen
   python local-test-kits.py claude-v3       # nur Claude v3 testen
   python local-test-kits.py mammouth        # nur Mammouth testen
   python local-test-kits.py mistral-vibe    # nur Mistral Vibe testen
@@ -36,7 +38,7 @@ Log: die gesamte Ausgabe wird zusaetzlich nach `target/local-test-kits-<agent>.l
 geschrieben (Tee, wie die `build-and-publish-*.py`-Skripte).
 
 Optionen:
-  {all,opencode-v3,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
+  {all,opencode-v3,opencode2,claude-v3,mammouth,mistral-vibe,pi}  Zu testendes Kit (default: all)
   -h, --help                      Diese Hilfe anzeigen
   --keep                          Sandboxes nach dem Test behalten
   --ci                            CI-Modus: Fake-API-Keys, kein realer
@@ -77,6 +79,7 @@ SO_DOC_FILES = ("mammouth-agent/files/home/stackexchange-api.md",
                 "mistral-vibe-agent/files/home/stackexchange-api.md",
                 "pi-agent/files/home/stackexchange-api.md",
                 "opencode-v3-agent/files/home/stackexchange-api.md",
+                "opencode2-v3-agent/files/home/stackexchange-api.md",
                 "claude-v3-agent/files/home/stackexchange-api.md")
 
 # sbx CLI: die Offline-Referenz (sbx-cli.md) wird aus der Release-Binary generiert
@@ -87,6 +90,7 @@ SBX_DOC_FILES = ("mammouth-agent/files/home/sbx-cli.md",
                  "mistral-vibe-agent/files/home/sbx-cli.md",
                  "pi-agent/files/home/sbx-cli.md",
                  "opencode-v3-agent/files/home/sbx-cli.md",
+                 "opencode2-v3-agent/files/home/sbx-cli.md",
                  "claude-v3-agent/files/home/sbx-cli.md")
 SBX_VALIDATE_YML = ".github/workflows/validate.yml"
 
@@ -144,6 +148,18 @@ INSTALL_SCRIPT_PAIRS = (
      "claude-v3-agent/files/home/.local/bin/install-apt-packages.sh"),
     ("opencode-v3-agent/files/home/.local/bin/mcp-check.sh",
      "claude-v3-agent/files/home/.local/bin/mcp-check.sh"),
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling.sh",
+     "opencode2-v3-agent/files/home/.local/bin/install-tooling.sh"),
+    ("opencode-v3-agent/files/home/.local/bin/install-tooling-user.sh",
+     "opencode2-v3-agent/files/home/.local/bin/install-tooling-user.sh"),
+    ("opencode-v3-agent/files/home/.local/bin/install-apt-packages.sh",
+     "opencode2-v3-agent/files/home/.local/bin/install-apt-packages.sh"),
+    ("opencode-v3-agent/files/home/.local/bin/mcp-check.sh",
+     "opencode2-v3-agent/files/home/.local/bin/mcp-check.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
+     "opencode2-v3-agent/files/home/.local/bin/opencode-startup-ca.sh"),
+    ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
+     "opencode2-v3-agent/files/home/.local/bin/opencode-startup-maven.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-ca.sh",
      "claude-v3-agent/files/home/.local/bin/claude-startup-ca.sh"),
     ("pi-agent/files/home/.local/bin/pi-startup-maven.sh",
@@ -179,6 +195,15 @@ OPENCODE_VERSION_RE = re.compile(r"ARG OPENCODE_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0
 OPENCODE_BASE_IMAGE_EXPECTED = SHELL_BASE_IMAGE_EXPECTED
 OPENCODE_WORKFLOW_VAR = "OPENCODE_VERSION"
 OPENCODE_NPM_LATEST_URL = "https://registry.npmjs.org/opencode-ai/latest"
+
+# OpenCode 2 (Issue #266): eigene Image-Linie, CLI aus npm `@opencode/cli` (2.x,
+# Renovate-managed). Gleiche Custom-Workload-Basis; Plugin-/Config-API ist die
+# V2-API (kein V1-Plugin-Code).
+OPENCODE2_VERSION = "2.3.0"
+OPENCODE2_VERSION_RE = re.compile(r"ARG OPENCODE2_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
+OPENCODE2_BASE_IMAGE_EXPECTED = SHELL_BASE_IMAGE_EXPECTED
+OPENCODE2_WORKFLOW_VAR = "OPENCODE2_VERSION"
+OPENCODE2_NPM_LATEST_URL = "https://registry.npmjs.org/@opencode%2Fcli/latest"
 
 # Mammouth (Issue #137/#240): eigenes Image (mammouth-agent/mammouth-agent.dockerfile, v3) — Basis
 # shell-docker-image + Kit-Tooling + Mammouth-CLI. MAMMOUTH_VERSION (CLI-Pin) treibt den Image-Tag;
@@ -232,6 +257,7 @@ BRUNO_PIN_FILES = [
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
     "opencode-v3-agent/opencode-v3-agent.dockerfile",
+    "opencode2-v3-agent/opencode2-v3-agent.dockerfile",
     "claude-v3-agent/claude-v3-agent.dockerfile",
 ]
 BRUNO_PIN_RE = re.compile(r"@usebruno/cli@(?P<v>[0-9]+(?:\.[0-9]+)+)")
@@ -245,6 +271,7 @@ INSPECTOR_PIN_FILES = [
     "mammouth-agent/mammouth-agent.dockerfile",
     "pi-agent/pi-agent.dockerfile",
     "opencode-v3-agent/opencode-v3-agent.dockerfile",
+    "opencode2-v3-agent/opencode2-v3-agent.dockerfile",
     "claude-v3-agent/claude-v3-agent.dockerfile",
 ]
 INSPECTOR_PIN_RE = re.compile(r"@modelcontextprotocol/inspector@(?P<v>[0-9]+(?:\.[0-9]+)+)")
@@ -265,6 +292,9 @@ KAFKA_ARCHIVE_URL = "https://archive.apache.org/dist/kafka/{ver}/kafka_{scala}-{
 OPENCODE_V3_DOCKERFILE = "opencode-v3-agent/opencode-v3-agent.dockerfile"
 OPENCODE_V3_DESCRIPTOR = "opencode-v3-agent/opencode-v3-agent.yaml"
 OPENCODE_V3_IMAGE_NAME = os.environ.get("OPENCODE_V3_IMAGE_NAME", "sbx-opencode")
+OPENCODE2_DOCKERFILE = "opencode2-v3-agent/opencode2-v3-agent.dockerfile"
+OPENCODE2_DESCRIPTOR = "opencode2-v3-agent/opencode2-v3-agent.yaml"
+OPENCODE2_IMAGE_NAME = os.environ.get("OPENCODE2_IMAGE_NAME", "sbx-opencode2")
 CLAUDE_V3_DOCKERFILE = "claude-v3-agent/claude-v3-agent.dockerfile"
 CLAUDE_V3_DESCRIPTOR = "claude-v3-agent/claude-v3-agent.yaml"
 CLAUDE_V3_IMAGE_NAME = os.environ.get("CLAUDE_V3_IMAGE_NAME", "sbx-claude")
@@ -286,6 +316,7 @@ SCENARIO_KIT = {
     "mistral-vibe": "mistral-vibe-agent",
     "pi": "pi-agent",
     "opencode-v3": "opencode-v3-agent",
+    "opencode2": "opencode2-v3-agent",
     "claude-v3": "claude-v3-agent",
 }
 SCENARIO_SECRETS = {
@@ -293,6 +324,7 @@ SCENARIO_SECRETS = {
     "mistral-vibe": ("github", "github-maven", "mistral", "zai", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "pi": ("github", "github-maven", "deepseek", "zai", "mistral", "openrouter", "google", "context7", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "opencode-v3": ("github", "github-maven", "deepseek", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
+    "opencode2": ("github", "github-maven", "deepseek", "context7", "openrouter", "google", "zai", "mistral", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
     "claude-v3": ("github", "github-maven", "anthropic", "context7", "mistral", "zai", "stackoverflow", "cloudsmith", "sonarcloud", "codeberg"),
 }
 # Reihenfolge der Checks (Ausgabe stabil halten)
@@ -1091,6 +1123,59 @@ def check_opencode_v3_cli_version():
         pass_(f"opencode-v3 CLI pin up-to-date ({cur}; npm latest {latest or 'n/a'}, bewusst 1.x)")
 
 
+def check_opencode2_cli_version():
+    """Prueft den OpenCode-2-CLI-Pin (2.x) des opencode2-v3-Workloads:
+    - BASE_IMAGE ist die von Docker empfohlene Custom-Workload-Basis
+      (`docker.io/sbx/shell-docker-image:latest`, Issue #254)
+    - ARG OPENCODE2_VERSION == OPENCODE2_VERSION-Konstante dieses Scripts
+    - OPENCODE2_VERSION in validate.yml/e2e.yml == Konstante
+    - Update-Hinweis, falls npm (`@opencode/cli`) eine neuere stabile 2.x-Version hat."""
+    cur = _dockerfile_base_version(OPENCODE2_DOCKERFILE, OPENCODE2_VERSION_RE)
+    if not cur:
+        fail(f"opencode2 CLI (ARG OPENCODE2_VERSION nicht in {OPENCODE2_DOCKERFILE} gefunden)")
+        return
+    base = _dockerfile_base_image(OPENCODE2_DOCKERFILE)
+    if base != OPENCODE2_BASE_IMAGE_EXPECTED:
+        fail(
+            f"opencode2 base image ({base or 'BASE_IMAGE fehlt'} != {OPENCODE2_BASE_IMAGE_EXPECTED})",
+            f"ARG BASE_IMAGE in {OPENCODE2_DOCKERFILE} auf {OPENCODE2_BASE_IMAGE_EXPECTED} setzen "
+            "(Docker-empfohlene Custom-Workload-Basis, Issue #254)",
+        )
+        return
+    if cur != OPENCODE2_VERSION:
+        fail(
+            f"opencode2 CLI (Dockerfile-Pin {cur} != OPENCODE2_VERSION {OPENCODE2_VERSION})",
+            f"ARG OPENCODE2_VERSION in {OPENCODE2_DOCKERFILE} auf {OPENCODE2_VERSION} setzen",
+        )
+        return
+    wf = _workflow_env_version(OPENCODE2_WORKFLOW_VAR, WORKFLOW_FILES)
+    if wf is None:
+        fail(f"opencode2 CLI ({OPENCODE2_WORKFLOW_VAR} nicht in validate.yml/e2e.yml gefunden)")
+        return
+    if wf != cur:
+        fail(
+            f"opencode2 CLI ({OPENCODE2_WORKFLOW_VAR} {wf} != OPENCODE2_VERSION {cur})",
+            f"{OPENCODE2_WORKFLOW_VAR} in .github/workflows/validate.yml + e2e.yml auf {cur} setzen",
+        )
+        return
+    try:
+        data = json.loads(_http_get(OPENCODE2_NPM_LATEST_URL))
+        latest = str(data.get("version", ""))
+    except Exception as e:
+        warn(f"opencode2 CLI update check skipped (npm latest nicht abrufbar: {e})")
+        pass_(f"opencode2 CLI pin up-to-date ({cur}, npm latest unbekannt)")
+        return
+    latest_major = latest.split(".")[0] if latest else ""
+    if latest_major == "2" and _version_newer(latest, cur):
+        warn(
+            f"opencode2 CLI update available (Pin {cur}, npm latest 2.x {latest})",
+            f"Optional: OPENCODE2_VERSION in {OPENCODE2_DOCKERFILE} + local-test-kits.py + "
+            f"validate.yml/e2e.yml auf {latest} heben (Renovate, 2.x-Linie)",
+        )
+    else:
+        pass_(f"opencode2 CLI pin up-to-date ({cur}; npm latest {latest or 'n/a'}, bewusst 2.x)")
+
+
 def _claude_v3_cli_version():
     """Claude-Code-CLI-Pin (ARG CLAUDE_VERSION) aus dem Claude-v3-Dockerfile."""
     return _dockerfile_base_version(CLAUDE_V3_DOCKERFILE, CLAUDE_VERSION_RE)
@@ -1397,7 +1482,7 @@ def check_kafka_distro_availability():
 def main():
     enable_ansi()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("agent", nargs="?", choices=["all", "opencode-v3", "claude-v3", "mammouth", "mistral-vibe", "pi"],
+    parser.add_argument("agent", nargs="?", choices=["all", "opencode-v3", "opencode2", "claude-v3", "mammouth", "mistral-vibe", "pi"],
                         default="all", help="Zu testendes Kit (default: all)")
     parser.add_argument("--keep", action="store_true", help="Sandboxes nach dem Test behalten")
     parser.add_argument("--ci", action="store_true",
@@ -1477,6 +1562,7 @@ def main():
     # Kit-Artefakt neu gebaut.
     kit_specs = [
         ("opencode-v3-agent", "opencode-v3"),
+        ("opencode2-v3-agent", "opencode2"),
         ("claude-v3-agent", "claude-v3"),
         ("mammouth-agent", "mammouth"),
         ("mistral-vibe-agent", "mistral-vibe"),
@@ -1508,6 +1594,9 @@ def main():
         print()
         info("==> OpenCode-v3 Base/CLI-Check (shell-docker-image + OPENCODE_VERSION, 1.x)")
         check_opencode_v3_cli_version()
+        print()
+        info("==> OpenCode-2 Base/CLI-Check (shell-docker-image + OPENCODE2_VERSION, 2.x)")
+        check_opencode2_cli_version()
         print()
         info("==> Claude-v3 Base/CLI-Check (shell-docker-image + CLAUDE_VERSION, npm @anthropic-ai/claude-code)")
         check_claude_v3_cli_version()
@@ -1597,6 +1686,36 @@ def main():
             "model": "deepseek/deepseek-flash",
             "config_label": "opencode-v3 config (default model, gateway, guard, CLI)",
             "config": 'test -f ~/.config/opencode/opencode.jsonc && grep -q "deepseek/deepseek-flash" ~/.config/opencode/opencode.jsonc && grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc && test -f ~/.config/opencode/plugins/intellij-run-config-guard.js && opencode --version >/dev/null 2>&1 && echo CONFIG-OK || { echo "MODEL=$(grep -c deepseek/deepseek-flash ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; echo "GUARD=$(test -f ~/.config/opencode/plugins/intellij-run-config-guard.js && echo 1 || echo 0)"; echo "CLI=$(opencode --version 2>/dev/null || echo MISSING)"; exit 1; }',
+        },
+        {
+            "name": "kit-test-opencode2",
+            "agent": "opencode2",
+            "kit": os.path.join(ROOT, "opencode2-v3-agent"),
+            "model": "deepseek/deepseek-flash",
+            "config_label": "opencode2 config (default model, V2 permissions, mcp.servers, V2 plugins, cli.json, CLI)",
+            "config": (
+                'test -f ~/.config/opencode/opencode.jsonc '
+                '&& grep -q "deepseek/deepseek-flash" ~/.config/opencode/opencode.jsonc '
+                '&& grep -q "permissions" ~/.config/opencode/opencode.jsonc '
+                '&& grep -q "mcp-gateway_analyze_calls" ~/.config/opencode/opencode.jsonc '
+                '&& grep -q "servers" ~/.config/opencode/opencode.jsonc '
+                '&& grep -q "codemode.*false" ~/.config/opencode/opencode.jsonc '
+                '&& test -f ~/.config/opencode/plugins/intellij-run-config-guard/index.js '
+                '&& grep -q "Plugin.define" ~/.config/opencode/plugins/intellij-run-config-guard/index.js '
+                '&& test -f ~/.config/opencode/plugins/startup-checks/index.js '
+                '&& test -f ~/.config/opencode/cli.json '
+                '&& test -f ~/.config/opencode/tui-plugins/startup-checks-tui/tui.tsx '
+                '&& opencode --version >/dev/null 2>&1 '
+                '&& opencode --version | grep -q "v2[.]" '
+                '&& echo CONFIG-OK '
+                '|| { echo "MODEL=$(grep -c deepseek/deepseek-flash ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; '
+                'echo "PERM=$(grep -c permissions ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; '
+                'echo "GW=$(grep -c mcp-gateway_analyze_calls ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; '
+                'echo "CODEMODE=$(grep -c codemode ~/.config/opencode/opencode.jsonc 2>/dev/null || echo 0)"; '
+                'echo "GUARD=$(test -f ~/.config/opencode/plugins/intellij-run-config-guard/index.js && echo 1 || echo 0)"; '
+                'echo "CLIJSON=$(test -f ~/.config/opencode/cli.json && echo 1 || echo 0)"; '
+                'echo "CLI=$(opencode --version 2>/dev/null || echo MISSING)"; exit 1; }'
+            ),
         },
         {
             "name": "kit-test-claude-v3",
@@ -1694,6 +1813,15 @@ def main():
                 info(f"OpenCode-v3-Image (publiziert): {kit_target}")
             else:
                 info("OpenCode-v3-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
+        if s["agent"] == "opencode2":
+            # Lokal default `local`; explizit leer (Branch/PR) -> lokales Verzeichnis.
+            oc2_raw = os.environ.get("OPENCODE2_IMAGE_TAG")
+            oc2_tag = "local" if oc2_raw is None else oc2_raw
+            if oc2_tag:
+                kit_target = f"{IMAGE_PREFIX}/{OPENCODE2_IMAGE_NAME}:{oc2_tag}"
+                info(f"OpenCode-2-Image (publiziert): {kit_target}")
+            else:
+                info("OpenCode-2-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
         if s["agent"] == "claude-v3":
             # Lokal default `local`; explizit leer (Branch/PR) -> lokales Verzeichnis.
             cc_raw = os.environ.get("CLAUDE_V3_IMAGE_TAG")
@@ -1792,7 +1920,7 @@ def main():
         required_tools = ["ctx7", "gh", "java", "javac", "mvn", "docker", "kubectl", "jq", "node", "npm", "kafka"]
         if s["agent"] == "pi":
             required_tools.append("pi")
-        if s["agent"] == "opencode-v3":
+        if s["agent"] in ("opencode-v3", "opencode2"):
             required_tools.append("opencode")
         if s["agent"] == "claude-v3":
             required_tools.append("claude")
@@ -1894,16 +2022,16 @@ def main():
 
         openrouter_env_cmd = 'echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-<unset>}"'
         c2, out = exec_sandbox(s["name"], openrouter_env_cmd)
-        if s["agent"] in ("opencode-v3", "pi"):
+        if s["agent"] in ("opencode-v3", "opencode2", "pi"):
             if c2 == 0 and "OPENROUTER_API_KEY=proxy-managed" in out:
                 pass_("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)")
             else:
                 sfail("openrouter proxy env wiring (OPENROUTER_API_KEY=proxy-managed)", out)
         else:
             if c2 == 0 and "OPENROUTER_API_KEY=<unset>" in out:
-                pass_("openrouter not wired (only opencode-v3/pi declare openrouter)")
+                pass_("openrouter not wired (only opencode-v3/opencode2/pi declare openrouter)")
             else:
-                sfail("openrouter not wired (only opencode-v3/pi declare openrouter)", out)
+                sfail("openrouter not wired (only opencode-v3/opencode2/pi declare openrouter)", out)
 
         # Built-in google service: the opencode template injects the placeholder
         # under GOOGLE_GENERATIVE_AI_API_KEY (the env name the AI SDK's google
@@ -1919,16 +2047,16 @@ def main():
                 sfail("google proxy env wiring (GEMINI_API_KEY=proxy-managed)", out)
         else:
             c2, out = exec_sandbox(s["name"], google_env_cmd)
-        if s["agent"] == "opencode-v3":
+        if s["agent"] in ("opencode-v3", "opencode2"):
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed" in out:
                 pass_("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)")
             else:
                 sfail("google proxy env wiring (GOOGLE_GENERATIVE_AI_API_KEY=proxy-managed)", out)
         elif s["agent"] not in ("pi",):
             if c2 == 0 and "GOOGLE_GENERATIVE_AI_API_KEY=<unset>" in out:
-                pass_("google not wired (only opencode-v3 declares google)")
+                pass_("google not wired (only opencode-v3/opencode2 declare google)")
             else:
-                sfail("google not wired (only opencode-v3 declares google)", out)
+                sfail("google not wired (only opencode-v3/opencode2 declare google)", out)
 
         # Kit-deklarierter zai-Service: von opencode-v3/claude-v3, mammouth-agent
         # und mistral-vibe-agent deklariert.

@@ -42,6 +42,13 @@
       "allowedVersions": "/^1\\./"
     },
     {
+      "description": "OpenCode-2 CLI-Pin (npm @opencode/cli, 2.x-Linie) in EINEM PR gruppieren: Dockerfile ARG OPENCODE2_VERSION + local-test-kits.py + validate.yml/e2e.yml (Issue #266).",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["@opencode/cli"],
+      "groupName": "opencode2-cli",
+      "allowedVersions": "/^2\\./"
+    },
+    {
       "description": "Claude-Code-CLI-Pin (npm @anthropic-ai/claude-code) in EINEM PR gruppieren: Dockerfile ARG CLAUDE_VERSION + local-test-kits.py + validate.yml/e2e.yml. Die Basis ist per Digest gepinnt (Tag `:latest`), Renovate aktualisiert den Digest (Issue #254).",
       "matchDatasources": ["npm"],
       "matchPackageNames": ["@anthropic-ai/claude-code"],
@@ -194,6 +201,14 @@
     },
     {
       "customType": "regex",
+      "description": "OpenCode-2 CLI-Pin (.github/workflows/validate.yml + e2e.yml: OPENCODE2_VERSION; npm @opencode/cli, 2.x — Issue #266)",
+      "managerFilePatterns": [".github/workflows/e2e.yml", ".github/workflows/validate.yml"],
+      "matchStrings": ["OPENCODE2_VERSION: (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@opencode/cli",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
       "description": "Claude-Code-CLI-Pin (claude-v3-agent/claude-v3-agent.dockerfile ARG CLAUDE_VERSION; npm @anthropic-ai/claude-code — Issue #254)",
       "managerFilePatterns": ["claude-v3-agent/claude-v3-agent.dockerfile"],
       "matchStrings": ["ARG CLAUDE_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
@@ -218,6 +233,14 @@
     },
     {
       "customType": "regex",
+      "description": "OpenCode-2 CLI-Pin (local-test-kits.py OPENCODE2_VERSION-Konstante; npm @opencode/cli, 2.x — Issue #266)",
+      "managerFilePatterns": ["local-test/local-test-kits.py"],
+      "matchStrings": ["OPENCODE2_VERSION = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
+      "depNameTemplate": "@opencode/cli",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
       "description": "Claude-Code-CLI-Pin (local-test-kits.py CLAUDE_VERSION-Konstante; npm @anthropic-ai/claude-code — Issue #254)",
       "managerFilePatterns": ["local-test/local-test-kits.py"],
       "matchStrings": ["CLAUDE_VERSION = \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""],
@@ -230,6 +253,14 @@
       "managerFilePatterns": ["opencode-v3-agent/opencode-v3-agent.dockerfile"],
       "matchStrings": ["ARG OPENCODE_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
       "depNameTemplate": "opencode-ai",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "OpenCode-2 CLI-Pin (opencode2-v3-agent/opencode2-v3-agent.dockerfile ARG OPENCODE2_VERSION; npm @opencode/cli, 2.x — Issue #266)",
+      "managerFilePatterns": ["opencode2-v3-agent/opencode2-v3-agent.dockerfile"],
+      "matchStrings": ["ARG OPENCODE2_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "@opencode/cli",
       "datasourceTemplate": "npm"
     },
     {

@@ -77,7 +77,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | MCP Inspector CLI (`mcp-inspector`, `mcpdo`) | 2.13.0 | npm global (`@modelcontextprotocol/inspector`, gepinnt; Renovate) |
 | jq, python3, pip, python3-yaml | distro | apt |
 
-> **opencode-v3/claude-v3/mammouth/mistral-vibe/pi (Issue #254):** Alle fünf basieren auf `docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00` (Digest-gepinnt; Renovate) —
+> **opencode-v3/opencode2-v3/claude-v3/mammouth/mistral-vibe/pi (Issue #254/#266):** Alle sechs basieren auf `docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00` (Digest-gepinnt; Renovate) —
 > Node/npm, Docker CLI, Compose und Buildx kommen aus dem Base-Image; Liberica JDK, Maven, uv (inkl. `uvx`,
 > Issue #284), Node-Pin usw. installiert weiterhin `install-tooling.sh` (wie in allen Kits).
 
@@ -94,6 +94,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Agent | Zusätzlich installiert | Konfiguration |
 |-------|-----------------------|---------------|
 | OpenCode v3 | v3-Workload (`opencode-v3-agent/`, Image `sbx-opencode`; Basis `docker.io/sbx/shell-docker-image:latest`, OpenCode-CLI via npm `opencode-ai` auf 1.x gepinnt) | `~/.config/opencode/opencode.jsonc` + `AGENTS.md` + Plugins |
+| OpenCode 2 | v3-Workload (`opencode2-v3-agent/`, Image `sbx-opencode2`; Basis `docker.io/sbx/shell-docker-image:latest`, `@opencode/cli` auf 2.x gepinnt; V2-Plugin-API) | `~/.config/opencode/opencode.jsonc` + `cli.json` + `AGENTS.md` + V2-Plugins |
 | Claude Code v3 | v3-Workload (`claude-v3-agent/`, Image `sbx-claude`; Basis `docker.io/sbx/shell-docker-image:latest`, Claude-CLI via npm `@anthropic-ai/claude-code` gepinnt); managed-settings + `claude-entrypoint` (Settings/Gateway-Merge) | `~/.claude/settings.json` + `CLAUDE.md` + `~/.claude.json` (MCP-Gateway) |
 | Mammouth Code | v3-Workload (`mammouth-agent/mammouth-agent.yaml`); Image `sbx-mammouth` mit CLI + Tooling | `~/.config/mammouth/opencode.jsonc` + `AGENTS.md` |
 | Mistral Vibe | v3-Workload-Image (`uv tool install mistral-vibe==<pin>`, `docker.io/domboeckli/sbx-mistral-vibe:<pin>`) | `~/.vibe/config.toml` (MCP-Gateway) + `~/.vibe/hooks.toml` (Read-only-Guard) + `~/.vibe/AGENTS.md` |
@@ -101,7 +102,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 
 ## Netzwerk (Sandbox, Deny-by-Default)
 
-Nur Hosts aus `network-policy@1` im jeweiligen v3-Descriptor (OpenCode v3/Claude v3/Mammouth/Mistral Vibe/Pi) sind erreichbar.
+Nur Hosts aus `network-policy@1` im jeweiligen v3-Descriptor (OpenCode v3/OpenCode 2/Claude v3/Mammouth/Mistral Vibe/Pi) sind erreichbar.
 Doku: `network-policy.md` in den `files/home/`-Kopien der Kits. Enforced durch den
 Sandbox-Proxy (`mcp-gateway`), der auch die `proxy-managed`-Credential-Injection übernimmt.
 
