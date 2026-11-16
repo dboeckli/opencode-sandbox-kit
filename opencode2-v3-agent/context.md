@@ -231,7 +231,7 @@ Installed skills (from [dboeckli/ai-agent-skills](https://github.com/dboeckli/ai
 ## Java / Maven
 
 - JDK (Liberica) 25 at `/usr/local/java` (`JAVA_HOME` set), `java`, `javac`
-- Maven 3.10.0 at `/opt/maven`, `mvn`
+- Maven 3.10.1 at `/opt/maven`, `mvn`
 - Spring Boot, Apache Camel, CXF, Commons Lang, HttpClient, Tomcat, POI — see `context7-tools.md`
 
 ## Docker CLI

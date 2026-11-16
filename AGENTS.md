@@ -874,7 +874,7 @@ Die jeweilige Config wird automatisch gelesen:
 |------|--------|
 | Node.js 26.13.1 | nodejs.org (`/opt/node` → Symlinks in `/usr/local/bin`; npm-CLIs wie renovate ≥43) |
 | Liberica JDK 25.0.5+11 | GitHub Releases (bell-sw) — alle Kits; alle JDK-Binaries (`java`, `javac`, `jar`, `javadoc`, `jshell`, `keytool`, …) via Symlink in `/usr/local/bin` |
-| Apache Maven 3.10.0 | dlcdn.apache.org |
+| Apache Maven 3.10.1 | dlcdn.apache.org (Fallback archive.apache.org) |
 | uv 0.13.8 (inkl. `uvx`) | GitHub Releases (astral-sh/uv) — Kit-Install, ersetzt das Base-uv 0.13.4, dessen CPython-Index bei 3.12.15 endet (Issue #284) |
 | Docker CLI 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; Issue #254) |
 | Docker Compose 5.7.0 (Plugin) | aus dem Base-Image (alle Kits; Issue #254) |
