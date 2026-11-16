@@ -831,7 +831,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 |------|---------|---------------|
 | Node.js | 26.13.1 | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` |
-| Apache Maven | 3.10.0 | `/opt/maven` |
+| Apache Maven | 3.10.1 | `/opt/maven` |
 | uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4 — Issue #284) |
 | Docker CLI | 29.9.3 | `/usr/local/bin/docker` (opencode-v3 aus Base; sonst 27.5.1) |
 | Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
