@@ -1,7 +1,7 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.53.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.54.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
 (deckt Commands/Flags + Manuels ab, indexiert aber den Docs-`main`-Branch statt des Pins;
@@ -27,7 +27,7 @@ Sandbox Commands:
   inspect     Show details for a sandbox
   ls          List sandboxes
   move        Move a sandbox between local and cloud
-  ports       Manage sandbox port publishing
+  port        Manage sandbox port publishing
   prune       Remove all stopped sandboxes
   rm          Remove one or more sandboxes
   run         Run an agent in a sandbox
@@ -195,8 +195,8 @@ Description:
   do not apply. Set cloud account defaults with
   "sbx --cloud policy init <allow-all|balanced|deny-all>".
 
-  Use "sbx --cloud run <agent> --name SANDBOX" to attach to the agent after
-  creation: cloud needs the agent, since a name alone is not a unique handle.
+  After creation, use "sbx --cloud attach SANDBOX" with the sandbox ID printed
+  by create to attach to the agent.
 
 Usage:
   sbx create AGENT|SANDBOX_KIT [PATH...] [flags]
@@ -233,7 +233,7 @@ Examples:
   # Add a mixin from a git repository (git+https:// or git+ssh://, optionally pinned to a ref and/or subdirectory)
   sbx create claude --kit "git+https://github.com/org/repo.git#ref=v1.0&dir=mixins/foo"
 
-  # Run the agent on an in-container clone of the host repo, wired back via a git-daemon
+  # Run the agent on an in-container clone of the host repo; fetch its commits with git fetch sandbox-<name>
   sbx create --clone claude .
 
   # Create a cloud sandbox for claude
@@ -283,7 +283,7 @@ Global Flags:
 Description:
   Execute a command in a sandbox. If the sandbox is stopped, it is started first. Or — with --cloud — the cloud sandbox
   ID (sbx_*) or name from "sbx --cloud ls". --user is not supported with --cloud.
-  --detach-keys applies only to an interactive (-i/-t) cloud exec.
+  Exec sessions cannot detach; --detach-keys is not supported.
 
   Exit status is that of the command. sbx exits 125 if it could not run the command,
   for example because the sandbox does not exist. A missing command exits 127,
@@ -304,7 +304,6 @@ Examples:
   sbx --cloud exec -it claude/my-sandbox bash
 
 Flags:
-      --detach-keys string     Override the key sequence for detaching an interactive cloud exec session (not supported for local exec)
   -e, --env stringArray        Set environment variables
       --env-file stringArray   Read in a file of environment variables
   -h, --help                   help for exec
@@ -424,7 +423,7 @@ Description:
       ports under new cloud URLs; a port the cloud refuses is skipped with a
       warning. Moving to local saves the published TCP ports and binds them
       on loopback while the sandbox runs. Host ports can change on restart;
-      'sbx ports SANDBOX' shows them. A cloud port published with an
+      'sbx port ls SANDBOX' shows them. A cloud port published with an
       explicit host binding stops a move to local.
 
   Sizing and disk:
@@ -471,78 +470,30 @@ Global Flags:
       --no-input   Never prompt; commands that need an answer fail with the command to run instead
 ```
 
-## sbx ports --help
+## sbx port --help
 ```
 Description:
   Manage sandbox port publishing.
 
-  List, publish, or unpublish sandbox ports. Publishing a local port starts a
-  stopped sandbox before creating the host binding. Without --publish or
-  --unpublish flags, lists all published ports.
-
-  Port spec format: [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]
-  When publishing without a HOST_PORT, an ephemeral port is allocated automatically.
-  If HOST_IP is omitted, the port is bound on loopback, expanded based on
-  PROTOCOL and the sandbox's address families: tcp/udp binds both 127.0.0.1
-  and ::1 (or only 127.0.0.1 if the sandbox is IPv4-only); tcp4/udp4 binds
-  only 127.0.0.1; tcp6/udp6 binds only ::1.
-  Supported protocols: tcp, tcp4, tcp6, udp, udp4, udp6.
-
-  When publishing without a PROTOCOL, tcp4 is used — so a sandbox service
-  listening only on IPv4 is reachable without a host client having to avoid
-  ::1 — or tcp6 when HOST_IP is an IPv6 address. Publish tcp explicitly to
-  bind both families.
-
-  When unpublishing without a HOST_PORT, mappings matching HOST_IP and PROTOCOL
-  are removed from every host port.
-
-  When unpublishing without a PROTOCOL, the mapping is removed whether it was
-  published with that same default or as dual-stack tcp. Name the protocol to
-  remove a tcp6 or udp mapping; anything left behind is reported.
-
-  With --cloud:
-  Manage the exposed ports of a cloud sandbox.
-
-  List, publish, or unpublish ports on a cloud sandbox given by ID (sbx_*) or
-  name. Without --publish or --unpublish flags, lists the exposed ports.
-
-  A port is the sandbox port number alone or with a /tcp suffix; UDP and host
-  bindings are refused. The cloud control plane assigns a publicly reachable URL
-  for each exposed port.
+  List, publish, or unpublish the ports of a sandbox.
 
 Usage:
-  sbx ports SANDBOX [flags]
+  sbx port COMMAND
 
-Examples:
-  # List published ports
-  sbx ports my-sandbox
-
-  # Publish sandbox port 8080 to an ephemeral host port
-  sbx ports my-sandbox --publish 8080
-
-  # Publish with a specific host port
-  sbx ports my-sandbox --publish 3000:8080
-
-  # Unpublish a port
-  sbx ports my-sandbox --unpublish 3000:8080
-
-  # Expose port 8080 on a cloud sandbox
-  sbx --cloud ports sbx_abc123 --publish 8080
-
-  # Remove an exposed port from a cloud sandbox
-  sbx --cloud ports sbx_abc123 --unpublish 8080
+Available Commands:
+  ls          List published ports
+  publish     Publish ports
+  unpublish   Unpublish ports
 
 Flags:
-      --format string           Output format: table, json or yaml
-  -h, --help                    help for ports
-      --json                    Output in JSON format
-  -p, --publish stringArray     Publish a port (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL] (local) or SANDBOX_PORT[/tcp] (cloud)
-      --unpublish stringArray   Unpublish a port (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL] (local) or SANDBOX_PORT[/tcp] (cloud)
+  -h, --help   help for port
 
 Global Flags:
       --cloud      Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx --cloud --help' for the current list)
   -D, --debug      Enable debug logging
       --no-input   Never prompt; commands that need an answer fail with the command to run instead
+
+Use "sbx port COMMAND --help" for more information about a command.
 ```
 
 ## sbx prune --help
@@ -637,6 +588,13 @@ Examples:
   # Remove every sandbox without asking
   sbx rm --all --force
 
+  # Remove a cloud sandbox by name or ID
+  sbx --cloud rm my-sandbox
+  sbx --cloud rm sbx_abc123
+
+  # Remove specific cloud sandboxes without confirmation
+  sbx --cloud rm sbx_abc123 sbx_def456 --force
+
 Flags:
       --all             Remove all sandboxes
   -f, --force           Skip confirmation prompts and delete even if in use (e.g. an open SSH connection)
@@ -705,7 +663,8 @@ Description:
 
   With --cloud, --env and --env-file only apply when creating a sandbox.
   Existing sandboxes keep their original environment; drop these flags to
-  reattach, or pass --new to create a sandbox with the new values.
+  reattach, or pass --new (with an unused --name, if you set one) to create a
+  sandbox with the new values.
 
   Sizing comes from --cpus and --memory and must land on a billable shape; without
   them a cloud sandbox gets 2 CPUs and 4 GiB. A template named with -t / --template
@@ -787,8 +746,8 @@ Flags:
       --on-timeout string           What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps it running by stopping and immediately starting it, or 'delete' removes it. Omit the flag and the server stops the sandbox when it can be started again later, and deletes it otherwise. With 'restart' a supplied --ttl must be at least 1h (cloud only).
       --platform string             Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the platform from the image and the CLI sends the local CPU as a hint for multi-platform images. With --template, omitting it inherits the template platform. With a sandbox kit, the kit's template is built for this platform and cached apart from other platforms; omitting it keeps the server's choice.
       --profile string              Governance profile to assign to the sandbox
-  -p, --publish stringArray         Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]. Applied when the sandbox is created; ignored when re-attaching (use "sbx ports")
-      --pull string                 Image pull policy (always|missing|never; default: never for saved local snapshots, missing for v3 kit compositions, otherwise always)
+  -p, --publish stringArray         Publish a sandbox port to the host (can be repeated): [[HOST_IP:]HOST_PORT:]SANDBOX_PORT[/PROTOCOL]. Applied when the sandbox is created; ignored when re-attaching (use "sbx port publish")
+      --pull string                 Image pull policy when creating a sandbox; ignored when reattaching (always|missing|never; default: never for saved local snapshots, missing for v3 kit compositions, otherwise always)
       --rm                          Remove the sandbox after the agent session exits
       --skills string               Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in read-only, directory stays writable), or readwrite (store mounted over it, writes are shared). Default: readonly, or the configured skills.defaultMode setting. Can only be used when creating a new sandbox.
       --static-mcp strings          MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp notion,atlassian), repeated flags (--static-mcp notion --static-mcp atlassian), or a mix; all forms accumulate into the same set. Use none for a static set with no servers, local sandboxes only. The set is chosen once at creation time and cannot be changed when re-attaching to an existing sandbox. Local sandboxes take names registered with 'sbx mcp add'. Cloud sandboxes resolve names on the cloud MCP gateway.
@@ -1016,6 +975,16 @@ Description:
   Policies contain rules that control what sandboxes can access. Local rules
   can apply globally across all sandboxes or be scoped to one sandbox. Use
   subcommands to allow, deny, list, or remove rules.
+
+  Network rules match the hostname a connection names, such as its TLS SNI or
+  HTTP Host. A denied host that shares an address with an allowed host can
+  still be reached in three cases. First, on connections the proxy does not
+  decrypt, the HTTP Host or :authority inside the encrypted stream is not
+  checked. Second, on cleartext HTTP sent through a CONNECT tunnel or without
+  HTTP_PROXY, only the first request on each connection has its Host checked.
+  Third, a connection that names no host is allowed when any hostname the
+  sandbox resolved to that address is allowed, even if another of those
+  hostnames is denied.
 
 Usage:
   sbx policy COMMAND
