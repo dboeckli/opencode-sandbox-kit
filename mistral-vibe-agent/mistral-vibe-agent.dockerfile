@@ -24,7 +24,7 @@
 # Node/npm, Python and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG VIBE_VERSION is the Mistral Vibe pin (Renovate, PyPI mistral-vibe).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:160a9e3f5cd4bafb39bb9db3a839cb5a468a5a3eff394d8c90fbc1f2635abd00
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:cbeb851c8a7deb8ba62c9b87f8186fd102aaaf9cbf05d4591f8461b82a84e8f6
 FROM ${BASE_IMAGE}
 
 ARG VIBE_VERSION=3.1.2
