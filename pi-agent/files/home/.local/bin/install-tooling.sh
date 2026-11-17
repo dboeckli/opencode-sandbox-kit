@@ -88,10 +88,13 @@ download() {
 	local url="$1" out="$2"
 	local attempt rc=1
 	for attempt in 1 2 3 4 5 6 7 8; do
-		curl -fsSL --connect-timeout 15 --max-time 300 "$url" -o "$out"
-		rc=$?
-		if [ "${rc}" -eq 0 ]; then
+		# curl im if-Kontext: unter `set -e` würde ein blanker curl-Aufruf die
+		# Subshell sofort beenden und die Retries überspringen (Issue: transienter
+		# connect timeout, exit 28). Im else-Zweig liefert `$?` den curl-Status.
+		if curl -fsSL --connect-timeout 15 --max-time 300 "$url" -o "$out"; then
 			return 0
+		else
+			rc=$?
 		fi
 		echo "install-tooling: download attempt ${attempt}/8 failed (curl exit ${rc}): ${url}" >&2
 		sleep "$(( attempt * 2 ))"
@@ -245,7 +248,7 @@ run_kubectl() {
 	local attempt
 	for attempt in 1 2 3 4 5 6 7 8; do
 		KUBE_VER="$(curl -fsSL --connect-timeout 15 --max-time 60 https://dl.k8s.io/release/stable.txt 2>/dev/null)" && break
-		echo "install-tooling: kubectl version fetch attempt ${attempt}/5 failed" >&2
+		echo "install-tooling: kubectl version fetch attempt ${attempt}/8 failed" >&2
 		sleep "$(( attempt * 2 ))"
 	done
 	[ -n "${KUBE_VER}" ] || { echo "install-tooling: failed to fetch kubectl stable version" >&2; return 1; }
