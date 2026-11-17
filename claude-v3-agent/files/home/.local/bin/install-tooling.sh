@@ -57,12 +57,13 @@ run_step() {
 	local rc=0 tmp
 	log_phase_start "${name}"
 	tmp="$(mktemp)"
-	# if-Bedingung: set -e (Parent) greift hier nicht — Subshell-RC wird sauber abgefangen
-	if ( set -euo pipefail; "$@" ) >"${tmp}" 2>&1; then
-		rc=0
-	else
-		rc=$?
-	fi
+	# NICHT als `if ( … )`-Bedingung ausführen: in einem Condition-Kontext ignoriert
+	# Bash `set -e` in der Subshell, sodass ein fehlgeschlagener Download verschluckt
+	# würde (Folgefehler laufen weiter, rc=0, z. B. dangling `mvn`-Symlink).
+	set +e
+	( set -euo pipefail; "$@" ) >"${tmp}" 2>&1
+	rc=$?
+	set -e
 	if [ "${rc}" -eq 0 ]; then
 		log_phase_done "${name}"
 	else
@@ -87,10 +88,13 @@ download() {
 	local url="$1" out="$2"
 	local attempt rc=1
 	for attempt in 1 2 3 4 5 6 7 8; do
-		curl -fsSL --connect-timeout 15 --max-time 300 "$url" -o "$out"
-		rc=$?
-		if [ "${rc}" -eq 0 ]; then
+		# curl im if-Kontext: unter `set -e` würde ein blanker curl-Aufruf die
+		# Subshell sofort beenden und die Retries überspringen (Issue: transienter
+		# connect timeout, exit 28). Im else-Zweig liefert `$?` den curl-Status.
+		if curl -fsSL --connect-timeout 15 --max-time 300 "$url" -o "$out"; then
 			return 0
+		else
+			rc=$?
 		fi
 		echo "install-tooling: download attempt ${attempt}/8 failed (curl exit ${rc}): ${url}" >&2
 		sleep "$(( attempt * 2 ))"
@@ -176,17 +180,24 @@ run_jdk() {
 
 # --- Apache Maven ---
 run_maven() {
-	MAVEN_VER="3.10.0"
+	MAVEN_VER="3.10.1"
 	if command -v mvn >/dev/null 2>&1 && mvn -v 2>/dev/null | grep -qF "${MAVEN_VER}"; then
 		log_step maven
 		return 0
 	fi
-	download "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/apache-maven-${MAVEN_VER}-bin.tar.gz" /tmp/maven.tar.gz
+	# dlcdn hält nur die aktuellen Releases; ein gepinntes älteres MAVEN_VER liegt
+	# nach dem Rollover nur noch im Apache-Archiv. Erst CDN, dann archive.apache.org.
+	local maven_tgz="apache-maven-${MAVEN_VER}-bin.tar.gz"
+	if ! download "https://dlcdn.apache.org/maven/maven-3/${MAVEN_VER}/binaries/${maven_tgz}" /tmp/maven.tar.gz; then
+		download "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VER}/binaries/${maven_tgz}" /tmp/maven.tar.gz
+	fi
 	rm -rf /opt/maven
 	mkdir -p /opt/maven
 	tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1
 	rm -f /tmp/maven.tar.gz
+	[ -x /opt/maven/bin/mvn ]
 	ln -sf /opt/maven/bin/mvn /usr/local/bin/mvn
+	mvn -v >/dev/null
 	log_step maven
 }
 
@@ -237,7 +248,7 @@ run_kubectl() {
 	local attempt
 	for attempt in 1 2 3 4 5 6 7 8; do
 		KUBE_VER="$(curl -fsSL --connect-timeout 15 --max-time 60 https://dl.k8s.io/release/stable.txt 2>/dev/null)" && break
-		echo "install-tooling: kubectl version fetch attempt ${attempt}/5 failed" >&2
+		echo "install-tooling: kubectl version fetch attempt ${attempt}/8 failed" >&2
 		sleep "$(( attempt * 2 ))"
 	done
 	[ -n "${KUBE_VER}" ] || { echo "install-tooling: failed to fetch kubectl stable version" >&2; return 1; }

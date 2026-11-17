@@ -61,7 +61,7 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 |------|---------|------|
 | Node.js | 26.13.1 | `/opt/node`, Symlinks `/usr/local/bin/{node,npm,npx,corepack}` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` (`JAVA_HOME`) — alle Kits; alle JDK-Binaries via Symlink in `/usr/local/bin` |
-| Apache Maven | 3.10.0 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
+| Apache Maven | 3.10.1 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
 | uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4, Issue #284) |
 | Docker CLI | 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; isolierter Daemon in der Sandbox-VM) |
 | Docker Compose | 5.7.0 (Plugin) | aus dem Base-Image (alle Kits) |

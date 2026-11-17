@@ -166,7 +166,7 @@ Docs: `npx ctx7 docs /vercel-labs/skills <query>` (Skills CLI).
 ## Java / Maven
 
 - JDK (Liberica) 25 at `/usr/local/java` (`JAVA_HOME` set), `java`, `javac`
-- Maven 3.10.0 at `/opt/maven`, `mvn`
+- Maven 3.10.1 at `/opt/maven`, `mvn`
 - **Spring Boot** — `/spring-projects/spring-boot` (framework docs)
 - Docs: `npx ctx7 docs <libraryId> <query>` — e.g. `/apache/maven`, `/spring-projects/spring-boot`
 

@@ -642,7 +642,7 @@ PyPI `mistral-vibe`). Da `sbx` keinen eingebauten `mistral-vibe`-Agenten kennt u
 [Pi](https://pi.dev) (`@earendil-works/pi-coding-agent`) ist ein minimaler, erweiterbarer Coding-Agent.
 Das Kit liegt unter `pi-agent/` und ist bewusst als **Kit-Spec v3** umgesetzt (`# syntax=docker/sandbox-kit:3`,
 `schemaVersion: "3"`, `kind: workload`) — Descriptor `pi-agent/pi-agent.yaml` + `pi-agent/pi-agent.dockerfile`.
-v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.53.0). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
+v3 benötigt `sbx` ≥ v0.45 (Repo-Pin: v0.54.0). **v3-Kits lassen sich nicht mit v1/v2-Kits kombinieren**
 (`--template` entfällt); das Pi-Kit ist ein eigenständiger Workload.
 
 - **Image**: `docker.io/domboeckli/sbx-pi-agent:<pi-version>` — baut auf `docker.io/sbx/shell-docker-image:latest`
@@ -748,7 +748,7 @@ Das Mistral-Vibe-Szenario nutzt lokal den zuletzt **lokal** gebauten Stand (`<IM
 Die Tests laufen zusätzlich automatisiert in GitHub Actions (`.github/workflows/`):
 
 - **`validate.yml`** — bei jedem Push/PR + nightly (03:00 UTC): installiert eine **gepinnte `sbx`-Version**
-  (`SBX_VERSION`, aktuell `v0.53.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
+  (`SBX_VERSION`, aktuell `v0.54.0`), meldet sich via `sbx login` an Docker an (`DOCKER_USERNAME`/`DOCKER_PAT`,
   mit Secret-Service-Setup — sbx >= v0.47.0 verlangt eine Docker-Session für `sbx kit validate`; bei Fork-PRs
   übersprungen, da keine Secrets), validiert die v3-Kits über den Kit-Builder (`sbx kit validate` ohne
   `--offline`; `./opencode-v3-agent/`, `./opencode2-v3-agent/`, `./claude-v3-agent/`, `./mammouth-agent/`, `./mistral-vibe-agent/`,
@@ -831,7 +831,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 |------|---------|---------------|
 | Node.js | 26.13.1 | `/opt/node` → Symlinks in `/usr/local/bin` (npm-CLIs wie renovate ≥43) |
 | Liberica JDK | 25.0.5+11 | `/usr/local/java` |
-| Apache Maven | 3.10.0 | `/opt/maven` |
+| Apache Maven | 3.10.1 | `/opt/maven` |
 | uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4 — Issue #284) |
 | Docker CLI | 29.9.3 | `/usr/local/bin/docker` (opencode-v3 aus Base; sonst 27.5.1) |
 | Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
@@ -901,7 +901,7 @@ Skills landen in `~/.agents/skills/` (werden als `user: "1000"` installiert).
 - [MCP-Gateway: Trust-Boundary & lokale Mitigationen](docs/mcp/mcp-gateway-security.md)
 - [IntelliJ MCP Port-Analyse](docs/mcp/intellij-mcp-port.md)
 - [Session-Start-Hook-Fix (Claude)](docs/session-start-hook-fix.md)
-- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.53.0 — generiert aus der Release-Binary)
+- [sbx CLI Offline-Referenz](opencode-v3-agent/files/home/sbx-cli.md) (`~/sbx-cli.md` in der Sandbox, v0.54.0 — generiert aus der Release-Binary)
 - [Codeberg Repo](https://codeberg.org/dboeckli/opencode-sandbox-kit) (kanonisch) — GitHub-Mirror: <https://github.com/dboeckli/opencode-sandbox-kit>
 - [Codeberg/Forgejo-Betriebshinweise](docs/codeberg-forgejo.md)
 - [Docker Sandbox Kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
