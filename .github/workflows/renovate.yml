@@ -18,6 +18,15 @@ name: Renovate (Codeberg)
 # Runs on a schedule (default branch = master) plus manual dispatch. Until the
 # migration branch is merged, trigger manually (Actions -> Renovate -> Run workflow,
 # select the branch).
+#
+# Why the retry loop: Codeberg's Forgejo API intermittently answers the PR-list
+# call (`GET /api/v1/repos/<repo>/pulls?state=all&sort=recentupdate&limit=100`,
+# issued by Renovate's PR cache on the first sync) with a 504 Gateway Time-out.
+# The same request is sometimes served in ~20 s and sometimes times out at
+# ~45 s, so the failures are load-dependent (Codeberg overload), not a config
+# error. Renovate hardcodes the initial page size (100) and aborts the whole
+# repo run on that error, so there is nothing to tune on our side — retrying the
+# (idempotent) whole run a few times is the workaround.
 
 on:
   schedule:
@@ -45,12 +54,31 @@ jobs:
           LOG_LEVEL: info
         run: |
           set -euo pipefail
-          docker run --rm \
-            -e RENOVATE_PLATFORM \
-            -e RENOVATE_ENDPOINT \
-            -e RENOVATE_TOKEN \
-            -e GITHUB_COM_TOKEN \
-            -e RENOVATE_REPOSITORIES \
-            -e RENOVATE_ONBOARDING \
-            -e LOG_LEVEL \
-            ghcr.io/renovatebot/renovate:latest
+
+          attempts=4
+          for attempt in $(seq 1 "$attempts"); do
+            echo "::group::Renovate attempt ${attempt}/${attempts}"
+            if docker run --rm \
+              -e RENOVATE_PLATFORM \
+              -e RENOVATE_ENDPOINT \
+              -e RENOVATE_TOKEN \
+              -e GITHUB_COM_TOKEN \
+              -e RENOVATE_REPOSITORIES \
+              -e RENOVATE_ONBOARDING \
+              -e LOG_LEVEL \
+              ghcr.io/renovatebot/renovate:latest; then
+              echo "::endgroup::"
+              echo "Renovate succeeded on attempt ${attempt}/${attempts}."
+              exit 0
+            fi
+            echo "::endgroup::"
+
+            if [ "$attempt" -lt "$attempts" ]; then
+              delay=$(( attempt * 60 + RANDOM % 60 ))
+              echo "::warning::Renovate attempt ${attempt}/${attempts} failed (transient Codeberg 504?). Retrying in ${delay}s."
+              sleep "$delay"
+            fi
+          done
+
+          echo "::error::Renovate failed after ${attempts} attempts."
+          exit 1
