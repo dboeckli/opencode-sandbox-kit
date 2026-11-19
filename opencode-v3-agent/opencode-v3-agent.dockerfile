@@ -33,7 +33,7 @@ ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:cbeb851c8a7deb8ba6
 FROM ${BASE_IMAGE}
 
 # OpenCode CLI pin (npm `opencode-ai`, 1.x). Available to the RUN steps below.
-ARG OPENCODE_VERSION=1.19.5
+ARG OPENCODE_VERSION=1.19.6
 
 # The base image runs as the unprivileged `agent` user; installs need root.
 USER root
