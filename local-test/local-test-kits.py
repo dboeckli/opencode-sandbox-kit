@@ -190,7 +190,7 @@ BASE_IMAGE_RE = re.compile(r"ARG BASE_IMAGE=(?P<img>\S+)")
 
 # OpenCode-v3 (Issue #254): Custom-Workload-Basis + OpenCode-CLI-Pin (npm `opencode-ai`,
 # bewusst 1.x-Linie). Renovate trackt die CLI-Version (nicht die driftende Basis).
-OPENCODE_VERSION = "1.19.5"
+OPENCODE_VERSION = "1.19.6"
 OPENCODE_VERSION_RE = re.compile(r"ARG OPENCODE_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 OPENCODE_BASE_IMAGE_EXPECTED = SHELL_BASE_IMAGE_EXPECTED
 OPENCODE_WORKFLOW_VAR = "OPENCODE_VERSION"
