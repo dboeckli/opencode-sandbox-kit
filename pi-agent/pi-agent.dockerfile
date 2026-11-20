@@ -24,7 +24,7 @@
 ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:cbeb851c8a7deb8ba62c9b87f8186fd102aaaf9cbf05d4591f8461b82a84e8f6
 FROM ${BASE_IMAGE}
 
-ARG PI_VERSION=1.5.2
+ARG PI_VERSION=1.6.0
 
 # The base image runs as the unprivileged `agent` user; installs need root.
 USER root
