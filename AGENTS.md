@@ -877,7 +877,6 @@ Die jeweilige Config wird automatisch gelesen:
 | Apache Maven 3.10.1 | dlcdn.apache.org (Fallback archive.apache.org) |
 | uv 0.13.8 (inkl. `uvx`) | GitHub Releases (astral-sh/uv) — Kit-Install, ersetzt das Base-uv 0.13.4, dessen CPython-Index bei 3.12.15 endet (Issue #284) |
 | Docker CLI 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; Issue #254) |
-| Docker Compose 5.7.0 (Plugin) | aus dem Base-Image (alle Kits; Issue #254) |
 | kubectl (latest stable) | dl.k8s.io (Build: v1.37.2) |
 | Helm 4.3.2 | get.helm.sh |
 | Apache Kafka CLI 4.4.0 (Scala 2.13) | dlcdn.apache.org (Fallback archive.apache.org) (`/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin`) |

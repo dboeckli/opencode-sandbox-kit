@@ -64,7 +64,6 @@ Doku-Tabellen: `AGENTS.md` → "Tools installed by the kit", `README.md` → Too
 | Apache Maven | 3.10.1 | `/opt/maven`, Symlink `/usr/local/bin/mvn` |
 | uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4, Issue #284) |
 | Docker CLI | 29.9.3 | aus dem Base-Image (`docker.io/sbx/shell-docker-image:latest`, alle Kits; isolierter Daemon in der Sandbox-VM) |
-| Docker Compose | 5.7.0 (Plugin) | aus dem Base-Image (alle Kits) |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
 | Helm | 4.3.2 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
 | Apache Kafka CLI | 4.4.0 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
