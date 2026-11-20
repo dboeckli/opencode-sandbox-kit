@@ -834,7 +834,7 @@ Der Agent bestätigt den Status in der ersten Antwort und schlägt bei einem `FA
 | Apache Maven | 3.10.1 | `/opt/maven` |
 | uv | 0.13.8 (inkl. `uvx`) | `/usr/local/bin/{uv,uvx}` (Kit-Tooling; ersetzt Base-uv 0.13.4 — Issue #284) |
 | Docker CLI | 29.9.3 | `/usr/local/bin/docker` (opencode-v3 aus Base; sonst 27.5.1) |
-| Docker Compose | 5.7.0 (Plugin) | Base-Image bzw. `/usr/local/lib/docker/cli-plugins/docker-compose` |
+| Docker Compose | variabel (Plugin, Renovate) | `/usr/local/lib/docker/cli-plugins/docker-compose` |
 | kubectl | latest stable | `/usr/local/bin/kubectl` (Build: v1.37.2) |
 | Helm | 4.3.2 | `/usr/local/bin/helm` (+ `helm4` Symlink) |
 | Apache Kafka CLI | 4.4.0 (Scala 2.13) | `/opt/kafka` + `kafka-*.sh`-Wrapper in `/usr/local/bin` |
