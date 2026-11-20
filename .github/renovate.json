@@ -55,6 +55,12 @@
       "groupName": "claude-cli"
     },
     {
+      "description": "solid-js: bei 1.x bleiben — @opentui/solid (peerDependencies `solid-js ^1.9.12`) unterstützt 2.x noch nicht; ein 2.x-Bump bricht die TUI-Plugins (createSignal) und ist mit dem eingesetzten Renderer unvereinbar (Revert von PR #316).",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["solid-js"],
+      "allowedVersions": "/^1\\./"
+    },
+    {
       "description": "Kubernetes MCP server: host-side install instructions in the PR body (binary is installed on the Windows host, not part of the sandbox image)",
       "matchDatasources": ["github-releases"],
       "matchDepNames": ["containers/kubernetes-mcp-server"],
