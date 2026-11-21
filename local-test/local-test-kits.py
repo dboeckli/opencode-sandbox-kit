@@ -1843,12 +1843,6 @@ def main():
                 info(f"Mammouth-Image (publiziert): {kit_target}")
             else:
                 info("Mammouth-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
-        if _kit_kind(s["kit"]) in ("sandbox", "workload"):
-            # Sandbox-/Workload-Kit definiert den Agenten selbst → Kit als erstes
-            # positionales Argument; kein Agent-Name, kein --kit (deprecated fuer Sandbox-Kits).
-            create_cmd = ["create", "--name", s["name"], kit_target, ws]
-        else:
-            create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", kit_target]
         # Mistral Vibe (v3): publiziertes Image per Ref; lokal default `local`
         # (build-and-publish-mistral-vibe-image), CI/e2e uebergibt den Master-Tag.
         # Explizit leer (Branch/PR) -> lokales Workload-Verzeichnis (Branch-Stand).
@@ -1860,6 +1854,12 @@ def main():
                 info(f"Mistral-Vibe-Image (publiziert): {kit_target}")
             else:
                 info("Mistral-Vibe-Image: lokales v3-Workload-Verzeichnis (sbx baut beim Erzeugen)")
+        if _kit_kind(s["kit"]) in ("sandbox", "workload"):
+            # Sandbox-/Workload-Kit definiert den Agenten selbst → Kit als erstes
+            # positionales Argument; kein Agent-Name, kein --kit (deprecated fuer Sandbox-Kits).
+            create_cmd = ["create", "--name", s["name"], kit_target, ws]
+        else:
+            create_cmd = ["create", "--name", s["name"], s["agent"], ws, "--kit", kit_target]
         # Host-Shared-Skills-Store NICHT mounten: die Sandbox bleibt ausserhalb der
         # geteilten Trust-Boundary; die Kit-Skills kommen aus dboeckli/ai-agent-skills
         # (install-tooling-user.sh), nicht vom Host.
