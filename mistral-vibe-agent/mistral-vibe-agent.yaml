@@ -52,6 +52,9 @@ capabilities:
           - api.eu.mistral.ai:443
           - api.us.mistral.ai:443
           - docs.mistral.ai:443
+          - docs.camunda.org:443
+          - docs.cibseven.org:443
+          - docs.operaton.org:443
           - experiments.mistral.services:443
           - api.z.ai:443
           - '*.z.ai:443'
@@ -113,6 +116,7 @@ capabilities:
           - repo.repsy.io:443
           - jitpack.io:443
           - artifacts.cibseven.org:443
+          - artifacts.camunda.com:443
           - packages.scm-manager.org:443
           - api.cloudsmith.io:443
           - upload.cloudsmith.io:443

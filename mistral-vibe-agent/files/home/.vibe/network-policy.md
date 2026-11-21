@@ -12,13 +12,13 @@ for GitHub, `npm` against `registry.npmjs.org`, `docker pull` against `docker.io
 - **Z.AI (GLM-5.3-Flash, Default-Modell)**: `api.z.ai`, `*.z.ai` (direkter OpenAI-kompatibler Provider; Key via Kit-Service `zai` → `ZAI_API_KEY`)
 - **GitHub**: `github.com`, `api.github.com`, `*.github.com`, `maven.pkg.github.com` (GitHub Packages Maven), `githubusercontent.com`, `objects.githubusercontent.com`, `*.githubusercontent.com`
 - **Codeberg (Kit-Repo canonical, Forgejo Actions/CI)**: `codeberg.org`, `*.codeberg.org` — Repository/Issues/CI des Sandbox-Kits; GitHub bleibt als **Mirror** erhalten. Kit-Referenzen: `git+https://codeberg.org/dboeckli/opencode-sandbox-kit.git`
-- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku)
+- **Docs / Context7**: `context7.com`, `*.context7.com`, `models.dev`, `docs.mistral.ai` (Mistral-Modell-/API-Doku), `docs.camunda.org`, `docs.cibseven.org`, `docs.operaton.org` (Camunda-/Cibseven-/Operaton-Doku)
 - **JetBrains Help + Marketplace + YouTrack**: `jetbrains.com`, `www.jetbrains.com`, `plugins.jetbrains.com`, `youtrack.jetbrains.com` (IntelliJ HTTP-Client Feature-Doku, z. B. `www.jetbrains.com/help/idea/http-response-handler-examples.html`; Plugin-Changelogs, z. B. MCP Server 26071; Issue-Recherche, z. B. IJPL MCP-Server)
 - **Package registries**: `registry.npmjs.org`, `dlcdn.apache.org`, `archive.apache.org`, `camel.apache.org`, `*.camel.apache.org`, `maven.org`, `repo1.maven.org`, `*.maven.org`, `spring.io`, `repo.spring.io`, `*.spring.io`, `start.spring.io`
 - **Node.js**: `nodejs.org` (Node 24 LTS Tarball — npm CLIs wie renovate >=43 benötigen Node ^24.11)
 - **Docker / Kubernetes**: `docker.io`, `*.docker.io`, `docker.com`, `*.docker.com`, `download.docker.com`, `dl.k8s.io`, `get.helm.sh`
 - **Zusätzliche Container-Registries**: `docker.elastic.co` (Elasticsearch/Kibana/Filebeat/APM), `docker-auth.elastic.co` (Elastic Token-Auth), `cr.jaegertracing.io` (Jaeger), `ghcr.io` (GitHub Packages)
-- **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `packages.scm-manager.org`
+- **Private Maven- & Helm-Repos**: `repo.repsy.io` (Maven + Helm-OCI + Docker), `jitpack.io`, `artifacts.cibseven.org`, `artifacts.camunda.com`, `packages.scm-manager.org`
 - **Cloudsmith**: `api.cloudsmith.io` (Artifact-Hosting API), `upload.cloudsmith.io` (Package-Upload), `docker.cloudsmith.io` (OCI-Registry), `helm.oci.cloudsmith.io` (Helm-OCI-Registry), `dl.cloudsmith.io` (OCI-Blob-Download/CDN), `docs.cloudsmith.com` (Doku-Website), `cloudsmith.com`/`www.cloudsmith.com` (Website/Pricing); API-Doku via Context7 (`npx ctx7 docs /cloudsmith-io/cloudsmith-api <query>`, z. B. FilesApi/Upload)
 - **Cloudflare R2**: `**/*.r2.cloudflarestorage.com` (Object Storage; Multi-Level-Wildcard — Blob-Host ist z. B. `docker-registry-production.<hash>.r2.cloudflarestorage.com`)
 - **Liberica JDK**: `api.bell-sw.com` (Renovate Versions-API)
