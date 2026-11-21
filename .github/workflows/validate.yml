@@ -20,7 +20,7 @@ jobs:
       # (customManager in .github/renovate.json).
       OPENCODE_VERSION: 1.19.6
       OPENCODE2_VERSION: 2.3.2
-      CLAUDE_VERSION: 2.1.329
+      CLAUDE_VERSION: 2.1.330
       # sbx >= v0.47.0 refuses `sbx kit validate` without a Docker account
       # session ("not signed in to Docker"); that session needs a Secret Service
       # on the headless runner (see the setup step below). Fork PRs get no
