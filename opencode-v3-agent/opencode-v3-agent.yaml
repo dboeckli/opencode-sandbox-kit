@@ -44,6 +44,9 @@ capabilities:
           - context7.com
           - '*.context7.com'
           - docs.mistral.ai
+          - docs.camunda.org
+          - docs.cibseven.org
+          - docs.operaton.org
           - api.mistral.ai
           - api.eu.mistral.ai
           - api.deepseek.com
@@ -115,6 +118,7 @@ capabilities:
           - repo.repsy.io
           - jitpack.io
           - artifacts.cibseven.org
+          - artifacts.camunda.com
           - packages.scm-manager.org
           - api.cloudsmith.io
           - upload.cloudsmith.io
