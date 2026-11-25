@@ -128,7 +128,7 @@ jobs:
       #  - Mammouth/Vibe/Pi nutzen dieselbe shell-docker-image-Basis und pinnen ihre CLI (Issue #254).
       OPENCODE_VERSION: 1.19.6
       OPENCODE2_VERSION: 2.4.1
-      CLAUDE_VERSION: 2.1.330
+      CLAUDE_VERSION: 2.1.332
     steps:
       - uses: actions/checkout@v7
 
