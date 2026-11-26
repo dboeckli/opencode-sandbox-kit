@@ -322,7 +322,7 @@ run_kafka() {
 # a pinned uv (incl. `uvx`) into /usr/local/bin and verify that its CPython index
 # contains 3.12.16 — the install fails otherwise (fail-closed via the Dockerfile).
 run_uv() {
-	UV_VER="0.13.9"
+	UV_VER="0.13.10"
 	UV_TEST_PYTHON="3.12.16"
 	if ! (command -v uv >/dev/null 2>&1 && command -v uvx >/dev/null 2>&1 \
 		&& version_ge "$(uv --version 2>/dev/null | awk '{print $2}')" "${UV_VER}"); then
