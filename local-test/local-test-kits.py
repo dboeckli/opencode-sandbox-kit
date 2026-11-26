@@ -199,7 +199,7 @@ OPENCODE_NPM_LATEST_URL = "https://registry.npmjs.org/opencode-ai/latest"
 # OpenCode 2 (Issue #266): eigene Image-Linie, CLI aus npm `@opencode/cli` (2.x,
 # Renovate-managed). Gleiche Custom-Workload-Basis; Plugin-/Config-API ist die
 # V2-API (kein V1-Plugin-Code).
-OPENCODE2_VERSION = "2.4.1"
+OPENCODE2_VERSION = "2.4.2"
 OPENCODE2_VERSION_RE = re.compile(r"ARG OPENCODE2_VERSION=(?P<v>[0-9]+\.[0-9]+\.[0-9]+)")
 OPENCODE2_BASE_IMAGE_EXPECTED = SHELL_BASE_IMAGE_EXPECTED
 OPENCODE2_WORKFLOW_VAR = "OPENCODE2_VERSION"

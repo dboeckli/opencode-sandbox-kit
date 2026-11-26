@@ -35,7 +35,7 @@ ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:cbeb851c8a7deb8ba6
 FROM ${BASE_IMAGE}
 
 # OpenCode 2 CLI pin (npm `@opencode/cli`, 2.x). Available to the RUN steps below.
-ARG OPENCODE2_VERSION=2.4.1
+ARG OPENCODE2_VERSION=2.4.2
 
 # The base image runs as the unprivileged `agent` user; installs need root.
 USER root
