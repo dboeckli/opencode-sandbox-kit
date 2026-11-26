@@ -27,7 +27,7 @@
 ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:cbeb851c8a7deb8ba62c9b87f8186fd102aaaf9cbf05d4591f8461b82a84e8f6
 FROM ${BASE_IMAGE}
 
-ARG VIBE_VERSION=3.1.4
+ARG VIBE_VERSION=3.1.5
 
 USER root
 
