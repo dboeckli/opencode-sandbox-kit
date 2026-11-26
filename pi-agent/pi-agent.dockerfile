@@ -62,7 +62,7 @@ RUN rm -rf /usr/local/java \
 # dependency before all its versions resolve (transient ETARGET).
 RUN set -e; \
     for attempt in 1 2 3; do \
-      if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.3.0 \
+      if npm_config_bin_links=true npm install -g ctx7 skills prettier renovate @usebruno/cli@4.4.0 \
            @modelcontextprotocol/inspector@2.16.0 \
          && npm_config_bin_links=true npm install -g --ignore-scripts @earendil-works/pi-coding-agent@${PI_VERSION}; then \
         break; \
