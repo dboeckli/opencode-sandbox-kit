@@ -5,7 +5,7 @@
 # Build/publish: docker buildx build ./mammouth-agent -f ./mammouth-agent/mammouth-agent.yaml
 # (multi-arch via .github/workflows/build-and-publish-mammouth-image.yml).
 #
-# v3 requires sbx >= v0.45 (repo pin: v0.54.0). v3 kits cannot compose with
+# v3 requires sbx >= v0.45 (repo pin: v0.54.1). v3 kits cannot compose with
 # v1/v2 kits, so this workload is standalone (--template does not apply).
 
 schemaVersion: "3"
@@ -49,6 +49,9 @@ capabilities:
           - status.codeberg.org:443
           - context7.com:443
           - '*.context7.com:443'
+          - registry.modelcontextprotocol.io:443
+          - glama.ai:443
+          - '*.glama.ai:443'
           - mammouth.ai:443
           - api.mammouth.ai:443
           - '*.mammouth.ai:443'

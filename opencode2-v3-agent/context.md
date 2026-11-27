@@ -195,7 +195,7 @@ Setup: `docs/mcp/kubernetes-mcp-server.md`.
 ## Docker MCP
 
 On a sandbox started with `--static-mcp idea,k8s,docker`, a local Docker MCP server
-(PyPI `mcp-server-docker-dboeckli==0.8.2`, started host-side via `uvx`) is exposed through the same sbx MCP
+(PyPI `mcp-server-docker-dboeckli==0.10.0`, started host-side via `uvx`) is exposed through the same sbx MCP
 gateway. Tools arrive as `mcp-gateway_<tool>`; since 0.8.0 every Docker tool is prefixed with `docker_`
 (the gateway namespace is flat and globally unique, so `docker_events_list` no longer collides with the
 Kubernetes `events_list`). Read-only tools — `docker_list_containers`, `docker_list_images`,
@@ -209,6 +209,11 @@ Kubernetes `events_list`). Read-only tools — `docker_list_containers`, `docker
 `docker_build_image`, `docker_remove_image`, `docker_create_network`, `docker_remove_network`,
 `docker_create_volume`, `docker_remove_volume`) are **`ask`** (per-call approval, not permanently
 granted). Setup: `docs/mcp/docker-mcp-server.md`.
+
+Since 0.9.0 the list tools (`docker_list_containers`/`_images`/`_volumes`) default to `format="summary"`
+(compact, no labels/nested image); pass `format="full"` for inspect-level data. Logs and attached
+`docker_run_container` output are capped at the last 20 KiB (`truncated`/`bytes`); since 0.10.0
+`docker_recreate_container` supports `preserve_configuration=true`.
 
 ## Context7
 
