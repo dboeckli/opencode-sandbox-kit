@@ -193,7 +193,7 @@ Setup: `docs/mcp/kubernetes-mcp-server.md`.
 ## Docker MCP
 
 On a sandbox started with `--static-mcp idea,k8s,docker`, a local Docker MCP server
-(PyPI `mcp-server-docker-dboeckli==0.10.0`, started host-side via `uvx`) is exposed through the same sbx MCP
+(PyPI `mcp-server-docker-dboeckli==0.12.1`, started host-side via `uvx`) is exposed through the same sbx MCP
 gateway. Tools arrive as `mcp__mcp-gateway__<tool>`; since 0.8.0 every Docker tool is prefixed with
 `docker_` (the gateway namespace is flat and globally unique, so `docker_events_list` no longer collides
 with the Kubernetes `events_list`). Read-only tools — `docker_list_containers`, `docker_list_images`,
