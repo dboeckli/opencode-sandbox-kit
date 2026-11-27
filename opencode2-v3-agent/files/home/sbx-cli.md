@@ -1,7 +1,7 @@
 # sbx CLI Reference (offline)
 
 Kompakte Offline-Referenz der **Docker Sandboxes CLI (`sbx`)** — generiert aus den authentischen
-`--help`-Outputs der **v0.54.0**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
+`--help`-Outputs der **v0.54.1**-Release-Binary (`docker/sbx-releases`). Includiert NICHT das
 interaktive TUI; aktualisieren durch Neugenerierung aus der Binary (`sbx <cmd> --help`).
 Detaillierte Hintergrunddoku (Kits, Policy, Proxy, Troubleshooting): `npx ctx7 docs /docker/docs <query>`
 (deckt Commands/Flags + Manuels ab, indexiert aber den Docs-`main`-Branch statt des Pins;
