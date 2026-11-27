@@ -208,6 +208,11 @@ tools (`docker_create_container`, `docker_run_container`, `docker_recreate_conta
 `docker_remove_network`, `docker_create_volume`, `docker_remove_volume`) are in `permissions.ask` (per-call
 approval). Setup: `docs/mcp/docker-mcp-server.md`.
 
+Since 0.9.0 the list tools (`docker_list_containers`/`_images`/`_volumes`) default to `format="summary"`
+(compact, no labels/nested image); pass `format="full"` for inspect-level data. Logs and attached
+`docker_run_container` output are capped at the last 20 KiB (`truncated`/`bytes`); since 0.10.0
+`docker_recreate_container` supports `preserve_configuration=true`.
+
 ## Context7
 
 Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated via `CONTEXT7_API_KEY` (placeholder `proxy-managed`, replaced by the proxy on requests to `context7.com`) — never shows the real key.

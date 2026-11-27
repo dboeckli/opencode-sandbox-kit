@@ -68,13 +68,31 @@ abgefangen) und kein Fehler.
 > liefert daher die alte Upstream-Version **ohne** `buildx_*`. Deshalb immer
 > `--from mcp-server-docker-dboeckli==<v>`.
 >
+> **0.10.0 — `docker_recreate_container` mit `preserve_configuration`:** Mit
+> `preserve_configuration=true` wird der Container aus seiner inspizierten Konfiguration neu gebaut
+> (Environment, Mounts/Volume-Identität, Netzwerke, Ports, Labels, Healthcheck, Restart-Policy); das
+> Ersatz-Image wird **vor** dem Stop geprüft, bei Fehlschlag wird die Original-Konfiguration
+> wiederhergestellt und der vorherige Running-State beibehalten. Default (Stop/Remove/Run) unverändert.
+>
+> **Breaking in 0.9.0 — Listen-Tools default `format="summary"`:** `docker_list_containers`,
+> `docker_list_images` und `docker_list_volumes` liefern standardmäßig eine kompakte `docker ps`-Zeile
+> **ohne** Health-Logs, verschachteltes Image-Objekt, Labels und Digests. Für die bisherigen
+> Inspect-Daten `format="full"` übergeben (`full` kappt `Health.Log`-Einträge auf 500 Zeichen).
+> Zusätzlich: `docker_run_container` mit `detach=false` liefert `{mode:"attached", output, truncated,
+> bytes}` statt zu scheitern; `docker_fetch_container_logs` und die attached-Ausgabe sind auf die letzten
+> **20 KiB** begrenzt und melden `truncated` + Original-Bytezahl; `docker_build_image` nutzt `rm`/`forcerm`
+> (keine Intermediate-Container nach fehlgeschlagenen Builds); Label-Filter gehen in Docker-CLI-Map-Form raus.
+>
+> **0.8.2 — Label-Filter + Docker-Desktop-Sichtbarkeit:** `docker_list_containers` mit Label-Filter nutzt
+> jetzt die Map-Form und löst Treffer per ID auf — auf Docker Desktop werden damit auch die
+> Kubernetes-Container sichtbar, die ein ungefiltertes Listing ausblendet (der „1 von 37“-Teil von #64
+> ist damit geklärt: Docker-Desktop-Verhalten, kein Server-Bug).
+>
 > **0.8.1 — Listen-Tools liefern ein JSON-Array:** `docker_list_*`/`docker_buildx_*` geben jetzt ein
 > einzelnes JSON-Array zurück statt aneinandergeketteter Einzelobjekte (upstream
 > [#64](https://github.com/dboeckli/mcp-server-docker/issues/64), behoben mit
 > [PR #65](https://github.com/dboeckli/mcp-server-docker/pull/65)) — Ergebnisse sind damit direkt
-> parsebar. Der zweite Teil von #64 (`docker_list_containers` liefert nur 1 von 37 Containern, obwohl
-> `docker_container_inspect` sie per Name auflöst) wird im Release-Text **nicht** genannt; beim Re-Test
-> nach dem Update prüfen.
+> parsebar.
 >
 > **Breaking in 0.8.0 — Tool-Präfix `docker_`:** Alle 36 Tools tragen jetzt das Präfix `docker_`
 > (`list_containers` → `docker_list_containers`), damit der flache Gateway-Namespace kollisionsfrei
