@@ -45,6 +45,7 @@ capabilities:
           - '*.opencode.ai'
           - context7.com
           - '*.context7.com'
+          - registry.modelcontextprotocol.io
           - docs.mistral.ai
           - docs.camunda.org
           - docs.cibseven.org
