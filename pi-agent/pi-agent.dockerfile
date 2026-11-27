@@ -21,7 +21,7 @@
 # Node/npm, Python, Go and the Docker CLI/compose/buildx come from it (Issue #254).
 # ARG PI_VERSION is the Pi pin (Renovate, npm @earendil-works/pi-coding-agent).
 
-ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:cbeb851c8a7deb8ba62c9b87f8186fd102aaaf9cbf05d4591f8461b82a84e8f6
+ARG BASE_IMAGE=docker.io/sbx/shell-docker-image:latest@sha256:653e3a213670e671d63ff9d9531bea3c0cc0dda80133ed6166f97b0866f1ea97
 FROM ${BASE_IMAGE}
 
 ARG PI_VERSION=1.6.1
