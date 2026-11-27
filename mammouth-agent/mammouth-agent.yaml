@@ -49,6 +49,9 @@ capabilities:
           - status.codeberg.org:443
           - context7.com:443
           - '*.context7.com:443'
+          - registry.modelcontextprotocol.io:443
+          - glama.ai:443
+          - '*.glama.ai:443'
           - mammouth.ai:443
           - api.mammouth.ai:443
           - '*.mammouth.ai:443'
