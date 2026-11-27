@@ -210,6 +210,11 @@ Kubernetes `events_list`). Read-only tools — `docker_list_containers`, `docker
 `docker_create_volume`, `docker_remove_volume`) are **`ask`** (per-call approval, not permanently
 granted). Setup: `docs/mcp/docker-mcp-server.md`.
 
+Since 0.9.0 the list tools (`docker_list_containers`/`_images`/`_volumes`) default to `format="summary"`
+(compact, no labels/nested image); pass `format="full"` for inspect-level data. Logs and attached
+`docker_run_container` output are capped at the last 20 KiB (`truncated`/`bytes`); since 0.10.0
+`docker_recreate_container` supports `preserve_configuration=true`.
+
 ## Context7
 
 Docs-as-a-service CLI; see the `<!-- context7 -->` section above. Authenticated via `CONTEXT7_API_KEY` (placeholder `proxy-managed`, replaced by the proxy on requests to `context7.com`) — never shows the real key.
