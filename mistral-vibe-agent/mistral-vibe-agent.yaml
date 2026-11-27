@@ -61,6 +61,8 @@ capabilities:
           - context7.com:443
           - '*.context7.com:443'
           - registry.modelcontextprotocol.io:443
+          - glama.ai:443
+          - '*.glama.ai:443'
           - api.github.com:443
           - github.com:443
           - '*.github.com:443'
