@@ -7,7 +7,7 @@ der Sandbox **ohne offenen `2375`-Port** (siehe [#71](https://codeberg.org/dboec
 ([`ckreiling/mcp-server-docker`](https://github.com/ckreiling/mcp-server-docker), Python) — fuer die
 Buildx-Abfragen (`docker_buildx_list`/`docker_buildx_history`/`docker_buildx_logs`, Issue #250) der Fork
 [`dboeckli/mcp-server-docker`](https://github.com/dboeckli/mcp-server-docker), gestartet aus dem
-PyPI-Wheel `mcp-server-docker-dboeckli==0.10.0` (Distribution ≠ Command-Name, Issue #286). Der Server wird
+PyPI-Wheel `mcp-server-docker-dboeckli==0.12.1` (Distribution ≠ Command-Name, Issue #286). Der Server wird
 **host-seitig via `uvx`** gestartet und beim **sbx MCP Gateway** registriert (`sbx mcp add --command …`). Die Sandbox spricht ausschließlich MCP; der direkte `2375`-Port entfällt
 aus der Netzwerk-Allowlist. Muster wie beim Kubernetes-MCP (Issue #40).
 
@@ -54,7 +54,7 @@ uvx --version
 ## 2. Server-Starttest
 
 ```powershell
-uvx --from "mcp-server-docker-dboeckli==0.10.0" mcp-server-docker
+uvx --from "mcp-server-docker-dboeckli==0.12.1" mcp-server-docker
 ```
 
 Der erste Start lädt das Wheel von PyPI (kein Git-Clone/venv-Build); danach startet der
@@ -62,55 +62,67 @@ Der erste Start lädt das Wheel von PyPI (kein Git-Clone/venv-Build); danach sta
 erscheinen. Das ist **normal** (der Server blockiert auf stdin; die Unterbrechung wird nicht
 abgefangen) und kein Fehler.
 
-> **PyPI-Pin (`mcp-server-docker-dboeckli==0.10.0`):** Der Server startet aus dem veröffentlichten Wheel
+> **PyPI-Pin (`mcp-server-docker-dboeckli==0.12.1`):** Der Server startet aus dem veröffentlichten Wheel
 > (kein Git-Clone/venv-Build mehr; Issue #286). Wichtig: **Distribution ≠ Command** — PyPI
 > `mcp-server-docker` gehört zum Upstream und endet bei `0.3.0`; ein bloßes `uvx mcp-server-docker`
 > liefert daher die alte Upstream-Version **ohne** `buildx_*`. Deshalb immer
-> `--from mcp-server-docker-dboeckli==<v>`.
+> `--from mcp-server-docker-dboeckli==<v>`. Gepinnt per `==<v>` (ohne `v`-Präfix); Renovate
+> (`.github/renovate.json`, PyPI-Datasource) und der Validate-Check (`local-test-kits.py`) prüfen den
+> Pin gegen die latest PyPI-Version.
 >
-> **0.10.0 — `docker_recreate_container` mit `preserve_configuration`:** Mit
-> `preserve_configuration=true` wird der Container aus seiner inspizierten Konfiguration neu gebaut
-> (Environment, Mounts/Volume-Identität, Netzwerke, Ports, Labels, Healthcheck, Restart-Policy); das
-> Ersatz-Image wird **vor** dem Stop geprüft, bei Fehlschlag wird die Original-Konfiguration
-> wiederhergestellt und der vorherige Running-State beibehalten. Default (Stop/Remove/Run) unverändert.
+> **Versionsdetails:** Changelog/Release-Notes im Upstream-Repo und die **MCP-Registry** (Abschnitt
+> unten, `/versions/latest`) sind die Quelle — hier stehen nur die kit-relevanten Änderungen:
 >
-> **Breaking in 0.9.0 — Listen-Tools default `format="summary"`:** `docker_list_containers`,
-> `docker_list_images` und `docker_list_volumes` liefern standardmäßig eine kompakte `docker ps`-Zeile
-> **ohne** Health-Logs, verschachteltes Image-Objekt, Labels und Digests. Für die bisherigen
-> Inspect-Daten `format="full"` übergeben (`full` kappt `Health.Log`-Einträge auf 500 Zeichen).
-> Zusätzlich: `docker_run_container` mit `detach=false` liefert `{mode:"attached", output, truncated,
-> bytes}` statt zu scheitern; `docker_fetch_container_logs` und die attached-Ausgabe sind auf die letzten
-> **20 KiB** begrenzt und melden `truncated` + Original-Bytezahl; `docker_build_image` nutzt `rm`/`forcerm`
-> (keine Intermediate-Container nach fehlgeschlagenen Builds); Label-Filter gehen in Docker-CLI-Map-Form raus.
->
-> **0.8.2 — Label-Filter + Docker-Desktop-Sichtbarkeit:** `docker_list_containers` mit Label-Filter nutzt
-> jetzt die Map-Form und löst Treffer per ID auf — auf Docker Desktop werden damit auch die
-> Kubernetes-Container sichtbar, die ein ungefiltertes Listing ausblendet (der „1 von 37“-Teil von #64
-> ist damit geklärt: Docker-Desktop-Verhalten, kein Server-Bug).
->
-> **0.8.1 — Listen-Tools liefern ein JSON-Array:** `docker_list_*`/`docker_buildx_*` geben jetzt ein
-> einzelnes JSON-Array zurück statt aneinandergeketteter Einzelobjekte (upstream
-> [#64](https://github.com/dboeckli/mcp-server-docker/issues/64), behoben mit
-> [PR #65](https://github.com/dboeckli/mcp-server-docker/pull/65)) — Ergebnisse sind damit direkt
-> parsebar.
->
-> **Breaking in 0.8.0 — Tool-Präfix `docker_`:** Alle 36 Tools tragen jetzt das Präfix `docker_`
-> (`list_containers` → `docker_list_containers`), damit der flache Gateway-Namespace kollisionsfrei
-> bleibt — insbesondere `events_list` → `docker_events_list` (der Kubernetes-MCP-Server bietet ebenfalls
-> `events_list`). Resource-URIs (`docker://…`) und der Prompt `docker_compose` bleiben unverändert; bei
-> bestehenden Whitelists/Prompts sind die Tool-Namen anzupassen.
->
-> Enthalten sind die Buildx-Abfragen
-> (`docker_buildx_list`/`docker_buildx_history`/`docker_buildx_logs`, Upstream-PR
-> `ckreiling/mcp-server-docker#78`, Issue #250) plus die Docker-/Buildx-Introspektion (`docker_buildx_du`,
-> `docker_buildx_inspect`, `docker_system_df`, `docker_system_info`, `docker_version`, `docker_image_inspect`,
-> `docker_image_history`, `docker_container_inspect`, `docker_container_processes`,
-> `docker_container_stats`). v0.7.0 ergänzt `docker_container_health`, `docker_network_inspect`,
-> `docker_volume_inspect` und `docker_events_list` (alle read-only). v0.6.0 ergänzt einen optionalen
-> Server-Read-only-Mode (`--read-only` / `MCP_SERVER_DOCKER_READ_ONLY=1`); das Kit nutzt ihn bewusst
-> **nicht** — die Write-Tools bleiben über die Gateway-`ask`-Regeln einzeln freigebbar. Gepinnt per `==<v>`
-> (ohne `v`-Präfix); Renovate (`.github/renovate.json`, PyPI-Datasource) und der Validate-Check
-> (`local-test-kits.py`) prüfen den Pin gegen die latest PyPI-Version.
+> - **0.8.0** — alle Tools mit `docker_`-Präfix (behebt die Gateway-Kollision `events_list` mit K8s; Whitelist-Namen).
+> - **0.9.0** — Listen-Tools default `format="summary"` (`format="full"` für die Inspect-Daten).
+> - **0.11.0** — startet auch ohne erreichbaren Docker-Daemon (`tools/list` ok, Tool-Calls melden den Fehler).
+> - **0.12.0** — optionale Safety-Modes (`--disable-destructive`/`--read-only`, per-Tool-Filter); das Kit
+>   nutzt sie bewusst **nicht** — die Write-Tools bleiben über die Gateway-`ask`-Regeln einzeln freigebbar.
+
+## MCP-Registry-Eintrag (`registry.modelcontextprotocol.io`)
+
+Der Server ist zusätzlich in der **offiziellen MCP-Registry** veröffentlicht. Das ist reine
+Metadaten-/Discovery-Information: Die Host-Installation bleibt unverändert beim PyPI-Wheel
+(`uvx --from mcp-server-docker-dboeckli==<pin>`), der Kit-Pin wird separat gepflegt (Renovate/
+Validate-Check).
+
+- **Name:** `io.github.dboeckli/mcp-server-docker` (Titel „Docker MCP Server“,
+  Repository `https://github.com/dboeckli/mcp-server-docker`)
+- **Pakete:** PyPI `mcp-server-docker-dboeckli` (stdio) und OCI
+  `ghcr.io/dboeckli/mcp-server-docker:<version>` (stdio)
+- **Version:** nicht hier gepinnt — die jeweils aktuelle Version liefert `/versions/latest`
+  (`_meta.…status=active`, `isLatest: true`). Source of Truth für die Host-Installation bleibt der
+  Kit-Pin (PyPI-Wheel).
+- **Publish:** seit 0.12.0 automatisch aus dem Release-Workflow (`registry-publish.yml`,
+  `workflow_run`-Gate nach erfolgreichen Tag-Builds) — kein manuelles `mcp-publisher` mehr. Der Eintrag
+  trägt dieselbe Version wie PyPI/OCI (aktuell `0.12.1`; OCI ab 0.12.1 auch `linux/arm64`).
+
+> **Sandbox-Zugriff:** `registry.modelcontextprotocol.io` steht in der Netzwerk-Allowlist aller
+> Agent-Kits (Issue #340) — die Abfrage funktioniert direkt aus der Sandbox (dort `curl`, nicht
+> PowerShell):
+
+```bash
+curl -s "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.dboeckli%2Fmcp-server-docker/versions/latest" \
+  | jq '{name: .server.name, version: .server.version, packages: [.server.packages[].identifier], status: ._meta["io.modelcontextprotocol.registry/official"].status, latest: ._meta["io.modelcontextprotocol.registry/official"].isLatest}'
+```
+
+API (Basis `https://registry.modelcontextprotocol.io/v0.1`; der Server-Name ist URL-encodiert als
+`io.github.dboeckli%2Fmcp-server-docker`):
+
+| Zweck | Endpoint |
+|-------|----------|
+| Neueste Version | `GET /servers/io.github.dboeckli%2Fmcp-server-docker/versions/latest` |
+| Bestimmte Version | `GET /servers/io.github.dboeckli%2Fmcp-server-docker/versions/<version>` |
+
+```powershell
+# Version + Pakete (PyPI/OCI) des Registry-Eintrags abfragen
+(Invoke-RestMethod "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.dboeckli%2Fmcp-server-docker/versions/latest").server |
+    Select-Object name, version, @{ n = "packages"; e = { $_.packages.identifier } }
+```
+
+> Die OCI-Variante (`ghcr.io/dboeckli/mcp-server-docker:<version>`) ist eine Alternative zur
+> containerisierten Registrierung (Variante 2 unten), **nicht** der Kit-Default — der sbx MCP
+> Gateway startet den Server host-seitig als stdio-Prozess aus dem PyPI-Wheel.
 
 ## 3. Beim sbx MCP Gateway registrieren
 
@@ -128,7 +140,7 @@ Absoluten `uvx`-Pfad ermitteln:
 Server registrieren:
 
 ```powershell
-sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.10.0,mcp-server-docker"
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.12.1,mcp-server-docker"
 ```
 
 Registrierung prüfen:
@@ -150,7 +162,7 @@ sbx mcp inspect docker
 Alternativ ohne `uvx`-Shim:
 
 ```powershell
-sbx mcp add docker --command (Get-Command uv).Source --args "tool,run,--from,mcp-server-docker-dboeckli==0.10.0,mcp-server-docker"
+sbx mcp add docker --command (Get-Command uv).Source --args "tool,run,--from,mcp-server-docker-dboeckli==0.12.1,mcp-server-docker"
 ```
 
 ### Bestehende Registrierung umstellen
@@ -165,7 +177,7 @@ sbx mcp rm docker
 Dann den Fork registrieren:
 
 ```powershell
-sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.10.0,mcp-server-docker"
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.12.1,mcp-server-docker"
 ```
 
 Laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim Erstellen fixiert) bzw. neu erstellen:
@@ -173,6 +185,40 @@ Laufende Sandbox nachladen (die `--static-mcp`-Menge ist beim Erstellen fixiert)
 ```powershell
 sbx mcp load docker --sandbox <name>
 ```
+
+### Tool-Aktivierung (Server-seitig, ab 0.12.0)
+
+Der Server registriert standardmäßig alle **36** Tools; seit 0.12.0 lässt sich das schon bei der
+Registrierung einschränken. Ein gefiltertes Tool fehlt in `tools/list` und ein Aufruf liefert
+`Unknown tool`:
+
+| Modus | Flag | Tools |
+|-------|------|-------|
+| Default | – | 36 |
+| Keine destruktiven | `--disable-destructive` (Alias `--no-destructive`) | 31 — ohne `docker_remove_container`, `docker_remove_image`, `docker_remove_network`, `docker_remove_volume`, `docker_recreate_container` |
+| Read-only | `--read-only` | 22 — nur Tools mit `readOnlyHint=true` |
+
+- `--read-only` ist strenger und gewinnt, wenn beide Flags gesetzt sind.
+- Pro Tool: `--enable-tools <name>` (übersteuert den Modus, wiederholbar) und `--disable-tools <name>`;
+  derselbe Name in beiden Listen bricht den Start mit Fehlermeldung ab.
+- Env-Pendants (z. B. für die containerisierte Variante): `MCP_SERVER_DOCKER_READ_ONLY`,
+  `MCP_SERVER_DOCKER_DISABLE_DESTRUCTIVE` (bzw. `…_NO_DESTRUCTIVE`), `MCP_SERVER_DOCKER_ENABLE_TOOLS`,
+  `MCP_SERVER_DOCKER_DISABLE_TOOLS`.
+- Die Flags kommen in dieselbe `--args`-Liste wie `--from`/`mcp-server-docker`. Mehrere Tool-Namen als
+  **wiederholtes Flag** angeben — Kommas trennen die Prozess-Argumente, nicht die Tool-Liste:
+
+```powershell
+# read-only (22 Tools)
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.12.1,mcp-server-docker,--read-only"
+
+# ohne destruktive Tools (31), zusätzlich docker_stop_container gesperrt
+sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.12.1,mcp-server-docker,--disable-destructive,--disable-tools,docker_stop_container"
+```
+
+> **Kit-Default bleibt „alle 36“ + Gateway-Whitelist.** Die Write-Tools bleiben so über die `ask`-Regeln
+> einzeln freigebbar. Der Server-Filter ist eine **harte** Grenze (Tool existiert nicht), die
+> Gateway-Whitelist nur eine Agent-Guardrail (Issue #229); beides ist kombinierbar. `--read-only` im
+> Server nimmt dem Agenten allerdings die `ask`-Freigabe für Write-Tools komplett.
 
 ## 4. Sandbox mit Docker-MCP starten
 
@@ -190,7 +236,8 @@ sbx run ./opencode-v3-agent/ `
 ## 5. Permission-Whitelist (Kit)
 
 Die Tools des Servers erscheinen (wie bei K8s) als `mcp-gateway_<tool>`. Gating (Deny-by-Default,
-letzte passende Regel gewinnt):
+letzte passende Regel gewinnt) — die Listen gelten für den Default (36 Tools); ein Server-Filter
+(Abschnitt 3, Tool-Aktivierung) kann das Set vorher verkleinern:
 
 - **`allow`** (read-only): `docker_list_containers`, `docker_list_images`, `docker_list_networks`,
   `docker_list_volumes`, `docker_fetch_container_logs`, `docker_buildx_list`, `docker_buildx_history`,
@@ -232,7 +279,7 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 | Symptom | Ursache / Fix |
 |---------|---------------|
-| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.10.0,mcp-server-docker"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
+| `mcp-docker:FAIL` in der Sandbox (Startup-Check/Sidebar), aber `mcp-k8s:OK` | Der Gateway-Prozess findet `uvx` nicht (Daemon-PATH ≠ Terminal-PATH). **Fix:** mit absolutem Pfad neu registrieren (`sbx mcp rm docker`, dann `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.12.1,mcp-server-docker"`), danach `sbx mcp load docker --sandbox <name>` bzw. Sandbox neu erstellen. |
 | `sbx mcp load docker` scheitert mit `502 … tool "events_list" … collides with an existing tool already registered for server "k8s"` | Auf dem Host läuft noch **0.7.0** mit unpräfixierten Tool-Namen. **Fix:** auf den Pin neu registrieren (`sbx mcp rm docker` + `add …==<pin>`, siehe oben) und `sbx mcp load docker --sandbox <name>`; erst danach `mcp-docker:OK` erwarten. |
 | `sbx mcp add` ok, aber keine Docker-Tools im `tools/list` | Server ist nicht Teil der `--static-mcp`-Menge der Sandbox (Set ist beim Erstellen fixiert) → `sbx mcp load docker --sandbox <name>` oder neu erstellen. |
 | Erster Check kurz `FAIL`, danach `OK` | `uvx` lädt das PyPI-Wheel beim ersten Start → kurzer Start-Timeout (Gateway-Startprobe); erneut prüfen. |
@@ -250,7 +297,7 @@ sbx mcp add docker --command (Get-Command docker).Source --args "run,-i,--rm,-v,
 
 ## Verifikation
 
-- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker-dboeckli==0.10.0`).
+- **Host:** `sbx mcp ls` zeigt `docker`; `sbx mcp inspect docker` zeigt Command/Args (absoluter `uvx`-Pfad + `mcp-server-docker-dboeckli==0.12.1`).
 - **Sandbox:** MCP-Handshake `tools/list` enthält die Docker-Tools (`docker_list_containers`, …); ein
   Read-Tool (`docker_list_containers`) läuft ohne Prompt, ein Write-Tool (`docker_run_container`) löst den
   `ask`-Prompt aus.
