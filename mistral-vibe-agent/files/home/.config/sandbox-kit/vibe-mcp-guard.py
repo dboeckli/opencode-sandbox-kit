@@ -84,6 +84,7 @@ ALLOW = (
     "docker_system_df",
     "docker_system_info",
     "docker_version",
+    "docker_status",
 )
 
 RUN_CONFIG_TOOL = PREFIX + "execute_run_configuration"

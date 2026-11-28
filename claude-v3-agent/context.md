@@ -199,7 +199,7 @@ gateway. Tools arrive as `mcp__mcp-gateway__<tool>`; since 0.8.0 every Docker to
 with the Kubernetes `events_list`). Read-only tools — `docker_list_containers`, `docker_list_images`,
 `docker_list_networks`, `docker_list_volumes`, `docker_fetch_container_logs`, `docker_buildx_list`,
 `docker_buildx_history`, `docker_buildx_logs`, `docker_buildx_du`, `docker_buildx_inspect`,
-`docker_system_df`, `docker_system_info`, `docker_version`, `docker_image_inspect`, `docker_image_history`,
+`docker_system_df`, `docker_system_info`, `docker_version`, `docker_status`, `docker_image_inspect`, `docker_image_history`,
 `docker_container_inspect`, `docker_container_processes`, `docker_container_stats`, `docker_container_health`,
 `docker_network_inspect`, `docker_volume_inspect`, `docker_events_list` — are on `permissions.allow`; the write
 tools (`docker_create_container`, `docker_run_container`, `docker_recreate_container`,

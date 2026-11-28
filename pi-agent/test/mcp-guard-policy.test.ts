@@ -45,6 +45,7 @@ test("allows read-only prefix groups", () => {
 	assert.equal(isAllowedTool(pi("docker_system_df"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("docker_system_info"), {}).allowed, true);
 	assert.equal(isAllowedTool(pi("docker_version"), {}).allowed, true);
+	assert.equal(isAllowedTool(pi("docker_status"), {}).allowed, true);
 });
 
 test("blocks Pi-prefixed write and exec tools", () => {
