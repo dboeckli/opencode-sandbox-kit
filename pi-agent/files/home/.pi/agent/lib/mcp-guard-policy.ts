@@ -38,6 +38,7 @@ const ALLOWED_EXACT = new Set([
 	"mcp-gateway_docker_system_df",
 	"mcp-gateway_docker_system_info",
 	"mcp-gateway_docker_version",
+	"mcp-gateway_docker_status",
 	"mcp-gateway_docker_fetch_container_logs",
 	"mcp-gateway_docker_events_list",
 	"mcp-gateway_fetch_query_result",
