@@ -79,6 +79,7 @@
       "mcp__mcp-gateway__docker_version",
       "mcp__mcp-gateway__docker_fetch_container_logs",
       "mcp__mcp-gateway__docker_events_list",
+      "mcp__mcp-gateway__docker_status",
       "mcp__mcp-gateway__docker_list_containers",
       "mcp__mcp-gateway__docker_list_images",
       "mcp__mcp-gateway__docker_list_networks",

@@ -14,7 +14,8 @@
 #   mcp-gateway:OK   gateway reachable (handshake succeeded)
 #   mcp-idea:OK      IntelliJ tools present (get_symbol_info)
 #   mcp-k8s:OK       Kubernetes tools present (pods_list)
-#   mcp-docker:OK    Docker tools present (docker_list_containers)
+#   mcp-docker:OK    Docker MCP + host daemon healthy (docker_status, 0.13.0+);
+#                    older hosts fall back to docker_list_containers presence
 #   mcp-client:OK    Mammouth's opencode.jsonc declares the gateway (url = MCP_URL)
 #   mcp-tools:OK     (deep) `mammouth mcp list` reports the gateway CONNECTED
 # Any missing step -> that token is FAIL.
@@ -61,7 +62,6 @@ if [ -n "$mcp_sid" ]; then
     -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
     -H 'Authorization: Bearer proxy-managed' -H "mcp-session-id: $mcp_sid" \
     -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' 2>/dev/null)
-  curl -s -m 2 -o /dev/null -X DELETE "$MCP_URL" -H "mcp-session-id: $mcp_sid" 2>/dev/null
   case "$mcp_tools" in
     *'"name":"get_symbol_info"'*) idea="mcp-idea:OK" ;;
   esac
@@ -69,8 +69,33 @@ if [ -n "$mcp_sid" ]; then
     *'"name":"pods_list"'*) k8s="mcp-k8s:OK" ;;
   esac
   case "$mcp_tools" in
-    *'"name":"docker_list_containers"'*) docker="mcp-docker:OK" ;;
+    *'"name":"docker_status"'*)
+      # 0.13.0+: real health probe. The server also lists tools when the daemon is
+      # unreachable, so tool presence alone is not enough. docker_status never
+      # raises: it returns status ok|degraded plus daemon version/latency (errors
+      # are redacted). Bounded by the server's 2s timeout and curl -m 5.
+      mcp_docker_status=$(curl -s -m 5 -X POST "$MCP_URL" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+        -H 'Authorization: Bearer proxy-managed' -H "mcp-session-id: $mcp_sid" \
+        -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"docker_status","arguments":{}}}' 2>/dev/null)
+      # Normalize escaped text/structuredContent variants before matching.
+      mcp_docker_verdict=$(printf '%s' "$mcp_docker_status" | tr -d '\\ ' | tr -d '\n')
+      case "$mcp_docker_verdict" in
+        *'"status":"ok"'*) docker="mcp-docker:OK" ;;
+        *)
+          docker="mcp-docker:FAIL"
+          printf 'mcp-docker diagnostic: %s\n' \
+            "$(printf '%s' "$mcp_docker_status" | tr '\n' ' ' | cut -c1-300)" >&2
+          ;;
+      esac
+      ;;
+    *'"name":"docker_list_containers"'*)
+      # Host registration < 0.13.0 (no health tool): tool presence is the only signal.
+      docker="mcp-docker:OK"
+      printf 'mcp-docker hint: docker_status missing (host server < 0.13.0), checked tool presence only\n' >&2
+      ;;
   esac
+  curl -s -m 2 -o /dev/null -X DELETE "$MCP_URL" -H "mcp-session-id: $mcp_sid" 2>/dev/null
 fi
 
 if [ "${MCP_CHECK_DEEP:-0}" = "1" ]; then

@@ -145,6 +145,7 @@
     { "action": "mcp-gateway_docker_version", "resource": "*", "effect": "allow" },
     { "action": "mcp-gateway_docker_fetch_container_logs", "resource": "*", "effect": "allow" },
     { "action": "mcp-gateway_docker_events_list", "resource": "*", "effect": "allow" },
+    { "action": "mcp-gateway_docker_status", "resource": "*", "effect": "allow" },
     { "action": "mcp-gateway_docker_list_*", "resource": "*", "effect": "allow" },
     { "action": "mcp-gateway_fetch_query_result", "resource": "*", "effect": "allow" },
     { "action": "mcp-gateway_generate_*", "resource": "*", "effect": "allow" },

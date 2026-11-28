@@ -116,7 +116,7 @@ Tools das Präfix `docker_` (flacher, global eindeutiger Gateway-Namespace — `
 nicht mehr mit dem `events_list` des Kubernetes-MCP). Read-only-Tools (`mcp-gateway_docker_list_*` für
 containers/images/networks/volumes, `mcp-gateway_docker_fetch_container_logs`,
 `mcp-gateway_docker_buildx_list`/`buildx_history`/`buildx_logs`/`buildx_du`/`buildx_inspect`,
-`mcp-gateway_docker_system_df`/`system_info`/`version`, `mcp-gateway_docker_image_inspect`/`image_history`,
+`mcp-gateway_docker_system_df`/`system_info`/`version`/`status`, `mcp-gateway_docker_image_inspect`/`image_history`,
 `mcp-gateway_docker_container_inspect`/`container_processes`/`container_stats`/`container_health`,
 `mcp-gateway_docker_network_inspect`/`volume_inspect`, `mcp-gateway_docker_events_list`) sind `allow`, die
 Write-Tools (`mcp-gateway_docker_run_container`, `mcp-gateway_docker_remove_container`,

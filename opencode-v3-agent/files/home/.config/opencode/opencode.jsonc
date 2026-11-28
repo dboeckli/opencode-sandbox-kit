@@ -132,6 +132,7 @@
     "mcp-gateway_docker_version": "allow",
     "mcp-gateway_docker_fetch_container_logs": "allow",
     "mcp-gateway_docker_events_list": "allow",
+    "mcp-gateway_docker_status": "allow",
     "mcp-gateway_docker_list_*": "allow",
     "mcp-gateway_fetch_query_result": "allow",
     "mcp-gateway_generate_*": "allow",

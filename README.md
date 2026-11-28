@@ -475,7 +475,7 @@ Einmalig host-seitig registrieren, dann die Sandbox mit `--static-mcp` erzeugen:
 |--------|------|--------------------------------------|
 | **IntelliJ MCP** | IntelliJ IDEA (JetBrains MCP Server, Port `64615` seit IDEA 2026.2.2, Endpoint `/stream`) | `sbx mcp add idea --url http://localhost:64615/stream --skip-ssrf-check` |
 | **Kubernetes** | `kubernetes-mcp-server` (voller Umfang, Toolsets `core,config,helm`; keine Sandbox-Credentials) | `sbx mcp add k8s --command "$env:USERPROFILE\.local\bin\kubernetes-mcp-server.exe" --args "--config,$env:USERPROFILE\.config\kubernetes-mcp-server\config.toml"` |
-| **Docker** | `dboeckli/mcp-server-docker`-Fork als PyPI-Wheel (`mcp-server-docker-dboeckli==0.13.0`: steuert den Host-Docker-Daemon + Docker-/Buildx-Introspektion, alle Tools mit `docker_`-Präfix, Listen-Tools `format=summary\|full`, Logs auf 20 KiB gekappt, `docker_recreate_container` mit `preserve_configuration`, Issue #250/#286) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.13.0,mcp-server-docker"` |
+| **Docker** | `dboeckli/mcp-server-docker`-Fork als PyPI-Wheel (`mcp-server-docker-dboeckli==0.13.0`: steuert den Host-Docker-Daemon + Docker-/Buildx-Introspektion, alle Tools mit `docker_`-Präfix, Listen-Tools `format=summary\|full`, Logs auf 20 KiB gekappt, `docker_recreate_container` mit `preserve_configuration`, `docker_status`-Health-Probe, Issue #250/#286) | `sbx mcp add docker --command (Get-Command uvx).Source --args "--from,mcp-server-docker-dboeckli==0.13.0,mcp-server-docker"` |
 
 ```powershell
 sbx run ./opencode-v3-agent/ `
@@ -815,7 +815,7 @@ Report als `[startup-checks] ...` an:
   **Skills** und **MCP & Host Systems** sofort sichtbar ist – ohne ersten Prompt. Der
   **MCP & Host Systems**-Block zeigt live (alle 10s, via `~/.config/sandbox-kit/check-infra.sh`) die
   **MCP-Server** über den sbx-Gateway (`~/.local/bin/mcp-check.sh`: ein MCP-Handshake → `mcp-gateway`, `mcp-idea`,
-  `mcp-k8s`, `mcp-docker`, `mcp-client` (Agent-Config deklariert den Gateway) und `mcp-tools` (Startup-Report: `mammouth`/`opencode mcp list` verbindet real über den Agent-Client; die 10s-TUI-Box nutzt die schnelle Variante); die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
+  `mcp-k8s`, `mcp-docker` (Docker-MCP + Host-Daemon-Health via `docker_status`, 0.13.0+; ältere Host-Registrierungen: Tool-Presence), `mcp-client` (Agent-Config deklariert den Gateway) und `mcp-tools` (Startup-Report: `mammouth`/`opencode mcp list` verbindet real über den Agent-Client; die 10s-TUI-Box nutzt die schnelle Variante); die Sandbox hält **keine** kubeconfig (Issue #40) und **keinen** Host-Docker-Port
   (Issue #165)). MCP-Server stehen in einer Zeile. Gebounded per `timeout`.
 - **Claude Code**: Ein `SessionStart`-Hook übergibt den Report als System-Message (registriert in `managed-settings.json` unter `/etc/claude-code/`).
 - **Mammouth Code** (Agent-Kit): Da Fork von OpenCode, werden dieselben Server-/TUI-Plugins aus `~/.config/mammouth/plugins/` geladen.
