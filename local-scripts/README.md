@@ -26,7 +26,7 @@ Abgrenzung zu den anderen Skript-Orten:
 .\local-scripts\install-kubernetes-mcp-server.ps1
 
 # bestimmte Version / immer aktuell
-.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.69
+.\local-scripts\install-kubernetes-mcp-server.ps1 -Version vX.Y.Z
 .\local-scripts\install-kubernetes-mcp-server.ps1 -Version latest
 
 # ohne PATH-Eintrag

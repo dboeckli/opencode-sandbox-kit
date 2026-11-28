@@ -43,7 +43,7 @@ Empfohlen über das Host-Skript im Repo (idempotent, erkennt die Architektur, pr
 # aus dem Repo-Root
 .\local-scripts\install-kubernetes-mcp-server.ps1                    # gepinnte Version (Renovate-tracked; PATH wird gesetzt)
 # oder explizit:
-.\local-scripts\install-kubernetes-mcp-server.ps1 -Version v0.0.69
+.\local-scripts\install-kubernetes-mcp-server.ps1 -Version vX.Y.Z
 # immer die aktuelle Release-Version:
 .\local-scripts\install-kubernetes-mcp-server.ps1 -Version latest
 # ohne PATH-Eintrag:
@@ -56,7 +56,7 @@ Empfohlen über das Host-Skript im Repo (idempotent, erkennt die Architektur, pr
 $dir = "$env:USERPROFILE\.local\bin"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
-# Aktuelle Release-Version ermitteln (oder fest pinnen, z. B. "v0.0.69")
+# Aktuelle Release-Version ermitteln (oder fest pinnen)
 $ver = (Invoke-RestMethod "https://api.github.com/repos/containers/kubernetes-mcp-server/releases/latest").tag_name
 
 $url = "https://github.com/containers/kubernetes-mcp-server/releases/download/$ver/kubernetes-mcp-server-windows-amd64.exe"
@@ -287,7 +287,7 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
 
 ## Upgrade-Hinweise (ab v0.0.68)
 
-> Geprüft mit **v0.0.69**: bestehende `config.toml` bleibt kompatibel (`read_only`, `toolsets`,
+> Geprüft: bestehende `config.toml` bleibt kompatibel (`read_only`, `toolsets`,
 > `kubeconfig`, `cluster_provider_strategy`, `log_file`/`log_level`, `denied_resources`).
 
 - **Config-Rework (breaking):** Runtime-CLI-Flags (`--port`, `--bind-address`, `--read-only`,
@@ -311,7 +311,7 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
   die Tool-Liste auf — daher nicht mehr im Default-Toolset. `kubevirt` ist aus demselben Grund nicht
   Default (kein KubeVirt auf dem Dev-Cluster): es fügt 7 `vm_*`-Tools hinzu (23 → 30 Tools);
   bei Bedarf `-Toolsets core,config,helm,kubevirt`.
-- **Tool-Anzahl (v0.0.69, gemessen):** Default `core,config,helm` = 23 Tools; mit `kubevirt` = 30;
+- **Tool-Anzahl (zuletzt gemessen):** Default `core,config,helm` = 23 Tools; mit `kubevirt` = 30;
   mit allen 8 Toolsets = 52.
 
 ## Betrieb
@@ -325,7 +325,7 @@ Prompt pro Aufruf auslösen (nicht dauerhaft freigegeben). Voraussetzung ist der
 | kubeconfig-Rotation | Docker Desktop rotiert Zertifikate → Prozess neu starten (Sandbox neu erstellen oder `sbx mcp load k8s --sandbox <name>`) |
 | Registrierung entfernen | `sbx mcp rm k8s` |
 
-### Cluster-Abhängigkeiten der Read-only-Tools (geprüft mit v0.0.69, Docker Desktop)
+### Cluster-Abhängigkeiten der Read-only-Tools
 
 - `nodes_top`/`pods_top` brauchen den **metrics-server**; auf einem Docker-Desktop-Cluster ohne
   metrics-server antworten beide mit `failed to get … top: metrics API is not available`
